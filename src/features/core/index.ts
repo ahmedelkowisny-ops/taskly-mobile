@@ -1,0 +1,1 @@
+export const coreFeatureName = 'core';
