@@ -12,17 +12,22 @@ export default function ProviderCoreTasksScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerCore" />
         <AppText variant="screenTitle">{t('coreTasks')}</AppText>
-        <AppText color={colors.slate700}>Core Tasker marketplace tasks will appear here.</AppText>
+        <AppText color={colors.slate700}>Approved Taskers see matching Core tasks by city and category.</AppText>
       </View>
 
       <EmptyStateCard
-        body="No Core tasks available in the placeholder state. Matching and cancellation rules remain backend-owned."
-        title="No Core tasks"
+        body="No available Core tasks right now. Matching, assignment, cancellation, and payout states remain backend-owned."
+        title="No matching Core tasks"
       />
 
       <AppCard accentColor={colors.tasklyBlue600}>
-        <StatusBadge label="Core Tasker" tone="core" />
-        <AppText color={colors.slate700}>This route is separate from Provider Pro request handling.</AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <StatusBadge label="Core Tasker" tone="core" />
+          <StatusBadge label="Stripe verification" tone="warning" />
+        </View>
+        <AppText color={colors.slate700}>
+          Stripe verification is shown here only as a Core payout readiness placeholder.
+        </AppText>
       </AppCard>
     </Screen>
   );

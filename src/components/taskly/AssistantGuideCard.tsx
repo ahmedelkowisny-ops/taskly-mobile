@@ -12,9 +12,10 @@ type AssistantGuideCardProps = {
 
 export function AssistantGuideCard({ body, title, tone = 'core' }: AssistantGuideCardProps) {
   const accentColor = tone === 'pro' ? colors.proAmber500 : colors.tasklyBlue600;
+  const backgroundColor = tone === 'pro' ? colors.proOrange50 : colors.tasklyBlue50;
 
   return (
-    <AppCard accentColor={accentColor} style={styles.card}>
+    <AppCard accentColor={accentColor} backgroundColor={backgroundColor} style={styles.card}>
       <View style={styles.header}>
         <StatusBadge label="Taskly Assistant" tone={tone} />
       </View>
@@ -28,7 +29,7 @@ export function AssistantGuideCard({ body, title, tone = 'core' }: AssistantGuid
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
+    borderColor: colors.white,
   },
   copy: {
     gap: spacing.sm,

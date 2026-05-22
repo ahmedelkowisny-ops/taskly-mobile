@@ -2,7 +2,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -12,47 +11,51 @@ export default function CustomerHomeScreen() {
     <Screen>
       <View style={styles.header}>
         <ModeBadge mode="customer" />
-        <AppText variant="screenTitle">Customer Home</AppText>
+        <AppText variant="screenTitle">Welcome to Taskly</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {mockAuth.currentCustomer.displayName}. This is a demo shell for Taskly customers.
+          Choose the right service path and keep every request inside a clear customer workspace.
         </AppText>
       </View>
 
-      <AppCard accentColor={colors.tasklyBlue600}>
-        <View style={styles.row}>
-          <StatusBadge label={t('paymentProtected')} tone="success" />
-          <StatusBadge label="Backend later" tone="neutral" />
-        </View>
-        <AppText variant="sectionTitle">Get help nearby</AppText>
-        <AppText color={colors.slate700}>
-          Task posting, matching, payment protection, and dispute rules will stay server-authoritative.
-        </AppText>
-        <AppButton>{t('postTask')}</AppButton>
-      </AppCard>
+      <View style={styles.actions}>
+        <AppCard accentColor={colors.tasklyBlue600}>
+          <StatusBadge label="Customer Core" tone="core" />
+          <AppText variant="sectionTitle">{t('postTask')}</AppText>
+          <AppText color={colors.slate700}>
+            For small, fixed-scope jobs where a Core Tasker can help nearby.
+          </AppText>
+          <AppButton>{t('postTask')}</AppButton>
+        </AppCard>
 
-      <EmptyStateCard
-        actionLabel={t('postProRequest')}
-        accent="pro"
-        body="No Pro requests yet. When connected, this area will guide customers through unlock-safe Pro comparison."
-        title="Plan a professional service"
-      />
+        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+          <StatusBadge label="Customer Pro" tone="pro" />
+          <AppText variant="sectionTitle">{t('postProRequest')}</AppText>
+          <AppText color={colors.slate700}>
+            For larger projects where comparing professional Pro responses matters.
+          </AppText>
+          <AppButton tone="pro">{t('postProRequest')}</AppButton>
+        </AppCard>
+      </View>
 
       <AssistantGuideCard
-        body="Use this inline guide before sensitive actions such as payment, unlocks, or onboarding steps."
-        title={t('unlockAndComparePros')}
+        body="Taskly helps you choose the right path: small fixed-scope tasks or larger Pro projects."
+        title="Choose the right path"
         tone="pro"
+      />
+
+      <EmptyStateCard
+        body="Upcoming tasks, Pro requests, and messages will appear here after real data is connected."
+        title="No upcoming activity"
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.sm,
+  actions: {
+    gap: spacing.lg,
   },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  header: {
     gap: spacing.sm,
   },
 });

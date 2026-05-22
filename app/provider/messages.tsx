@@ -12,12 +12,12 @@ export default function ProviderMessagesScreen() {
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('messages')}</AppText>
-        <AppText color={colors.slate700}>Provider conversations for Core and Pro work will share this surface.</AppText>
+        <AppText color={colors.slate700}>Provider conversations should keep Core and Pro context visible.</AppText>
       </View>
 
       <EmptyStateCard
-        body="No provider messages yet. Future message threads should clearly handle loading, empty, error, and unauthorized states."
-        title="No messages"
+        body="No provider messages yet. Future threads should clearly handle loading, empty, error, and unauthorized states."
+        title="No provider messages"
       />
 
       <AppCard>
@@ -26,7 +26,7 @@ export default function ProviderMessagesScreen() {
           <ModeBadge mode="providerPro" />
         </View>
         <AppText color={colors.slate700}>
-          Keep Core and Pro context visible in each future conversation thread.
+          Message previews should show whether a thread belongs to Core tasks or Pro requests.
         </AppText>
       </AppCard>
     </Screen>

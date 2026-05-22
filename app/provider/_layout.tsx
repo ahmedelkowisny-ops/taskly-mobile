@@ -6,12 +6,16 @@ import { colors } from '@/src/theme/colors';
 export default function ProviderLayout() {
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.proOrange600,
+        tabBarActiveTintColor:
+          route.name === 'pro-requests' ? colors.proOrange600 : colors.tasklyBlue600,
         tabBarInactiveTintColor: colors.slate500,
-        tabBarLabelStyle: { fontSize: 10 },
-      }}>
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarStyle: {
+          borderTopColor: colors.slate100,
+        },
+      })}>
       <Tabs.Screen
         name="dashboard"
         options={{
@@ -50,8 +54,7 @@ export default function ProviderLayout() {
       <Tabs.Screen
         name="account"
         options={{
-          title: 'Account',
-          tabBarIcon: ({ color, size }) => <Ionicons color={color} name="person-outline" size={size} />,
+          href: null,
         }}
       />
     </Tabs>

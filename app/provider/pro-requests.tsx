@@ -12,24 +12,26 @@ export default function ProviderProRequestsScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerPro" />
         <AppText variant="screenTitle">{t('proRequests')}</AppText>
-        <AppText color={colors.slate700}>Provider Pro requests use orange and gold accents.</AppText>
+        <AppText color={colors.slate700}>
+          Approved Pros see requests based on approved categories and cities.
+        </AppText>
       </View>
 
       <EmptyStateCard
         accent="pro"
-        body="No Pro requests yet. This placeholder does not require Stripe verification and does not expose contact details."
-        title="No Pro requests"
+        body="No matching Pro requests right now. Pro matching and visibility rules will come from the backend."
+        title="No matching Pro requests"
       />
 
       <AppCard accentColor={colors.proAmber500}>
         <StatusBadge label="Pro only" tone="pro" />
         <AppText color={colors.slate700}>
-          Pro unlock, comparison, and contact permission logic must be returned by the backend when added.
+          Keep contact details inside Taskly until the allowed unlock/contact flow.
         </AppText>
       </AppCard>
 
       <AssistantGuideCard
-        body="Use this premium card to guide Pros through safe next steps without turning it into a popup."
+        body="Pro work uses approved categories and cities. It does not require Stripe verification for a Pro-only flow."
         title="Pro request guidance"
         tone="pro"
       />

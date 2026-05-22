@@ -17,7 +17,7 @@ const toneStyles: Record<StatusTone, { backgroundColor: string; color: string }>
   core: { backgroundColor: colors.tasklyBlue50, color: colors.tasklyBlue700 },
   pro: { backgroundColor: colors.proOrange50, color: colors.proOrange600 },
   success: { backgroundColor: colors.success50, color: colors.success600 },
-  warning: { backgroundColor: colors.proOrange50, color: colors.warning600 },
+  warning: { backgroundColor: '#FFFBEB', color: colors.warning600 },
   danger: { backgroundColor: '#FEF2F2', color: colors.danger600 },
   neutral: { backgroundColor: colors.slate100, color: colors.slate700 },
 };

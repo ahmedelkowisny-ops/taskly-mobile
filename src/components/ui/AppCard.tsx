@@ -6,12 +6,19 @@ import { radius, spacing } from '@/src/theme/spacing';
 
 type AppCardProps = PropsWithChildren<{
   accentColor?: string;
+  backgroundColor?: string;
   style?: StyleProp<ViewStyle>;
 }>;
 
-export function AppCard({ accentColor, children, style }: AppCardProps) {
+export function AppCard({ accentColor, backgroundColor = colors.white, children, style }: AppCardProps) {
   return (
-    <View style={[styles.card, accentColor ? { borderLeftColor: accentColor, borderLeftWidth: 4 } : null, style]}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor },
+        accentColor ? { borderLeftColor: accentColor, borderLeftWidth: 4 } : null,
+        style,
+      ]}>
       {children}
     </View>
   );
@@ -19,11 +26,15 @@ export function AppCard({ accentColor, children, style }: AppCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
     borderColor: colors.slate100,
     borderRadius: radius.sm,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
   },
 });

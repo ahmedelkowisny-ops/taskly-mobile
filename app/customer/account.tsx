@@ -12,17 +12,17 @@ export default function CustomerAccountScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('account')}</AppText>
-        <AppText color={colors.slate700}>Customer settings and auth state placeholders.</AppText>
+        <AppText color={colors.slate700}>Customer settings, trust details, and notification preferences will live here.</AppText>
       </View>
 
-      <AppCard>
-        <StatusBadge label="Mock auth" tone="neutral" />
+      <AppCard accentColor={colors.tasklyBlue600}>
+        <StatusBadge label="Customer account" tone="core" />
         <AppText variant="sectionTitle">Signed in as Customer</AppText>
         <AppText color={colors.slate700}>Real account state will come from the Taskly backend/API later.</AppText>
       </AppCard>
 
       <AssistantGuideCard
-        body="When account setup becomes real, this card can explain missing profile data, payments, or trust steps inline."
+        body="Account screens should explain missing data, payment readiness, and trust steps inline without opening blocking popups."
         title="Account guidance"
       />
     </Screen>

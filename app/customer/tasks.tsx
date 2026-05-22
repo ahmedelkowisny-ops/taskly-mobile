@@ -12,19 +12,23 @@ export default function CustomerTasksScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('myTasks')}</AppText>
-        <AppText color={colors.slate700}>Customer Core task tracking will live here after API integration.</AppText>
+        <AppText color={colors.slate700}>Track small fixed-scope tasks with Core Taskers.</AppText>
       </View>
 
       <EmptyStateCard
         actionLabel={t('postTask')}
-        body="You have no active tasks yet. Future loading, empty, error, and unauthorized states should stay explicit on this screen."
-        title="No customer tasks"
+        body="You have no active Core tasks yet. Post a clear task to start receiving provider interest later."
+        title="No Core tasks yet"
       />
 
-      <AppCard>
-        <StatusBadge label="Customer Core" tone="core" />
+      <AppCard accentColor={colors.tasklyBlue600}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <StatusBadge label="OPEN" tone="core" />
+          <StatusBadge label="PAYMENT PROTECTED" tone="success" />
+        </View>
+        <AppText variant="sectionTitle">{t('paymentProtected')}</AppText>
         <AppText color={colors.slate700}>
-          Placeholder only. Real matching, cancellation, payment, and dispute states must come from the backend.
+          Safe placeholder wording only: when payments are added, Taskly will show backend-provided payment protection status without duplicating payment rules in the app.
         </AppText>
       </AppCard>
     </Screen>

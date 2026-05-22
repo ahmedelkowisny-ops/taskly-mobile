@@ -12,7 +12,7 @@ export default function ProviderAccountScreen() {
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('account')}</AppText>
-        <AppText color={colors.slate700}>Provider account and role placeholder states.</AppText>
+        <AppText color={colors.slate700}>Provider account, role state, and notification placeholders.</AppText>
       </View>
 
       <AppCard>
@@ -20,10 +20,22 @@ export default function ProviderAccountScreen() {
           <ModeBadge mode="providerCore" />
           <ModeBadge mode="providerPro" />
         </View>
-        <AppText variant="sectionTitle">Dual provider mock state</AppText>
+        <AppText variant="sectionTitle">Dual provider workspace</AppText>
         <AppText color={colors.slate700}>
           Role authorization and Pro approval remain server-authoritative when real auth arrives.
         </AppText>
+      </AppCard>
+
+      <AppCard accentColor={colors.tasklyBlue600}>
+        <ModeBadge mode="providerCore" />
+        <AppText variant="sectionTitle">Core account readiness</AppText>
+        <AppText color={colors.slate700}>Core payout and tasker approval states will be read from the backend.</AppText>
+      </AppCard>
+
+      <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+        <ModeBadge mode="providerPro" />
+        <AppText variant="sectionTitle">Pro account readiness</AppText>
+        <AppText color={colors.slate700}>Pro profile review and category approval stay separate from Core payouts.</AppText>
       </AppCard>
 
       <AssistantGuideCard

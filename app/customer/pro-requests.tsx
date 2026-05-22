@@ -14,19 +14,19 @@ export default function CustomerProRequestsScreen() {
         <StatusBadge label="Customer Pro" tone="pro" />
         <AppText variant="screenTitle">{t('myProRequests')}</AppText>
         <AppText color={colors.slate700}>
-          Pro request comparison will be unlocked only through the approved backend flow.
+          Start larger professional projects and compare Pro responses only when the backend allows it.
         </AppText>
       </View>
 
       <EmptyStateCard
         actionLabel={t('postProRequest')}
         accent="pro"
-        body="No Pro requests yet. Provider contact details stay hidden until the allowed unlock/contact flow."
-        title="No Pro requests"
+        body="Pro requests are free to post. Customers unlock comparison details after meaningful Pro responses exist."
+        title="No Pro requests yet"
       />
 
       <AssistantGuideCard
-        body="This premium inline card is reserved for safe explanations before unlock and payment-sensitive actions."
+        body="Provider contact details stay hidden until the allowed unlock/contact flow."
         title={t('unlockAndComparePros')}
         tone="pro"
       />

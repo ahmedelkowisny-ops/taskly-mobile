@@ -12,18 +12,18 @@ export default function CustomerMessagesScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('messages')}</AppText>
-        <AppText color={colors.slate700}>Customer conversations will appear after backend chat data is connected.</AppText>
+        <AppText color={colors.slate700}>Conversations with Core Taskers and Pros will appear here.</AppText>
       </View>
 
       <EmptyStateCard
-        body="No messages yet. This screen should later handle unauthorized access and failed message loads clearly."
-        title="No conversations"
+        body="No conversations yet. When real messaging arrives, loading, empty, error, and unauthorized states should stay visible."
+        title="No customer messages"
       />
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <StatusBadge label="Contact rules" tone="core" />
         <AppText color={colors.slate700}>
-          Pro phone and email details are intentionally not shown in this placeholder foundation.
+          Pro phone and email details are not shown before the allowed unlock/contact flow.
         </AppText>
       </AppCard>
     </Screen>

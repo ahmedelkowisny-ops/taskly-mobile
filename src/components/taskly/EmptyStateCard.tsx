@@ -20,9 +20,10 @@ export function EmptyStateCard({
   title,
 }: EmptyStateCardProps) {
   const accentColor = accent === 'pro' ? colors.proOrange600 : colors.tasklyBlue600;
+  const backgroundColor = accent === 'pro' ? colors.proOrange50 : colors.tasklyBlue50;
 
   return (
-    <AppCard accentColor={accentColor}>
+    <AppCard accentColor={accentColor} backgroundColor={backgroundColor}>
       <View style={styles.copy}>
         <AppText variant="sectionTitle">{title}</AppText>
         <AppText color={colors.slate700}>{body}</AppText>

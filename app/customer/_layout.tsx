@@ -10,7 +10,10 @@ export default function CustomerLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.tasklyBlue600,
         tabBarInactiveTintColor: colors.slate500,
-        tabBarLabelStyle: { fontSize: 11 },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarStyle: {
+          borderTopColor: colors.slate100,
+        },
       }}>
       <Tabs.Screen
         name="home"
