@@ -12,7 +12,9 @@ export default function ProviderCoreTasksScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerCore" />
         <AppText variant="screenTitle">{t('coreTasks')}</AppText>
-        <AppText color={colors.slate700}>Approved Taskers see matching Core tasks by city and category.</AppText>
+        <AppText color={colors.slate700}>
+          Approved Core Taskers see matching tasks by city and category inside the Provider Workspace.
+        </AppText>
       </View>
 
       <EmptyStateCard
@@ -26,7 +28,7 @@ export default function ProviderCoreTasksScreen() {
           <StatusBadge label="Stripe verification" tone="warning" />
         </View>
         <AppText color={colors.slate700}>
-          Stripe verification is shown here only as a Core payout readiness placeholder.
+          Stripe verification is shown here only as a Core payout readiness placeholder, not as Pro logic.
         </AppText>
       </AppCard>
     </Screen>

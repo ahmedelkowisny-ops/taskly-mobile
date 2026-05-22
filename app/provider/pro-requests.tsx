@@ -13,7 +13,7 @@ export default function ProviderProRequestsScreen() {
         <ModeBadge mode="providerPro" />
         <AppText variant="screenTitle">{t('proRequests')}</AppText>
         <AppText color={colors.slate700}>
-          Approved Pros see requests based on approved categories and cities.
+          Approved Pros see requests based on approved categories and cities inside the Provider Workspace.
         </AppText>
       </View>
 
@@ -31,7 +31,7 @@ export default function ProviderProRequestsScreen() {
       </AppCard>
 
       <AssistantGuideCard
-        body="Pro work uses approved categories and cities. It does not require Stripe verification for a Pro-only flow."
+        body="Pro work uses approved categories and cities inside the Provider Workspace. It does not require Stripe verification for a Pro-only flow."
         title="Pro request guidance"
         tone="pro"
       />

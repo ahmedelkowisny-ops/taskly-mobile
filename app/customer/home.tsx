@@ -13,7 +13,7 @@ export default function CustomerHomeScreen() {
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">Welcome to Taskly</AppText>
         <AppText color={colors.slate700}>
-          Choose the right service path and keep every request inside a clear customer workspace.
+          Choose the right service path inside your Customer Workspace.
         </AppText>
       </View>
 

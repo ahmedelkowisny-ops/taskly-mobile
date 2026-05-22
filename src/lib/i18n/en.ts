@@ -11,4 +11,11 @@ export const en = {
   profile: 'Profile',
   paymentProtected: 'Payment protected',
   unlockAndComparePros: 'Unlock and compare Pros',
+  customerWorkspace: 'Customer Workspace',
+  providerWorkspace: 'Provider Workspace',
+  enterCustomerWorkspace: 'Enter Customer Workspace',
+  enterProviderWorkspace: 'Enter Provider Workspace',
+  switchWorkspace: 'Switch workspace',
+  oneTasklyApp: 'One Taskly app',
+  adminWebOnly: 'Admin remains web-only',
 } as const;

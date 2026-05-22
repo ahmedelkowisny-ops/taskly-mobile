@@ -12,7 +12,9 @@ export default function CustomerTasksScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('myTasks')}</AppText>
-        <AppText color={colors.slate700}>Track small fixed-scope tasks with Core Taskers.</AppText>
+        <AppText color={colors.slate700}>
+          Track small fixed-scope tasks from the Customer Workspace.
+        </AppText>
       </View>
 
       <EmptyStateCard

@@ -12,7 +12,9 @@ export default function ProviderMessagesScreen() {
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('messages')}</AppText>
-        <AppText color={colors.slate700}>Provider conversations should keep Core and Pro context visible.</AppText>
+        <AppText color={colors.slate700}>
+          Provider Workspace conversations should keep Core and Pro context visible.
+        </AppText>
       </View>
 
       <EmptyStateCard

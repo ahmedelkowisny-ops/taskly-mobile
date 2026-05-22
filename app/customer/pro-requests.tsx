@@ -14,7 +14,7 @@ export default function CustomerProRequestsScreen() {
         <StatusBadge label="Customer Pro" tone="pro" />
         <AppText variant="screenTitle">{t('myProRequests')}</AppText>
         <AppText color={colors.slate700}>
-          Start larger professional projects and compare Pro responses only when the backend allows it.
+          Start larger professional projects from the Customer Workspace and compare Pro responses only when the backend allows it.
         </AppText>
       </View>
 

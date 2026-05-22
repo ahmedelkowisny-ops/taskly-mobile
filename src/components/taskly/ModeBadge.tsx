@@ -5,9 +5,9 @@ type ModeBadgeProps = {
 };
 
 const modeCopy: Record<ModeBadgeProps['mode'], { label: string; tone: 'core' | 'pro' }> = {
-  customer: { label: 'Customer', tone: 'core' },
-  providerCore: { label: 'Provider Core', tone: 'core' },
-  providerPro: { label: 'Provider Pro', tone: 'pro' },
+  customer: { label: 'Customer Workspace', tone: 'core' },
+  providerCore: { label: 'Core Tasks', tone: 'core' },
+  providerPro: { label: 'Pro Requests', tone: 'pro' },
 };
 
 export function ModeBadge({ mode }: ModeBadgeProps) {

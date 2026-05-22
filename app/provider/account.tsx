@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge } from '@/src/components/taskly';
+import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -12,7 +12,9 @@ export default function ProviderAccountScreen() {
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('account')}</AppText>
-        <AppText color={colors.slate700}>Provider account, role state, and notification placeholders.</AppText>
+        <AppText color={colors.slate700}>
+          Provider Workspace account, role state, and notification placeholders.
+        </AppText>
       </View>
 
       <AppCard>
@@ -20,9 +22,9 @@ export default function ProviderAccountScreen() {
           <ModeBadge mode="providerCore" />
           <ModeBadge mode="providerPro" />
         </View>
-        <AppText variant="sectionTitle">Dual provider workspace</AppText>
+        <AppText variant="sectionTitle">Dual Provider Workspace</AppText>
         <AppText color={colors.slate700}>
-          Role authorization and Pro approval remain server-authoritative when real auth arrives.
+          Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them.
         </AppText>
       </AppCard>
 
@@ -42,6 +44,8 @@ export default function ProviderAccountScreen() {
         body="Future account errors, loading states, empty states, and unauthorized states should be explicit and mobile-friendly."
         title="Account checks"
       />
+
+      <WorkspaceSwitchHint />
     </Screen>
   );
 }

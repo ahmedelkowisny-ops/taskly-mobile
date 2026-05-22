@@ -4,13 +4,16 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 
 # Taskly Mobile Rules
 
-- This repository is the shared Expo React Native foundation for the Taskly Customer app and Taskly Provider app.
+- Taskly mobile is one public Expo React Native app with role-based workspaces.
+- The Customer workspace lives under `/customer/*`.
+- The Provider workspace lives under `/provider/*`.
 - Keep Admin web-only. Do not create admin mobile routes, screens, or navigation.
+- The Provider workspace supports Core Taskers, Taskly Pro professionals, and users who may be both.
+- Keep Customer and Provider screens clearly separated.
+- Keep Core Tasks and Pro Requests visually and functionally separated inside Provider.
 - Do not change backend business logic unless explicitly asked.
-- Do not duplicate payment, matching, cancellation, dispute, role, or Pro unlock logic on mobile.
 - Mobile must call the existing Taskly backend/API later; keep the backend server-authoritative.
-- Keep Customer and Provider routes separate.
-- In Provider, Core Tasker and Pro Tasker modes must be visibly separated.
+- Do not duplicate payment, matching, cancellation, dispute, role, or Pro unlock logic on mobile.
 - Do not require Stripe verification for a Pro-only flow.
 - Do not expose Pro phone/email before the allowed unlock/contact flow.
 - Do not use public or professional UI wording like "V1".

@@ -11,4 +11,11 @@ export const bg = {
   profile: 'Профил',
   paymentProtected: 'Плащането е защитено',
   unlockAndComparePros: 'Отключи и сравни Pro оферти',
+  customerWorkspace: 'Клиентска зона',
+  providerWorkspace: 'Зона за изпълнители',
+  enterCustomerWorkspace: 'Влез като клиент',
+  enterProviderWorkspace: 'Влез като изпълнител',
+  switchWorkspace: 'Смени зона',
+  oneTasklyApp: 'Едно Taskly приложение',
+  adminWebOnly: 'Админ панелът остава само в уеб',
 } as const;

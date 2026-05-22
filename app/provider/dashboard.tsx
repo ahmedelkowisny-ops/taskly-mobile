@@ -12,9 +12,9 @@ export default function ProviderDashboardScreen() {
     <Screen>
       <View style={styles.header}>
         <StatusBadge label="Provider" tone="neutral" />
-        <AppText variant="screenTitle">{t('providerDashboard')}</AppText>
+        <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {mockAuth.currentProvider.displayName}. Core and Pro are separate modes in one provider workspace.
+          Welcome, {mockAuth.currentProvider.displayName}. Core and Pro are separate modes inside the Provider Workspace.
         </AppText>
       </View>
 
@@ -22,14 +22,18 @@ export default function ProviderDashboardScreen() {
         <AppCard accentColor={colors.tasklyBlue600} style={styles.panel}>
           <ModeBadge mode="providerCore" />
           <AppText variant="sectionTitle">{t('coreTasks')}</AppText>
-          <AppText color={colors.slate700}>Available Core tasks, active jobs, and payout readiness will live here.</AppText>
+          <AppText color={colors.slate700}>
+            Core Tasker work can live inside the Provider Workspace alongside Pro work.
+          </AppText>
           <StatusBadge label="0 available" tone="core" />
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.panel}>
           <ModeBadge mode="providerPro" />
           <AppText variant="sectionTitle">{t('proRequests')}</AppText>
-          <AppText color={colors.slate700}>Approved Pro categories, cities, and matching requests stay separate from Core.</AppText>
+          <AppText color={colors.slate700}>
+            Taskly Pro requests stay visually and functionally separate from Core Tasks.
+          </AppText>
           <StatusBadge label="0 matching" tone="pro" />
         </AppCard>
       </View>
@@ -51,7 +55,7 @@ export default function ProviderDashboardScreen() {
       </View>
 
       <AssistantGuideCard
-        body="Core tasks and Pro requests stay separate so each mode can follow its own backend-approved rules."
+        body="Core Tasks and Pro Requests stay separate so each mode can follow backend-approved rules inside one Taskly app."
         title="Mode guidance"
         tone="pro"
       />
