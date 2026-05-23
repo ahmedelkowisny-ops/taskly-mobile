@@ -3,12 +3,19 @@ import { StyleSheet, View } from 'react-native';
 
 import { TasklyLogoText, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { mockAuth } from '@/src/lib/auth/mockAuth';
+import {
+  canAccessCustomerWorkspace,
+  canAccessProviderWorkspace,
+  getProviderModeSummary,
+} from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const session = mockAuth.currentSession;
 
   return (
     <Screen contentStyle={styles.content}>
@@ -18,6 +25,23 @@ export default function WelcomeScreen() {
           One app for posting jobs, managing provider work, and staying connected.
         </AppText>
       </View>
+
+      <AppCard>
+        <View style={styles.badges}>
+          <StatusBadge label={`Demo user: ${session.displayName}`} tone="neutral" />
+          <StatusBadge
+            label={canAccessCustomerWorkspace(session) ? t('customerWorkspace') : 'Customer pending'}
+            tone={canAccessCustomerWorkspace(session) ? 'core' : 'neutral'}
+          />
+          <StatusBadge
+            label={canAccessProviderWorkspace(session) ? getProviderModeSummary(session) : 'Provider pending'}
+            tone={canAccessProviderWorkspace(session) ? 'pro' : 'neutral'}
+          />
+        </View>
+        <AppText color={colors.slate700}>
+          Static demo state only. Real sign-in and role permissions will come from the Taskly backend later.
+        </AppText>
+      </AppCard>
 
       <View style={styles.cards}>
         <AppCard accentColor={colors.tasklyBlue600}>
@@ -48,6 +72,24 @@ export default function WelcomeScreen() {
         You can switch workspaces when your account has the right permissions.
       </AppText>
 
+      <AppCard>
+        <StatusBadge label="How Taskly works" tone="neutral" />
+        <View style={styles.howItWorks}>
+          <View style={styles.howItem}>
+            <StatusBadge label={t('customerWorkspace')} tone="core" />
+            <AppText color={colors.slate700}>Post tasks or Pro requests.</AppText>
+          </View>
+          <View style={styles.howItem}>
+            <StatusBadge label={t('providerWorkspace')} tone="pro" />
+            <AppText color={colors.slate700}>Manage Core tasks and Pro requests.</AppText>
+          </View>
+          <View style={styles.howItem}>
+            <StatusBadge label="Admin" tone="neutral" />
+            <AppText color={colors.slate700}>{t('adminWebOnly')}.</AppText>
+          </View>
+        </View>
+      </AppCard>
+
       <WorkspaceSwitchHint compact />
     </Screen>
   );
@@ -68,6 +110,12 @@ const styles = StyleSheet.create({
   hero: {
     gap: spacing.md,
     marginBottom: spacing.lg,
+  },
+  howItWorks: {
+    gap: spacing.md,
+  },
+  howItem: {
+    gap: spacing.sm,
   },
   note: {
     textAlign: 'center',

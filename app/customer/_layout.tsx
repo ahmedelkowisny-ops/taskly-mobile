@@ -44,6 +44,12 @@ export default function CustomerLayout() {
         }}
       />
       <Tabs.Screen
+        name="onboarding"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="account"
         options={{
           title: 'Account',

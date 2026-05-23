@@ -1,22 +1,48 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge } from '@/src/components/taskly';
-import { AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AssistantGuideCard, ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
+import {
+  getProviderModeSummary,
+  getRecommendedProviderNextAction,
+} from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderDashboardScreen() {
+  const router = useRouter();
+  const session = mockAuth.currentSession;
+  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+
   return (
     <Screen>
       <View style={styles.header}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {mockAuth.currentProvider.displayName}. Core and Pro are separate modes inside the Provider Workspace.
+          Welcome, {session.displayName}. Core and Pro are separate modes inside the Provider Workspace.
         </AppText>
       </View>
+
+      <ProviderStatusCard
+        accent="neutral"
+        actionLabel="Review provider setup"
+        description="Core tasks and Pro requests stay separate so payments, responses, and customer expectations remain clear."
+        onPress={() => router.push('/provider/start')}
+        statusLabel={getProviderModeSummary(session)}
+        title="Provider status"
+      />
+
+      <AppCard>
+        <StatusBadge label="Recommended next action" tone="neutral" />
+        <AppText variant="sectionTitle">{getRecommendedProviderNextAction(session)}</AppText>
+        <AppText color={colors.slate700}>
+          This recommendation comes from static demo state only. Real role state will be backend-authoritative.
+        </AppText>
+      </AppCard>
 
       <View style={styles.grid}>
         <AppCard accentColor={colors.tasklyBlue600} style={styles.panel}>
@@ -25,7 +51,7 @@ export default function ProviderDashboardScreen() {
           <AppText color={colors.slate700}>
             Core Tasker work can live inside the Provider Workspace alongside Pro work.
           </AppText>
-          <StatusBadge label="0 available" tone="core" />
+          <StatusBadge label={`Status: ${coreTaskerStatus}`} tone="core" />
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.panel}>
@@ -34,7 +60,7 @@ export default function ProviderDashboardScreen() {
           <AppText color={colors.slate700}>
             Taskly Pro requests stay visually and functionally separate from Core Tasks.
           </AppText>
-          <StatusBadge label="0 matching" tone="pro" />
+          <StatusBadge label={`Status: ${proStatus}`} tone="pro" />
         </AppCard>
       </View>
 
@@ -42,15 +68,15 @@ export default function ProviderDashboardScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <ModeBadge mode="providerCore" />
           <AppText variant="sectionTitle">Core payout status</AppText>
-          <AppText color={colors.slate700}>Stripe verification required for Core payouts.</AppText>
-          <StatusBadge label="Stripe verification" tone="warning" />
+          <AppText color={colors.slate700}>{t('stripeVerificationCorePayouts')}.</AppText>
+          <StatusBadge label={coreTaskerStatus === 'needsStripe' ? 'Needs Stripe' : coreTaskerStatus} tone="warning" />
         </AppCard>
 
         <AppCard accentColor={colors.proAmber500} backgroundColor={colors.proOrange50}>
           <ModeBadge mode="providerPro" />
-          <AppText variant="sectionTitle">Pro readiness</AppText>
-          <AppText color={colors.slate700}>Pro profile review and category approval are required for Pro work.</AppText>
-          <StatusBadge label="Profile review" tone="pro" />
+          <AppText variant="sectionTitle">Profile strength</AppText>
+          <AppText color={colors.slate700}>{t('proProfileReview')} and category approval are required for Pro work.</AppText>
+          <StatusBadge label={proStatus} tone="pro" />
         </AppCard>
       </View>
 
@@ -59,6 +85,10 @@ export default function ProviderDashboardScreen() {
         title="Mode guidance"
         tone="pro"
       />
+
+      <AppButton onPress={() => router.push('/provider/start')} tone="pro" variant="outline">
+        {t('startProviderWorkspace')}
+      </AppButton>
     </Screen>
   );
 }

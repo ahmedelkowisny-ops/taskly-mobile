@@ -1,12 +1,15 @@
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
-import { AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderAccountScreen() {
+  const router = useRouter();
+
   return (
     <Screen>
       <View style={{ gap: spacing.sm }}>
@@ -24,7 +27,7 @@ export default function ProviderAccountScreen() {
         </View>
         <AppText variant="sectionTitle">Dual Provider Workspace</AppText>
         <AppText color={colors.slate700}>
-          Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them.
+          Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them. Future workspace switching and notifications will follow account permissions.
         </AppText>
       </AppCard>
 
@@ -46,6 +49,14 @@ export default function ProviderAccountScreen() {
       />
 
       <WorkspaceSwitchHint />
+
+      <AppButton onPress={() => router.push('/provider/start')} tone="pro" variant="outline">
+        {t('startProviderWorkspace')}
+      </AppButton>
+
+      <AppButton onPress={() => router.push('/')} variant="ghost">
+        Back to Taskly
+      </AppButton>
     </Screen>
   );
 }

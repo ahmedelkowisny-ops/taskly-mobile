@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
@@ -7,6 +8,8 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerHomeScreen() {
+  const router = useRouter();
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -24,7 +27,7 @@ export default function CustomerHomeScreen() {
           <AppText color={colors.slate700}>
             For small, fixed-scope jobs where a Core Tasker can help nearby.
           </AppText>
-          <AppButton>{t('postTask')}</AppButton>
+          <AppButton onPress={() => router.push('/customer/onboarding')}>{t('postTask')}</AppButton>
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -33,7 +36,9 @@ export default function CustomerHomeScreen() {
           <AppText color={colors.slate700}>
             For larger projects where comparing professional Pro responses matters.
           </AppText>
-          <AppButton tone="pro">{t('postProRequest')}</AppButton>
+          <AppButton onPress={() => router.push('/customer/onboarding')} tone="pro">
+            {t('postProRequest')}
+          </AppButton>
         </AppCard>
       </View>
 
@@ -47,6 +52,10 @@ export default function CustomerHomeScreen() {
         body="Upcoming tasks, Pro requests, and messages will appear here after real data is connected."
         title="No upcoming activity"
       />
+
+      <AppButton onPress={() => router.push('/customer/onboarding')} variant="outline">
+        {t('setupCustomerWorkspace')}
+      </AppButton>
     </Screen>
   );
 }

@@ -52,6 +52,12 @@ export default function ProviderLayout() {
         }}
       />
       <Tabs.Screen
+        name="start"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="account"
         options={{
           href: null,

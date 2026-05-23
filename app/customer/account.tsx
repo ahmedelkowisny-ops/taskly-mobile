@@ -1,12 +1,15 @@
+import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
-import { AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerAccountScreen() {
+  const router = useRouter();
+
   return (
     <Screen>
       <View style={{ gap: spacing.sm }}>
@@ -29,6 +32,14 @@ export default function CustomerAccountScreen() {
       />
 
       <WorkspaceSwitchHint />
+
+      <AppButton onPress={() => router.push('/customer/onboarding')} variant="outline">
+        {t('setupCustomerWorkspace')}
+      </AppButton>
+
+      <AppButton onPress={() => router.push('/')} variant="ghost">
+        Back to Taskly
+      </AppButton>
     </Screen>
   );
 }

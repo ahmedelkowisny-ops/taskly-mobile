@@ -43,10 +43,13 @@ export default function ProviderProfileScreen() {
         <AppButton onPress={() => router.push('/provider/account')} variant="outline">
           Open Account
         </AppButton>
+        <AppButton onPress={() => router.push('/provider/start')} tone="pro" variant="outline">
+          {t('startProviderWorkspace')}
+        </AppButton>
       </AppCard>
 
       <AssistantGuideCard
-        body="Pro-only setup should not depend on Stripe verification in this mobile foundation."
+        body="Core Tasker profile and Pro profile are separate sections. Pro-only setup should not depend on Stripe verification in this mobile foundation."
         title="Profile readiness"
         tone="pro"
       />
