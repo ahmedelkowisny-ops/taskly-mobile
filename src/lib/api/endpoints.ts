@@ -27,6 +27,7 @@ export const endpoints = {
   provider: {
     coreTaskDetail: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}`,
     coreTasks: '/api/mobile/provider/core-tasks',
+    dashboard: '/api/mobile/provider/dashboard',
     dashboardSummary: '/api/mobile/provider/dashboard',
     messages: '/api/mobile/provider/messages',
     proRequestDetail: (proRequestId: string) => `/api/mobile/provider/pro-requests/${proRequestId}`,

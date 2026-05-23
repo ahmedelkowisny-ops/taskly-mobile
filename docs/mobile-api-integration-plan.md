@@ -425,6 +425,29 @@ Scope remains intentionally limited:
 
 The backend remains the source of truth for status labels, workspace access, permissions, and `nextAction` fields. Mobile displays those fields and does not calculate sensitive eligibility. Demo mode still uses local mock responses when selected.
 
+## Phase 13 Provider Read-Only APIs
+
+Phase 13 adds read-only Provider Workspace data integration while keeping Core and Pro modes separate.
+
+Backend endpoints added:
+
+- `GET /api/mobile/provider/dashboard`
+- `GET /api/mobile/provider/core-tasks`
+- `GET /api/mobile/provider/pro-requests`
+- `GET /api/mobile/provider/profile`
+
+Mobile wrappers live in `src/lib/api/provider.ts`, with paths centralized in `src/lib/api/endpoints.ts`. Provider Dashboard, Core Tasks, Pro Requests, and Profile now fetch read-only data when an authenticated token is available.
+
+Scope remains intentionally limited:
+
+- No Core task accept/respond, on-the-way, start task, or completion request actions.
+- No Stripe onboarding action.
+- No Pro response create/edit flow.
+- No payment, cancellation, dispute, refund, help, image upload, messaging, or notification mutations.
+- No customer private contact/address data is exposed by mobile unless the backend explicitly returns safe preview fields.
+
+The backend remains the source of truth for provider capabilities, matching, status labels, permissions, and `nextAction` fields. Mobile displays backend-provided values and keeps demo responses available for development.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

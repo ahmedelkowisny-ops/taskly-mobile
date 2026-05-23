@@ -135,26 +135,102 @@ export type ProRequestDetail = ProRequestSummary & {
 };
 
 export type ProviderCoreTaskSummary = {
-  city: string;
+  categoryLabel: string;
+  cityLabel: string;
+  customerPreviewLabel: string;
   id: string;
+  nextAction: ProviderNextAction;
+  paymentStatusLabel: string;
+  priceLabel: string;
+  scheduledEndAt: string | null;
+  scheduledStartAt: string | null;
   status: string;
+  statusLabel: string;
   title: string;
+  unreadMessagesCount: number;
+};
+
+export type ProviderCoreTasksResponse = {
+  emptyState: EmptyStateContent;
+  tasks: ProviderCoreTaskSummary[];
 };
 
 export type ProviderProRequestSummary = {
-  city: string;
+  categoryLabel: string;
+  cityLabel: string;
+  createdAt: string;
   id: string;
+  isEligibleToRespond: boolean;
+  nextAction: ProviderNextAction;
+  responseStatusLabel: string;
   status: string;
+  statusLabel: string;
+  timelineLabel: string;
+  title: string;
+};
+
+export type ProviderProRequestsResponse = {
+  emptyState: EmptyStateContent;
+  proRequests: ProviderProRequestSummary[];
+};
+
+export type ProviderNextAction = {
+  accent?: 'core' | 'neutral' | 'pro';
+  href: string | null;
+  label: string;
+  type: string;
+};
+
+export type ProviderDashboardCard = {
+  accent: 'core' | 'neutral' | 'pro' | 'warning';
+  description: string;
+  href: string | null;
+  id: string;
+  kind: 'core' | 'message' | 'profile' | 'pro' | 'verification';
+  statusLabel: string;
   title: string;
 };
 
 export type ProviderDashboardSummary = {
-  coreTasksCount: number;
-  nextActions: NextAction[];
-  profileStrengthLabel: string;
-  proRequestsCount: number;
-  providerCapabilities: ProviderCapabilities;
+  activeCoreTasksCount: number;
+  availableCoreTasksCount: number;
+  coreTaskerStatus: ProviderCapabilities['coreTaskerStatus'];
+  displayName: string;
+  matchingProRequestsCount: number;
+  pendingCompletionCount: number;
+  proStatus: ProviderCapabilities['proStatus'];
+  reservedCoreTasksCount: number;
+  submittedProResponsesCount: number;
   unreadMessagesCount: number;
+};
+
+export type ProviderDashboardResponse = {
+  cards: ProviderDashboardCard[];
+  nextActions: ProviderNextAction[];
+  summary: ProviderDashboardSummary;
+};
+
+export type ProviderProCategoryStatus = {
+  label: string;
+  status: 'approved' | 'pending' | 'rejected' | string;
+};
+
+export type ProviderProfileSummary = {
+  coreCategories: string[];
+  coreCities: string[];
+  coreTaskerStatus: ProviderCapabilities['coreTaskerStatus'];
+  displayName: string;
+  portfolioProjectsCount: number;
+  proCategories: ProviderProCategoryStatus[];
+  proCities: string[];
+  proStatus: ProviderCapabilities['proStatus'];
+  profileStrengthLabel: string;
+  stripeStatusLabel: string;
+};
+
+export type ProviderProfileResponse = {
+  nextActions: ProviderNextAction[];
+  profile: ProviderProfileSummary;
 };
 
 export type MessageThreadSummary = {

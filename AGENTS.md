@@ -37,6 +37,9 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Screens must use an `AuthProvider` token helper and must never read refresh tokens directly.
 - Do not add mutations to read-only screens without a dedicated phase.
 - Display backend `nextAction` values; do not invent sensitive eligibility on mobile.
+- Provider read-only screens may call provider API wrappers only.
+- Do not add provider mutations to read-only screens without a dedicated phase.
+- Do not expose customer address/contact data unless the backend explicitly returns it.
 
 # Mobile Auth Rules
 

@@ -1,14 +1,79 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
 import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { ProviderProfileResponse } from '@/src/lib/api/domain';
+import { getMockProviderProfileResponse } from '@/src/lib/api/mockApi';
+import { getProviderProfile } from '@/src/lib/api/provider';
+import { useAuth } from '@/src/lib/auth/useAuth';
+import { getCoreTaskerStatusLabel, getProStatusLabel } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderProfileScreen() {
   const router = useRouter();
+  const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const [data, setData] = useState<ProviderProfileResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    setErrorMessage(null);
+    setIsUnauthorized(false);
+
+    if (status === 'demo') {
+      setData(getMockProviderProfileResponse());
+      setIsLoading(false);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setData(null);
+      setIsUnauthorized(status === 'unauthenticated');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const authToken = await getValidAccessToken();
+
+    if (!authToken) {
+      setData(null);
+      setIsUnauthorized(true);
+      setIsLoading(false);
+      return;
+    }
+
+    const result = await getProviderProfile(authToken);
+
+    if (result.ok) {
+      setData(result.data);
+      setIsLoading(false);
+      return;
+    }
+
+    setData(null);
+    setIsUnauthorized(result.status === 401 || result.status === 403);
+    setErrorMessage(
+      result.status === 401 || result.status === 403
+        ? 'Login or Provider Workspace access is required.'
+        : 'Could not load provider profile status.',
+    );
+    setIsLoading(false);
+  }, [getValidAccessToken, status]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadProfile();
+    }, [loadProfile]),
+  );
+
+  const profile = data?.profile;
 
   return (
     <Screen>
@@ -20,18 +85,72 @@ export default function ProviderProfileScreen() {
         </AppText>
       </View>
 
+      {isLoading ? (
+        <AppCard accentColor={colors.navy900}>
+          <StatusBadge label="Loading" tone="neutral" />
+          <AppText variant="sectionTitle">Loading provider profile</AppText>
+          <AppText color={colors.slate700}>Fetching read-only profile status from Taskly.</AppText>
+        </AppCard>
+      ) : null}
+
+      {errorMessage || isUnauthorized ? (
+        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
+          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <AppText variant="sectionTitle">
+            {isUnauthorized ? 'Profile status needs Provider access' : 'Could not refresh profile status'}
+          </AppText>
+          <AppText color={colors.slate700}>
+            {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
+          </AppText>
+          <View style={{ gap: spacing.sm }}>
+            <AppButton onPress={loadProfile} variant="outline">
+              Retry
+            </AppButton>
+            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
+              Continue in demo mode
+            </AppButton>
+          </View>
+        </AppCard>
+      ) : null}
+
+      {profile ? (
+        <AppCard>
+          <StatusBadge label={status === 'demo' ? 'Demo profile' : 'Live read-only profile'} tone={status === 'demo' ? 'neutral' : 'success'} />
+          <AppText variant="sectionTitle">{profile.displayName}</AppText>
+          <AppText color={colors.slate700}>{profile.profileStrengthLabel}</AppText>
+          <AppText color={colors.slate700}>{profile.stripeStatusLabel}</AppText>
+        </AppCard>
+      ) : null}
+
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />
         <AppText variant="sectionTitle">Core Tasker profile</AppText>
-        <AppText color={colors.slate700}>Skills, coverage area, and trust signals will be backend-backed.</AppText>
+        <AppText color={colors.slate700}>
+          {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : 'Skills, coverage area, and trust signals will be backend-backed.'}
+        </AppText>
+        {profile?.coreCities.length ? <AppText color={colors.slate500}>Cities: {profile.coreCities.join(', ')}</AppText> : null}
+        {profile?.coreCategories.length ? <AppText color={colors.slate500}>Categories: {profile.coreCategories.join(', ')}</AppText> : null}
       </AppCard>
 
       <AppCard accentColor={colors.proOrange600}>
         <ModeBadge mode="providerPro" />
         <AppText variant="sectionTitle">Pro professional profile</AppText>
         <AppText color={colors.slate700}>
-          Public phone and email remain hidden until the allowed unlock/contact flow.
+          {profile ? getProStatusLabel(profile.proStatus) : 'Public phone and email remain hidden until the allowed unlock/contact flow.'}
         </AppText>
+        {profile?.proCities.length ? <AppText color={colors.slate500}>Cities: {profile.proCities.join(', ')}</AppText> : null}
+        {profile?.proCategories.length ? (
+          <View style={{ gap: spacing.xs }}>
+            {profile.proCategories.map((category) => (
+              <StatusBadge
+                key={`${category.label}-${category.status}`}
+                label={`${category.label}: ${category.status}`}
+                tone={category.status === 'approved' ? 'success' : category.status === 'rejected' ? 'danger' : 'warning'}
+              />
+            ))}
+          </View>
+        ) : null}
+        {profile ? <AppText color={colors.slate500}>Portfolio projects: {profile.portfolioProjectsCount}</AppText> : null}
       </AppCard>
 
       <AppCard>

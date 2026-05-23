@@ -3,12 +3,17 @@ export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export { getCustomerHomeSummary, getCustomerProRequests, getCustomerTasks } from './customer';
 export { endpoints } from './endpoints';
+export { getProviderCoreTasks, getProviderDashboard, getProviderProfile, getProviderProRequests } from './provider';
 export {
   getMockCustomerHomeResponse,
   getMockCustomerHomeSummary,
   getMockCustomerProRequestsResponse,
   getMockCustomerTasksResponse,
+  getMockProviderCoreTasksResponse,
+  getMockProviderDashboardResponse,
   getMockProviderDashboardSummary,
+  getMockProviderProfileResponse,
+  getMockProviderProRequestsResponse,
   getMockUserSession,
 } from './mockApi';
 export type { ApiClientConfig, TasklyApiClient } from './client';
@@ -29,8 +34,16 @@ export type {
   ProRequestDetail,
   ProRequestSummary,
   ProResponsePreview,
+  ProviderCoreTasksResponse,
   ProviderCoreTaskSummary,
+  ProviderDashboardCard,
+  ProviderDashboardResponse,
   ProviderDashboardSummary,
+  ProviderNextAction,
+  ProviderProfileResponse,
+  ProviderProfileSummary,
+  ProviderProCategoryStatus,
+  ProviderProRequestsResponse,
   ProviderProRequestSummary,
   TaskDetail,
   TaskSummary,

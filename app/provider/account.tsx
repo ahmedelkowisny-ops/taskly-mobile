@@ -42,8 +42,12 @@ export default function ProviderAccountScreen() {
           Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them. Future workspace switching and notifications will follow account permissions.
         </AppText>
         <AppText color={colors.slate500} variant="caption">
-          {status === 'authenticated' ? `${session.user.displayName} · ${session.user.email}` : getProviderModeSummary(session)}
+          {status === 'authenticated' ? `${session.user.displayName} - ${session.user.email}` : getProviderModeSummary(session)}
         </AppText>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <StatusBadge label={session.workspaceAccess.provider ? 'Provider access' : 'Provider setup'} tone={session.workspaceAccess.provider ? 'success' : 'warning'} />
+          <StatusBadge label={status === 'demo' ? 'Demo mode' : status === 'authenticated' ? 'Signed in' : 'Login needed'} tone={status === 'authenticated' ? 'success' : 'neutral'} />
+        </View>
       </AppCard>
 
       <SessionStatusCard compact onLoginPress={() => router.push(LOGIN_ROUTE)} />
