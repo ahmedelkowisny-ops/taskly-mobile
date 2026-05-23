@@ -1,0 +1,35 @@
+// Proposed mobile API routes. These paths are placeholders until backend contracts are implemented.
+
+export const endpoints = {
+  auth: {
+    currentSession: '/api/mobile/auth/session',
+    login: '/api/mobile/auth/login',
+    logout: '/api/mobile/auth/logout',
+    refreshSession: '/api/mobile/auth/refresh',
+  },
+  customer: {
+    homeSummary: '/api/mobile/customer/home',
+    messages: '/api/mobile/customer/messages',
+    proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,
+    proRequests: '/api/mobile/customer/pro-requests',
+    taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
+    tasks: '/api/mobile/customer/tasks',
+  },
+  notifications: {
+    preferences: '/api/mobile/notifications/preferences',
+    registerPushToken: '/api/mobile/notifications/register-push-token',
+  },
+  payments: {
+    corePaymentStatus: (taskId: string) => `/api/mobile/payments/core-tasks/${taskId}/status`,
+    proAccessStatus: (proRequestId: string) => `/api/mobile/payments/pro-requests/${proRequestId}/access-status`,
+  },
+  provider: {
+    coreTaskDetail: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}`,
+    coreTasks: '/api/mobile/provider/core-tasks',
+    dashboardSummary: '/api/mobile/provider/dashboard',
+    messages: '/api/mobile/provider/messages',
+    proRequestDetail: (proRequestId: string) => `/api/mobile/provider/pro-requests/${proRequestId}`,
+    proRequests: '/api/mobile/provider/pro-requests',
+    profile: '/api/mobile/provider/profile',
+  },
+} as const;

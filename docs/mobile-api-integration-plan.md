@@ -360,6 +360,25 @@ Eventually add shared API types under `src/lib/api/types.ts`:
 
 This phase adds only the low-risk foundation types needed to plan the API client.
 
+## Phase 6 API Client Foundation
+
+Phase 6 adds the mobile API client foundation without connecting screens to real backend data.
+
+- Environment variable: `EXPO_PUBLIC_TASKLY_API_BASE_URL`.
+- Local default example: `http://localhost:3000`.
+- Android emulator may need `http://10.0.2.2:3000`.
+- Expo Go on a physical phone should use the computer LAN IP on the same network.
+- Only `EXPO_PUBLIC_*` values are exposed to the app, so they must not contain secrets.
+
+The endpoint registry lives in `src/lib/api/endpoints.ts`. It centralizes proposed mobile API paths such as `/api/mobile/auth/session`, `/api/mobile/customer/tasks`, and `/api/mobile/provider/dashboard`. These are placeholders until the backend exposes stable mobile JSON contracts.
+
+The typed client uses `ApiResult<T>`:
+
+- Success: `{ ok: true; data; status }`
+- Failure: `{ ok: false; error; status? }`
+
+The request helper should return failures for normal HTTP/network errors instead of throwing into screens. Screens are not connected yet because the first real integration should define auth/session behavior, token storage, unauthorized handling, and workspace permission routing. The next recommended phase is auth/session integration using the typed client and endpoint registry.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

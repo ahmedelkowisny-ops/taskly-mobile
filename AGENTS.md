@@ -24,6 +24,12 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 
 - Never call the database directly from mobile.
 - Use a typed API client for backend communication.
+- API calls must go through `src/lib/api/client.ts`.
+- Endpoint paths should be centralized in `src/lib/api/endpoints.ts`.
+- Screens must not hardcode API URLs.
+- Never store secrets in the app bundle.
+- Only `EXPO_PUBLIC_*` variables are available to the app and are not secret.
 - Backend owns sensitive decisions and remains server-authoritative.
 - Payment, cancellation, refund, matching, role, and Pro unlock logic must never be calculated only on mobile.
+- Sensitive decisions must come from backend response fields such as `nextAction`, permissions, and eligibility flags.
 - All API-connected screens need loading, empty, error, and unauthorized states.
