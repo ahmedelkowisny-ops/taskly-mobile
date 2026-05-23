@@ -5,3 +5,5 @@ export { ProviderStatusCard } from './ProviderStatusCard';
 export { SessionStatusCard } from './SessionStatusCard';
 export { TasklyLogoText } from './TasklyLogoText';
 export { WorkspaceSwitchHint } from './WorkspaceSwitchHint';
+export { WorkspaceAccessCard } from './WorkspaceAccessCard';
+export { WorkspaceGuard } from './WorkspaceGuard';

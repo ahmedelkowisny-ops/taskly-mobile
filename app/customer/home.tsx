@@ -3,12 +3,17 @@ import { StyleSheet, View } from 'react-native';
 
 import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { getMockUserSession } from '@/src/lib/api/mockApi';
+import { useAuth } from '@/src/lib/auth/useAuth';
+import { getCustomerWorkspaceSummary } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
+  const { session: authSession, status } = useAuth();
+  const session = authSession ?? getMockUserSession();
 
   return (
     <Screen>
@@ -16,9 +21,17 @@ export default function CustomerHomeScreen() {
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">Welcome to Taskly</AppText>
         <AppText color={colors.slate700}>
-          Choose the right service path inside your Customer Workspace.
+          Welcome, {session.user.displayName}. Choose the right service path inside your Customer Workspace.
         </AppText>
       </View>
+
+      <AppCard accentColor={colors.tasklyBlue600}>
+        <StatusBadge label={status === 'authenticated' ? 'Backend session' : status === 'demo' ? 'Demo session' : 'Workspace guidance'} tone="core" />
+        <AppText variant="sectionTitle">{getCustomerWorkspaceSummary(session)}</AppText>
+        <AppText color={colors.slate700}>
+          Post task and Pro request actions remain placeholders until posting flows are connected.
+        </AppText>
+      </AppCard>
 
       <View style={styles.actions}>
         <AppCard accentColor={colors.tasklyBlue600}>

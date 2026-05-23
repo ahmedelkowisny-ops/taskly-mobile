@@ -6,6 +6,8 @@ import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/componen
 import { mockAuth, type CoreTaskerStatus, type ProStatus } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import {
+  getCoreTaskerStatusLabel,
+  getProStatusLabel,
   getProviderModeSummary,
   getRecommendedProviderNextAction,
 } from '@/src/lib/auth/workspaceAccess';
@@ -18,8 +20,12 @@ function getCoreActionLabel(coreTaskerStatus: CoreTaskerStatus) {
     return t('continueCoreTaskerOnboarding');
   }
 
-  if (coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe') {
-    return 'Check Core status';
+  if (coreTaskerStatus === 'needsStripe') {
+    return 'Check Stripe verification';
+  }
+
+  if (coreTaskerStatus === 'approved') {
+    return 'View dashboard';
   }
 
   return 'Start Core Tasker onboarding';
@@ -31,7 +37,7 @@ function getProActionLabel(proStatus: ProStatus) {
   }
 
   if (proStatus === 'approved') {
-    return 'View matching Pro requests';
+    return 'View matching Pro requests placeholder';
   }
 
   return 'Start or continue Pro application';
@@ -44,6 +50,8 @@ export default function ProviderStartScreen() {
   const summary = getProviderModeSummary(session);
   const nextAction = getRecommendedProviderNextAction(session);
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+  const coreStatusLabel = getCoreTaskerStatusLabel(coreTaskerStatus);
+  const proStatusLabel = getProStatusLabel(proStatus);
 
   return (
     <Screen>
@@ -65,7 +73,7 @@ export default function ProviderStartScreen() {
         accent="core"
         actionLabel={getCoreActionLabel(coreTaskerStatus)}
         description="For small fixed-scope tasks. Requires approval and Stripe verification for Core payouts."
-        statusLabel={t('stripeVerificationCorePayouts')}
+        statusLabel={coreStatusLabel}
         title={t('coreTasker')}
       />
 
@@ -73,7 +81,7 @@ export default function ProviderStartScreen() {
         accent="pro"
         actionLabel={getProActionLabel(proStatus)}
         description="For larger quote-based professional projects. Requires Pro profile review and category approval, without Stripe verification for Pro-only access."
-        statusLabel={t('proProfileReview')}
+        statusLabel={proStatusLabel}
         title={t('tasklyPro')}
       />
 

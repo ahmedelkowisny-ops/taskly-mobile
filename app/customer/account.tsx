@@ -3,6 +3,9 @@ import { View } from 'react-native';
 
 import { AssistantGuideCard, ModeBadge, SessionStatusCard, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { getMockUserSession } from '@/src/lib/api/mockApi';
+import { useAuth } from '@/src/lib/auth/useAuth';
+import { getCustomerWorkspaceSummary } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -11,6 +14,8 @@ const LOGIN_ROUTE = '/login' as Href;
 
 export default function CustomerAccountScreen() {
   const router = useRouter();
+  const { session: authSession, status } = useAuth();
+  const session = authSession ?? getMockUserSession();
 
   return (
     <Screen>
@@ -25,8 +30,9 @@ export default function CustomerAccountScreen() {
       <AppCard accentColor={colors.tasklyBlue600}>
         <StatusBadge label="Customer account" tone="core" />
         <AppText variant="sectionTitle">Customer Workspace access</AppText>
-        <AppText color={colors.slate700}>
-          Real login and logout actions will be connected next. Workspace access should follow backend permissions.
+        <AppText color={colors.slate700}>{getCustomerWorkspaceSummary(session)}</AppText>
+        <AppText color={colors.slate500} variant="caption">
+          {status === 'authenticated' ? `${session.user.displayName} · ${session.user.email}` : 'Login or demo mode controls the account state shown here.'}
         </AppText>
       </AppCard>
 

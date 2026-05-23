@@ -593,6 +593,21 @@ Tokens are stored only through Expo SecureStore. If SecureStore is unavailable, 
 
 Demo mode remains available and clears local token storage before activating the mock session. Registration, forgot password, social login, and workspace route guarding are still future phases.
 
+## Phase 11 Workspace Route Guarding
+
+Workspace entry now uses backend session fields from `AuthProvider`:
+
+- `workspaceAccess`
+- `providerCapabilities`
+- `permissions`
+- `nextAction`
+
+The welcome screen shows session-aware workspace cards for Customer and Provider entry. Customer and Provider route groups are wrapped in `WorkspaceGuard`, which shows friendly loading, login-required, unavailable, and demo states without aggressive redirects. Provider setup remains reachable so users can understand their next provider step.
+
+These guards are UI guidance only. The backend must still enforce every sensitive access decision, including tasks, payments, matching, cancellation, disputes, provider approval, and Pro unlock/contact rules.
+
+Demo mode remains available. Real task lists, provider matching data, payment flows, Pro request data, messages, and notifications are still not connected.
+
 ## 9. Risks/Open Questions
 
 - Current web auth uses server actions for login/register/logout/current user; mobile likely needs new dedicated Next.js API routes.

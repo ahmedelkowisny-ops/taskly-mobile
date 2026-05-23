@@ -2,7 +2,14 @@ import type { UserSession } from '../api/types';
 import type { MockSession } from './mockAuth';
 
 type WorkspaceSession = Pick<UserSession | MockSession, 'providerCapabilities' | 'workspaceAccess'> &
-  Partial<Pick<UserSession, 'nextAction'>>;
+  Partial<Pick<UserSession, 'nextAction' | 'permissions'>>;
+
+export type WorkspaceName = 'customer' | 'provider';
+export type WorkspaceEntryState = {
+  actionLabel: string;
+  description: string;
+  state: 'available' | 'demo' | 'loginRequired' | 'unavailable';
+};
 
 function hasBackendNextAction(session: WorkspaceSession): session is WorkspaceSession & Pick<UserSession, 'nextAction'> {
   return 'nextAction' in session && Boolean(session.nextAction);
@@ -14,6 +21,18 @@ export function canAccessCustomerWorkspace(session: WorkspaceSession | null | un
 
 export function canAccessProviderWorkspace(session: WorkspaceSession | null | undefined) {
   return Boolean(session?.workspaceAccess.provider);
+}
+
+export function getCustomerWorkspaceSummary(session: WorkspaceSession | null | undefined) {
+  if (!session) {
+    return 'Login to post tasks, Pro requests, and manage messages.';
+  }
+
+  if (session.workspaceAccess.customer) {
+    return 'Customer Workspace available';
+  }
+
+  return 'Customer Workspace is not available for this account yet.';
 }
 
 export function getProviderModeSummary(session: WorkspaceSession | null | undefined) {
@@ -92,4 +111,86 @@ export function getRecommendedProviderNextAction(session: WorkspaceSession | nul
   }
 
   return 'Start as a Tasker or apply as Taskly Pro';
+}
+
+export function getWorkspaceEntryState(
+  session: WorkspaceSession | null | undefined,
+  workspace: WorkspaceName,
+  authStatus: 'authenticated' | 'demo' | 'error' | 'loading' | 'unauthenticated',
+): WorkspaceEntryState {
+  if (authStatus === 'loading') {
+    return {
+      actionLabel: 'Checking session',
+      description: 'Checking your Taskly session...',
+      state: 'unavailable',
+    };
+  }
+
+  if (authStatus === 'demo') {
+    return {
+      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Enter Provider Workspace',
+      description: 'Demo workspace mode is active.',
+      state: 'demo',
+    };
+  }
+
+  if (!session || authStatus === 'unauthenticated' || authStatus === 'error') {
+    return {
+      actionLabel: 'Login',
+      description: 'Login required to use this workspace with your real Taskly account.',
+      state: 'loginRequired',
+    };
+  }
+
+  const allowed = workspace === 'customer' ? canAccessCustomerWorkspace(session) : canAccessProviderWorkspace(session);
+
+  if (allowed) {
+    return {
+      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Enter Provider Workspace',
+      description: workspace === 'customer' ? getCustomerWorkspaceSummary(session) : getProviderModeSummary(session),
+      state: 'available',
+    };
+  }
+
+  if (workspace === 'provider') {
+    return {
+      actionLabel: 'Start provider setup',
+      description: getRecommendedProviderNextAction(session),
+      state: 'unavailable',
+    };
+  }
+
+  return {
+    actionLabel: 'Back to Taskly',
+    description: getCustomerWorkspaceSummary(session),
+    state: 'unavailable',
+  };
+}
+
+export function getCoreTaskerStatusLabel(status: WorkspaceSession['providerCapabilities']['coreTaskerStatus']) {
+  switch (status) {
+    case 'applicant':
+      return 'Core Tasker onboarding in progress';
+    case 'approved':
+      return 'Core Tasker approved';
+    case 'needsStripe':
+      return 'Stripe verification required for Core payouts';
+    case 'none':
+    default:
+      return 'Core Tasker not started';
+  }
+}
+
+export function getProStatusLabel(status: WorkspaceSession['providerCapabilities']['proStatus']) {
+  switch (status) {
+    case 'draft':
+      return 'Pro application draft';
+    case 'pending':
+      return 'Pro application under review';
+    case 'approved':
+      return 'Taskly Pro approved';
+    case 'none':
+    default:
+      return 'Taskly Pro not started';
+  }
 }

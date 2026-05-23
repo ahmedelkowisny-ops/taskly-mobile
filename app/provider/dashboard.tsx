@@ -6,6 +6,8 @@ import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/componen
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import {
+  getCoreTaskerStatusLabel,
+  getProStatusLabel,
   getProviderModeSummary,
   getRecommendedProviderNextAction,
 } from '@/src/lib/auth/workspaceAccess';
@@ -19,6 +21,8 @@ export default function ProviderDashboardScreen() {
   const session = authSession ?? mockAuth.currentSession;
   const displayName = authSession?.user.displayName ?? mockAuth.currentSession.displayName;
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+  const coreStatusLabel = getCoreTaskerStatusLabel(coreTaskerStatus);
+  const proStatusLabel = getProStatusLabel(proStatus);
 
   return (
     <Screen>
@@ -46,7 +50,9 @@ export default function ProviderDashboardScreen() {
         <StatusBadge label="Recommended next action" tone="neutral" />
         <AppText variant="sectionTitle">{getRecommendedProviderNextAction(session)}</AppText>
         <AppText color={colors.slate700}>
-          This recommendation comes from static demo state only. Real role state will be backend-authoritative.
+          {status === 'authenticated'
+            ? 'This recommendation comes from the backend session.'
+            : 'Demo mode keeps provider guidance available while real data is not connected.'}
         </AppText>
       </AppCard>
 
@@ -57,7 +63,7 @@ export default function ProviderDashboardScreen() {
           <AppText color={colors.slate700}>
             Core Tasker work can live inside the Provider Workspace alongside Pro work.
           </AppText>
-          <StatusBadge label={`Status: ${coreTaskerStatus}`} tone="core" />
+          <StatusBadge label={coreStatusLabel} tone="core" />
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.panel}>
@@ -66,7 +72,7 @@ export default function ProviderDashboardScreen() {
           <AppText color={colors.slate700}>
             Taskly Pro requests stay visually and functionally separate from Core Tasks.
           </AppText>
-          <StatusBadge label={`Status: ${proStatus}`} tone="pro" />
+          <StatusBadge label={proStatusLabel} tone="pro" />
         </AppCard>
       </View>
 
@@ -75,14 +81,14 @@ export default function ProviderDashboardScreen() {
           <ModeBadge mode="providerCore" />
           <AppText variant="sectionTitle">Core payout status</AppText>
           <AppText color={colors.slate700}>{t('stripeVerificationCorePayouts')}.</AppText>
-          <StatusBadge label={coreTaskerStatus === 'needsStripe' ? 'Needs Stripe' : coreTaskerStatus} tone="warning" />
+          <StatusBadge label={coreStatusLabel} tone={coreTaskerStatus === 'approved' ? 'success' : 'warning'} />
         </AppCard>
 
         <AppCard accentColor={colors.proAmber500} backgroundColor={colors.proOrange50}>
           <ModeBadge mode="providerPro" />
           <AppText variant="sectionTitle">Profile strength</AppText>
           <AppText color={colors.slate700}>{t('proProfileReview')} and category approval are required for Pro work.</AppText>
-          <StatusBadge label={proStatus} tone="pro" />
+          <StatusBadge label={proStatusLabel} tone={proStatus === 'approved' ? 'success' : 'pro'} />
         </AppCard>
       </View>
 

@@ -59,4 +59,8 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Demo mode must remain available during development.
 - Do not implement registration without a dedicated phase.
 - Use secure storage only for tokens if a token strategy is chosen.
+- `WorkspaceGuard` is UI guidance only; backend must still enforce access.
+- Do not use mobile guards as a security boundary.
+- Workspace access must come from backend session response or demo mock only.
+- Do not infer provider approval from local UI state.
 - Admin is web-only. Do not add admin mobile screens or workspace routing.

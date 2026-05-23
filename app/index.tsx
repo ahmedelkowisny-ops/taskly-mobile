@@ -1,26 +1,33 @@
 import { Href, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { SessionStatusCard, TasklyLogoText, WorkspaceSwitchHint } from '@/src/components/taskly';
+import { SessionStatusCard, TasklyLogoText, WorkspaceAccessCard, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   canAccessCustomerWorkspace,
   canAccessProviderWorkspace,
   getProviderModeSummary,
+  getWorkspaceEntryState,
 } from '@/src/lib/auth/workspaceAccess';
-import { getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 const LOGIN_ROUTE = '/login' as Href;
+const CUSTOMER_HOME_ROUTE = '/customer/home' as Href;
+const PROVIDER_DASHBOARD_ROUTE = '/provider/dashboard' as Href;
+const PROVIDER_START_ROUTE = '/provider/start' as Href;
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { session: authSession, status } = useAuth();
-  const session = authSession ?? getMockUserSession();
-  const previewLabel = authSession ? `Session user: ${session.user.displayName}` : `Demo preview: ${session.user.displayName}`;
+  const { session, status, useDemoSession } = useAuth();
+  const customerEntry = getWorkspaceEntryState(session, 'customer', status);
+  const providerEntry = getWorkspaceEntryState(session, 'provider', status);
+  const providerTarget =
+    status === 'demo' || (session && canAccessProviderWorkspace(session) && session.nextAction.type === 'none')
+      ? PROVIDER_DASHBOARD_ROUTE
+      : PROVIDER_START_ROUTE;
 
   return (
     <Screen contentStyle={styles.content}>
@@ -33,7 +40,7 @@ export default function WelcomeScreen() {
 
       <SessionStatusCard onLoginPress={() => router.push(LOGIN_ROUTE)} />
 
-      {status !== 'authenticated' ? (
+      {status !== 'authenticated' && status !== 'demo' ? (
         <AppButton onPress={() => router.push(LOGIN_ROUTE)} variant="outline">
           Login
         </AppButton>
@@ -41,8 +48,11 @@ export default function WelcomeScreen() {
 
       <AppCard>
         <View style={styles.badges}>
-          <StatusBadge label={previewLabel} tone={authSession ? 'success' : 'neutral'} />
-          <StatusBadge label={status === 'demo' ? 'Demo active' : 'Workspace preview'} tone="neutral" />
+          <StatusBadge
+            label={session ? `Session user: ${session.user.displayName}` : 'No active session'}
+            tone={session ? 'success' : 'neutral'}
+          />
+          <StatusBadge label={status === 'demo' ? 'Demo active' : 'Workspace guidance'} tone="neutral" />
           <StatusBadge
             label={canAccessCustomerWorkspace(session) ? t('customerWorkspace') : 'Customer pending'}
             tone={canAccessCustomerWorkspace(session) ? 'core' : 'neutral'}
@@ -58,28 +68,29 @@ export default function WelcomeScreen() {
       </AppCard>
 
       <View style={styles.cards}>
-        <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label={t('customerWorkspace')} tone="core" />
-          <AppText variant="sectionTitle">{t('customerWorkspace')}</AppText>
-          <AppText color={colors.slate700}>
-            For posting tasks, Pro requests, payments, messages, approvals, and support.
-          </AppText>
-          <AppButton onPress={() => router.push('/customer/home')}>{t('enterCustomerWorkspace')}</AppButton>
-        </AppCard>
+        <WorkspaceAccessCard
+          accessState={customerEntry.state}
+          accent="customer"
+          actionLabel={customerEntry.actionLabel}
+          description="For posting tasks, Pro requests, payments, messages, approvals, and support."
+          note={customerEntry.description}
+          onPress={() => router.push(customerEntry.state === 'loginRequired' ? LOGIN_ROUTE : CUSTOMER_HOME_ROUTE)}
+          onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}
+          secondaryLabel={status === 'unauthenticated' || status === 'error' ? t('continueDemoMode') : undefined}
+          title={t('customerWorkspace')}
+        />
 
-        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-          <View style={styles.badges}>
-            <StatusBadge label={t('providerWorkspace')} tone="pro" />
-            <StatusBadge label={t('coreTasks')} tone="core" />
-          </View>
-          <AppText variant="sectionTitle">{t('providerWorkspace')}</AppText>
-          <AppText color={colors.slate700}>
-            For managing Core tasks, Pro requests, profile status, responses, and messages.
-          </AppText>
-          <AppButton onPress={() => router.push('/provider/dashboard')} tone="pro">
-            {t('enterProviderWorkspace')}
-          </AppButton>
-        </AppCard>
+        <WorkspaceAccessCard
+          accessState={providerEntry.state}
+          accent="provider"
+          actionLabel={providerEntry.actionLabel}
+          description="For managing Core tasks, Pro requests, profile status, responses, and messages."
+          note={providerEntry.description}
+          onPress={() => router.push(providerEntry.state === 'loginRequired' ? LOGIN_ROUTE : providerTarget)}
+          onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}
+          secondaryLabel={status === 'unauthenticated' || status === 'error' ? t('continueDemoMode') : undefined}
+          title={t('providerWorkspace')}
+        />
       </View>
 
       <AppText color={colors.slate500} style={styles.note} variant="caption">

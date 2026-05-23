@@ -399,3 +399,9 @@ The mobile side now has:
 - A first login screen at `/login`.
 
 The backend routes already exist, but the next phase should test end-to-end login against the local backend using a real `EXPO_PUBLIC_TASKLY_API_BASE_URL`. Workspace route guarding should come later and must use backend `workspaceAccess` and `permissions`.
+
+## Phase 11 Workspace Guidance Implemented
+
+Login now feeds the workspace entry UI through `AuthProvider` session state. Customer and Provider route groups use `WorkspaceGuard`, and the welcome screen uses workspace cards driven by backend `workspaceAccess`, provider capabilities, permissions, and next actions.
+
+The guards are not a security boundary. Backend routes must continue to enforce all sensitive access and business rules.
