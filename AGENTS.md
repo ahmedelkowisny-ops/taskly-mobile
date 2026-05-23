@@ -33,6 +33,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Payment, cancellation, refund, matching, role, and Pro unlock logic must never be calculated only on mobile.
 - Sensitive decisions must come from backend response fields such as `nextAction`, permissions, and eligibility flags.
 - All API-connected screens need loading, empty, error, and unauthorized states.
+- Customer read-only screens may call customer API wrappers only.
+- Screens must use an `AuthProvider` token helper and must never read refresh tokens directly.
+- Do not add mutations to read-only screens without a dedicated phase.
+- Display backend `nextAction` values; do not invent sensitive eligibility on mobile.
 
 # Mobile Auth Rules
 

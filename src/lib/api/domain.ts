@@ -15,11 +15,83 @@ export type PaymentActionState = {
   status: 'available' | 'blocked' | 'notRequired' | 'pending';
 };
 
+export type EmptyStateContent = {
+  description: string;
+  title: string;
+};
+
+export type CustomerNextAction = {
+  accent?: 'core' | 'neutral' | 'pro';
+  href: string | null;
+  label: string;
+  type: string;
+};
+
+export type CustomerHighlight = {
+  accent: 'core' | 'neutral' | 'pro' | 'warning';
+  description: string;
+  href: string | null;
+  id: string;
+  kind: 'message' | 'payment' | 'proRequest' | 'support' | 'task';
+  statusLabel: string;
+  title: string;
+};
+
 export type CustomerHomeSummary = {
-  activeProRequestsCount: number;
   activeTasksCount: number;
-  nextActions: NextAction[];
+  completedTasksCount: number;
+  displayName: string;
+  openTasksCount: number;
+  pendingCompletionCount: number;
+  proRequestsCount: number;
+  proResponsesAvailableCount: number;
   unreadMessagesCount: number;
+};
+
+export type CustomerHomeResponse = {
+  highlights: CustomerHighlight[];
+  nextActions: CustomerNextAction[];
+  summary: CustomerHomeSummary;
+};
+
+export type CustomerTaskSummary = {
+  categoryLabel: string;
+  cityLabel: string;
+  id: string;
+  nextAction: CustomerNextAction;
+  paymentStatusLabel: string;
+  priceLabel: string;
+  scheduledEndAt: string | null;
+  scheduledStartAt: string | null;
+  status: string;
+  statusLabel: string;
+  title: string;
+  unreadMessagesCount: number;
+};
+
+export type CustomerTasksResponse = {
+  emptyState: EmptyStateContent;
+  tasks: CustomerTaskSummary[];
+};
+
+export type CustomerProRequestSummary = {
+  categoryLabel: string;
+  cityLabel: string;
+  createdAt: string;
+  id: string;
+  isUnlocked: boolean;
+  nextAction: CustomerNextAction;
+  responsesCount: number;
+  status: string;
+  statusLabel: string;
+  timelineLabel: string;
+  title: string;
+  unlockStatusLabel: string;
+};
+
+export type CustomerProRequestsResponse = {
+  emptyState: EmptyStateContent;
+  proRequests: CustomerProRequestSummary[];
 };
 
 export type TaskSummary = {

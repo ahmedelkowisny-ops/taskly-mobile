@@ -8,6 +8,7 @@ export const endpoints = {
     refreshSession: '/api/mobile/auth/refresh',
   },
   customer: {
+    home: '/api/mobile/customer/home',
     homeSummary: '/api/mobile/customer/home',
     messages: '/api/mobile/customer/messages',
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,

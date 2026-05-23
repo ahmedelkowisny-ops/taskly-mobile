@@ -404,6 +404,27 @@ The mobile app now wraps Expo Router with `AuthProvider`, which calls `GET /api/
 
 Screens should use the AuthProvider state for session display and later route guarding. They should not call the session endpoint directly. Demo mode remains available while login/logout/token storage are still unimplemented.
 
+## Phase 12 Customer Read-Only APIs
+
+Phase 12 adds the first read-only customer data integration.
+
+Backend endpoints added:
+
+- `GET /api/mobile/customer/home`
+- `GET /api/mobile/customer/tasks`
+- `GET /api/mobile/customer/pro-requests`
+
+Mobile wrappers live in `src/lib/api/customer.ts`, and endpoint paths remain centralized in `src/lib/api/endpoints.ts`. Customer Home, My Tasks, and My Pro Requests now fetch read-only data through these wrappers when an authenticated token is available.
+
+Scope remains intentionally limited:
+
+- No task or Pro request creation.
+- No payment, cancellation, approval, rejection, refund, help, image upload, messaging, or notification mutations.
+- No provider/private contact details are exposed.
+- Customer screen CTAs remain placeholders until dedicated mutation phases.
+
+The backend remains the source of truth for status labels, workspace access, permissions, and `nextAction` fields. Mobile displays those fields and does not calculate sensitive eligibility. Demo mode still uses local mock responses when selected.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

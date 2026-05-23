@@ -21,6 +21,7 @@ export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'erro
 export type AuthContextValue = {
   clearSession: () => void;
   error: ApiError | null;
+  getValidAccessToken: () => Promise<string | null>;
   isDemoMode: boolean;
   login: (email: string, password: string) => Promise<ApiResult<UserSession>>;
   logout: () => Promise<void>;
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [error, setError] = useState<ApiError | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [memoryAccessToken, setMemoryAccessToken] = useState<string | null>(null);
 
   const restoreStoredSession = useCallback(async () => {
     setStatus('loading');
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const sessionResult = await getCurrentSession({ authToken: tokens.accessToken });
 
       if (sessionResult.ok) {
+        setMemoryAccessToken(tokens.accessToken);
         setSession(sessionResult.data);
         setStatus('authenticated');
         return;
@@ -73,6 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (refreshResult.ok) {
         await saveAuthTokens(refreshResult.data.tokens);
+        setMemoryAccessToken(refreshResult.data.tokens.accessToken);
         setSession(refreshResult.data.session);
         setStatus('authenticated');
         return;
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (tokens) {
       await clearAuthTokens();
+      setMemoryAccessToken(null);
       setSession(null);
       setStatus('unauthenticated');
       return;
@@ -89,12 +94,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const cookieResult = await getCurrentSession();
 
     if (cookieResult.ok) {
+      setMemoryAccessToken(null);
       setSession(cookieResult.data);
       setStatus('authenticated');
       return;
     }
 
     setSession(null);
+    setMemoryAccessToken(null);
     setError(cookieResult.error);
     setStatus(isUnauthenticatedError(cookieResult.error, cookieResult.status) ? 'unauthenticated' : 'error');
   }, []);
@@ -108,6 +115,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const result = accessToken ? await getCurrentSession({ authToken: accessToken }) : await getCurrentSession();
 
     if (result.ok) {
+      if (accessToken) {
+        setMemoryAccessToken(accessToken);
+      }
       setSession(result.data);
       setStatus('authenticated');
       return;
@@ -119,6 +129,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (refreshResult.ok) {
         await saveAuthTokens(refreshResult.data.tokens);
+        setMemoryAccessToken(refreshResult.data.tokens.accessToken);
         setSession(refreshResult.data.session);
         setStatus('authenticated');
         return;
@@ -128,6 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     setSession(null);
+    setMemoryAccessToken(null);
     setError(result.error);
     setStatus(isUnauthenticatedError(result.error, result.status) ? 'unauthenticated' : 'error');
   }, []);
@@ -145,6 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (!result.ok) {
       setSession(null);
+      setMemoryAccessToken(null);
       setError(result.error);
       setStatus(isUnauthenticatedError(result.error, result.status) ? 'unauthenticated' : 'error');
       return result;
@@ -158,6 +171,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     setSession(result.data.session);
+    setMemoryAccessToken(result.data.tokens.accessToken);
     setStatus('authenticated');
 
     return {
@@ -167,6 +181,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  const getValidAccessToken = useCallback(async () => {
+    const accessToken = memoryAccessToken ?? (await getAccessToken());
+
+    if (accessToken) {
+      const sessionResult = await getCurrentSession({ authToken: accessToken });
+
+      if (sessionResult.ok) {
+        setSession(sessionResult.data);
+        setStatus('authenticated');
+        setError(null);
+        setIsDemoMode(false);
+        setMemoryAccessToken(accessToken);
+        return accessToken;
+      }
+
+      if (!isUnauthenticatedError(sessionResult.error, sessionResult.status)) {
+        setError(sessionResult.error);
+        return accessToken;
+      }
+    }
+
+    const refreshToken = await getRefreshToken();
+
+    if (!refreshToken) {
+      return null;
+    }
+
+    const refreshResult = await refreshMobileSession(refreshToken);
+
+    if (!refreshResult.ok) {
+      await clearAuthTokens();
+      setSession(null);
+      setError(refreshResult.error);
+      setStatus(isUnauthenticatedError(refreshResult.error, refreshResult.status) ? 'unauthenticated' : 'error');
+      setIsDemoMode(false);
+      return null;
+    }
+
+    await saveAuthTokens(refreshResult.data.tokens);
+    setSession(refreshResult.data.session);
+    setStatus('authenticated');
+    setError(null);
+    setIsDemoMode(false);
+    setMemoryAccessToken(refreshResult.data.tokens.accessToken);
+
+    return refreshResult.data.tokens.accessToken;
+  }, [memoryAccessToken]);
+
   const logout = useCallback(async () => {
     const refreshToken = await getRefreshToken();
 
@@ -175,6 +237,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     await clearAuthTokens();
+    setMemoryAccessToken(null);
     setSession(null);
     setStatus('unauthenticated');
     setError(null);
@@ -183,6 +246,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const useDemoSession = useCallback(() => {
     void clearAuthTokens();
+    setMemoryAccessToken(null);
     setSession(getMockUserSession());
     setStatus('demo');
     setError(null);
@@ -191,6 +255,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const clearSession = useCallback(() => {
     void clearAuthTokens();
+    setMemoryAccessToken(null);
     setSession(null);
     setStatus('unauthenticated');
     setError(null);
@@ -219,6 +284,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       clearSession,
       error,
+      getValidAccessToken,
       isDemoMode,
       login,
       logout,
@@ -228,7 +294,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       status,
       useDemoSession,
     }),
-    [clearSession, error, isDemoMode, login, logout, refreshSession, restoreStoredSession, session, status, useDemoSession],
+    [
+      clearSession,
+      error,
+      getValidAccessToken,
+      isDemoMode,
+      login,
+      logout,
+      refreshSession,
+      restoreStoredSession,
+      session,
+      status,
+      useDemoSession,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

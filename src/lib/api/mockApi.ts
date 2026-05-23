@@ -1,6 +1,12 @@
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 
-import { CustomerHomeSummary, ProviderDashboardSummary } from './domain';
+import {
+  CustomerHomeResponse,
+  CustomerHomeSummary,
+  CustomerProRequestsResponse,
+  CustomerTasksResponse,
+  ProviderDashboardSummary,
+} from './domain';
 import { UserSession } from './types';
 
 export function getMockUserSession(): UserSession {
@@ -31,17 +37,74 @@ export function getMockUserSession(): UserSession {
 
 export function getMockCustomerHomeSummary(): CustomerHomeSummary {
   return {
-    activeProRequestsCount: 0,
     activeTasksCount: 0,
-    nextActions: [
+    completedTasksCount: 0,
+    displayName: mockAuth.currentSession.displayName,
+    openTasksCount: 0,
+    pendingCompletionCount: 0,
+    proRequestsCount: 0,
+    proResponsesAvailableCount: 0,
+    unreadMessagesCount: 0,
+  };
+}
+
+export function getMockCustomerHomeResponse(): CustomerHomeResponse {
+  return {
+    highlights: [
       {
-        href: '/customer/onboarding',
-        id: 'setup-customer-workspace',
-        label: 'Set up your Customer Workspace',
-        tone: 'core',
+        accent: 'core',
+        description: 'Demo Core task placeholder',
+        href: '/customer/tasks',
+        id: 'demo-core-empty',
+        kind: 'task',
+        statusLabel: 'Demo',
+        title: 'Core tasks will appear here',
+      },
+      {
+        accent: 'pro',
+        description: 'Demo Pro request placeholder',
+        href: '/customer/pro-requests',
+        id: 'demo-pro-empty',
+        kind: 'proRequest',
+        statusLabel: 'Demo',
+        title: 'Pro requests will appear here',
       },
     ],
-    unreadMessagesCount: 0,
+    nextActions: [
+      {
+        accent: 'core',
+        href: '/customer/onboarding',
+        label: 'Post a task',
+        type: 'post_task_placeholder',
+      },
+      {
+        accent: 'pro',
+        href: '/customer/onboarding',
+        label: 'Post a Pro request',
+        type: 'post_pro_request_placeholder',
+      },
+    ],
+    summary: getMockCustomerHomeSummary(),
+  };
+}
+
+export function getMockCustomerTasksResponse(): CustomerTasksResponse {
+  return {
+    emptyState: {
+      description: 'Demo mode is active. Real Core tasks will load after login and backend data are available.',
+      title: 'No demo Core tasks',
+    },
+    tasks: [],
+  };
+}
+
+export function getMockCustomerProRequestsResponse(): CustomerProRequestsResponse {
+  return {
+    emptyState: {
+      description: 'Demo mode is active. Real Pro requests will load after login and backend data are available.',
+      title: 'No demo Pro requests',
+    },
+    proRequests: [],
   };
 }
 
