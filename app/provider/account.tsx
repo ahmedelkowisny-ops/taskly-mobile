@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
+import { AssistantGuideCard, ModeBadge, SessionStatusCard, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -30,6 +30,8 @@ export default function ProviderAccountScreen() {
           Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them. Future workspace switching and notifications will follow account permissions.
         </AppText>
       </AppCard>
+
+      <SessionStatusCard compact />
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />

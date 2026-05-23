@@ -1,21 +1,24 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { TasklyLogoText, WorkspaceSwitchHint } from '@/src/components/taskly';
+import { SessionStatusCard, TasklyLogoText, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { mockAuth } from '@/src/lib/auth/mockAuth';
 import {
   canAccessCustomerWorkspace,
   canAccessProviderWorkspace,
   getProviderModeSummary,
 } from '@/src/lib/auth/workspaceAccess';
+import { getMockUserSession } from '@/src/lib/api/mockApi';
+import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const session = mockAuth.currentSession;
+  const { session: authSession, status } = useAuth();
+  const session = authSession ?? getMockUserSession();
+  const previewLabel = authSession ? `Session user: ${session.user.displayName}` : `Demo preview: ${session.user.displayName}`;
 
   return (
     <Screen contentStyle={styles.content}>
@@ -26,9 +29,12 @@ export default function WelcomeScreen() {
         </AppText>
       </View>
 
+      <SessionStatusCard />
+
       <AppCard>
         <View style={styles.badges}>
-          <StatusBadge label={`Demo user: ${session.displayName}`} tone="neutral" />
+          <StatusBadge label={previewLabel} tone={authSession ? 'success' : 'neutral'} />
+          <StatusBadge label={status === 'demo' ? 'Demo active' : 'Workspace preview'} tone="neutral" />
           <StatusBadge
             label={canAccessCustomerWorkspace(session) ? t('customerWorkspace') : 'Customer pending'}
             tone={canAccessCustomerWorkspace(session) ? 'core' : 'neutral'}
@@ -39,7 +45,7 @@ export default function WelcomeScreen() {
           />
         </View>
         <AppText color={colors.slate700}>
-          Static demo state only. Real sign-in and role permissions will come from the Taskly backend later.
+          Workspace navigation remains open while login is being connected. Backend session data is used when available.
         </AppText>
       </AppCard>
 

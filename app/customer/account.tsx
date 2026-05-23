@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
+import { AssistantGuideCard, ModeBadge, SessionStatusCard, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -23,8 +23,12 @@ export default function CustomerAccountScreen() {
       <AppCard accentColor={colors.tasklyBlue600}>
         <StatusBadge label="Customer account" tone="core" />
         <AppText variant="sectionTitle">Customer Workspace access</AppText>
-        <AppText color={colors.slate700}>Real account state will come from the Taskly backend/API later.</AppText>
+        <AppText color={colors.slate700}>
+          Real login and logout actions will be connected next. Workspace access should follow backend permissions.
+        </AppText>
       </AppCard>
+
+      <SessionStatusCard compact />
 
       <AssistantGuideCard
         body="Account screens should explain missing data, payment readiness, and trust steps inline without opening blocking popups."

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AssistantGuideCard, ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
+import { useAuth } from '@/src/lib/auth/useAuth';
 import {
   getProviderModeSummary,
   getRecommendedProviderNextAction,
@@ -14,16 +15,21 @@ import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderDashboardScreen() {
   const router = useRouter();
-  const session = mockAuth.currentSession;
+  const { session: authSession, status } = useAuth();
+  const session = authSession ?? mockAuth.currentSession;
+  const displayName = authSession?.user.displayName ?? mockAuth.currentSession.displayName;
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
 
   return (
     <Screen>
       <View style={styles.header}>
-        <StatusBadge label="Provider" tone="neutral" />
+        <View style={styles.badges}>
+          <StatusBadge label="Provider" tone="neutral" />
+          <StatusBadge label={status === 'authenticated' ? 'Backend session' : status === 'demo' ? 'Demo session' : 'Demo fallback'} tone="neutral" />
+        </View>
         <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {session.displayName}. Core and Pro are separate modes inside the Provider Workspace.
+          Welcome, {displayName}. Core and Pro are separate modes inside the Provider Workspace.
         </AppText>
       </View>
 
@@ -98,6 +104,11 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   header: {
+    gap: spacing.sm,
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   panel: {

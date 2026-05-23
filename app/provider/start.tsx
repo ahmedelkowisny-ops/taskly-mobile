@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { mockAuth } from '@/src/lib/auth/mockAuth';
+import { mockAuth, type CoreTaskerStatus, type ProStatus } from '@/src/lib/auth/mockAuth';
+import { useAuth } from '@/src/lib/auth/useAuth';
 import {
   getProviderModeSummary,
   getRecommendedProviderNextAction,
@@ -12,28 +13,24 @@ import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
-function getCoreActionLabel() {
-  const status = mockAuth.currentSession.providerCapabilities.coreTaskerStatus;
-
-  if (status === 'applicant') {
+function getCoreActionLabel(coreTaskerStatus: CoreTaskerStatus) {
+  if (coreTaskerStatus === 'applicant') {
     return t('continueCoreTaskerOnboarding');
   }
 
-  if (status === 'approved' || status === 'needsStripe') {
+  if (coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe') {
     return 'Check Core status';
   }
 
   return 'Start Core Tasker onboarding';
 }
 
-function getProActionLabel() {
-  const status = mockAuth.currentSession.providerCapabilities.proStatus;
-
-  if (status === 'pending') {
+function getProActionLabel(proStatus: ProStatus) {
+  if (proStatus === 'pending') {
     return 'View Pro review status';
   }
 
-  if (status === 'approved') {
+  if (proStatus === 'approved') {
     return 'View matching Pro requests';
   }
 
@@ -42,9 +39,11 @@ function getProActionLabel() {
 
 export default function ProviderStartScreen() {
   const router = useRouter();
-  const session = mockAuth.currentSession;
+  const { session: authSession, status } = useAuth();
+  const session = authSession ?? mockAuth.currentSession;
   const summary = getProviderModeSummary(session);
   const nextAction = getRecommendedProviderNextAction(session);
+  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
 
   return (
     <Screen>
@@ -57,14 +56,14 @@ export default function ProviderStartScreen() {
       </View>
 
       <AppCard>
-        <StatusBadge label="Demo role status" tone="neutral" />
+        <StatusBadge label={status === 'authenticated' ? 'Backend role status' : status === 'demo' ? 'Demo role status' : 'Demo fallback'} tone="neutral" />
         <AppText variant="sectionTitle">{summary}</AppText>
         <AppText color={colors.slate700}>{nextAction}</AppText>
       </AppCard>
 
       <ProviderStatusCard
         accent="core"
-        actionLabel={getCoreActionLabel()}
+        actionLabel={getCoreActionLabel(coreTaskerStatus)}
         description="For small fixed-scope tasks. Requires approval and Stripe verification for Core payouts."
         statusLabel={t('stripeVerificationCorePayouts')}
         title={t('coreTasker')}
@@ -72,7 +71,7 @@ export default function ProviderStartScreen() {
 
       <ProviderStatusCard
         accent="pro"
-        actionLabel={getProActionLabel()}
+        actionLabel={getProActionLabel(proStatus)}
         description="For larger quote-based professional projects. Requires Pro profile review and category approval, without Stripe verification for Pro-only access."
         statusLabel={t('proProfileReview')}
         title={t('tasklyPro')}

@@ -120,10 +120,11 @@ export async function apiRequest<T>(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Network request failed';
     const isAbort = error instanceof Error && error.name === 'AbortError';
+    const missingBaseUrl = error instanceof Error && error.message === 'Missing EXPO_PUBLIC_TASKLY_API_BASE_URL';
 
     return {
       error: {
-        code: isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR',
+        code: missingBaseUrl ? 'API_BASE_URL_MISSING' : isAbort ? 'REQUEST_ABORTED' : 'NETWORK_ERROR',
         details: error,
         message,
       },

@@ -42,6 +42,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - `/api/mobile/auth/session` is the first backend auth endpoint.
 - Mobile screens should not directly call `/api/mobile/auth/session` until an AuthProvider/session shell is implemented.
 - Do not replace mock UI state without a dedicated phase.
+- `AuthProvider` is the only app-shell owner of session state.
+- Screens should use `useAuth()` instead of calling the session endpoint directly.
+- Demo mode is allowed until real login is implemented.
+- Do not block routes with mobile-only assumptions; use backend `workspaceAccess` when enforcing later.
 - Session, role, and workspace access must come from the backend.
 - Do not store raw passwords or secrets.
 - Use secure storage only for tokens if a token strategy is chosen.

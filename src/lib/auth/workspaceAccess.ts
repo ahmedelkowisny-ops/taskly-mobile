@@ -1,14 +1,26 @@
-import { MockSession } from './mockAuth';
+import type { UserSession } from '../api/types';
+import type { MockSession } from './mockAuth';
 
-export function canAccessCustomerWorkspace(session: MockSession) {
-  return session.workspaceAccess.customer;
+type WorkspaceSession = Pick<UserSession | MockSession, 'providerCapabilities' | 'workspaceAccess'> &
+  Partial<Pick<UserSession, 'nextAction'>>;
+
+function hasBackendNextAction(session: WorkspaceSession): session is WorkspaceSession & Pick<UserSession, 'nextAction'> {
+  return 'nextAction' in session && Boolean(session.nextAction);
 }
 
-export function canAccessProviderWorkspace(session: MockSession) {
-  return session.workspaceAccess.provider;
+export function canAccessCustomerWorkspace(session: WorkspaceSession | null | undefined) {
+  return Boolean(session?.workspaceAccess.customer);
 }
 
-export function getProviderModeSummary(session: MockSession) {
+export function canAccessProviderWorkspace(session: WorkspaceSession | null | undefined) {
+  return Boolean(session?.workspaceAccess.provider);
+}
+
+export function getProviderModeSummary(session: WorkspaceSession | null | undefined) {
+  if (!session) {
+    return 'No session loaded';
+  }
+
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
   const hasCore = coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe';
   const hasPro = proStatus === 'approved';
@@ -36,7 +48,19 @@ export function getProviderModeSummary(session: MockSession) {
   return 'No provider mode active';
 }
 
-export function getRecommendedProviderNextAction(session: MockSession) {
+export function getRecommendedProviderNextAction(session: WorkspaceSession | null | undefined) {
+  if (!session) {
+    return 'Check your Taskly session';
+  }
+
+  if (hasBackendNextAction(session)) {
+    if (session.nextAction.type !== 'none' && session.nextAction.label) {
+      return session.nextAction.label;
+    }
+
+    return 'No provider action required';
+  }
+
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
 
   if ((coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe') && proStatus === 'approved') {

@@ -548,6 +548,35 @@ Current limitation: this cookie-based endpoint is useful for web/local validatio
 
 Screens still use the mock session until a dedicated AuthProvider/session shell phase replaces the app-level session source.
 
+## Phase 9 AuthProvider/Session Shell
+
+The mobile app now has an app-shell auth context:
+
+- `src/lib/auth/AuthProvider.tsx`
+- `src/lib/auth/useAuth.ts`
+- `src/components/taskly/SessionStatusCard.tsx`
+
+`AuthProvider` calls `GET /api/mobile/auth/session` once on mount through `getCurrentSession()`. It exposes:
+
+- `session`
+- `status: "loading" | "authenticated" | "unauthenticated" | "error" | "demo"`
+- `error`
+- `isDemoMode`
+- `refreshSession()`
+- `useDemoSession()`
+- `clearSession()`
+
+Current behavior:
+
+- A valid backend session becomes `authenticated`.
+- A `401` response becomes `unauthenticated` without crashing the app.
+- Missing API base URL or network failure becomes `error` and the UI offers demo mode.
+- Demo mode uses the existing mock session and keeps Customer/Provider navigation available.
+
+Login, logout API calls, registration, token storage, refresh tokens, and secure storage are not implemented yet. Screens are not fully guarded yet; they can read session state for display, but enforcement should wait for a dedicated route-guarding phase using backend `workspaceAccess` and `permissions`.
+
+Next recommended phase: implement login/logout transport and storage strategy, or add workspace route guarding once backend session behavior is stable for the target environment.
+
 ## 9. Risks/Open Questions
 
 - Current web auth uses server actions for login/register/logout/current user; mobile likely needs new dedicated Next.js API routes.

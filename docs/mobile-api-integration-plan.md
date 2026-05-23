@@ -396,6 +396,12 @@ The typed client uses `ApiResult<T>`:
 
 The request helper should return failures for normal HTTP/network errors instead of throwing into screens. Screens are not connected yet because the first real integration should define auth/session behavior, token storage, unauthorized handling, and workspace permission routing. The next recommended phase is auth/session integration using the typed client and endpoint registry.
 
+## Phase 9 App-Shell Session Checking
+
+The mobile app now wraps Expo Router with `AuthProvider`, which calls `GET /api/mobile/auth/session` once at startup through `getCurrentSession()`. The shell exposes loading, authenticated, unauthenticated, error, and demo states through `useAuth()`.
+
+Screens should use the AuthProvider state for session display and later route guarding. They should not call the session endpoint directly. Demo mode remains available while login/logout/token storage are still unimplemented.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
