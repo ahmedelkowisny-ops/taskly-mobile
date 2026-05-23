@@ -33,3 +33,13 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Payment, cancellation, refund, matching, role, and Pro unlock logic must never be calculated only on mobile.
 - Sensitive decisions must come from backend response fields such as `nextAction`, permissions, and eligibility flags.
 - All API-connected screens need loading, empty, error, and unauthorized states.
+
+# Mobile Auth Rules
+
+- Do not implement auth by guessing.
+- Inspect existing web auth before changing mobile auth behavior.
+- Mobile auth must use dedicated backend routes.
+- Session, role, and workspace access must come from the backend.
+- Do not store raw passwords or secrets.
+- Use secure storage only for tokens if a token strategy is chosen.
+- Admin is web-only. Do not add admin mobile screens or workspace routing.

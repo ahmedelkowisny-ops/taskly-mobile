@@ -26,6 +26,8 @@ The backend remains the source of truth for users, roles, workspace access, task
 
 ## C) Auth/Session Plan
 
+Detailed auth audit and recommendations live in [`docs/mobile-auth-session-plan.md`](./mobile-auth-session-plan.md).
+
 Mobile needs API support for:
 
 - Login
@@ -58,6 +60,8 @@ Likely mobile session response shape:
 ```
 
 Mobile should eventually replace `src/lib/auth/mockAuth.ts` with session data from this API, while keeping helpers such as `canAccessCustomerWorkspace`, `canAccessProviderWorkspace`, and provider next-action display logic driven by backend-safe fields.
+
+Auth/session integration should happen before customer/provider data APIs. The backend must provide `workspaceAccess` and `providerCapabilities` so mobile can route and render workspaces without duplicating role logic.
 
 ## D) Customer API Map
 
