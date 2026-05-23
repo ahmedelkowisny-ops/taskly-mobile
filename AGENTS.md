@@ -19,3 +19,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Do not use public or professional UI wording like "V1".
 - Keep layouts mobile-friendly and suitable for Bulgarian text length.
 - Every screen should support loading, empty, error, and unauthorized states when real data is added later.
+
+# Mobile API Integration Rules
+
+- Never call the database directly from mobile.
+- Use a typed API client for backend communication.
+- Backend owns sensitive decisions and remains server-authoritative.
+- Payment, cancellation, refund, matching, role, and Pro unlock logic must never be calculated only on mobile.
+- All API-connected screens need loading, empty, error, and unauthorized states.
