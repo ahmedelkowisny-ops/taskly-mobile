@@ -37,12 +37,34 @@ export type ProviderCapabilities = {
   proStatus: 'none' | 'draft' | 'pending' | 'approved';
 };
 
+export type PermissionSummary = {
+  canPostProRequest: boolean;
+  canPostTask: boolean;
+  canViewCoreTasks: boolean;
+  canViewProRequests: boolean;
+};
+
+export type SessionNextActionType =
+  | 'none'
+  | 'complete_core_onboarding'
+  | 'complete_stripe_verification'
+  | 'continue_pro_application'
+  | 'wait_for_pro_review';
+
+export type SessionNextAction = {
+  href: string | null;
+  label: string | null;
+  type: SessionNextActionType;
+};
+
 export type UserSession = {
+  nextAction: SessionNextAction;
+  permissions: PermissionSummary;
   providerCapabilities: ProviderCapabilities;
   user: {
+    displayName: string;
     email: string;
     id: string;
-    name: string;
     preferredLocale: Locale;
   };
   workspaceAccess: WorkspaceAccess;

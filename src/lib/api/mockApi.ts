@@ -7,11 +7,22 @@ export function getMockUserSession(): UserSession {
   const session = mockAuth.currentSession;
 
   return {
+    nextAction: {
+      href: null,
+      label: null,
+      type: 'none',
+    },
+    permissions: {
+      canPostProRequest: session.workspaceAccess.customer,
+      canPostTask: session.workspaceAccess.customer,
+      canViewCoreTasks: session.providerCapabilities.coreTaskerStatus === 'approved',
+      canViewProRequests: session.providerCapabilities.proStatus === 'approved',
+    },
     providerCapabilities: session.providerCapabilities,
     user: {
+      displayName: session.displayName,
       email: 'demo@taskly.bg',
       id: session.id,
-      name: session.displayName,
       preferredLocale: session.preferredLocale,
     },
     workspaceAccess: session.workspaceAccess,

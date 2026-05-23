@@ -1,3 +1,4 @@
+export { getCurrentSession } from './auth';
 export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export { endpoints } from './endpoints';
@@ -26,7 +27,10 @@ export type {
   ApiError,
   ApiRequestOptions,
   ApiResult,
+  PermissionSummary,
   ProviderCapabilities,
+  SessionNextAction,
+  SessionNextActionType,
   UserSession,
   WorkspaceAccess,
 } from './types';

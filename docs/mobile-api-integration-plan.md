@@ -28,6 +28,8 @@ The backend remains the source of truth for users, roles, workspace access, task
 
 Detailed auth audit and recommendations live in [`docs/mobile-auth-session-plan.md`](./mobile-auth-session-plan.md).
 
+Phase 8 adds the first backend mobile auth endpoint, `GET /api/mobile/auth/session`, plus a mobile wrapper at `src/lib/api/auth.ts`. This endpoint validates the existing web `taskly_session` cookie server-side and returns the mobile-safe `UserSession` shape. Screens are still mock-driven until the AuthProvider/session shell phase.
+
 Mobile needs API support for:
 
 - Login
@@ -44,7 +46,7 @@ Likely mobile session response shape:
 {
   user: {
     id: string;
-    name: string;
+    displayName: string;
     email: string;
     preferredLocale: 'en' | 'bg';
   };
@@ -55,6 +57,17 @@ Likely mobile session response shape:
   providerCapabilities: {
     coreTaskerStatus: 'none' | 'applicant' | 'approved' | 'needsStripe';
     proStatus: 'none' | 'draft' | 'pending' | 'approved';
+  };
+  permissions: {
+    canPostTask: boolean;
+    canPostProRequest: boolean;
+    canViewCoreTasks: boolean;
+    canViewProRequests: boolean;
+  };
+  nextAction: {
+    type: string;
+    label: string | null;
+    href: string | null;
   };
 }
 ```

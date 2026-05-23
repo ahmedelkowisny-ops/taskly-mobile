@@ -502,6 +502,52 @@ Clarifications:
 9. Add registration later.
 10. Add role-specific onboarding continuation later.
 
+## Phase 8 Mobile Session Endpoint
+
+The first backend auth endpoint has been added at:
+
+`GET /api/mobile/auth/session`
+
+It returns a mobile-safe session summary when the existing `taskly_session` cookie is valid and returns `401` with a safe JSON error when no valid session exists.
+
+Authenticated response shape:
+
+```json
+{
+  "user": {
+    "id": "123",
+    "displayName": "Ahmed Ahmedov",
+    "email": "ahmed@example.com",
+    "preferredLocale": "en"
+  },
+  "workspaceAccess": {
+    "customer": true,
+    "provider": true
+  },
+  "providerCapabilities": {
+    "coreTaskerStatus": "approved",
+    "proStatus": "pending"
+  },
+  "permissions": {
+    "canPostTask": true,
+    "canPostProRequest": true,
+    "canViewCoreTasks": true,
+    "canViewProRequests": false
+  },
+  "nextAction": {
+    "type": "wait_for_pro_review",
+    "label": "Pro application under review",
+    "href": "/provider/start"
+  }
+}
+```
+
+The mobile wrapper is `getCurrentSession()` in `src/lib/api/auth.ts`. It calls the centralized endpoint registry and returns `ApiResult<UserSession>`.
+
+Current limitation: this cookie-based endpoint is useful for web/local validation and for confirming the backend session contract. Production native mobile auth will likely still need a token-based strategy with secure storage and dedicated login/logout/refresh routes.
+
+Screens still use the mock session until a dedicated AuthProvider/session shell phase replaces the app-level session source.
+
 ## 9. Risks/Open Questions
 
 - Current web auth uses server actions for login/register/logout/current user; mobile likely needs new dedicated Next.js API routes.
