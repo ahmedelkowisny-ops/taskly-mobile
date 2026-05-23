@@ -46,6 +46,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Screens should use `useAuth()` instead of calling the session endpoint directly.
 - Demo mode is allowed until real login is implemented.
 - Do not block routes with mobile-only assumptions; use backend `workspaceAccess` when enforcing later.
+- Do not implement mobile login/logout without following `docs/mobile-login-logout-plan.md`.
+- Do not store refresh tokens in plaintext.
+- Do not log tokens or passwords.
+- Do not bypass `sessionVersion` checks.
+- Existing web cookie auth must remain intact.
 - Session, role, and workspace access must come from the backend.
 - Do not store raw passwords or secrets.
 - Use secure storage only for tokens if a token strategy is chosen.

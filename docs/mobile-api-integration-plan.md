@@ -30,6 +30,8 @@ Detailed auth audit and recommendations live in [`docs/mobile-auth-session-plan.
 
 Phase 8 adds the first backend mobile auth endpoint, `GET /api/mobile/auth/session`, plus a mobile wrapper at `src/lib/api/auth.ts`. This endpoint validates the existing web `taskly_session` cookie server-side and returns the mobile-safe `UserSession` shape. Screens are still mock-driven until the AuthProvider/session shell phase.
 
+Login/logout should be implemented only after the token/cookie strategy is confirmed in [`docs/mobile-login-logout-plan.md`](./mobile-login-logout-plan.md). The recommended path is a hybrid model: keep web cookie auth intact and add native mobile access/refresh token routes later.
+
 Mobile needs API support for:
 
 - Login

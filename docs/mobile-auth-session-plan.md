@@ -1,5 +1,7 @@
 # Taskly Mobile Auth and Session Plan
 
+See [`docs/mobile-login-logout-plan.md`](./mobile-login-logout-plan.md) for the native mobile login/logout design. Login/logout should not be implemented until the token/cookie strategy and storage model in that plan are confirmed.
+
 ## 1. Current Web Auth Summary
 
 This audit inspected the existing web/backend project at `D:\Taskly`. The mobile app was not connected to auth and no backend code was changed.
