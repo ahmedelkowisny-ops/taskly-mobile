@@ -1,4 +1,4 @@
-export { getCurrentSession } from './auth';
+export { getCurrentSession, loginWithEmailPassword, logoutMobileSession, refreshMobileSession } from './auth';
 export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export { endpoints } from './endpoints';
@@ -27,8 +27,14 @@ export type {
   ApiError,
   ApiRequestOptions,
   ApiResult,
+  AuthTokens,
+  LoginRequest,
+  LoginResponse,
+  LogoutResponse,
   PermissionSummary,
   ProviderCapabilities,
+  RefreshRequest,
+  RefreshResponse,
   SessionNextAction,
   SessionNextActionType,
   UserSession,

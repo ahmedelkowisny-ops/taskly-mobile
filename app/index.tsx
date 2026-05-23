@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { SessionStatusCard, TasklyLogoText, WorkspaceSwitchHint } from '@/src/components/taskly';
@@ -13,6 +13,8 @@ import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+
+const LOGIN_ROUTE = '/login' as Href;
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -29,7 +31,13 @@ export default function WelcomeScreen() {
         </AppText>
       </View>
 
-      <SessionStatusCard />
+      <SessionStatusCard onLoginPress={() => router.push(LOGIN_ROUTE)} />
+
+      {status !== 'authenticated' ? (
+        <AppButton onPress={() => router.push(LOGIN_ROUTE)} variant="outline">
+          Login
+        </AppButton>
+      ) : null}
 
       <AppCard>
         <View style={styles.badges}>
@@ -45,7 +53,7 @@ export default function WelcomeScreen() {
           />
         </View>
         <AppText color={colors.slate700}>
-          Workspace navigation remains open while login is being connected. Backend session data is used when available.
+          Workspace navigation remains open during rollout. Backend session data is used when available.
         </AppText>
       </AppCard>
 

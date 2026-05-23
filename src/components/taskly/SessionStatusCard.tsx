@@ -8,6 +8,7 @@ import { AppButton, AppCard, AppText, StatusBadge } from '../ui';
 
 type SessionStatusCardProps = {
   compact?: boolean;
+  onLoginPress?: () => void;
 };
 
 function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: string) {
@@ -49,14 +50,14 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
 
   return {
     badge: 'Not signed in',
-    body: 'You are not signed in yet. Login will be connected in the next phase.',
+    body: 'You are not signed in yet. Use login or continue in demo mode.',
     title: 'Taskly account',
     tone: 'neutral' as const,
   };
 }
 
-export function SessionStatusCard({ compact = false }: SessionStatusCardProps) {
-  const { clearSession, error, isDemoMode, refreshSession, session, status, useDemoSession } = useAuth();
+export function SessionStatusCard({ compact = false, onLoginPress }: SessionStatusCardProps) {
+  const { clearSession, error, isDemoMode, logout, refreshSession, session, status, useDemoSession } = useAuth();
   const name = session?.user.displayName;
   const copy = getStatusCopy(status, name);
   const canUseDemo = status === 'error' || status === 'unauthenticated';
@@ -70,6 +71,12 @@ export function SessionStatusCard({ compact = false }: SessionStatusCardProps) {
       </View>
 
       <AppText color={colors.slate700}>{copy.body}</AppText>
+
+      {status === 'authenticated' && session?.user.email ? (
+        <AppText color={colors.slate500} variant="caption">
+          {session.user.email}
+        </AppText>
+      ) : null}
 
       {error ? (
         <AppText color={colors.slate500} variant="caption">
@@ -85,6 +92,10 @@ export function SessionStatusCard({ compact = false }: SessionStatusCardProps) {
       ) : null}
 
       <View style={styles.actions}>
+        {status !== 'authenticated' && onLoginPress ? (
+          <AppButton onPress={onLoginPress}>Login</AppButton>
+        ) : null}
+
         <AppButton
           loading={status === 'loading'}
           onPress={() => {
@@ -93,6 +104,17 @@ export function SessionStatusCard({ compact = false }: SessionStatusCardProps) {
           variant="outline">
           Retry session check
         </AppButton>
+
+        {status === 'authenticated' ? (
+          <AppButton
+            onPress={() => {
+              void logout();
+            }}
+            tone="neutral"
+            variant="outline">
+            Logout
+          </AppButton>
+        ) : null}
 
         {canUseDemo ? (
           <AppButton onPress={useDemoSession} tone="pro">

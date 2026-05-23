@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AssistantGuideCard, ModeBadge, SessionStatusCard, WorkspaceSwitchHint } from '@/src/components/taskly';
@@ -6,6 +6,8 @@ import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/componen
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+
+const LOGIN_ROUTE = '/login' as Href;
 
 export default function ProviderAccountScreen() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function ProviderAccountScreen() {
         </AppText>
       </AppCard>
 
-      <SessionStatusCard compact />
+      <SessionStatusCard compact onLoginPress={() => router.push(LOGIN_ROUTE)} />
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />

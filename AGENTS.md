@@ -53,5 +53,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Existing web cookie auth must remain intact.
 - Session, role, and workspace access must come from the backend.
 - Do not store raw passwords or secrets.
+- Tokens must only be stored through `src/lib/auth/tokenStorage.ts`.
+- Screens must use `AuthProvider` actions instead of calling auth API functions directly.
+- Never log passwords or tokens.
+- Demo mode must remain available during development.
+- Do not implement registration without a dedicated phase.
 - Use secure storage only for tokens if a token strategy is chosen.
 - Admin is web-only. Do not add admin mobile screens or workspace routing.

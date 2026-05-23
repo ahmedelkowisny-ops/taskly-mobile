@@ -579,6 +579,20 @@ Login, logout API calls, registration, token storage, refresh tokens, and secure
 
 Next recommended phase: implement login/logout transport and storage strategy, or add workspace route guarding once backend session behavior is stable for the target environment.
 
+## Phase 10C Mobile Login Shell
+
+The mobile app now has the first native login shell:
+
+- Secure token storage module: `src/lib/auth/tokenStorage.ts`
+- Login screen: `app/login.tsx`
+- Auth API wrappers for login, refresh, logout, and current session
+- AuthProvider restore flow using stored access/refresh tokens
+- AuthProvider login/logout actions for screens to use
+
+Tokens are stored only through Expo SecureStore. If SecureStore is unavailable, such as some browser-preview environments, login can still hold the authenticated session in memory for the current run, but tokens are not persisted.
+
+Demo mode remains available and clears local token storage before activating the mock session. Registration, forgot password, social login, and workspace route guarding are still future phases.
+
 ## 9. Risks/Open Questions
 
 - Current web auth uses server actions for login/register/logout/current user; mobile likely needs new dedicated Next.js API routes.

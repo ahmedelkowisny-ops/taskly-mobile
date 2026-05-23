@@ -27,6 +27,37 @@ export type ApiRequestOptions = {
   timeoutMs?: number;
 };
 
+export type AuthTokens = {
+  accessToken: string;
+  accessTokenExpiresIn: number;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+};
+
+export type LoginRequest = {
+  deviceId?: string;
+  deviceName?: string;
+  email: string;
+  password: string;
+};
+
+export type RefreshRequest = {
+  deviceId?: string;
+  deviceName?: string;
+  refreshToken: string;
+};
+
+export type LoginResponse = {
+  session: UserSession;
+  tokens: AuthTokens;
+};
+
+export type RefreshResponse = LoginResponse;
+
+export type LogoutResponse = {
+  success: boolean;
+};
+
 export type WorkspaceAccess = {
   customer: boolean;
   provider: boolean;

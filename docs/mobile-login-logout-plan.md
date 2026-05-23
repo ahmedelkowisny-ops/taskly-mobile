@@ -371,3 +371,31 @@ Mobile tests:
 - Local physical-device testing against the backend LAN IP.
 - Whether refresh-token family reuse detection should force global `sessionVersion` increment.
 - Whether preferred locale should become a persisted `User` field.
+
+## Phase 10B Backend Foundation Implemented
+
+The backend now has the first native mobile token-auth foundation:
+
+- Prisma model: `MobileRefreshToken`
+- Backend routes:
+  - `POST /api/mobile/auth/login`
+  - `POST /api/mobile/auth/refresh`
+  - `POST /api/mobile/auth/logout`
+  - `GET /api/mobile/auth/session` with Bearer-token support while preserving cookie fallback
+- Access token lifetime: 15 minutes by default.
+- Refresh token lifetime: 30 days by default.
+- Refresh tokens are stored hashed in the database and rotate on refresh.
+
+The mobile app is not connected to login/logout yet. The next mobile step is to add secure storage, mobile auth API functions for login/logout/refresh, and a login UI while keeping demo mode available during rollout.
+
+## Phase 10C Mobile Login Shell Implemented
+
+The mobile side now has:
+
+- Expo SecureStore installed.
+- SecureStore-backed token storage in `src/lib/auth/tokenStorage.ts`.
+- Login/logout/refresh API wrappers in `src/lib/api/auth.ts`.
+- AuthProvider restore, login, logout, refresh, and demo-mode flows.
+- A first login screen at `/login`.
+
+The backend routes already exist, but the next phase should test end-to-end login against the local backend using a real `EXPO_PUBLIC_TASKLY_API_BASE_URL`. Workspace route guarding should come later and must use backend `workspaceAccess` and `permissions`.
