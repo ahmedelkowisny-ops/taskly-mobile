@@ -878,6 +878,55 @@ Scope remains limited:
 - One image per multipart request/message.
 - No camera capture, multi-image chat send, files, voice messages, Pro request chat, support/admin attachments, payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
+## Phase 22A Provider Core Action Contract Review
+
+Phase 22A reviewed the existing backend/web Core Tasker action flow and documented the safe mobile contract in `docs/mobile-provider-core-actions-contract.md`.
+
+Backend files inspected:
+
+- `D:\Taskly\prisma\schema.prisma`
+- `D:\Taskly\src\app\actions.ts`
+- `D:\Taskly\src\app\actions\payments.ts`
+- `D:\Taskly\src\lib\stripe-ops.ts`
+- `D:\Taskly\src\lib\tasker-verification.server.ts`
+- `D:\Taskly\src\lib\mobile-provider-readonly.ts`
+- `D:\Taskly\src\app\api\mobile\provider\*`
+- Web tasker/customer dashboards that call the existing actions
+
+Current action map findings:
+
+- Providers view matching open tasks through backend city/category/readiness rules.
+- Providers currently express interest through `interestTask` / `expressInterest`; this does not assign the task.
+- Customers select a tasker through `reserveTasker`, which creates the reservation lock and booking.
+- Customer/payment logic then moves the selected task into assigned/in-progress state.
+- Provider runtime actions already exist on web for `markOnTheWay`, `startTask`, and `requestTaskCompletion`.
+- Provider cancellation/cannot-attend is not yet a clean mobile-safe contract and needs a separate cancellation/dispute review.
+
+Recommended mobile action order:
+
+1. Phase 22B: Provider express interest/respond for open matching Core tasks.
+2. Phase 22C: Provider "On the way" using existing schedule/payment gates.
+3. Phase 22D: Provider "Start task" using existing payment and schedule gates.
+4. Phase 22E: Provider "Request completion".
+5. Phase 22F: Provider task action UI and `nextActions` consistency.
+
+Proposed mobile endpoints:
+
+- `POST /api/mobile/provider/core-tasks/[taskId]/interest`
+- `POST /api/mobile/provider/core-tasks/[taskId]/on-the-way`
+- `POST /api/mobile/provider/core-tasks/[taskId]/start`
+- `POST /api/mobile/provider/core-tasks/[taskId]/request-completion`
+
+No provider direct-accept endpoint is recommended yet because the current source of truth uses provider interest followed by customer selection/reservation/payment setup.
+
+The proposed `nextActions` structure adds backend-owned booleans such as `canExpressInterest`, `canChat`, `canMarkOnTheWay`, `canStart`, and `canRequestCompletion`, plus blocked reason codes. Mobile may use these to render controls, but every mutation endpoint must repeat the checks server-side.
+
+Scope remains limited:
+
+- No provider mutations were connected.
+- No payment, Stripe, cancellation, refund, dispute, help, Pro Access payment/unlock, Pro request provider response, task lifecycle, matching, or provider action logic was changed.
+- Customer private address/contact data remains protected by the current mobile detail shape.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

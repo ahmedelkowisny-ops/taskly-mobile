@@ -113,6 +113,12 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Do not invent Pro request chat.
 - Do not enable attachments for support/admin read-only threads.
 - Chat image work must not change payment, lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
+- Provider mobile actions must use backend-authoritative `nextActions` and blocked reasons.
+- Mobile must not decide lifecycle, payment, matching, schedule, Stripe, or provider eligibility only on the client.
+- Provider actions must verify tasker approval, role, assignment/ownership, city/category eligibility, Stripe verification when required, payment state, and schedule gates server-side.
+- Do not connect provider lifecycle actions before reviewing the existing web/backend source of truth.
+- Do not change payment, cancellation, dispute, matching, or lifecycle rules while wiring provider mobile UI.
+- Do not expose customer private address or contact data before the backend explicitly allows it for the current task state.
 
 # Mobile Auth Rules
 
