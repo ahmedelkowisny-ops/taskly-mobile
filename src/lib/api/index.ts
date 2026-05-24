@@ -23,6 +23,7 @@ export {
   getProviderProfile,
   getProviderProRequestDetail,
   getProviderProRequests,
+  markProviderCoreTaskOnTheWay,
 } from './provider';
 export {
   getMockCitiesCatalogResponse,
@@ -89,6 +90,7 @@ export type {
   MessageThreadDetailResponse,
   MessageThreadMeta,
   MessageThreadsResponse,
+  MarkProviderCoreTaskOnTheWayResponse,
   NextAction,
   NotificationPreferenceSummary,
   PaymentActionState,

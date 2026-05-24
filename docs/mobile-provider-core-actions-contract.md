@@ -105,7 +105,7 @@ The provider mobile Core task list is read-only.
    - Do not expose a direct provider "accept" unless product confirms a direct-accept backend path. Current reservation is customer-owned.
    - Support tools-confirmation requirements when the backend returns that reason code.
 
-2. Phase 22C: Provider "On the way".
+2. Phase 22C: Provider "On the way". Implemented.
    - Use the existing `markOnTheWay` server logic.
    - Keep the two-hour schedule gate server-side.
 
@@ -220,6 +220,8 @@ If a product decision later introduces direct provider accept, it needs a backen
 
 `POST /api/mobile/provider/core-tasks/[taskId]/on-the-way`
 
+Status: implemented in Phase 22C.
+
 Request:
 
 ```json
@@ -235,6 +237,7 @@ Checks:
 - Payment is execution-ready by backend logic.
 - Current time is within two hours of scheduled start.
 - Idempotent when `onTheWayAt` already exists.
+- Mobile must not send `startedAt`, completion, payment, booking, reservation, tasker/customer, Stripe, status, or lifecycle fields.
 
 Success response proposal:
 
@@ -260,6 +263,8 @@ Mobile display:
 
 - Show only when backend says `canMarkOnTheWay`.
 - Display the exact backend blocked reason when too early.
+- The UI must make clear that On the way does not start the task.
+- Start Task remains a future phase.
 
 ### Start Task
 

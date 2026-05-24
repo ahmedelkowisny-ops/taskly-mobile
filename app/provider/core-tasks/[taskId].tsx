@@ -7,7 +7,7 @@ import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderCoreTaskDetail, ProviderCoreTaskDetailResponse } from '@/src/lib/api/domain';
 import { getMockProviderCoreTaskDetailResponse } from '@/src/lib/api/mockApi';
-import { expressInterestInCoreTask, getProviderCoreTaskDetail } from '@/src/lib/api/provider';
+import { expressInterestInCoreTask, getProviderCoreTaskDetail, markProviderCoreTaskOnTheWay } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -23,6 +23,7 @@ export default function ProviderCoreTaskDetailScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
   const [isExpressingInterest, setIsExpressingInterest] = useState(false);
+  const [isMarkingOnTheWay, setIsMarkingOnTheWay] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [needsToolsConfirmation, setNeedsToolsConfirmation] = useState(false);
@@ -89,6 +90,25 @@ export default function ProviderCoreTaskDetailScreen() {
             blockedReasonCode: 'ALREADY_INTERESTED',
             canExpressInterest: false,
             primary: { label: t('interestSent'), type: 'interest_sent' },
+          },
+        },
+      };
+    });
+  }, []);
+
+  const markDemoOnTheWay = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('youAreOnTheWay'),
+            blockedReasonCode: 'ON_THE_WAY_MARKED',
+            canMarkOnTheWay: false,
+            primary: { label: t('onTheWay'), type: 'on_the_way_marked' },
           },
         },
       };
@@ -166,6 +186,64 @@ export default function ProviderCoreTaskDetailScreen() {
     setActionError(result.error.message || t('couldNotExpressInterest'));
   }, [getValidAccessToken, loadDetail, markDemoInterestSent, status, taskId]);
 
+  const handleMarkOnTheWay = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+
+    if (status === 'demo') {
+      markDemoOnTheWay();
+      setActionMessage(t('youAreOnTheWay'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsMarkingOnTheWay(true);
+    const result = await markProviderCoreTaskOnTheWay(taskId, authToken);
+    setIsMarkingOnTheWay(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      }
+      setActionMessage(t('youAreOnTheWay'));
+      return;
+    }
+
+    if (result.error.code === 'TOO_EARLY_ON_THE_WAY') {
+      setActionError(t('tooEarlyOnTheWay'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'PAYMENT_NOT_READY' || result.error.code === 'TASK_NOT_READY') {
+      setActionError(t('taskNotReadyYet'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'NOT_ASSIGNED_TASKER') {
+      setActionError(t('notAssignedToTask'));
+      return;
+    }
+
+    if (result.error.code === 'TASKER_NOT_VERIFIED' || result.error.code === 'TASKER_NOT_APPROVED') {
+      setActionError(t('completeVerificationToRespond'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotMarkOnTheWay'));
+  }, [getValidAccessToken, loadDetail, markDemoOnTheWay, status, taskId]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -209,9 +287,11 @@ export default function ProviderCoreTaskDetailScreen() {
             actionError={actionError}
             actionMessage={actionMessage}
             isExpressingInterest={isExpressingInterest}
+            isMarkingOnTheWay={isMarkingOnTheWay}
             needsToolsConfirmation={needsToolsConfirmation}
             onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
             onExpressInterest={() => handleExpressInterest()}
+            onMarkOnTheWay={handleMarkOnTheWay}
             task={task}
           />
         </>
@@ -269,27 +349,42 @@ function ProviderActions({
   actionError,
   actionMessage,
   isExpressingInterest,
+  isMarkingOnTheWay,
   needsToolsConfirmation,
   onConfirmTools,
   onExpressInterest,
+  onMarkOnTheWay,
   task,
 }: {
   actionError: string | null;
   actionMessage: string | null;
   isExpressingInterest: boolean;
+  isMarkingOnTheWay: boolean;
   needsToolsConfirmation: boolean;
   onConfirmTools: () => void;
   onExpressInterest: () => void;
+  onMarkOnTheWay: () => void;
   task: ProviderCoreTaskDetail;
 }) {
   const canExpressInterest = task.nextActions.canExpressInterest;
+  const canMarkOnTheWay = task.nextActions.canMarkOnTheWay;
   const blockedReason = task.nextActions.blockedReason;
 
   return (
-    <AppCard accentColor={canExpressInterest ? colors.tasklyBlue600 : undefined}>
+    <AppCard accentColor={canExpressInterest || canMarkOnTheWay ? colors.tasklyBlue600 : undefined}>
       <AppText variant="sectionTitle">Next steps</AppText>
-      <AppText color={colors.slate700}>{t('customerWillChooseTasker')}</AppText>
-      <AppText color={colors.slate700}>{t('doesNotReserveTask')}</AppText>
+      {canExpressInterest ? (
+        <>
+          <AppText color={colors.slate700}>{t('customerWillChooseTasker')}</AppText>
+          <AppText color={colors.slate700}>{t('doesNotReserveTask')}</AppText>
+        </>
+      ) : null}
+      {canMarkOnTheWay ? (
+        <>
+          <AppText color={colors.slate700}>{t('letCustomerKnowOnTheWay')}</AppText>
+          <AppText color={colors.slate700}>{t('onTheWayDoesNotStartTask')}</AppText>
+        </>
+      ) : null}
 
       {actionMessage ? (
         <StatusBadge label={actionMessage} tone="success" />
@@ -310,6 +405,13 @@ function ProviderActions({
               {t('confirmToolsAndExpressInterest')}
             </AppButton>
           ) : null}
+        </View>
+      ) : canMarkOnTheWay ? (
+        <View style={styles.stack}>
+          <AppText color={colors.slate700}>{t('onTheWayCloseToStart')}</AppText>
+          <AppButton loading={isMarkingOnTheWay} onPress={onMarkOnTheWay}>
+            {isMarkingOnTheWay ? t('markingOnTheWay') : t('markOnTheWay')}
+          </AppButton>
         </View>
       ) : (
         <AppButton disabled variant="outline">

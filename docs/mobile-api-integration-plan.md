@@ -957,6 +957,33 @@ Scope remains limited:
 - Customer selection/reservation remains customer-owned.
 - No booking, assignment, payment, Stripe, cancellation, refund, dispute, help, provider runtime action, Pro response, Pro Access payment/unlock, or lifecycle logic was added.
 
+## Phase 22C Provider Core On-The-Way Action
+
+Phase 22C connects only the provider Core runtime "On the way" action for assigned Core tasks.
+
+Backend behavior:
+
+- Added `POST /api/mobile/provider/core-tasks/[taskId]/on-the-way`.
+- The route requires mobile auth and derives the provider/tasker identity from the backend mobile session.
+- The route rejects server-owned fields such as tasker/customer ids, status, reservation, booking, payment, Stripe, assignment, lifecycle, `startedAt`, and `completedAt` fields.
+- The backend verifies approved/verified Core tasker status, task existence, assignment/reservation to the authenticated tasker, eligible task status, schedule presence, payment execution readiness, and the existing two-hour scheduled-start gate.
+- The action is idempotent when `onTheWayAt` is already set.
+- The action sets only `onTheWayAt` and returns the refreshed Provider Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Provider Core task detail shows `Mark on the way` only when `nextActions.canMarkOnTheWay` is true.
+- The UI explains that the action notifies the customer and does not start the task.
+- After success, the screen refreshes from the backend and disables repeat marking.
+- Demo mode simulates on-the-way locally and does not call the backend.
+- Provider Core task list shows a compact on-the-way indicator when the backend response says it is actionable.
+
+Scope remains limited:
+
+- No Start Task or Request Completion action was added.
+- No direct provider accept/reserve was added.
+- No payment, Stripe, booking, assignment, reservation, cancellation, refund, dispute, help, provider cancellation, Pro response, Pro Access payment/unlock, or lifecycle transition logic was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

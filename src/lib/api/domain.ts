@@ -399,6 +399,11 @@ export type ExpressInterestInCoreTaskResponse = {
   task: ProviderCoreTaskDetail | null;
 };
 
+export type MarkProviderCoreTaskOnTheWayResponse = {
+  onTheWayAt: string | null;
+  task: ProviderCoreTaskDetail | null;
+};
+
 export type ProviderProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;

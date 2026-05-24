@@ -121,6 +121,9 @@ export default function ProviderCoreTasksScreen() {
                 {task.nextActions.canExpressInterest ? (
                   <StatusBadge label={t('expressInterest')} tone="success" />
                 ) : null}
+                {task.nextActions.canMarkOnTheWay ? (
+                  <StatusBadge label={t('onTheWay')} tone="warning" />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>

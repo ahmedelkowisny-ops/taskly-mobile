@@ -124,6 +124,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Customer selection and payment setup remain separate from provider interest.
 - Provider interest must be eligibility-checked server-side.
 - Provider runtime actions such as on the way, start task, request completion, and cannot attend remain separate phases.
+- Provider runtime actions must be shown only from backend-authored `nextActions`.
+- On-the-way does not start the task.
+- On-the-way must not create payment, booking, reservation, or assignment records.
+- Start Task and Request Completion remain separate phases from on-the-way.
 
 # Mobile Auth Rules
 

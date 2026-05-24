@@ -3,6 +3,7 @@ import { endpoints } from './endpoints';
 import {
   ExpressInterestInCoreTaskPayload,
   ExpressInterestInCoreTaskResponse,
+  MarkProviderCoreTaskOnTheWayResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
@@ -44,6 +45,17 @@ export function expressInterestInCoreTask(
   return apiRequest<ExpressInterestInCoreTaskResponse>(endpoints.provider.coreTaskInterest(taskId), {
     authToken,
     body: payload,
+    method: 'POST',
+  });
+}
+
+export function markProviderCoreTaskOnTheWay(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<MarkProviderCoreTaskOnTheWayResponse>> {
+  return apiRequest<MarkProviderCoreTaskOnTheWayResponse>(endpoints.provider.coreTaskOnTheWay(taskId), {
+    authToken,
+    body: {},
     method: 'POST',
   });
 }
