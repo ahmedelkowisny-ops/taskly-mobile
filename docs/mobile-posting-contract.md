@@ -294,9 +294,11 @@ Validation notes:
 - Mobile may show helpful local validation but cannot treat it as authoritative.
 - Backend should return customer-readable field errors for mobile display.
 
-## Proposed Pro Request Creation API Contract
+## Pro Request Creation API Contract
 
-Suggested route:
+Status: implemented in Phase 18.
+
+Route:
 
 - `POST /api/mobile/customer/pro-requests`
 
@@ -393,6 +395,7 @@ Validation notes:
 - Backend remains final for category/city, description length, budget range, and Pro posting/unlock rules.
 - Backend should create Pro requests as free-to-post with unlock/payment state controlled server-side.
 - Backend should not expose Pro contact details or unlock private fields in the create response.
+- Phase 18 mobile submit sends customer-entered fields plus `localImageCount` only. It does not send local image URIs, compressed URIs, base64 data, image URLs, status/access/payment/unlock fields, provider fields, or response fields.
 
 ## Image Handling Recommendation
 
@@ -469,3 +472,11 @@ After Phase 17:
 - Pro request submit remains disabled and future.
 - Images remain local-only and are not included in the create payload.
 - Payment entry points remain separate from creation.
+
+After Phase 18:
+
+- Pro request submit is connected through `POST /api/mobile/customer/pro-requests`.
+- Created Pro requests use the existing backend initial state (`OPEN` with Pro access not paid) and return the mobile customer Pro request detail shape.
+- Post Pro Request validation displays missing/invalid fields before submit.
+- Images remain local-only and are not uploaded, persisted, or sent as URIs.
+- Pro Access payment/unlock, Stripe, provider responses/actions, and image upload/storage remain future phases.

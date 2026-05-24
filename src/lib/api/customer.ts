@@ -1,6 +1,8 @@
 import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
+  CreateCustomerProRequestPayload,
+  CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
   CreateCustomerTaskResponse,
   CustomerHomeResponse,
@@ -57,5 +59,16 @@ export function getCustomerProRequestDetail(
   return apiRequest<CustomerProRequestDetailResponse>(endpoints.customer.proRequestDetail(proRequestId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function createCustomerProRequest(
+  payload: CreateCustomerProRequestPayload,
+  authToken: string,
+): Promise<ApiResult<CreateCustomerProRequestResponse>> {
+  return apiRequest<CreateCustomerProRequestResponse>(endpoints.customer.proRequests, {
+    authToken,
+    body: payload,
+    method: 'POST',
   });
 }

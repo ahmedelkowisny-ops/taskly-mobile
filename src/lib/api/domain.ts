@@ -202,6 +202,18 @@ export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
   };
 };
 
+export type CreateCustomerProRequestPayload = {
+  budgetMaxEur: number;
+  budgetMinEur: number;
+  categoryKey: string;
+  cityId: string;
+  description: string;
+  district: string;
+  localImageCount?: number;
+  timeline: string;
+  title: string;
+};
+
 export type CustomerProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;
@@ -252,6 +264,15 @@ export type CustomerProRequestDetail = {
 
 export type CustomerProRequestDetailResponse = {
   proRequest: CustomerProRequestDetail;
+};
+
+export type CreateCustomerProRequestResponse = CustomerProRequestDetailResponse & {
+  nextActions: DetailNextAction[];
+  uploadState?: {
+    imageUploadRequired: boolean;
+    maxImages: number;
+    uploadedImagesCount: number;
+  };
 };
 
 export type TaskSummary = {

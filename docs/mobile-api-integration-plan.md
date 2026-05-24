@@ -579,6 +579,33 @@ Phase 17.1 improves `/customer/post-task` validation visibility without changing
 - Pro request creation remains unconnected.
 - No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, image upload, or Pro unlock logic was added.
 
+## Phase 18 Pro Request Creation Mutation
+
+Phase 18 connects Customer Workspace Pro request creation only.
+
+Backend endpoint added:
+
+- `POST /api/mobile/customer/pro-requests`
+
+Mobile behavior:
+
+- `/customer/post-pro-request` now submits through the typed customer API wrapper.
+- The mobile route uses the authenticated bearer token and never sends a customer/user ID.
+- Submit activation requires city, Pro category, area/district, project title, project description meeting the backend minimum length, preferred timeline/start date, and a valid min/max budget range.
+- The form shows a compact missing/invalid field summary and field-level helper/error messaging while submit is disabled.
+- On success, the app navigates to `/customer/pro-requests/[proRequestId]`.
+- Demo mode does not call the backend and shows a demo-only message instead.
+- Selected local images remain local. Mobile sends only `localImageCount`; it does not send local image URIs, compressed URIs, base64 data, image URLs, or image records.
+
+Scope remains limited:
+
+- No Core task creation changes beyond shared API exports/types.
+- No image upload or storage.
+- No Pro Access Fee, unlock, Stripe, payment, provider response/action, cancellation, dispute, refund, help, matching, access, or lifecycle logic.
+- No mobile-sent status, access, unlock, payment, matching, provider, response, or admin fields.
+
+The backend derives the customer identity from the mobile session, verifies customer workspace permission, rejects server-owned fields, creates the Pro request through shared backend persistence logic, and returns the created Pro request using the existing mobile customer Pro request detail shape plus backend-provided next actions.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

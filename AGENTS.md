@@ -66,6 +66,12 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Core task creation from mobile must use backend-authenticated customer identity.
 - Mobile Core task creation must not send local image URIs, compressed URIs, base64 image data, or image records.
 - Payment entry points must remain separate from Core task creation.
+- Pro request creation from mobile must use backend-authenticated customer identity.
+- Mobile Pro request creation must not send server-owned status, payment, access, unlock, matching, provider, response, or admin fields.
+- Mobile Pro request creation must not send local image URIs, compressed URIs, base64 image data, image URLs, or image records.
+- Image upload/storage remains separate from Pro request creation.
+- Pro Access Fee, payment, and unlock must remain separate from Pro request creation.
+- Provider responses/actions must remain separate from customer Pro request creation.
 
 # Mobile Auth Rules
 
