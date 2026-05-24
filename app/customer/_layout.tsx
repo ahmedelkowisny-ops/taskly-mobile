@@ -32,10 +32,22 @@ export default function CustomerLayout() {
           }}
         />
         <Tabs.Screen
+          name="tasks/[taskId]"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="pro-requests"
           options={{
             title: 'Pro',
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="ribbon-outline" size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="pro-requests/[proRequestId]"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen

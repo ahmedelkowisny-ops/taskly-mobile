@@ -1,4 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
@@ -13,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderCoreTasksScreen() {
+  const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderCoreTasksResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -123,7 +126,11 @@ export default function ProviderCoreTasksScreen() {
               <AppText color={colors.slate700}>
                 {task.priceLabel} - {task.customerPreviewLabel}
               </AppText>
-              <AppButton variant="outline">{task.nextAction.label}</AppButton>
+              <AppButton
+                onPress={() => router.push(`/provider/core-tasks/${task.id}` as Href)}
+                variant="outline">
+                View details
+              </AppButton>
             </AppCard>
           ))}
         </View>

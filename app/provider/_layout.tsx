@@ -33,10 +33,22 @@ export default function ProviderLayout() {
           }}
         />
         <Tabs.Screen
+          name="core-tasks/[taskId]"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="pro-requests"
           options={{
             title: 'Pro',
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="star-outline" size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="pro-requests/[proRequestId]"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen

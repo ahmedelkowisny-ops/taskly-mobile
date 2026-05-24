@@ -2,13 +2,17 @@ import { mockAuth } from '@/src/lib/auth/mockAuth';
 
 import {
   CustomerHomeResponse,
+  CustomerProRequestDetailResponse,
   CustomerHomeSummary,
   CustomerProRequestsResponse,
+  CustomerTaskDetailResponse,
   CustomerTasksResponse,
   ProviderCoreTasksResponse,
+  ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
   ProviderDashboardSummary,
   ProviderProfileResponse,
+  ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
 } from './domain';
 import { UserSession } from './types';
@@ -102,6 +106,32 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
   };
 }
 
+export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): CustomerTaskDetailResponse {
+  return {
+    task: {
+      addressPreviewLabel: 'Demo address preview',
+      categoryLabel: 'Furniture Assembly',
+      cityLabel: 'Sofia',
+      description: 'Demo read-only Core task detail. Actions stay disabled until a later mutation phase.',
+      id: taskId,
+      images: [],
+      nextActions: [{ accent: 'core', href: '/customer/tasks', label: 'Review task status', type: 'demo_review_task' }],
+      paymentStatusLabel: 'Payment protected',
+      priceLabel: 'EUR 40',
+      scheduledEndAt: null,
+      scheduledStartAt: null,
+      status: 'OPEN',
+      statusLabel: 'Open',
+      taskerPreview: null,
+      timeline: [
+        { description: 'Demo task posted.', id: 'posted', label: 'Posted', status: 'done' },
+        { description: 'Payment state is shown by backend data.', id: 'payment', label: 'Payment protected', status: 'current' },
+      ],
+      title: 'Demo Core task',
+    },
+  };
+}
+
 export function getMockCustomerProRequestsResponse(): CustomerProRequestsResponse {
   return {
     emptyState: {
@@ -109,6 +139,38 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       title: 'No demo Pro requests',
     },
     proRequests: [],
+  };
+}
+
+export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro-request'): CustomerProRequestDetailResponse {
+  return {
+    proRequest: {
+      budgetLabel: 'Budget not set',
+      categoryLabel: 'Renovation',
+      cityLabel: 'Sofia',
+      createdAt: new Date().toISOString(),
+      description: 'Demo read-only Pro request detail. Unlock and contact actions stay backend-owned.',
+      id: proRequestId,
+      images: [],
+      isUnlocked: false,
+      nextActions: [{ accent: 'pro', href: '/customer/pro-requests', label: 'Unlock and compare Pros', type: 'demo_unlock' }],
+      responsePreviews: [
+        {
+          headline: 'Pro response available',
+          id: 'demo-response',
+          isLocked: true,
+          proDisplayName: 'Taskly Pro',
+          roughQuoteLabel: 'Locked until comparison is available',
+          statusLabel: 'Submitted',
+        },
+      ],
+      responsesCount: 1,
+      status: 'RESPONSES_RECEIVED',
+      statusLabel: 'Responses received',
+      timelineLabel: 'Flexible',
+      title: 'Demo Pro request',
+      unlockStatusLabel: 'Pro responses available to unlock',
+    },
   };
 }
 
@@ -175,6 +237,32 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
   };
 }
 
+export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-task'): ProviderCoreTaskDetailResponse {
+  return {
+    task: {
+      addressPreviewLabel: 'Address shared after selection',
+      categoryLabel: 'Furniture Assembly',
+      cityLabel: 'Sofia',
+      customerPreviewLabel: 'Customer preview',
+      description: 'Demo provider Core task detail. Accept/start/completion actions are not connected yet.',
+      id: taskId,
+      images: [],
+      nextActions: [{ accent: 'core', href: '/provider/core-tasks', label: 'View task preview', type: 'demo_view_core' }],
+      paymentStatusLabel: 'Not paid yet',
+      priceLabel: 'EUR 40',
+      scheduledEndAt: null,
+      scheduledStartAt: null,
+      status: 'OPEN',
+      statusLabel: 'Available',
+      timeline: [
+        { description: 'Visible according to demo matching.', id: 'visible', label: 'Visible to you', status: 'done' },
+        { description: 'Provider actions come later.', id: 'next', label: 'Next step', status: 'current' },
+      ],
+      title: 'Demo provider Core task',
+    },
+  };
+}
+
 export function getMockProviderProRequestsResponse(): ProviderProRequestsResponse {
   return {
     emptyState: {
@@ -182,6 +270,27 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
       title: 'No demo Pro requests',
     },
     proRequests: [],
+  };
+}
+
+export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-provider-pro'): ProviderProRequestDetailResponse {
+  return {
+    proRequest: {
+      budgetLabel: 'Budget not set',
+      categoryLabel: 'Renovation',
+      cityLabel: 'Sofia',
+      createdAt: new Date().toISOString(),
+      description: 'Demo provider Pro request detail. Respond/edit actions are not connected yet.',
+      eligibility: { isEligibleToRespond: true, reasonLabel: 'Eligible to respond later' },
+      id: proRequestId,
+      images: [],
+      myResponse: null,
+      nextActions: [{ accent: 'pro', href: '/provider/pro-requests', label: 'Review Pro request', type: 'demo_review_pro' }],
+      status: 'OPEN',
+      statusLabel: 'Open',
+      timelineLabel: 'Flexible',
+      title: 'Demo provider Pro request',
+    },
   };
 }
 

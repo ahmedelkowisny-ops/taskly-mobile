@@ -2,8 +2,10 @@ import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
   ProviderCoreTasksResponse,
+  ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
   ProviderProfileResponse,
+  ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
 } from './domain';
 import { ApiResult } from './types';
@@ -22,8 +24,28 @@ export function getProviderCoreTasks(authToken: string): Promise<ApiResult<Provi
   });
 }
 
+export function getProviderCoreTaskDetail(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<ProviderCoreTaskDetailResponse>> {
+  return apiRequest<ProviderCoreTaskDetailResponse>(endpoints.provider.coreTaskDetail(taskId), {
+    authToken,
+    method: 'GET',
+  });
+}
+
 export function getProviderProRequests(authToken: string): Promise<ApiResult<ProviderProRequestsResponse>> {
   return apiRequest<ProviderProRequestsResponse>(endpoints.provider.proRequests, {
+    authToken,
+    method: 'GET',
+  });
+}
+
+export function getProviderProRequestDetail(
+  proRequestId: string,
+  authToken: string,
+): Promise<ApiResult<ProviderProRequestDetailResponse>> {
+  return apiRequest<ProviderProRequestDetailResponse>(endpoints.provider.proRequestDetail(proRequestId), {
     authToken,
     method: 'GET',
   });

@@ -1,4 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
@@ -13,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerTasksScreen() {
+  const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<CustomerTasksResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,7 +127,11 @@ export default function CustomerTasksScreen() {
                 {task.priceLabel}
                 {task.scheduledStartAt ? ` - ${new Date(task.scheduledStartAt).toLocaleDateString()}` : ''}
               </AppText>
-              <AppButton variant="outline">{task.nextAction.label}</AppButton>
+              <AppButton
+                onPress={() => router.push(`/customer/tasks/${task.id}` as Href)}
+                variant="outline">
+                View details
+              </AppButton>
             </AppCard>
           ))}
         </View>

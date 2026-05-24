@@ -20,6 +20,26 @@ export type EmptyStateContent = {
   title: string;
 };
 
+export type DetailImage = {
+  alt: string;
+  id: string;
+  url: string;
+};
+
+export type DetailTimelineItem = {
+  description: string;
+  id: string;
+  label: string;
+  status: 'current' | 'done' | 'upcoming';
+};
+
+export type DetailNextAction = {
+  accent?: 'core' | 'neutral' | 'pro' | 'warning';
+  href: string | null;
+  label: string;
+  type: string;
+};
+
 export type CustomerNextAction = {
   accent?: 'core' | 'neutral' | 'pro';
   href: string | null;
@@ -74,6 +94,35 @@ export type CustomerTasksResponse = {
   tasks: CustomerTaskSummary[];
 };
 
+export type CustomerTaskerPreview = {
+  displayName: string;
+  ratingLabel: string;
+  statusLabel: string;
+};
+
+export type CustomerTaskDetail = {
+  addressPreviewLabel: string;
+  categoryLabel: string;
+  cityLabel: string;
+  description: string;
+  id: string;
+  images: DetailImage[];
+  nextActions: DetailNextAction[];
+  paymentStatusLabel: string;
+  priceLabel: string;
+  scheduledEndAt: string | null;
+  scheduledStartAt: string | null;
+  status: string;
+  statusLabel: string;
+  taskerPreview: CustomerTaskerPreview | null;
+  timeline: DetailTimelineItem[];
+  title: string;
+};
+
+export type CustomerTaskDetailResponse = {
+  task: CustomerTaskDetail;
+};
+
 export type CustomerProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;
@@ -92,6 +141,38 @@ export type CustomerProRequestSummary = {
 export type CustomerProRequestsResponse = {
   emptyState: EmptyStateContent;
   proRequests: CustomerProRequestSummary[];
+};
+
+export type CustomerProResponsePreview = {
+  headline: string;
+  id: string;
+  isLocked: boolean;
+  proDisplayName: string;
+  roughQuoteLabel: string;
+  statusLabel: string;
+};
+
+export type CustomerProRequestDetail = {
+  budgetLabel: string;
+  categoryLabel: string;
+  cityLabel: string;
+  createdAt: string;
+  description: string;
+  id: string;
+  images: DetailImage[];
+  isUnlocked: boolean;
+  nextActions: DetailNextAction[];
+  responsePreviews: CustomerProResponsePreview[];
+  responsesCount: number;
+  status: string;
+  statusLabel: string;
+  timelineLabel: string;
+  title: string;
+  unlockStatusLabel: string;
+};
+
+export type CustomerProRequestDetailResponse = {
+  proRequest: CustomerProRequestDetail;
 };
 
 export type TaskSummary = {
@@ -155,6 +236,29 @@ export type ProviderCoreTasksResponse = {
   tasks: ProviderCoreTaskSummary[];
 };
 
+export type ProviderCoreTaskDetail = {
+  addressPreviewLabel: string;
+  categoryLabel: string;
+  cityLabel: string;
+  customerPreviewLabel: string;
+  description: string;
+  id: string;
+  images: DetailImage[];
+  nextActions: DetailNextAction[];
+  paymentStatusLabel: string;
+  priceLabel: string;
+  scheduledEndAt: string | null;
+  scheduledStartAt: string | null;
+  status: string;
+  statusLabel: string;
+  timeline: DetailTimelineItem[];
+  title: string;
+};
+
+export type ProviderCoreTaskDetailResponse = {
+  task: ProviderCoreTaskDetail;
+};
+
 export type ProviderProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;
@@ -172,6 +276,39 @@ export type ProviderProRequestSummary = {
 export type ProviderProRequestsResponse = {
   emptyState: EmptyStateContent;
   proRequests: ProviderProRequestSummary[];
+};
+
+export type ProviderProResponseSummary = {
+  id: string;
+  roughQuoteLabel: string;
+  statusLabel: string;
+  submittedAt: string;
+};
+
+export type EligibilitySummary = {
+  isEligibleToRespond: boolean;
+  reasonLabel: string;
+};
+
+export type ProviderProRequestDetail = {
+  budgetLabel: string;
+  categoryLabel: string;
+  cityLabel: string;
+  createdAt: string;
+  description: string;
+  eligibility: EligibilitySummary;
+  id: string;
+  images: DetailImage[];
+  myResponse: ProviderProResponseSummary | null;
+  nextActions: DetailNextAction[];
+  status: string;
+  statusLabel: string;
+  timelineLabel: string;
+  title: string;
+};
+
+export type ProviderProRequestDetailResponse = {
+  proRequest: ProviderProRequestDetail;
 };
 
 export type ProviderNextAction = {

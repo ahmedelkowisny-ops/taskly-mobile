@@ -1,18 +1,35 @@
 export { getCurrentSession, loginWithEmailPassword, logoutMobileSession, refreshMobileSession } from './auth';
 export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
-export { getCustomerHomeSummary, getCustomerProRequests, getCustomerTasks } from './customer';
+export {
+  getCustomerHomeSummary,
+  getCustomerProRequestDetail,
+  getCustomerProRequests,
+  getCustomerTaskDetail,
+  getCustomerTasks,
+} from './customer';
 export { endpoints } from './endpoints';
-export { getProviderCoreTasks, getProviderDashboard, getProviderProfile, getProviderProRequests } from './provider';
+export {
+  getProviderCoreTaskDetail,
+  getProviderCoreTasks,
+  getProviderDashboard,
+  getProviderProfile,
+  getProviderProRequestDetail,
+  getProviderProRequests,
+} from './provider';
 export {
   getMockCustomerHomeResponse,
   getMockCustomerHomeSummary,
+  getMockCustomerProRequestDetailResponse,
   getMockCustomerProRequestsResponse,
+  getMockCustomerTaskDetailResponse,
   getMockCustomerTasksResponse,
+  getMockProviderCoreTaskDetailResponse,
   getMockProviderCoreTasksResponse,
   getMockProviderDashboardResponse,
   getMockProviderDashboardSummary,
   getMockProviderProfileResponse,
+  getMockProviderProRequestDetailResponse,
   getMockProviderProRequestsResponse,
   getMockUserSession,
 } from './mockApi';
@@ -22,11 +39,20 @@ export type {
   CustomerHomeSummary,
   CustomerHomeResponse,
   CustomerNextAction,
+  CustomerProRequestDetail,
+  CustomerProRequestDetailResponse,
   CustomerProRequestSummary,
   CustomerProRequestsResponse,
+  CustomerProResponsePreview,
+  CustomerTaskDetail,
+  CustomerTaskDetailResponse,
   CustomerTaskSummary,
   CustomerTasksResponse,
+  DetailImage,
+  DetailNextAction,
+  DetailTimelineItem,
   EmptyStateContent,
+  EligibilitySummary,
   MessageThreadSummary,
   NextAction,
   NotificationPreferenceSummary,
@@ -34,6 +60,8 @@ export type {
   ProRequestDetail,
   ProRequestSummary,
   ProResponsePreview,
+  ProviderCoreTaskDetail,
+  ProviderCoreTaskDetailResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskSummary,
   ProviderDashboardCard,
@@ -43,8 +71,11 @@ export type {
   ProviderProfileResponse,
   ProviderProfileSummary,
   ProviderProCategoryStatus,
+  ProviderProRequestDetail,
+  ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
   ProviderProRequestSummary,
+  ProviderProResponseSummary,
   TaskDetail,
   TaskSummary,
 } from './domain';

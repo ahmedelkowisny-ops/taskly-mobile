@@ -1,4 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
@@ -13,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderProRequestsScreen() {
+  const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProRequestsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,8 +124,11 @@ export default function ProviderProRequestsScreen() {
                 {request.categoryLabel} - {request.cityLabel}
               </AppText>
               <AppText color={colors.slate700}>{request.timelineLabel}</AppText>
-              <AppButton tone="pro" variant="outline">
-                {request.nextAction.label}
+              <AppButton
+                onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
+                tone="pro"
+                variant="outline">
+                View details
               </AppButton>
             </AppCard>
           ))}

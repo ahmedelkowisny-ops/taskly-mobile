@@ -40,6 +40,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Provider read-only screens may call provider API wrappers only.
 - Do not add provider mutations to read-only screens without a dedicated phase.
 - Do not expose customer address/contact data unless the backend explicitly returns it.
+- Detail screens are read-only unless a dedicated mutation phase says otherwise.
+- Detail screens must display backend `nextAction` values but must not execute sensitive actions.
+- Do not expose private address/contact details unless the backend response explicitly includes them.
+- Do not add payment, cancellation, accept, or respond actions to detail screens without a dedicated phase.
 
 # Mobile Auth Rules
 

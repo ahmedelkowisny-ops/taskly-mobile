@@ -448,6 +448,35 @@ Scope remains intentionally limited:
 
 The backend remains the source of truth for provider capabilities, matching, status labels, permissions, and `nextAction` fields. Mobile displays backend-provided values and keeps demo responses available for development.
 
+## Phase 14 Read-Only Detail Screens
+
+Phase 14 adds read-only detail endpoints and mobile screens for both workspaces.
+
+Backend endpoints added:
+
+- `GET /api/mobile/customer/tasks/[taskId]`
+- `GET /api/mobile/customer/pro-requests/[proRequestId]`
+- `GET /api/mobile/provider/core-tasks/[taskId]`
+- `GET /api/mobile/provider/pro-requests/[proRequestId]`
+
+Mobile detail routes added:
+
+- `/customer/tasks/[taskId]`
+- `/customer/pro-requests/[proRequestId]`
+- `/provider/core-tasks/[taskId]`
+- `/provider/pro-requests/[proRequestId]`
+
+The screens show read-only status, safe preview fields, images, timelines, and backend-provided `nextActions`. List cards now navigate to these detail routes. The CTAs on detail screens are placeholders only; they do not execute sensitive actions.
+
+Scope remains read-only:
+
+- No Core task accept, start, on-the-way, completion, cancellation, dispute, refund, help, payment, or Stripe actions.
+- No Pro response create/edit, unlock payment, site visit invite, or contact flow.
+- No image upload or messaging integration.
+- No private Pro contact details or customer private address/contact details are exposed unless the backend explicitly returns safe fields for the authenticated user and lifecycle state.
+
+The backend remains the source of truth for access checks, status labels, visibility, and `nextAction` fields. Demo detail payloads remain available so the mobile app can open detail screens without backend data.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
