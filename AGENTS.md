@@ -79,6 +79,9 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile must not store image data permanently without backend ownership checks.
 - Image upload must remain separate from payment, lifecycle, provider actions, and Pro unlock logic.
 - Creation should not be blocked by image upload unless backend rules explicitly require it.
+- Backend mobile image endpoints must verify authenticated customer ownership before creating image records.
+- Backend mobile image endpoints must not accept local file URIs as permanent image values.
+- Do not connect mobile upload until Phase 20B.
 
 # Mobile Auth Rules
 

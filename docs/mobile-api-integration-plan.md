@@ -649,6 +649,43 @@ Open risks before Phase 20:
 - Mobile compressed image metadata is partial, so backend validation must remain authoritative for size and MIME type.
 - Phase 20 should decide whether upload is allowed only immediately after creation or also while the customer-owned entity remains editable.
 
+## Phase 20A Backend Mobile Image Upload Endpoints
+
+Phase 20A adds backend upload endpoints only. Mobile upload remains unconnected until Phase 20B.
+
+Backend endpoints added:
+
+- `POST /api/mobile/customer/tasks/[taskId]/images`
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/images`
+
+Endpoint behavior:
+
+- Both routes require existing mobile authentication and derive identity from the backend session/token.
+- Both routes accept `multipart/form-data` with one file field named `image`.
+- Both routes verify that the target entity exists and belongs to the authenticated customer.
+- Both routes reject attempts to attach images to another customer's task/request.
+- Both routes append images and return the created image plus upload state.
+
+Rules used:
+
+- Core task max images: 5, matching the current backend `TaskImage` upload action.
+- Pro request max images: 10, matching the current backend `ProRequestImage` upload action.
+- Max file size: 10 MB per image.
+- Accepted MIME types follow current backend upload logic: JPEG, JPG, PNG, WebP, GIF, HEIC, and HEIF.
+- Storage follows the existing backend pattern: write under `public/uploads/*` when available and fall back to a DB `data:` URL in the `LONGTEXT` image URL column on read-only/serverless filesystems.
+
+Known limitations:
+
+- The DB `LONGTEXT`/data URL bridge is compatible with current web behavior but is not a long-term scalable media storage strategy.
+- Mobile compressed image upload is not wired yet.
+- Phase 20B should add mobile API client/types and upload selected compressed images after creation.
+
+Scope remains limited:
+
+- No mobile submit flow changes.
+- No images are sent in create payloads.
+- No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

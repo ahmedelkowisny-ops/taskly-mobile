@@ -344,6 +344,74 @@ Backend implementation note:
 - Prefer extracting shared upload helpers from the existing server actions so web actions and mobile routes share validation constants, storage fallback logic, and DB persistence.
 - If extraction is too risky, copy only the minimal current behavior into the mobile route and schedule helper consolidation immediately after Phase 20.
 
+## Phase 20A Backend Endpoint Status
+
+Phase 20A implements the backend upload endpoints only. Mobile upload is still not wired.
+
+Added backend endpoints:
+
+- `POST /api/mobile/customer/tasks/[taskId]/images`
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/images`
+
+Request format:
+
+- `multipart/form-data`
+- One image per request
+- File field name: `image`
+
+Auth and ownership:
+
+- Both endpoints require mobile authentication.
+- The backend derives the authenticated customer/user identity from the session/token.
+- The Core task endpoint checks that the task exists, is not deleted, and has `authorId` matching the authenticated user.
+- The Pro request endpoint checks that the request exists and has `customerId` matching the authenticated user.
+- Neither endpoint accepts mobile-supplied owner IDs, status fields, payment fields, provider fields, lifecycle fields, matching fields, access/unlock fields, local URIs, image URLs, base64 strings, or image records.
+
+Limits:
+
+- Core task images: 5 max, matching current backend Core task upload logic.
+- Pro request images: 10 max, matching current backend Pro request upload logic.
+- Max file size: 10 MB.
+- Accepted MIME types: `image/jpeg`, `image/jpg`, `image/png`, `image/webp`, `image/gif`, `image/heic`, `image/heif`.
+
+Response shape:
+
+```ts
+{
+  image: {
+    id: string;
+    url: string;
+    sortOrder?: number;
+    createdAt: string;
+  };
+  uploadState: {
+    uploadedCount: number;
+    maxImages: number;
+    remainingSlots: number;
+  };
+}
+```
+
+Lifecycle gating:
+
+- Phase 20A matches existing web upload behavior and does not add new lifecycle state transitions or payment/provider gating.
+- Core task uploads are allowed for the authenticated owner while the task exists and is not soft-deleted.
+- Pro request uploads are allowed for the authenticated owner while the Pro request exists.
+- More restrictive edit windows can be added later only as a dedicated backend rule change.
+
+Storage:
+
+- The endpoints use the existing storage pattern: write to `public/uploads/tasks/*` or `public/uploads/pro-requests/*` when the filesystem is writable.
+- In read-only/serverless environments, the endpoints fall back to a `data:` URL persisted in the existing `LONGTEXT` image URL column.
+- This keeps mobile compatible with current web behavior, but external object storage remains the preferred long-term design.
+
+Phase 20B should:
+
+- Add mobile API client/types for both upload endpoints.
+- Upload selected compressed images after Core task or Pro request creation.
+- Show progress and non-blocking warnings when images cannot be added.
+- Keep creation separate from upload and keep demo mode local-only.
+
 ## Phase 20 API Contracts
 
 ### Core Task Image Upload
