@@ -14,7 +14,7 @@ export {
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
 export { resolveApiMediaUrl } from './media';
-export { getMessageThread, getMessageThreads, sendMessage } from './messages';
+export { getMessageThread, getMessageThreads, sendMessage, sendMessageImage } from './messages';
 export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
@@ -79,6 +79,7 @@ export type {
   MessageAccent,
   MessageContextType,
   MessageItem,
+  MessageAttachment,
   MessageSenderRole,
   MessageReadOnlyReason,
   MessageThreadCapabilities,

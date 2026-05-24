@@ -101,9 +101,18 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Messaging changes must not change payment, task lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
 - Mobile message threads must expose explicit capabilities instead of relying on hidden UI assumptions.
 - Backend must remain the source of truth for whether a thread supports sending.
+- Mobile message sending UI must respect backend thread capabilities.
+- Do not show an active composer when `canSendText` is false.
+- Text sending must not send attachment, image, media, file, base64, or local URI fields.
 - Pro request chat must not be invented without a backend model and product decision.
 - Chat attachments must remain separate from text sending.
 - Messaging work must not change payment, lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
+- Chat attachments must respect backend thread capabilities.
+- Chat attachments must verify participant access server-side.
+- Do not show attachment UI when `canSendAttachments` is false.
+- Do not invent Pro request chat.
+- Do not enable attachments for support/admin read-only threads.
+- Chat image work must not change payment, lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
 
 # Mobile Auth Rules
 

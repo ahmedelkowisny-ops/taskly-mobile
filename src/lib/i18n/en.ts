@@ -165,4 +165,13 @@ export const en = {
   attachmentsNotAvailableYet: 'Attachments are not available yet.',
   coreTaskChatsOnly: 'Sending is available for Core task chats only.',
   unsupportedConversationType: 'Unsupported conversation type.',
+  addPhoto: 'Add photo',
+  sendPhoto: 'Send photo',
+  sendingPhoto: 'Sending photo...',
+  photoSent: 'Photo sent',
+  couldNotSendPhoto: 'Could not send photo.',
+  imageCouldNotLoad: 'Image could not be loaded.',
+  attachmentsUnavailableForConversation: 'Attachments are not available for this conversation.',
+  pickPhoto: 'Pick a photo',
+  textOrPhotoMessagesOnly: 'Text or photo messages only for now.',
 } as const;

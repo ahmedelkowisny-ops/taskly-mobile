@@ -798,6 +798,20 @@ Scope remains limited:
 - No image attachments, camera/gallery, files, voice, typing indicators, read receipts, or push notification work was added.
 - No payment, provider action, task lifecycle, Pro request lifecycle/access, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
+### Phase 21B Mobile Text Message Sending UI
+
+The mobile Customer and Provider thread detail screens are connected to the hardened backend send route when `thread.capabilities.canSendText` is true.
+
+- The composer posts `{ body }` through `src/lib/api/messages.ts` to `POST /api/mobile/messages/threads/[threadId]/messages`.
+- The request sends text only and does not include attachment, image, local URI, base64, file, voice, or media fields.
+- Empty, whitespace-only, and over-2000-character messages are blocked client-side before submit.
+- The returned message is appended locally after a successful response, with duplicate ids ignored.
+- Demo Core threads append a local demo message and never call the backend.
+- Support/admin threads remain read-only because their capabilities return `canSendText: false`.
+- Pro request chat remains unavailable because there is still no backend Pro chat/thread model.
+- Attachments remain unavailable and no camera/gallery/file controls are shown.
+- No payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
 ## Phase 21B.1 Messaging Thread Capability Cleanup
 
 Phase 21B.1 makes mobile messaging capabilities explicit before future attachment work.
@@ -835,6 +849,34 @@ Scope remains limited:
 - No chat attachments.
 - No Pro request chat.
 - No payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
+## Phase 21C Mobile Chat Image Attachments
+
+Phase 21C adds image attachments only for existing Core booking chat threads.
+
+Backend behavior:
+
+- `POST /api/mobile/messages/threads/[threadId]/messages` now accepts `multipart/form-data` with one image file field named `image`.
+- The route still requires mobile authentication and derives the sender from the backend session/token.
+- Image sends are supported only for existing Core booking threads where the authenticated user is the customer or tasker participant.
+- Support/admin threads remain read-only and cannot receive attachments.
+- Pro request chat remains unavailable because no backend Pro chat/thread model exists.
+- The backend validates supported thread type, participant access, chat-ready task state, image MIME type, and max file size.
+- Chat images reuse the existing storage bridge: write under `/uploads/chat/[bookingId]` when filesystem uploads are available, otherwise persist a DB `data:` URL fallback through the JSON `Message.content` attachment payload.
+- The `Message` model remains unchanged; image messages are stored as normal `Message` rows with JSON content containing `text` and `attachments`.
+
+Mobile behavior:
+
+- Customer and Provider Core chat detail screens show an Add photo button only when backend capabilities include `canSendText: true` and `canSendAttachments: true`.
+- The mobile app picks one library image at a time, compresses it locally, uploads it as multipart, and appends the returned image message after success.
+- Text sending remains working.
+- Message rendering now displays image attachments from `data:` URLs, absolute URLs, and relative `/uploads/...` paths resolved through the API base URL.
+- Demo Core chat can append a local image message without calling the backend; support/admin demo threads remain read-only.
+
+Scope remains limited:
+
+- One image per multipart request/message.
+- No camera capture, multi-image chat send, files, voice messages, Pro request chat, support/admin attachments, payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
 ## I) Recommended Integration Order
 

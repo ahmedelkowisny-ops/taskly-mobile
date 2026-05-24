@@ -501,6 +501,14 @@ export type MessageThreadCapabilities = {
   readOnlyReason?: MessageReadOnlyReason;
 };
 
+export type MessageAttachment = {
+  id: string;
+  mimeType?: string;
+  size?: number;
+  type: 'image';
+  url: string;
+};
+
 export type MessageThreadSummary = {
   accent: MessageAccent;
   capabilities: MessageThreadCapabilities;
@@ -532,7 +540,7 @@ export type MessageThreadMeta = {
 };
 
 export type MessageItem = {
-  attachments?: [];
+  attachments?: MessageAttachment[];
   body: string;
   createdAt: string;
   id: string;
@@ -549,7 +557,7 @@ export type MessageThreadDetailResponse = {
 
 export type SendMessageResponse = {
   message: MessageItem & {
-    attachments: [];
+    attachments: MessageAttachment[];
     isMine: true;
   };
   thread?: {
