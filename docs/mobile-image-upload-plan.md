@@ -412,6 +412,52 @@ Phase 20B should:
 - Show progress and non-blocking warnings when images cannot be added.
 - Keep creation separate from upload and keep demo mode local-only.
 
+## Phase 20B Mobile Status
+
+Phase 20B is implemented on mobile.
+
+Mobile helpers added:
+
+- `src/lib/api/imageUploads.ts` adds typed wrappers for task and Pro request image upload endpoints.
+- `src/lib/images/uploadSelectedImages.ts` uploads selected images sequentially and returns `{ total, uploaded, failed, skipped, errors }`.
+- The shared API client now passes `FormData` bodies through without JSON encoding or manually setting `Content-Type`.
+
+Upload sequence:
+
+- Post Task calls Core task creation first.
+- Post Pro Request calls Pro request creation first.
+- If creation succeeds and selected images exist, mobile uploads them one by one.
+- If creation fails, no image upload is attempted.
+- The app navigates to the created detail screen after the upload sequence completes.
+
+React Native multipart behavior:
+
+- Uploads use `FormData`.
+- The field name is `image`.
+- The file part uses the React Native shape `{ uri, name, type }`.
+- `compressedUri` is preferred when `status === 'compressed'`.
+- `uri` is used only as the local file source fallback for multipart upload.
+- Local URI values are never sent as JSON or persisted as backend image values.
+- Base64 is not sent.
+
+Partial failure behavior:
+
+- Images with `status === 'error'` or `data:` URIs are skipped.
+- A failed upload does not stop the remaining uploads.
+- A failed or skipped upload does not roll back the created task/request.
+- Users see a non-blocking warning when some photos fail or are skipped.
+
+Demo behavior:
+
+- Demo mode does not call creation or upload endpoints.
+- Selected photos remain local in demo mode.
+
+Remaining limitations:
+
+- There is no durable background retry/outbox yet.
+- Upload progress is simple sequential count progress.
+- Long-term object storage remains a future storage architecture improvement.
+
 ## Phase 20 API Contracts
 
 ### Core Task Image Upload

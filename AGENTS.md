@@ -82,6 +82,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Backend mobile image endpoints must verify authenticated customer ownership before creating image records.
 - Backend mobile image endpoints must not accept local file URIs as permanent image values.
 - Do not connect mobile upload until Phase 20B.
+- Mobile image upload must happen after entity creation.
+- Creation payloads must not contain image data or local URI values.
+- Image upload failures must not roll back successful task/request creation.
+- Upload should prefer `compressedUri` when available.
+- Do not connect payment, provider, lifecycle, or Pro unlock logic during image upload work.
 
 # Mobile Auth Rules
 

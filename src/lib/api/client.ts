@@ -70,6 +70,10 @@ function createAbortSignal(signal: AbortSignal | undefined, timeoutMs: number) {
   };
 }
 
+function isFormDataBody(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
@@ -82,13 +86,20 @@ export async function apiRequest<T>(
   try {
     const baseUrl = assertApiBaseUrl(config.baseUrl ?? getApiBaseUrl());
     const token = options.authToken ?? (config.getAccessToken ? await config.getAccessToken() : null);
-    const hasBody = options.body !== undefined;
+    const body = options.body;
+    const hasBody = body !== undefined;
+    const isFormData = isFormDataBody(body);
+    const requestBody: BodyInit | undefined = !hasBody
+      ? undefined
+      : isFormData
+        ? body
+        : JSON.stringify(body);
 
     const response = await fetch(buildUrl(baseUrl, path), {
-      body: hasBody ? JSON.stringify(options.body) : undefined,
+      body: requestBody,
       headers: {
         Accept: 'application/json',
-        ...(hasBody ? { 'Content-Type': 'application/json' } : null),
+        ...(hasBody && !isFormData ? { 'Content-Type': 'application/json' } : null),
         ...(token ? { Authorization: `Bearer ${token}` } : null),
         ...options.headers,
       },

@@ -202,6 +202,20 @@ export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
   };
 };
 
+export type CustomerImageUploadResponse = {
+  image: {
+    createdAt: string;
+    id: string;
+    sortOrder?: number;
+    url: string;
+  };
+  uploadState: {
+    maxImages: number;
+    remainingSlots: number;
+    uploadedCount: number;
+  };
+};
+
 export type CreateCustomerProRequestPayload = {
   budgetMaxEur: number;
   budgetMinEur: number;

@@ -18,8 +18,10 @@ export const endpoints = {
     homeSummary: '/api/mobile/customer/home',
     messages: '/api/mobile/customer/messages',
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,
+    proRequestImageUpload: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/images`,
     proRequests: '/api/mobile/customer/pro-requests',
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
+    taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
     tasks: '/api/mobile/customer/tasks',
   },
   notifications: {

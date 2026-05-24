@@ -33,6 +33,7 @@ import {
   validateSelectedImages,
 } from '@/src/lib/images/imagePicker';
 import { LocalSelectedImage } from '@/src/lib/images/types';
+import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -96,6 +97,12 @@ function getSafeApiMessage(message: string) {
   return message;
 }
 
+function formatUploadProgress(current: number, total: number) {
+  return t('uploadingPhotosProgress')
+    .replace('{current}', String(current))
+    .replace('{total}', String(total));
+}
+
 export default function CustomerPostProRequestScreen() {
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
@@ -117,6 +124,10 @@ export default function CustomerPostProRequestScreen() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadProgressCurrent, setUploadProgressCurrent] = useState(0);
+  const [uploadProgressTotal, setUploadProgressTotal] = useState(0);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   const loadCatalog = useCallback(async () => {
@@ -293,6 +304,9 @@ export default function CustomerPostProRequestScreen() {
     setHasSubmittedOnce(true);
     setSubmitMessage(null);
     setSubmitError(null);
+    setUploadWarning(null);
+    setUploadProgressCurrent(0);
+    setUploadProgressTotal(0);
     setFieldErrors({});
 
     if (formValidation.issues.length > 0 || !selectedCategoryId || !selectedCityId) {
@@ -335,8 +349,55 @@ export default function CustomerPostProRequestScreen() {
     setIsSubmitting(false);
 
     if (result.ok) {
+      const proRequestId = result.data.proRequest.id;
+
+      if (images.length > 0) {
+        setSubmitMessage(t('proRequestCreatedUploadingPhotos'));
+        setIsUploadingImages(true);
+
+        const uploadSummary = await uploadSelectedImagesSequentially({
+          authToken,
+          entityId: proRequestId,
+          entityType: 'proRequest',
+          images,
+          onProgress: ({ current, total }) => {
+            setUploadProgressCurrent(current);
+            setUploadProgressTotal(total);
+            setSubmitMessage(formatUploadProgress(current, total));
+          },
+        });
+
+        setIsUploadingImages(false);
+
+        if (uploadSummary.failed > 0) {
+          setUploadWarning(t('proRequestCreatedSomePhotosFailed'));
+          setSubmitMessage(t('proRequestCreated'));
+          setTimeout(() => {
+            router.push(`/customer/pro-requests/${proRequestId}` as Href);
+          }, 1200);
+          return;
+        }
+
+        if (uploadSummary.skipped > 0) {
+          setUploadWarning(t('somePhotosSkipped'));
+          setTimeout(() => {
+            router.push(`/customer/pro-requests/${proRequestId}` as Href);
+          }, 1200);
+          return;
+        }
+
+        if (uploadSummary.uploaded > 0) {
+          setSubmitMessage(t('photosUploaded'));
+        } else {
+          setSubmitMessage(t('proRequestCreated'));
+        }
+
+        router.push(`/customer/pro-requests/${proRequestId}` as Href);
+        return;
+      }
+
       setSubmitMessage(t('proRequestCreated'));
-      router.push(`/customer/pro-requests/${result.data.proRequest.id}` as Href);
+      router.push(`/customer/pro-requests/${proRequestId}` as Href);
       return;
     }
 
@@ -356,7 +417,7 @@ export default function CustomerPostProRequestScreen() {
     district,
     formValidation,
     getValidAccessToken,
-    images.length,
+    images,
     router,
     selectedCategoryId,
     selectedCityId,
@@ -545,12 +606,12 @@ export default function CustomerPostProRequestScreen() {
         </View>
       </FormSection>
 
-      <FormSection accent="pro" description="Image picker and upload are intentionally not connected yet." title={t('photos')}>
+      <FormSection accent="pro" description={t('photosUploadAfterCreation')} title={t('photos')}>
         <ImagePickerPlaceholder
           acceptedImageTypes={catalog?.rules.acceptedImageTypes}
           accent="pro"
           errorMessage={imageErrorMessage}
-          helperText={t('photosStayLocalCreate')}
+          helperText={t('photosUploadAfterCreation')}
           images={images}
           isProcessing={isProcessingImages}
           maxImages={catalog?.rules.maxImages}
@@ -561,8 +622,26 @@ export default function CustomerPostProRequestScreen() {
 
       {images.length ? (
         <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('imageUploadLater')} tone="warning" />
-          <AppText color={colors.slate700}>{t('imagesLaterStep')}</AppText>
+          <StatusBadge label={t('photos')} tone="warning" />
+          <AppText color={colors.slate700}>{t('photosUploadAfterCreation')}</AppText>
+        </AppCard>
+      ) : null}
+
+      {isUploadingImages ? (
+        <AppCard accentColor={colors.proOrange600}>
+          <StatusBadge label={t('uploadingPhotos')} tone="pro" />
+          <AppText color={colors.slate700}>
+            {uploadProgressTotal > 0
+              ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
+              : t('proRequestCreatedUploadingPhotos')}
+          </AppText>
+        </AppCard>
+      ) : null}
+
+      {uploadWarning ? (
+        <AppCard accentColor={colors.warning600}>
+          <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
+          <AppText color={colors.slate700}>{uploadWarning}</AppText>
         </AppCard>
       ) : null}
 
@@ -601,8 +680,18 @@ export default function CustomerPostProRequestScreen() {
         </AppCard>
       ) : null}
 
-      <AppButton disabled={!isSubmitEnabled || isSubmitting} loading={isSubmitting} onPress={handleSubmit} tone="pro">
-        {isSubmitting ? t('creatingProRequest') : isSubmitEnabled ? t('submitProRequest') : t('completeRequiredFields')}
+      <AppButton
+        disabled={!isSubmitEnabled || isSubmitting || isUploadingImages}
+        loading={isSubmitting || isUploadingImages}
+        onPress={handleSubmit}
+        tone="pro">
+        {isUploadingImages
+          ? t('uploadingPhotos')
+          : isSubmitting
+            ? t('creatingProRequest')
+            : isSubmitEnabled
+              ? t('submitProRequest')
+              : t('completeRequiredFields')}
       </AppButton>
       <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">
         {t('backToTaskly')}

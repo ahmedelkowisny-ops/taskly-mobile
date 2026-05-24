@@ -33,6 +33,7 @@ import {
   validateSelectedImages,
 } from '@/src/lib/images/imagePicker';
 import { LocalSelectedImage } from '@/src/lib/images/types';
+import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -42,6 +43,8 @@ type CatalogState = {
   cities: CityOption[];
   rules: CoreTaskPostingRules;
 };
+
+const CORE_TASK_UPLOAD_MAX_IMAGES = 5;
 
 type ValidationFieldKey =
   | 'address'
@@ -114,6 +117,12 @@ function getSafeApiMessage(message: string) {
   return message;
 }
 
+function formatUploadProgress(current: number, total: number) {
+  return t('uploadingPhotosProgress')
+    .replace('{current}', String(current))
+    .replace('{total}', String(total));
+}
+
 export default function CustomerPostTaskScreen() {
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
@@ -138,6 +147,10 @@ export default function CustomerPostTaskScreen() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [uploadProgressCurrent, setUploadProgressCurrent] = useState(0);
+  const [uploadProgressTotal, setUploadProgressTotal] = useState(0);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   const loadCatalog = useCallback(async () => {
@@ -184,6 +197,7 @@ export default function CustomerPostTaskScreen() {
 
   const handlePickImages = useCallback(async () => {
     const rules = catalog?.rules ?? getMockPostingRulesResponse().coreTask;
+    const maxImages = Math.min(rules.maxImages, CORE_TASK_UPLOAD_MAX_IMAGES);
     setImageErrorMessage(null);
     setIsProcessingImages(true);
 
@@ -197,7 +211,7 @@ export default function CustomerPostTaskScreen() {
 
       const pickedImages = await pickTasklyImages({
         currentCount: images.length,
-        maxImages: rules.maxImages,
+        maxImages,
       });
 
       if (!pickedImages.length) {
@@ -206,7 +220,7 @@ export default function CustomerPostTaskScreen() {
 
       const validation = validateSelectedImages(pickedImages, {
         acceptedImageTypes: rules.acceptedImageTypes,
-        maxImages: Math.max(0, rules.maxImages - images.length),
+        maxImages: Math.max(0, maxImages - images.length),
       });
       const compressedImages = await compressSelectedImages(validation.accepted, {
         compress: 0.75,
@@ -332,6 +346,9 @@ export default function CustomerPostTaskScreen() {
     setHasSubmittedOnce(true);
     setSubmitMessage(null);
     setSubmitError(null);
+    setUploadWarning(null);
+    setUploadProgressCurrent(0);
+    setUploadProgressTotal(0);
     setFieldErrors({});
 
     if (formValidation.issues.length > 0 || !selectedCategoryId || !selectedCityId) {
@@ -379,8 +396,55 @@ export default function CustomerPostTaskScreen() {
     setIsSubmitting(false);
 
     if (result.ok) {
+      const taskId = result.data.task.id;
+
+      if (images.length > 0) {
+        setSubmitMessage(t('taskCreatedUploadingPhotos'));
+        setIsUploadingImages(true);
+
+        const uploadSummary = await uploadSelectedImagesSequentially({
+          authToken,
+          entityId: taskId,
+          entityType: 'task',
+          images,
+          onProgress: ({ current, total }) => {
+            setUploadProgressCurrent(current);
+            setUploadProgressTotal(total);
+            setSubmitMessage(formatUploadProgress(current, total));
+          },
+        });
+
+        setIsUploadingImages(false);
+
+        if (uploadSummary.failed > 0) {
+          setUploadWarning(t('taskCreatedSomePhotosFailed'));
+          setSubmitMessage(t('taskCreated'));
+          setTimeout(() => {
+            router.push(`/customer/tasks/${taskId}` as Href);
+          }, 1200);
+          return;
+        }
+
+        if (uploadSummary.skipped > 0) {
+          setUploadWarning(t('somePhotosSkipped'));
+          setTimeout(() => {
+            router.push(`/customer/tasks/${taskId}` as Href);
+          }, 1200);
+          return;
+        }
+
+        if (uploadSummary.uploaded > 0) {
+          setSubmitMessage(t('photosUploaded'));
+        } else {
+          setSubmitMessage(t('taskCreated'));
+        }
+
+        router.push(`/customer/tasks/${taskId}` as Href);
+        return;
+      }
+
       setSubmitMessage(t('taskCreated'));
-      router.push(`/customer/tasks/${result.data.task.id}` as Href);
+      router.push(`/customer/tasks/${taskId}` as Href);
       return;
     }
 
@@ -401,7 +465,7 @@ export default function CustomerPostTaskScreen() {
     estimatedTime,
     formValidation,
     getValidAccessToken,
-    images.length,
+    images,
     router,
     scheduledEndAt,
     scheduledStartAt,
@@ -615,14 +679,14 @@ export default function CustomerPostTaskScreen() {
         </View>
       </FormSection>
 
-      <FormSection description="Image picker and upload are intentionally not connected yet." title={t('photos')}>
+      <FormSection description={t('photosUploadAfterCreation')} title={t('photos')}>
         <ImagePickerPlaceholder
           acceptedImageTypes={catalog?.rules.acceptedImageTypes}
           errorMessage={imageErrorMessage}
-          helperText={t('photosStayLocal')}
+          helperText={t('photosUploadAfterCreation')}
           images={images}
           isProcessing={isProcessingImages}
-          maxImages={catalog?.rules.maxImages}
+          maxImages={catalog?.rules.maxImages ? Math.min(catalog.rules.maxImages, CORE_TASK_UPLOAD_MAX_IMAGES) : undefined}
           onPickImages={handlePickImages}
           onRemoveImage={handleRemoveImage}
         />
@@ -630,8 +694,26 @@ export default function CustomerPostTaskScreen() {
 
       {images.length ? (
         <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('imageUploadLater')} tone="warning" />
-          <AppText color={colors.slate700}>{t('imagesLaterStep')}</AppText>
+          <StatusBadge label={t('photos')} tone="warning" />
+          <AppText color={colors.slate700}>{t('photosUploadAfterCreation')}</AppText>
+        </AppCard>
+      ) : null}
+
+      {isUploadingImages ? (
+        <AppCard accentColor={colors.tasklyBlue600}>
+          <StatusBadge label={t('uploadingPhotos')} tone="core" />
+          <AppText color={colors.slate700}>
+            {uploadProgressTotal > 0
+              ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
+              : t('taskCreatedUploadingPhotos')}
+          </AppText>
+        </AppCard>
+      ) : null}
+
+      {uploadWarning ? (
+        <AppCard accentColor={colors.warning600}>
+          <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
+          <AppText color={colors.slate700}>{uploadWarning}</AppText>
         </AppCard>
       ) : null}
 
@@ -670,8 +752,17 @@ export default function CustomerPostTaskScreen() {
         </AppCard>
       ) : null}
 
-      <AppButton disabled={!isSubmitEnabled || isSubmitting} loading={isSubmitting} onPress={handleSubmit}>
-        {isSubmitting ? t('creatingTask') : isSubmitEnabled ? t('submitTask') : t('completeRequiredFields')}
+      <AppButton
+        disabled={!isSubmitEnabled || isSubmitting || isUploadingImages}
+        loading={isSubmitting || isUploadingImages}
+        onPress={handleSubmit}>
+        {isUploadingImages
+          ? t('uploadingPhotos')
+          : isSubmitting
+            ? t('creatingTask')
+            : isSubmitEnabled
+              ? t('submitTask')
+              : t('completeRequiredFields')}
       </AppButton>
       <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">
         {t('backToTaskly')}

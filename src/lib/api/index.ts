@@ -12,6 +12,7 @@ export {
   getCustomerTasks,
 } from './customer';
 export { endpoints } from './endpoints';
+export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
 export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
@@ -44,6 +45,7 @@ export type { ApiClientConfig, TasklyApiClient } from './client';
 export type {
   CustomerHighlight,
   CustomerHomeSummary,
+  CustomerImageUploadResponse,
   CustomerHomeResponse,
   CustomerNextAction,
   CreateCustomerProRequestPayload,

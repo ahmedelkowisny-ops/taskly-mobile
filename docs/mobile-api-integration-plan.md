@@ -686,6 +686,28 @@ Scope remains limited:
 - No images are sent in create payloads.
 - No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
+## Phase 20B Mobile Image Upload After Creation
+
+Phase 20B wires mobile image upload after successful Customer Workspace creation mutations.
+
+Mobile behavior:
+
+- Post Task still creates the Core task first through `POST /api/mobile/customer/tasks`.
+- Post Pro Request still creates the Pro request first through `POST /api/mobile/customer/pro-requests`.
+- Creation payloads still send only `localImageCount`; they do not include local image URIs, compressed URIs, base64 data, image URLs, or image records.
+- After creation succeeds, mobile uploads selected images one at a time through the Phase 20A backend endpoints.
+- `compressedUri` is preferred when the selected image status is `compressed`; the original local `uri` is used only as a fallback file source for React Native multipart upload.
+- Each upload uses `multipart/form-data` with one React Native file object field named `image`.
+- Mobile skips images with processing errors and continues uploading remaining images if one upload fails.
+- Creation remains successful if image upload fails. The user sees a non-blocking warning and the app still navigates to the created detail screen.
+- Demo mode does not call upload endpoints.
+
+Scope remains limited:
+
+- No upload happens before entity creation.
+- No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+- Detail refresh is kept simple by navigating after the upload sequence completes, so existing detail APIs can include the uploaded images.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
