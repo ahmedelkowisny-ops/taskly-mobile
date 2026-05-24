@@ -16,6 +16,7 @@ export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageU
 export { resolveApiMediaUrl } from './media';
 export { getMessageThread, getMessageThreads, sendMessage, sendMessageImage } from './messages';
 export {
+  expressInterestInCoreTask,
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
   getProviderDashboard,
@@ -75,6 +76,8 @@ export type {
   DetailTimelineItem,
   EmptyStateContent,
   EligibilitySummary,
+  ExpressInterestInCoreTaskPayload,
+  ExpressInterestInCoreTaskResponse,
   MessageThreadSummary,
   MessageAccent,
   MessageContextType,
@@ -94,6 +97,7 @@ export type {
   ProResponsePreview,
   ProviderCoreTaskDetail,
   ProviderCoreTaskDetailResponse,
+  ProviderCoreTaskNextActions,
   ProviderCoreTasksResponse,
   ProviderCoreTaskSummary,
   ProviderDashboardCard,

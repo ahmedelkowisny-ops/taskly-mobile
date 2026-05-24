@@ -335,6 +335,7 @@ export type ProviderCoreTaskSummary = {
   customerPreviewLabel: string;
   id: string;
   nextAction: ProviderNextAction;
+  nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;
@@ -350,6 +351,22 @@ export type ProviderCoreTasksResponse = {
   tasks: ProviderCoreTaskSummary[];
 };
 
+export type ProviderCoreTaskNextActions = {
+  blockedReason?: string;
+  blockedReasonCode?: string;
+  canCancelOrReportIssue: boolean;
+  canChat: boolean;
+  canExpressInterest: boolean;
+  canMarkOnTheWay: boolean;
+  canRequestCompletion: boolean;
+  canStart: boolean;
+  primary?: {
+    label: string;
+    method?: 'POST';
+    type: string;
+  };
+};
+
 export type ProviderCoreTaskDetail = {
   addressPreviewLabel: string;
   categoryLabel: string;
@@ -358,7 +375,7 @@ export type ProviderCoreTaskDetail = {
   description: string;
   id: string;
   images: DetailImage[];
-  nextActions: DetailNextAction[];
+  nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;
@@ -371,6 +388,15 @@ export type ProviderCoreTaskDetail = {
 
 export type ProviderCoreTaskDetailResponse = {
   task: ProviderCoreTaskDetail;
+};
+
+export type ExpressInterestInCoreTaskPayload = {
+  toolsConfirmed?: boolean;
+};
+
+export type ExpressInterestInCoreTaskResponse = {
+  alreadyInterested: boolean;
+  task: ProviderCoreTaskDetail | null;
 };
 
 export type ProviderProRequestSummary = {

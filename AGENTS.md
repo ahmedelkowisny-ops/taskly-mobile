@@ -119,6 +119,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Do not connect provider lifecycle actions before reviewing the existing web/backend source of truth.
 - Do not change payment, cancellation, dispute, matching, or lifecycle rules while wiring provider mobile UI.
 - Do not expose customer private address or contact data before the backend explicitly allows it for the current task state.
+- Provider mobile must use "express interest" or "respond" wording for open Core tasks, not "accept" or "reserve", unless the backend flow explicitly changes.
+- Provider mobile must not reserve or assign Core tasks directly.
+- Customer selection and payment setup remain separate from provider interest.
+- Provider interest must be eligibility-checked server-side.
+- Provider runtime actions such as on the way, start task, request completion, and cannot attend remain separate phases.
 
 # Mobile Auth Rules
 

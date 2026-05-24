@@ -118,6 +118,9 @@ export default function ProviderCoreTasksScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={task.statusLabel} tone="core" />
                 <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
+                {task.nextActions.canExpressInterest ? (
+                  <StatusBadge label={t('expressInterest')} tone="success" />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>

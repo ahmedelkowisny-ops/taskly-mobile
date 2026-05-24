@@ -100,7 +100,7 @@ The provider mobile Core task list is read-only.
 
 ## Recommended Mobile Phase Order
 
-1. Phase 22B: Provider express interest/respond to an open matching Core task.
+1. Phase 22B: Provider express interest/respond to an open matching Core task. Implemented.
    - Use `expressInterest` semantics.
    - Do not expose a direct provider "accept" unless product confirms a direct-accept backend path. Current reservation is customer-owned.
    - Support tools-confirmation requirements when the backend returns that reason code.
@@ -138,6 +138,8 @@ All provider action endpoints must:
 
 `POST /api/mobile/provider/core-tasks/[taskId]/interest`
 
+Status: implemented in Phase 22B.
+
 Request:
 
 ```json
@@ -146,7 +148,7 @@ Request:
 }
 ```
 
-`toolsConfirmed` is optional and only meaningful when the backend requires category tools confirmation.
+`toolsConfirmed` is optional and only meaningful when the backend requires category tools confirmation. The route otherwise accepts an empty JSON body. The current `TaskInterest` model does not have a customer-facing message/note field, so mobile does not send or store an interest message in this phase.
 
 Checks:
 
@@ -164,17 +166,20 @@ Success response proposal:
 
 ```json
 {
-  "task": { "...": "ProviderCoreTaskDetail" },
-  "nextActions": {
-    "canExpressInterest": false,
-    "canChat": false,
-    "canMarkOnTheWay": false,
-    "canStart": false,
-    "canRequestCompletion": false,
-    "canCancelOrReportIssue": false,
-    "primary": {
-      "type": "interest_sent",
-      "label": "Interest sent"
+  "alreadyInterested": false,
+  "task": {
+    "...": "ProviderCoreTaskDetail",
+    "nextActions": {
+      "canExpressInterest": false,
+      "canChat": false,
+      "canMarkOnTheWay": false,
+      "canStart": false,
+      "canRequestCompletion": false,
+      "canCancelOrReportIssue": false,
+      "primary": {
+        "type": "interest_sent",
+        "label": "Interest sent"
+      }
     }
   }
 }
@@ -197,6 +202,7 @@ Mobile display:
 
 - Show only for eligible `OPEN` matching tasks.
 - Hide or disable with backend `blockedReasonCode` for non-eligible tasks.
+- Use "Express interest" / "respond" wording only. Do not show "Accept" or "Reserve".
 
 ### Direct Accept / Reserve
 
@@ -441,14 +447,14 @@ Mobile may use this object to show, hide, or disable controls, but the backend e
 
 ## Phase 22B Recommendation
 
-Phase 22B should implement only:
+Phase 22B implemented only:
 
 - `POST /api/mobile/provider/core-tasks/[taskId]/interest`
 - Mobile action UI for open matching tasks when backend `nextActions.canExpressInterest` is true
 - Tools-confirmation handling when the backend returns `TOOLS_CONFIRMATION_REQUIRED`
 - Refetch of provider Core task detail/list after success
 
-Phase 22B should not:
+Phase 22B did not:
 
 - Reserve or assign the tasker.
 - Start payment.

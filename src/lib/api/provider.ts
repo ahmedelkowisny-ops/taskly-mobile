@@ -1,6 +1,8 @@
 import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
+  ExpressInterestInCoreTaskPayload,
+  ExpressInterestInCoreTaskResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
@@ -31,6 +33,18 @@ export function getProviderCoreTaskDetail(
   return apiRequest<ProviderCoreTaskDetailResponse>(endpoints.provider.coreTaskDetail(taskId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function expressInterestInCoreTask(
+  taskId: string,
+  authToken: string,
+  payload: ExpressInterestInCoreTaskPayload = {},
+): Promise<ApiResult<ExpressInterestInCoreTaskResponse>> {
+  return apiRequest<ExpressInterestInCoreTaskResponse>(endpoints.provider.coreTaskInterest(taskId), {
+    authToken,
+    body: payload,
+    method: 'POST',
   });
 }
 

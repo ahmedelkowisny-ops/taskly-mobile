@@ -927,6 +927,36 @@ Scope remains limited:
 - No payment, Stripe, cancellation, refund, dispute, help, Pro Access payment/unlock, Pro request provider response, task lifecycle, matching, or provider action logic was changed.
 - Customer private address/contact data remains protected by the current mobile detail shape.
 
+## Phase 22B Provider Core Express-Interest Action
+
+Phase 22B connects only the provider Core task interest/respond action for open matching Core tasks.
+
+Backend behavior:
+
+- Added `POST /api/mobile/provider/core-tasks/[taskId]/interest`.
+- The route requires mobile auth and derives the provider/tasker identity from the backend mobile session.
+- The route rejects server-owned fields such as tasker/customer ids, status, reservation, booking, payment, Stripe, assignment, lifecycle, and price fields.
+- The route accepts an empty JSON body, plus `toolsConfirmed: true` only when a risky Core category requires tools confirmation.
+- The existing `TaskInterest` model is used. No note/message is stored because the current web interest model has no message field.
+- Duplicate interest is idempotently handled through the existing unique `(taskId, taskerId)` interest model and returns an already-interested state instead of creating duplicates.
+- The backend verifies approved/verified tasker status, open task status, assignment state, city match, service category eligibility, restricted category capability, preferred-tasker window, task preflight, and tools confirmation.
+- The endpoint returns the refreshed provider Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Provider Core task detail shows `Express interest` only when `nextActions.canExpressInterest` is true.
+- The screen uses wording that the customer will choose a tasker and that expressing interest does not reserve the task.
+- After success, the screen refreshes from the backend and disables repeat interest.
+- Demo mode simulates interest locally and does not call the backend.
+- Provider Core task list shows a compact interest-available indicator when the backend response says it is actionable.
+
+Scope remains limited:
+
+- No direct provider accept/reserve was added.
+- The mobile app does not call `reserveTasker`.
+- Customer selection/reservation remains customer-owned.
+- No booking, assignment, payment, Stripe, cancellation, refund, dispute, help, provider runtime action, Pro response, Pro Access payment/unlock, or lifecycle logic was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

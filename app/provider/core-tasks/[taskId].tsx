@@ -5,10 +5,11 @@ import { Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTaskDetailResponse } from '@/src/lib/api/domain';
+import { ProviderCoreTaskDetail, ProviderCoreTaskDetailResponse } from '@/src/lib/api/domain';
 import { getMockProviderCoreTaskDetailResponse } from '@/src/lib/api/mockApi';
-import { getProviderCoreTaskDetail } from '@/src/lib/api/provider';
+import { expressInterestInCoreTask, getProviderCoreTaskDetail } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -21,10 +22,15 @@ export default function ProviderCoreTaskDetailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
+  const [isExpressingInterest, setIsExpressingInterest] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [needsToolsConfirmation, setNeedsToolsConfirmation] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
     setStateLabel(null);
+    setActionError(null);
 
     if (status === 'demo') {
       setData(getMockProviderCoreTaskDetailResponse(taskId));
@@ -70,6 +76,96 @@ export default function ProviderCoreTaskDetailScreen() {
 
   const task = data?.task;
 
+  const markDemoInterestSent = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('alreadyExpressedInterest'),
+            blockedReasonCode: 'ALREADY_INTERESTED',
+            canExpressInterest: false,
+            primary: { label: t('interestSent'), type: 'interest_sent' },
+          },
+        },
+      };
+    });
+  }, []);
+
+  const handleExpressInterest = useCallback(async (options?: { toolsConfirmed?: boolean }) => {
+    setActionError(null);
+    setActionMessage(null);
+
+    if (status === 'demo') {
+      markDemoInterestSent();
+      setActionMessage(`${t('interestSent')}. ${t('customerWillChooseTasker')}`);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsExpressingInterest(true);
+    const result = await expressInterestInCoreTask(taskId, authToken, {
+      toolsConfirmed: options?.toolsConfirmed === true,
+    });
+    setIsExpressingInterest(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      }
+      setNeedsToolsConfirmation(false);
+      setActionMessage(
+        result.data.alreadyInterested
+          ? t('alreadyExpressedInterest')
+          : `${t('interestSent')}. ${t('customerWillChooseTasker')}`,
+      );
+      return;
+    }
+
+    if (result.error.code === 'TOOLS_CONFIRMATION_REQUIRED') {
+      setNeedsToolsConfirmation(true);
+      setActionError(t('toolsConfirmationRequired'));
+      return;
+    }
+
+    if (result.error.code === 'ALREADY_INTERESTED') {
+      setActionError(t('alreadyExpressedInterest'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASK_NOT_OPEN') {
+      setActionError(t('taskNoLongerAvailable'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASKER_NOT_VERIFIED' || result.error.code === 'TASKER_NOT_APPROVED') {
+      setActionError(t('completeVerificationToRespond'));
+      return;
+    }
+
+    if (result.status === 403) {
+      setActionError(t('notEligibleForTask'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotExpressInterest'));
+  }, [getValidAccessToken, loadDetail, markDemoInterestSent, status, taskId]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -109,7 +205,15 @@ export default function ProviderCoreTaskDetailScreen() {
 
           <Images images={task.images} />
           <Timeline items={task.timeline} />
-          <NextActions actions={task.nextActions} />
+          <ProviderActions
+            actionError={actionError}
+            actionMessage={actionMessage}
+            isExpressingInterest={isExpressingInterest}
+            needsToolsConfirmation={needsToolsConfirmation}
+            onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
+            onExpressInterest={() => handleExpressInterest()}
+            task={task}
+          />
         </>
       ) : null}
     </Screen>
@@ -161,13 +265,57 @@ function Timeline({ items }: { items: { description: string; id: string; label: 
   );
 }
 
-function NextActions({ actions }: { actions: { label: string; type: string }[] }) {
+function ProviderActions({
+  actionError,
+  actionMessage,
+  isExpressingInterest,
+  needsToolsConfirmation,
+  onConfirmTools,
+  onExpressInterest,
+  task,
+}: {
+  actionError: string | null;
+  actionMessage: string | null;
+  isExpressingInterest: boolean;
+  needsToolsConfirmation: boolean;
+  onConfirmTools: () => void;
+  onExpressInterest: () => void;
+  task: ProviderCoreTaskDetail;
+}) {
+  const canExpressInterest = task.nextActions.canExpressInterest;
+  const blockedReason = task.nextActions.blockedReason;
+
   return (
-    <AppCard>
+    <AppCard accentColor={canExpressInterest ? colors.tasklyBlue600 : undefined}>
       <AppText variant="sectionTitle">Next steps</AppText>
-      {actions.map((action) => (
-        <AppButton key={action.type} disabled variant="outline">{action.label}</AppButton>
-      ))}
+      <AppText color={colors.slate700}>{t('customerWillChooseTasker')}</AppText>
+      <AppText color={colors.slate700}>{t('doesNotReserveTask')}</AppText>
+
+      {actionMessage ? (
+        <StatusBadge label={actionMessage} tone="success" />
+      ) : null}
+
+      {actionError ? (
+        <AppText color={colors.danger600}>{actionError}</AppText>
+      ) : null}
+
+      {canExpressInterest ? (
+        <View style={styles.stack}>
+          <AppText color={colors.slate700}>{t('letCustomerKnowAvailable')}</AppText>
+          <AppButton loading={isExpressingInterest} onPress={onExpressInterest}>
+            {isExpressingInterest ? t('expressingInterest') : t('expressInterest')}
+          </AppButton>
+          {needsToolsConfirmation ? (
+            <AppButton loading={isExpressingInterest} onPress={onConfirmTools} variant="outline">
+              {t('confirmToolsAndExpressInterest')}
+            </AppButton>
+          ) : null}
+        </View>
+      ) : (
+        <AppButton disabled variant="outline">
+          {blockedReason || task.nextActions.primary?.label || t('alreadyExpressedInterest')}
+        </AppButton>
+      )}
     </AppCard>
   );
 }
