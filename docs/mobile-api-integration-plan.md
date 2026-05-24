@@ -606,6 +606,49 @@ Scope remains limited:
 
 The backend derives the customer identity from the mobile session, verifies customer workspace permission, rejects server-owned fields, creates the Pro request through shared backend persistence logic, and returns the created Pro request using the existing mobile customer Pro request detail shape plus backend-provided next actions.
 
+## Phase 19 Image Upload/Storage Architecture Review
+
+Phase 19 reviews image handling for future mobile uploads. See `docs/mobile-image-upload-plan.md` for the detailed architecture comparison and Phase 20 contract proposal.
+
+Current backend findings:
+
+- Core task images are stored as `TaskImage` rows with `url` stored in a `LONGTEXT` column. Web upload accepts up to 5 images per task, 10 MB per file, and image MIME types including JPEG, PNG, WebP, GIF, HEIC, and HEIF.
+- Pro request images are stored as `ProRequestImage` rows with `url` stored in a `LONGTEXT` column and `sortOrder`. Web upload accepts up to 10 images per Pro request, 10 MB per file, and the same broad image MIME set.
+- Web upload attempts to write files under `public/uploads/tasks/*` or `public/uploads/pro-requests/*` when the filesystem is writable. On read-only/serverless environments it falls back to a `data:` URL persisted in the database.
+- The filesystem path is convenient locally but is not durable serverless storage. The `LONGTEXT` data URL fallback keeps uploads working but can increase database size and query payloads.
+
+Current mobile findings:
+
+- Post Task and Post Pro Request keep selected images local in form state only.
+- Mobile has original local `uri`, optional `compressedUri`, optional `fileName`, `fileSize`, `mimeType`, `width`, and `height`, plus image processing status.
+- `compressedUri` should be the preferred upload source when `status` is `compressed`.
+- Mobile still sends only `localImageCount` during creation. It does not send local image URIs, compressed URIs, base64 data, image URLs, or image records.
+
+Recommended Phase 20 strategy:
+
+- Keep image upload separate from entity creation.
+- Add authenticated post-create upload endpoints:
+  - `POST /api/mobile/customer/tasks/[taskId]/images`
+  - `POST /api/mobile/customer/pro-requests/[proRequestId]/images`
+- Upload compressed mobile images after the Core task or Pro request is created.
+- Treat upload failure as non-blocking: the created task/request remains, and mobile shows a clear "photos could not be added" warning.
+- Prefer `multipart/form-data` with one image per request so ownership checks, size validation, partial success, and retries stay simple.
+- Reuse or extract the existing backend upload validation/persistence paths instead of duplicating storage rules.
+
+Scope remains limited:
+
+- No upload is connected in Phase 19.
+- No image storage API is implemented in Phase 19.
+- No payment, Stripe, provider action, lifecycle, cancellation, refund, dispute, help, matching, or Pro unlock logic is added.
+- Core task creation and Pro request creation remain separate from image upload.
+
+Open risks before Phase 20:
+
+- The mobile posting rules currently need to stay aligned with backend image limits, especially Core task max images.
+- Serverless filesystem writes are not durable; data URL fallback is acceptable only as a conservative bridge, not long-term media storage.
+- Mobile compressed image metadata is partial, so backend validation must remain authoritative for size and MIME type.
+- Phase 20 should decide whether upload is allowed only immediately after creation or also while the customer-owned entity remains editable.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

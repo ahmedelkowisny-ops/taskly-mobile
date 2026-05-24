@@ -72,6 +72,13 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Image upload/storage remains separate from Pro request creation.
 - Pro Access Fee, payment, and unlock must remain separate from Pro request creation.
 - Provider responses/actions must remain separate from customer Pro request creation.
+- Mobile image upload must use authenticated backend endpoints.
+- Mobile must only attach images to entities owned by the authenticated customer.
+- Mobile must upload compressed images instead of original large images where possible.
+- Mobile must not send local file URIs as permanent image values.
+- Mobile must not store image data permanently without backend ownership checks.
+- Image upload must remain separate from payment, lifecycle, provider actions, and Pro unlock logic.
+- Creation should not be blocked by image upload unless backend rules explicitly require it.
 
 # Mobile Auth Rules
 
