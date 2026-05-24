@@ -13,6 +13,7 @@ export {
 } from './customer';
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
+export { resolveApiMediaUrl } from './media';
 export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,

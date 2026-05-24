@@ -708,6 +708,30 @@ Scope remains limited:
 - No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 - Detail refresh is kept simple by navigating after the upload sequence completes, so existing detail APIs can include the uploaded images.
 
+## Phase 20C Uploaded Image Display Verification
+
+Phase 20C verifies and improves mobile display after Phase 20B upload.
+
+Findings:
+
+- Customer Core task detail already returns `task.images` with image `id` and `url`, ordered by creation time.
+- Customer Pro request detail already returns `proRequest.images` with image `id` and `url`, ordered by `sortOrder`.
+- The backend detail APIs did not need a read-only shape change for display.
+- Detail screens already reload on focus through `useFocusEffect`, and Phase 20B navigates after upload completes, so the created detail fetch can include uploaded images.
+
+Mobile display update:
+
+- Customer Core task detail and Customer Pro request detail now resolve backend media URLs before rendering images.
+- `data:` URLs render unchanged.
+- Absolute `http://` and `https://` URLs render unchanged.
+- Relative backend paths such as `/uploads/tasks/...` are resolved against `EXPO_PUBLIC_TASKLY_API_BASE_URL`.
+
+Scope remains limited:
+
+- No upload endpoint behavior changed.
+- No create mutation behavior changed.
+- No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

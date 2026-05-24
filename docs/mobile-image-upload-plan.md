@@ -458,6 +458,37 @@ Remaining limitations:
 - Upload progress is simple sequential count progress.
 - Long-term object storage remains a future storage architecture improvement.
 
+## Phase 20C Display And Refresh Status
+
+Phase 20C display verification is complete.
+
+Backend detail API findings:
+
+- Customer Core task detail already includes image `id` and `url` in `task.images`.
+- Customer Pro request detail already includes image `id` and `url` in `proRequest.images`.
+- Pro request detail ordering already follows backend `sortOrder`.
+- The detail response does not currently expose image `createdAt` or `sortOrder`, but display does not require those fields.
+- No backend changes were required.
+
+Mobile detail display:
+
+- Customer Core task detail displays uploaded images in its existing image grid.
+- Customer Pro request detail displays uploaded images in its existing image grid.
+- Mobile now resolves relative backend media paths against `EXPO_PUBLIC_TASKLY_API_BASE_URL`.
+- `data:` URLs from the backend `LONGTEXT` fallback render unchanged.
+- Absolute URLs render unchanged.
+
+Refresh behavior:
+
+- Post-create upload still completes before navigation.
+- Detail screens refetch on focus, so the first detail fetch after navigation can include uploaded images.
+- No cache invalidation layer was added.
+
+Remaining limitations:
+
+- Detail screens show a simple grid only; final gallery polish is still future work.
+- List screens do not show image thumbnails yet.
+
 ## Phase 20 API Contracts
 
 ### Core Task Image Upload

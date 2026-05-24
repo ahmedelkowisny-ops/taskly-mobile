@@ -7,6 +7,7 @@ import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerProRequestDetail } from '@/src/lib/api/customer';
 import { CustomerProRequestDetailResponse } from '@/src/lib/api/domain';
+import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { colors } from '@/src/theme/colors';
@@ -151,7 +152,14 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
     <AppCard>
       <AppText variant="sectionTitle">Images</AppText>
       <View style={styles.imageGrid}>
-        {images.map((image) => <Image key={image.id} accessibilityLabel={image.alt} source={{ uri: image.url }} style={styles.image} />)}
+        {images.map((image) => (
+          <Image
+            key={image.id}
+            accessibilityLabel={image.alt}
+            source={{ uri: resolveApiMediaUrl(image.url) }}
+            style={styles.image}
+          />
+        ))}
       </View>
     </AppCard>
   );
