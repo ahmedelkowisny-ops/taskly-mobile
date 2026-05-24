@@ -89,6 +89,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Do not connect payment, provider, lifecycle, or Pro unlock logic during image upload work.
 - After mobile upload work, detail/list APIs should expose uploaded images only through safe read-only response shapes.
 - Do not expose private or unrelated image data across users.
+- Mobile messaging APIs must verify thread participant access server-side.
+- Do not expose messages or contact details across users.
+- Pro message visibility must respect existing unlock/contact rules.
+- Message sending and attachments must remain separate phases.
+- Messaging work must not change payment, task lifecycle, provider action, or Pro unlock logic.
 
 # Mobile Auth Rules
 

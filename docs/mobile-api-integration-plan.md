@@ -732,6 +732,40 @@ Scope remains limited:
 - No create mutation behavior changed.
 - No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
+## Phase 21A Mobile Messaging Read-Only Foundation
+
+Phase 21A adds read-only mobile messaging APIs and screens. Message sending remains unconnected.
+
+Backend endpoints added:
+
+- `GET /api/mobile/messages/threads`
+- `GET /api/mobile/messages/threads/[threadId]`
+
+Backend behavior:
+
+- Both routes require existing mobile authentication and derive the user from the backend session/token.
+- Thread list returns only conversations where the authenticated user is a participant or the recipient of an official Taskly message.
+- Core chat threads are based on existing `Booking` and `Message` records and are limited to customer/tasker participants on non-deleted tasks with chat-ready task statuses.
+- Official Taskly/admin messages are exposed as read-only support threads for the recipient only.
+- Pro request chat is not exposed because no existing Pro message thread model was found in this phase.
+- Thread detail returns safe metadata and chronological messages.
+- Chat attachments are intentionally returned as empty arrays in this phase.
+- Admin message detail is not marked read by the mobile read-only API.
+- No admin management, private contact details, Pro contact/unlock behavior, or cross-user threads are exposed.
+
+Mobile behavior:
+
+- Customer Messages now loads thread cards and opens read-only conversation detail.
+- Provider Messages now loads the same participant-safe thread cards and keeps Core/Support context labels visible.
+- Demo mode uses local demo message threads and does not call the backend.
+- Detail screens show messages in chronological order and a disabled/future-state note that sending will be connected later.
+
+Scope remains limited:
+
+- No message sending.
+- No chat image attachments.
+- No payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

@@ -17,6 +17,8 @@ import {
   ProviderProfileResponse,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
+  MessageThreadDetailResponse,
+  MessageThreadsResponse,
 } from './domain';
 import { UserSession } from './types';
 
@@ -416,6 +418,71 @@ export function getMockProviderProfileResponse(): ProviderProfileResponse {
       proStatus: session.providerCapabilities.proStatus,
       profileStrengthLabel: 'Demo provider profile',
       stripeStatusLabel: 'Demo Core payout status',
+    },
+  };
+}
+
+export function getMockMessageThreadsResponse(): MessageThreadsResponse {
+  const now = new Date().toISOString();
+
+  return {
+    threads: [
+      {
+        accent: 'core',
+        contextId: 'demo-task',
+        contextType: 'CORE_TASK',
+        id: 'booking:demo-core-thread',
+        lastMessageAt: now,
+        lastMessagePreview: 'Demo read-only Core task conversation.',
+        otherParticipantName: 'Taskly demo user',
+        roleLabel: 'Participant',
+        statusLabel: 'Core task',
+        subtitle: 'Taskly demo user',
+        title: 'Demo Core task conversation',
+        unreadCount: 0,
+      },
+      {
+        accent: 'neutral',
+        contextType: 'SUPPORT',
+        id: 'admin:demo-support-thread',
+        lastMessageAt: now,
+        lastMessagePreview: 'Official Taskly messages will appear here.',
+        otherParticipantName: 'Taskly',
+        roleLabel: 'Support',
+        statusLabel: 'Support',
+        subtitle: 'Taskly',
+        title: 'Message from Taskly',
+        unreadCount: 0,
+      },
+    ],
+  };
+}
+
+export function getMockMessageThreadResponse(threadId = 'booking:demo-core-thread'): MessageThreadDetailResponse {
+  const isSupport = threadId.startsWith('admin:');
+
+  return {
+    messages: [
+      {
+        attachments: [],
+        body: isSupport
+          ? 'This is a demo official Taskly message. Sending will be connected later.'
+          : 'This is a demo read-only conversation. Sending will be connected later.',
+        createdAt: new Date().toISOString(),
+        id: `${threadId}:message-1`,
+        isMine: false,
+        senderId: 'demo-other',
+        senderName: isSupport ? 'Taskly' : 'Taskly demo user',
+        senderRole: isSupport ? 'SUPPORT' : 'TASKER',
+      },
+    ],
+    thread: {
+      accent: isSupport ? 'neutral' : 'core',
+      contextId: isSupport ? undefined : 'demo-task',
+      contextType: isSupport ? 'SUPPORT' : 'CORE_TASK',
+      id: threadId,
+      subtitle: isSupport ? 'Taskly' : 'Taskly demo user',
+      title: isSupport ? 'Message from Taskly' : 'Demo Core task conversation',
     },
   };
 }

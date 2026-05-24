@@ -14,6 +14,7 @@ export {
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
 export { resolveApiMediaUrl } from './media';
+export { getMessageThread, getMessageThreads } from './messages';
 export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
@@ -31,6 +32,8 @@ export {
   getMockCustomerProRequestsResponse,
   getMockCustomerTaskDetailResponse,
   getMockCustomerTasksResponse,
+  getMockMessageThreadResponse,
+  getMockMessageThreadsResponse,
   getMockPostingRulesResponse,
   getMockProviderCoreTaskDetailResponse,
   getMockProviderCoreTasksResponse,
@@ -73,6 +76,13 @@ export type {
   EmptyStateContent,
   EligibilitySummary,
   MessageThreadSummary,
+  MessageAccent,
+  MessageContextType,
+  MessageItem,
+  MessageSenderRole,
+  MessageThreadDetailResponse,
+  MessageThreadMeta,
+  MessageThreadsResponse,
   NextAction,
   NotificationPreferenceSummary,
   PaymentActionState,

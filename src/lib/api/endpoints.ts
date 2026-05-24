@@ -24,6 +24,10 @@ export const endpoints = {
     taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
     tasks: '/api/mobile/customer/tasks',
   },
+  messages: {
+    threadDetail: (threadId: string) => `/api/mobile/messages/threads/${encodeURIComponent(threadId)}`,
+    threads: '/api/mobile/messages/threads',
+  },
   notifications: {
     preferences: '/api/mobile/notifications/preferences',
     registerPushToken: '/api/mobile/notifications/register-push-token',

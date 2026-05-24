@@ -484,12 +484,52 @@ export type ProviderProfileResponse = {
   profile: ProviderProfileSummary;
 };
 
+export type MessageContextType = 'CORE_TASK' | 'OTHER' | 'PRO_REQUEST' | 'SUPPORT';
+export type MessageAccent = 'core' | 'neutral' | 'pro';
+export type MessageSenderRole = 'ADMIN' | 'CUSTOMER' | 'PRO' | 'SUPPORT' | 'SYSTEM' | 'TASKER';
+
 export type MessageThreadSummary = {
-  context: 'core' | 'pro';
+  accent: MessageAccent;
+  contextId?: string;
+  contextType: MessageContextType;
   id: string;
-  lastMessagePreview: string;
+  lastMessageAt?: string | null;
+  lastMessagePreview?: string;
+  otherParticipantName?: string;
+  roleLabel?: string;
+  statusLabel?: string;
+  subtitle?: string;
   title: string;
-  unreadCount: number;
+  unreadCount?: number;
+};
+
+export type MessageThreadsResponse = {
+  threads: MessageThreadSummary[];
+};
+
+export type MessageThreadMeta = {
+  accent: MessageAccent;
+  contextId?: string;
+  contextType: MessageContextType;
+  id: string;
+  subtitle?: string;
+  title: string;
+};
+
+export type MessageItem = {
+  attachments?: [];
+  body: string;
+  createdAt: string;
+  id: string;
+  isMine: boolean;
+  senderId: string;
+  senderName: string;
+  senderRole?: MessageSenderRole;
+};
+
+export type MessageThreadDetailResponse = {
+  messages: MessageItem[];
+  thread: MessageThreadMeta;
 };
 
 export type NotificationPreferenceSummary = {
