@@ -1,6 +1,8 @@
 import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
+  CreateCustomerTaskPayload,
+  CreateCustomerTaskResponse,
   CustomerHomeResponse,
   CustomerProRequestDetailResponse,
   CustomerProRequestsResponse,
@@ -27,6 +29,17 @@ export function getCustomerTaskDetail(taskId: string, authToken: string): Promis
   return apiRequest<CustomerTaskDetailResponse>(endpoints.customer.taskDetail(taskId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function createCustomerTask(
+  payload: CreateCustomerTaskPayload,
+  authToken: string,
+): Promise<ApiResult<CreateCustomerTaskResponse>> {
+  return apiRequest<CreateCustomerTaskResponse>(endpoints.customer.tasks, {
+    authToken,
+    body: payload,
+    method: 'POST',
   });
 }
 

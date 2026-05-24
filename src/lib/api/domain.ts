@@ -176,6 +176,32 @@ export type CustomerTaskDetailResponse = {
   task: CustomerTaskDetail;
 };
 
+export type CreateCustomerTaskPayload = {
+  address: string;
+  budgetEur: number;
+  categorySlug: string;
+  cityId: string;
+  description: string;
+  estimatedTime: string;
+  localImageCount?: number;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  scheduledEndAt: string;
+  scheduledStartAt: string;
+  title: string;
+};
+
+export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
+  nextActions: DetailNextAction[];
+  uploadState?: {
+    imageUploadRequired: boolean;
+    maxImages: number;
+    uploadedImagesCount: number;
+  };
+};
+
 export type CustomerProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;

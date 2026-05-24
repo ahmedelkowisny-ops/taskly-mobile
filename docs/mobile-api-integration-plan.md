@@ -527,6 +527,58 @@ Scope remains local-only:
 
 Selected images stay in form state only. The app keeps both the original local URI and a compressed URI where processing succeeds so a later upload/storage phase can decide how to send files safely.
 
+## Phase 16.5 Posting Form Data Contract Review
+
+Phase 16.5 reviews the current mobile Post Task and Post Pro Request form state against existing backend create logic. See `docs/mobile-posting-contract.md` for the detailed contract proposal.
+
+Summary:
+
+- Post Task currently stores selected city, selected Core category, title, description, and local images.
+- Post Task currently renders address, schedule, and budget placeholders, but those fields are not controlled submit-ready state yet.
+- Post Pro Request currently stores selected city, selected Pro category, title, description, and local images.
+- Post Pro Request currently renders district/area, preferred timeline, and budget range placeholders, but those fields are not controlled submit-ready state yet.
+- Proposed future mobile creation routes are `POST /api/mobile/customer/tasks` and `POST /api/mobile/customer/pro-requests`.
+- Mobile must not send server-owned lifecycle, payment, matching, role, Pro unlock, assignment, access, or status fields.
+- Images remain a separate upload/storage concern. Local image URIs must not be sent in create payloads.
+- Submit remains disabled and no backend business logic changed in this phase.
+
+## Phase 17 Core Task Creation Mutation
+
+Phase 17 connects Customer Workspace Core task creation only.
+
+Backend endpoint added:
+
+- `POST /api/mobile/customer/tasks`
+
+Mobile behavior:
+
+- `/customer/post-task` now submits through the typed customer API wrapper.
+- The mobile route uses the authenticated bearer token and never sends a customer/user ID.
+- On success, the app navigates to `/customer/tasks/[taskId]`.
+- Demo mode does not call the backend and shows a demo-only success message instead.
+- Selected local images remain local. Mobile sends only `localImageCount`; it does not send local image URIs, compressed URIs, base64 data, or image records.
+
+Scope remains limited:
+
+- No Pro request creation.
+- No image upload or storage.
+- No payment, Stripe, cancellation, dispute, refund, help, provider action, or Pro unlock behavior.
+- No mobile-sent lifecycle, payment, matching, status, reservation, assignment, or provider fields.
+
+The backend route derives the customer identity from the mobile session, validates customer workspace permission, rejects server-owned fields, creates the Core task through existing backend task creation logic, and returns the created task using the existing mobile customer task detail shape plus backend-provided next actions.
+
+## Phase 17.1 Post Task Submit Validation Visibility
+
+Phase 17.1 improves `/customer/post-task` validation visibility without changing backend business logic.
+
+- Post Task now shows a compact missing/invalid field summary near the submit button whenever submit is disabled.
+- Submit activation currently requires city, Core category, title, description meeting the backend minimum length, address, schedule start, schedule end after start, estimated time, positive budget, and valid latitude/longitude coordinates.
+- Required fields used by submit activation now have visible helper/error messaging, and backend `fieldErrors` are mapped back to matching fields when possible.
+- Latitude/longitude remain required because the current backend route requires a valid service location; the mobile screen keeps temporary coordinate inputs until a map/location picker phase replaces them.
+- Selected images remain local-only. Mobile still sends only `localImageCount` and never sends local image URIs, compressed URIs, base64 data, or image records.
+- Pro request creation remains unconnected.
+- No payment, provider, lifecycle, matching, cancellation, refund, dispute, help, Stripe, image upload, or Pro unlock logic was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

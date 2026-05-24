@@ -55,6 +55,17 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Respect backend posting rules for `maxImages` and `acceptedImageTypes`.
 - Do not store image data permanently without a dedicated storage design.
 - Do not add payment, lifecycle, provider action, or Pro unlock behavior from image picker work.
+- Mobile forms must never silently disable submit without explaining missing/invalid fields.
+- Any required field used by submit activation must have visible helper/error messaging.
+- Do not require hidden/technical fields unless the UI provides a clear way to set them.
+- Before connecting mobile posting submits, verify request body shape against backend create logic and `docs/mobile-posting-contract.md`.
+- Mobile must not send server-owned lifecycle, payment, matching, role, Pro unlock, assignment, access, or status fields.
+- Mobile creation mutations must return the created entity plus backend-provided next available actions.
+- Image upload/storage must remain separate until the dedicated upload/storage phase.
+- Do not connect payment or provider actions while implementing posting creation.
+- Core task creation from mobile must use backend-authenticated customer identity.
+- Mobile Core task creation must not send local image URIs, compressed URIs, base64 image data, or image records.
+- Payment entry points must remain separate from Core task creation.
 
 # Mobile Auth Rules
 
