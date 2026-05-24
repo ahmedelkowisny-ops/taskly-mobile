@@ -49,6 +49,12 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Catalogs and posting rules must come from backend APIs or demo mocks.
 - Do not hardcode final city/category/rule logic in mobile screens.
 - Do not add image upload before a dedicated upload phase.
+- Image picker work is local-only until a dedicated upload/storage phase.
+- Do not upload images before a dedicated upload/storage phase.
+- Do not submit posting forms from image picker work.
+- Respect backend posting rules for `maxImages` and `acceptedImageTypes`.
+- Do not store image data permanently without a dedicated storage design.
+- Do not add payment, lifecycle, provider action, or Pro unlock behavior from image picker work.
 
 # Mobile Auth Rules
 

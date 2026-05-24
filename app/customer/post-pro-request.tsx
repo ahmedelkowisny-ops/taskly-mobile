@@ -24,6 +24,13 @@ import {
   getMockProCategoriesResponse,
 } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import {
+  compressSelectedImages,
+  pickTasklyImages,
+  requestImageLibraryPermission,
+  validateSelectedImages,
+} from '@/src/lib/images/imagePicker';
+import { LocalSelectedImage } from '@/src/lib/images/types';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -44,6 +51,9 @@ export default function CustomerPostProRequestScreen() {
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [images, setImages] = useState<LocalSelectedImage[]>([]);
+  const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -86,6 +96,55 @@ export default function CustomerPostProRequestScreen() {
       void loadCatalog();
     }, [loadCatalog]),
   );
+
+  const handlePickImages = useCallback(async () => {
+    const rules = catalog?.rules ?? getMockPostingRulesResponse().proRequest;
+    setImageErrorMessage(null);
+    setIsProcessingImages(true);
+
+    try {
+      const permission = await requestImageLibraryPermission();
+
+      if (!permission.granted) {
+        setImageErrorMessage(t('allowPhotoAccess'));
+        return;
+      }
+
+      const pickedImages = await pickTasklyImages({
+        currentCount: images.length,
+        maxImages: rules.maxImages,
+      });
+
+      if (!pickedImages.length) {
+        return;
+      }
+
+      const validation = validateSelectedImages(pickedImages, {
+        acceptedImageTypes: rules.acceptedImageTypes,
+        maxImages: Math.max(0, rules.maxImages - images.length),
+      });
+      const compressedImages = await compressSelectedImages(validation.accepted, {
+        compress: 0.75,
+        maxWidth: 1600,
+      });
+
+      setImages((current) => [...current, ...compressedImages]);
+
+      const hasProcessingError = compressedImages.some((image) => image.status === 'error');
+      if (validation.rejected.length || hasProcessingError) {
+        setImageErrorMessage(t('somePhotosCouldNotBeAdded'));
+      }
+    } catch {
+      setImageErrorMessage(t('couldNotProcessPhoto'));
+    } finally {
+      setIsProcessingImages(false);
+    }
+  }, [catalog?.rules, images.length]);
+
+  const handleRemoveImage = useCallback((imageId: string) => {
+    setImages((current) => current.filter((image) => image.id !== imageId));
+    setImageErrorMessage(null);
+  }, []);
 
   const descriptionLength = description.trim().length;
   const descriptionHelper = catalog
@@ -183,7 +242,17 @@ export default function CustomerPostProRequestScreen() {
       </FormSection>
 
       <FormSection accent="pro" description="Image picker and upload are intentionally not connected yet." title={t('photos')}>
-        <ImagePickerPlaceholder maxImages={catalog?.rules.maxImages} tone="pro" />
+        <ImagePickerPlaceholder
+          acceptedImageTypes={catalog?.rules.acceptedImageTypes}
+          accent="pro"
+          errorMessage={imageErrorMessage}
+          helperText={t('photosStayLocal')}
+          images={images}
+          isProcessing={isProcessingImages}
+          maxImages={catalog?.rules.maxImages}
+          onPickImages={handlePickImages}
+          onRemoveImage={handleRemoveImage}
+        />
       </FormSection>
 
       <AppButton disabled tone="pro">

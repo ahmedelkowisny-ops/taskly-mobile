@@ -505,6 +505,28 @@ Scope remains UI-only:
 
 Catalogs and posting rules must come from backend APIs or demo mocks. The backend remains the source of truth for final city/category availability, validation constraints, payment wording, and future mutation eligibility.
 
+## Phase 16 Image Picker And Compression Foundation
+
+Phase 16 adds local photo selection to the customer posting foundations.
+
+Mobile changes:
+
+- `expo-image-picker` is used for selecting local images from the device library.
+- `expo-image-manipulator` is used for conservative local resizing/compression.
+- Post Task and Post Pro Request forms now support local preview, removal, validation, and processing state.
+- The forms use backend posting rules for `maxImages` and `acceptedImageTypes` when available.
+- Demo posting rules remain available when demo mode is active or backend catalogs are unavailable.
+
+Scope remains local-only:
+
+- No image upload.
+- No permanent image storage.
+- No Core task creation.
+- No Pro request creation.
+- No payment, Stripe, cancellation, dispute, refund, help, provider action, or Pro unlock behavior.
+
+Selected images stay in form state only. The app keeps both the original local URI and a compressed URI where processing succeeds so a later upload/storage phase can decide how to send files safely.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
