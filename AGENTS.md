@@ -44,6 +44,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Detail screens must display backend `nextAction` values but must not execute sensitive actions.
 - Do not expose private address/contact details unless the backend response explicitly includes them.
 - Do not add payment, cancellation, accept, or respond actions to detail screens without a dedicated phase.
+- Posting form foundations are UI-only until a dedicated mutation phase.
+- Do not connect submit buttons without a dedicated phase.
+- Catalogs and posting rules must come from backend APIs or demo mocks.
+- Do not hardcode final city/category/rule logic in mobile screens.
+- Do not add image upload before a dedicated upload phase.
 
 # Mobile Auth Rules
 

@@ -477,6 +477,34 @@ Scope remains read-only:
 
 The backend remains the source of truth for access checks, status labels, visibility, and `nextAction` fields. Demo detail payloads remain available so the mobile app can open detail screens without backend data.
 
+## Phase 15 Catalogs And Posting Form Foundations
+
+Phase 15 adds read-only catalog/config endpoints and UI-only customer posting foundations. These screens prepare the mobile UX for future Core task and Pro request creation without submitting anything yet.
+
+Backend endpoints added:
+
+- `GET /api/mobile/catalog/cities`
+- `GET /api/mobile/catalog/core-categories`
+- `GET /api/mobile/catalog/pro-categories`
+- `GET /api/mobile/catalog/posting-rules`
+
+Mobile form routes added:
+
+- `/customer/post-task`
+- `/customer/post-pro-request`
+
+The mobile screens fetch cities, category catalogs, and posting rules through `src/lib/api/catalog.ts`. Demo catalog responses remain available in `src/lib/api/mockApi.ts` so the forms can be previewed without a backend.
+
+Scope remains UI-only:
+
+- No Core task creation.
+- No Pro request creation.
+- No image picker or image upload.
+- No payment, Stripe, cancellation, dispute, refund, help, Pro unlock, or provider action logic.
+- Submit buttons stay disabled and clearly say that submission will be connected later.
+
+Catalogs and posting rules must come from backend APIs or demo mocks. The backend remains the source of truth for final city/category availability, validation constraints, payment wording, and future mutation eligibility.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

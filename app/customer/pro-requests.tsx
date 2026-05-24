@@ -141,6 +141,7 @@ export default function CustomerProRequestsScreen() {
           actionLabel={t('postProRequest')}
           accent="pro"
           body={data.emptyState.description}
+          onActionPress={() => router.push('/customer/post-pro-request' as Href)}
           title={data.emptyState.title}
         />
       ) : null}

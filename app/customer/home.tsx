@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -145,7 +146,7 @@ export default function CustomerHomeScreen() {
           <AppText color={colors.slate700}>
             For small, fixed-scope jobs where a Core Tasker can help nearby.
           </AppText>
-          <AppButton onPress={() => router.push('/customer/onboarding')}>{t('postTask')}</AppButton>
+          <AppButton onPress={() => router.push('/customer/post-task' as Href)}>{t('postTask')}</AppButton>
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -154,7 +155,7 @@ export default function CustomerHomeScreen() {
           <AppText color={colors.slate700}>
             For larger projects where comparing professional Pro responses matters.
           </AppText>
-          <AppButton onPress={() => router.push('/customer/onboarding')} tone="pro">
+          <AppButton onPress={() => router.push('/customer/post-pro-request' as Href)} tone="pro">
             {t('postProRequest')}
           </AppButton>
         </AppCard>

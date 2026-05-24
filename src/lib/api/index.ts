@@ -1,4 +1,5 @@
 export { getCurrentSession, loginWithEmailPassword, logoutMobileSession, refreshMobileSession } from './auth';
+export { getCities, getCoreCategories, getPostingRules, getProCategories } from './catalog';
 export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export {
@@ -18,12 +19,15 @@ export {
   getProviderProRequests,
 } from './provider';
 export {
+  getMockCitiesCatalogResponse,
+  getMockCoreCategoriesResponse,
   getMockCustomerHomeResponse,
   getMockCustomerHomeSummary,
   getMockCustomerProRequestDetailResponse,
   getMockCustomerProRequestsResponse,
   getMockCustomerTaskDetailResponse,
   getMockCustomerTasksResponse,
+  getMockPostingRulesResponse,
   getMockProviderCoreTaskDetailResponse,
   getMockProviderCoreTasksResponse,
   getMockProviderDashboardResponse,
@@ -31,6 +35,7 @@ export {
   getMockProviderProfileResponse,
   getMockProviderProRequestDetailResponse,
   getMockProviderProRequestsResponse,
+  getMockProCategoriesResponse,
   getMockUserSession,
 } from './mockApi';
 export type { ApiClientConfig, TasklyApiClient } from './client';
@@ -39,6 +44,11 @@ export type {
   CustomerHomeSummary,
   CustomerHomeResponse,
   CustomerNextAction,
+  CatalogCategory,
+  CatalogCategoriesResponse,
+  CitiesCatalogResponse,
+  CityOption,
+  CoreTaskPostingRules,
   CustomerProRequestDetail,
   CustomerProRequestDetailResponse,
   CustomerProRequestSummary,
@@ -76,6 +86,8 @@ export type {
   ProviderProRequestsResponse,
   ProviderProRequestSummary,
   ProviderProResponseSummary,
+  PostingRulesResponse,
+  ProRequestPostingRules,
   TaskDetail,
   TaskSummary,
 } from './domain';

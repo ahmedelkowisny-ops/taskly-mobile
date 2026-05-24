@@ -139,6 +139,7 @@ export default function CustomerTasksScreen() {
         <EmptyStateCard
           actionLabel={t('postTask')}
           body={data.emptyState.description}
+          onActionPress={() => router.push('/customer/post-task' as Href)}
           title={data.emptyState.title}
         />
       ) : null}

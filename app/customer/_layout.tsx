@@ -64,6 +64,18 @@ export default function CustomerLayout() {
           }}
         />
         <Tabs.Screen
+          name="post-task"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="post-pro-request"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="account"
           options={{
             title: 'Account',

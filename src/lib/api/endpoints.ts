@@ -7,6 +7,12 @@ export const endpoints = {
     logout: '/api/mobile/auth/logout',
     refreshSession: '/api/mobile/auth/refresh',
   },
+  catalog: {
+    cities: '/api/mobile/catalog/cities',
+    coreCategories: '/api/mobile/catalog/core-categories',
+    postingRules: '/api/mobile/catalog/posting-rules',
+    proCategories: '/api/mobile/catalog/pro-categories',
+  },
   customer: {
     home: '/api/mobile/customer/home',
     homeSummary: '/api/mobile/customer/home',

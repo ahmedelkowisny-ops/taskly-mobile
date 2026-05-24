@@ -1,12 +1,15 @@
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 
 import {
+  CatalogCategoriesResponse,
+  CitiesCatalogResponse,
   CustomerHomeResponse,
   CustomerProRequestDetailResponse,
   CustomerHomeSummary,
   CustomerProRequestsResponse,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
+  PostingRulesResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
@@ -53,6 +56,102 @@ export function getMockCustomerHomeSummary(): CustomerHomeSummary {
     proRequestsCount: 0,
     proResponsesAvailableCount: 0,
     unreadMessagesCount: 0,
+  };
+}
+
+export function getMockCitiesCatalogResponse(): CitiesCatalogResponse {
+  return {
+    cities: [
+      { id: 'demo-sofia', isActive: true, nameBg: 'Sofia', nameEn: 'Sofia', slug: 'sofia' },
+      { id: 'demo-plovdiv', isActive: true, nameBg: 'Plovdiv', nameEn: 'Plovdiv', slug: 'plovdiv' },
+      { id: 'demo-varna', isActive: true, nameBg: 'Varna', nameEn: 'Varna', slug: 'varna' },
+    ],
+  };
+}
+
+export function getMockCoreCategoriesResponse(): CatalogCategoriesResponse {
+  return {
+    categories: [
+      {
+        descriptionBg: null,
+        descriptionEn: 'Small fixed-scope assembly jobs.',
+        id: 'furniture_assembly',
+        isActive: true,
+        nameBg: 'Furniture Assembly',
+        nameEn: 'Furniture Assembly',
+        slug: 'furniture_assembly',
+      },
+      {
+        descriptionBg: null,
+        descriptionEn: 'Mounting shelves, mirrors, rods, frames, and similar items.',
+        id: 'general_mounting',
+        isActive: true,
+        nameBg: 'General Mounting',
+        nameEn: 'General Mounting',
+        slug: 'general_mounting',
+      },
+      {
+        descriptionBg: null,
+        descriptionEn: 'Replacement-only work at existing electrical points.',
+        id: 'light_electrical',
+        isActive: true,
+        nameBg: 'Light Electrical',
+        nameEn: 'Light Electrical',
+        slug: 'light_electrical',
+      },
+    ],
+  };
+}
+
+export function getMockProCategoriesResponse(): CatalogCategoriesResponse {
+  return {
+    categories: [
+      {
+        descriptionBg: 'Demo Pro category',
+        descriptionEn: 'Larger renovation projects with professional quotes.',
+        id: 'bathroom_renovation',
+        isActive: true,
+        nameBg: 'Bathroom Renovation',
+        nameEn: 'Bathroom Renovation',
+        requiresPortfolio: true,
+        slug: 'bathroom_renovation',
+      },
+      {
+        descriptionBg: 'Demo Pro category',
+        descriptionEn: 'Kitchen renovation, fitting, custom work, and appliance integration.',
+        id: 'kitchen_projects',
+        isActive: true,
+        nameBg: 'Kitchen Projects',
+        nameEn: 'Kitchen Projects',
+        requiresPortfolio: true,
+        slug: 'kitchen_projects',
+      },
+    ],
+  };
+}
+
+export function getMockPostingRulesResponse(): PostingRulesResponse {
+  return {
+    coreTask: {
+      acceptedImageTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+      maxDescriptionLength: 2000,
+      maxImages: 10,
+      minDescriptionLength: 20,
+      paymentProtectionCopy: 'Payment is protected through Taskly/Stripe when the task is confirmed.',
+      requiresAddress: true,
+      requiresCity: true,
+      requiresSchedule: true,
+    },
+    proRequest: {
+      acceptedImageTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+      maxDescriptionLength: 3000,
+      maxImages: 10,
+      minDescriptionLength: 30,
+      postingIsFreeCopy:
+        'Posting a Pro request is free. You only unlock comparison details after meaningful Pro responses exist.',
+      requiresCity: true,
+      requiresDistrictOrArea: true,
+    },
   };
 }
 

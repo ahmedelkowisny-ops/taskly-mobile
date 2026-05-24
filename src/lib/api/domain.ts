@@ -20,6 +20,59 @@ export type EmptyStateContent = {
   title: string;
 };
 
+export type CityOption = {
+  id: string;
+  isActive: boolean;
+  nameBg: string;
+  nameEn: string;
+  slug: string;
+};
+
+export type CatalogCategory = {
+  descriptionBg: string | null;
+  descriptionEn: string | null;
+  id: string;
+  isActive: boolean;
+  nameBg: string;
+  nameEn: string;
+  requiresPortfolio?: boolean;
+  slug: string;
+};
+
+export type CitiesCatalogResponse = {
+  cities: CityOption[];
+};
+
+export type CatalogCategoriesResponse = {
+  categories: CatalogCategory[];
+};
+
+export type CoreTaskPostingRules = {
+  acceptedImageTypes: string[];
+  maxDescriptionLength: number;
+  maxImages: number;
+  minDescriptionLength: number;
+  paymentProtectionCopy: string;
+  requiresAddress: boolean;
+  requiresCity: boolean;
+  requiresSchedule: boolean;
+};
+
+export type ProRequestPostingRules = {
+  acceptedImageTypes: string[];
+  maxDescriptionLength: number;
+  maxImages: number;
+  minDescriptionLength: number;
+  postingIsFreeCopy: string;
+  requiresCity: boolean;
+  requiresDistrictOrArea: boolean;
+};
+
+export type PostingRulesResponse = {
+  coreTask: CoreTaskPostingRules;
+  proRequest: ProRequestPostingRules;
+};
+
 export type DetailImage = {
   alt: string;
   id: string;
