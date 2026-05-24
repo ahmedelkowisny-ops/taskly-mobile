@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { MessageThreadDetailResponse, MessageThreadsResponse } from './domain';
+import { MessageThreadDetailResponse, MessageThreadsResponse, SendMessageResponse } from './domain';
 import { endpoints } from './endpoints';
 import { ApiResult } from './types';
 
@@ -17,5 +17,17 @@ export function getMessageThread(
   return apiRequest<MessageThreadDetailResponse>(endpoints.messages.threadDetail(threadId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function sendMessage(
+  threadId: string,
+  body: string,
+  authToken: string,
+): Promise<ApiResult<SendMessageResponse>> {
+  return apiRequest<SendMessageResponse>(endpoints.messages.sendMessage(threadId), {
+    authToken,
+    body: { body },
+    method: 'POST',
   });
 }

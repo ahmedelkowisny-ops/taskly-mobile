@@ -94,6 +94,16 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Pro message visibility must respect existing unlock/contact rules.
 - Message sending and attachments must remain separate phases.
 - Messaging work must not change payment, task lifecycle, provider action, or Pro unlock logic.
+- Mobile message sending must verify participant access server-side.
+- Text sending and attachments are separate phases.
+- Do not invent Pro request chat without a backend model and product decision.
+- Do not expose private contact details through messaging.
+- Messaging changes must not change payment, task lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
+- Mobile message threads must expose explicit capabilities instead of relying on hidden UI assumptions.
+- Backend must remain the source of truth for whether a thread supports sending.
+- Pro request chat must not be invented without a backend model and product decision.
+- Chat attachments must remain separate from text sending.
+- Messaging work must not change payment, lifecycle, provider actions, cancellation/dispute, or Pro unlock logic.
 
 # Mobile Auth Rules
 

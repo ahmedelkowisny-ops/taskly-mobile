@@ -766,6 +766,76 @@ Scope remains limited:
 - No chat image attachments.
 - No payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
 
+## Phase 21B Mobile Text Message Sending
+
+Phase 21B connects plain text sending for existing Core booking conversations only.
+
+Backend endpoint added:
+
+- `POST /api/mobile/messages/threads/[threadId]/messages`
+
+Backend behavior:
+
+- The route requires existing mobile authentication and derives the sender from the backend session/token.
+- Sending is supported for existing Core booking threads with ids like `booking:[id]`.
+- The sender must be the booking customer or tasker, the task must be non-deleted, and the task status must already be chat-ready.
+- Tasker sending preserves the existing backend tasker verification gate used by web chat.
+- The request body is text-only: `{ body: string }`.
+- Empty messages are rejected, messages are trimmed, and the max text length is 2000 characters.
+- Attachment/media/image/file/base64/local URI fields are rejected.
+- Official Taskly/admin messages remain one-way support threads because the backend has `AdminMessage` but no safe user-reply thread model.
+- No Pro request chat was added because no existing Pro chat/thread model exists.
+
+Mobile behavior:
+
+- Customer and Provider message detail screens now show a text-only composer for Core booking conversations.
+- On successful send, the returned message is appended locally.
+- Support/admin conversations show that sending is not available.
+- Demo mode appends a local demo message and does not call the backend.
+
+Scope remains limited:
+
+- No image attachments, camera/gallery, files, voice, typing indicators, read receipts, or push notification work was added.
+- No payment, provider action, task lifecycle, Pro request lifecycle/access, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
+## Phase 21B.1 Messaging Thread Capability Cleanup
+
+Phase 21B.1 makes mobile messaging capabilities explicit before future attachment work.
+
+Response shape update:
+
+- Message thread list cards and thread detail metadata now include:
+  - `capabilities.canRead`
+  - `capabilities.canSendText`
+  - `capabilities.canSendAttachments`
+  - optional `capabilities.readOnlyReason`
+
+Thread behavior:
+
+- Core booking chats return `canRead: true`, `canSendText: true`, and `canSendAttachments: false`.
+- Official Taskly/admin messages return `canRead: true`, `canSendText: false`, `canSendAttachments: false`, and `readOnlyReason: "SUPPORT_READ_ONLY"`.
+- Pro request chat remains unavailable because no real backend Pro chat/thread model exists. Mobile must not expose or invent Pro chat threads without a backend model and product decision.
+- Unsupported thread types remain non-sendable and should use `readOnlyReason: "UNSUPPORTED_THREAD_TYPE"` if exposed in the future.
+
+Mobile behavior:
+
+- Thread cards show a compact read-only indicator when text sending is not available.
+- Thread detail screens show the text composer only when `capabilities.canSendText` is true.
+- Read-only support/admin conversations show a clear explanation instead of a disabled mystery state.
+- Attachments remain unavailable and no camera/gallery/media controls are shown.
+
+Backend enforcement:
+
+- The text send route still validates mobile auth, participant access, supported thread type, and text-only payloads server-side.
+- The send route does not allow Pro request chat, support/admin replies, cross-user sending, attachments, or media fields.
+
+Scope remains limited:
+
+- No new messaging models.
+- No chat attachments.
+- No Pro request chat.
+- No payment, provider action, lifecycle, matching, cancellation, refund, dispute, help, Stripe, or Pro unlock logic is added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

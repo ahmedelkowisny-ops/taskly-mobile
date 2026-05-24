@@ -25,6 +25,7 @@ export const endpoints = {
     tasks: '/api/mobile/customer/tasks',
   },
   messages: {
+    sendMessage: (threadId: string) => `/api/mobile/messages/threads/${encodeURIComponent(threadId)}/messages`,
     threadDetail: (threadId: string) => `/api/mobile/messages/threads/${encodeURIComponent(threadId)}`,
     threads: '/api/mobile/messages/threads',
   },

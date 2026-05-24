@@ -14,7 +14,7 @@ export {
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
 export { resolveApiMediaUrl } from './media';
-export { getMessageThread, getMessageThreads } from './messages';
+export { getMessageThread, getMessageThreads, sendMessage } from './messages';
 export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
@@ -80,6 +80,8 @@ export type {
   MessageContextType,
   MessageItem,
   MessageSenderRole,
+  MessageReadOnlyReason,
+  MessageThreadCapabilities,
   MessageThreadDetailResponse,
   MessageThreadMeta,
   MessageThreadsResponse,
@@ -105,6 +107,7 @@ export type {
   ProviderProRequestsResponse,
   ProviderProRequestSummary,
   ProviderProResponseSummary,
+  SendMessageResponse,
   PostingRulesResponse,
   ProRequestPostingRules,
   TaskDetail,

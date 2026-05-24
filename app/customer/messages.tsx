@@ -120,6 +120,7 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.unreadCount ? <StatusBadge label={`${thread.unreadCount} ${t('unreadMessages')}`} tone="warning" /> : null}
+          {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
         </View>
         <AppText variant="sectionTitle">{thread.title}</AppText>
         {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}

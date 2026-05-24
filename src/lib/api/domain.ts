@@ -487,9 +487,23 @@ export type ProviderProfileResponse = {
 export type MessageContextType = 'CORE_TASK' | 'OTHER' | 'PRO_REQUEST' | 'SUPPORT';
 export type MessageAccent = 'core' | 'neutral' | 'pro';
 export type MessageSenderRole = 'ADMIN' | 'CUSTOMER' | 'PRO' | 'SUPPORT' | 'SYSTEM' | 'TASKER';
+export type MessageReadOnlyReason =
+  | 'NOT_PARTICIPANT'
+  | 'PRO_CHAT_NOT_AVAILABLE'
+  | 'SUPPORT_READ_ONLY'
+  | 'THREAD_CLOSED'
+  | 'UNSUPPORTED_THREAD_TYPE';
+
+export type MessageThreadCapabilities = {
+  canRead: boolean;
+  canSendAttachments: boolean;
+  canSendText: boolean;
+  readOnlyReason?: MessageReadOnlyReason;
+};
 
 export type MessageThreadSummary = {
   accent: MessageAccent;
+  capabilities: MessageThreadCapabilities;
   contextId?: string;
   contextType: MessageContextType;
   id: string;
@@ -509,6 +523,7 @@ export type MessageThreadsResponse = {
 
 export type MessageThreadMeta = {
   accent: MessageAccent;
+  capabilities: MessageThreadCapabilities;
   contextId?: string;
   contextType: MessageContextType;
   id: string;
@@ -530,6 +545,18 @@ export type MessageItem = {
 export type MessageThreadDetailResponse = {
   messages: MessageItem[];
   thread: MessageThreadMeta;
+};
+
+export type SendMessageResponse = {
+  message: MessageItem & {
+    attachments: [];
+    isMine: true;
+  };
+  thread?: {
+    id: string;
+    lastMessageAt?: string;
+    lastMessagePreview?: string;
+  };
 };
 
 export type NotificationPreferenceSummary = {

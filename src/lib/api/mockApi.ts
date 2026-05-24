@@ -429,6 +429,11 @@ export function getMockMessageThreadsResponse(): MessageThreadsResponse {
     threads: [
       {
         accent: 'core',
+        capabilities: {
+          canRead: true,
+          canSendAttachments: false,
+          canSendText: true,
+        },
         contextId: 'demo-task',
         contextType: 'CORE_TASK',
         id: 'booking:demo-core-thread',
@@ -443,6 +448,12 @@ export function getMockMessageThreadsResponse(): MessageThreadsResponse {
       },
       {
         accent: 'neutral',
+        capabilities: {
+          canRead: true,
+          canSendAttachments: false,
+          canSendText: false,
+          readOnlyReason: 'SUPPORT_READ_ONLY',
+        },
         contextType: 'SUPPORT',
         id: 'admin:demo-support-thread',
         lastMessageAt: now,
@@ -478,6 +489,12 @@ export function getMockMessageThreadResponse(threadId = 'booking:demo-core-threa
     ],
     thread: {
       accent: isSupport ? 'neutral' : 'core',
+      capabilities: {
+        canRead: true,
+        canSendAttachments: false,
+        canSendText: !isSupport,
+        readOnlyReason: isSupport ? 'SUPPORT_READ_ONLY' : undefined,
+      },
       contextId: isSupport ? undefined : 'demo-task',
       contextType: isSupport ? 'SUPPORT' : 'CORE_TASK',
       id: threadId,
