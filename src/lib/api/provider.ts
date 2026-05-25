@@ -96,7 +96,7 @@ export function reportProviderCoreTaskIssue(
 ): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
   return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskReportIssue(taskId), {
     authToken,
-    body: payload,
+    body: toProviderIssueActionBody(payload),
     method: 'POST',
   });
 }
@@ -108,7 +108,7 @@ export function reportProviderCannotAttend(
 ): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
   return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskCannotAttend(taskId), {
     authToken,
-    body: payload,
+    body: toProviderIssueActionBody(payload),
     method: 'POST',
   });
 }
@@ -120,9 +120,16 @@ export function requestProviderCoreTaskSupport(
 ): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
   return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskSupportRequest(taskId), {
     authToken,
-    body: payload,
+    body: toProviderIssueActionBody(payload),
     method: 'POST',
   });
+}
+
+function toProviderIssueActionBody(payload: ProviderCoreIssueActionPayload) {
+  return {
+    ...(payload.details ? { details: payload.details } : null),
+    reason: payload.reason,
+  };
 }
 
 export function getProviderProRequests(authToken: string): Promise<ApiResult<ProviderProRequestsResponse>> {

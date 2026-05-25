@@ -268,7 +268,7 @@ export const en = {
   submitReport: 'Submit report',
   submitSupportRequest: 'Submit support request',
   confirmCannotAttend: "Confirm you can't attend",
-  mayAffectCustomerPaymentProtected: 'This may affect the customer and payment protected flow.',
+  mayAffectCustomerPaymentProtected: 'This may affect the customer and protected payment flow.',
   tasklyWillReviewRequest: 'Taskly will review the request and update the task if needed.',
   reportSubmitted: 'Report submitted.',
   cannotAttendRequestSubmitted: 'Cannot-attend request submitted.',

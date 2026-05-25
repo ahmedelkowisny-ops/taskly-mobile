@@ -1,4 +1,4 @@
-// Proposed mobile API routes. These paths are placeholders until backend contracts are implemented.
+// Centralized mobile API routes. Screens should use wrappers instead of hardcoding these paths.
 
 export const endpoints = {
   auth: {
