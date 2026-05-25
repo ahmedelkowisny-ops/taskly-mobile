@@ -117,13 +117,19 @@ export default function ProviderProRequestsScreen() {
             <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={request.statusLabel} tone="pro" />
-                <StatusBadge label={request.responseStatusLabel} tone={request.isEligibleToRespond ? 'warning' : 'neutral'} />
+                <StatusBadge
+                  label={request.proResponseState?.badgeLabel || request.responseStatusLabel}
+                  tone={getProResponseBadgeTone(request.proResponseState?.status)}
+                />
               </View>
               <AppText variant="sectionTitle">{request.title}</AppText>
               <AppText color={colors.slate700}>
                 {request.categoryLabel} - {request.cityLabel}
               </AppText>
               <AppText color={colors.slate700}>{request.timelineLabel}</AppText>
+              {request.proResponseState?.helperText ? (
+                <AppText color={colors.slate700}>{request.proResponseState.helperText}</AppText>
+              ) : null}
               <AppButton
                 onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
                 tone="pro"
@@ -155,4 +161,11 @@ export default function ProviderProRequestsScreen() {
       />
     </Screen>
   );
+}
+
+function getProResponseBadgeTone(status?: string) {
+  if (status === 'can_submit' || status === 'can_edit') return 'success';
+  if (status === 'response_hidden' || status === 'profile_under_review') return 'warning';
+  if (status === 'submitted_locked') return 'pro';
+  return 'neutral';
 }

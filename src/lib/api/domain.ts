@@ -773,6 +773,11 @@ export type ProviderProRequestSummary = {
   id: string;
   isEligibleToRespond: boolean;
   nextAction: ProviderNextAction;
+  proResponseBlockedReason?: string | null;
+  proResponseBlockedReasonCode?: string | null;
+  proResponseCapabilities?: ProviderProResponseCapabilities;
+  proResponseState?: ProviderProResponseState;
+  proResponseSummary?: ProviderProResponseSummary | null;
   responseStatusLabel: string;
   status: string;
   statusLabel: string;
@@ -786,10 +791,54 @@ export type ProviderProRequestsResponse = {
 };
 
 export type ProviderProResponseSummary = {
+  canEdit?: boolean;
+  currency?: string;
+  customerPreviewLabel?: string;
+  hiddenFromCustomer?: boolean;
   id: string;
+  materialsIncluded?: string;
   roughQuoteLabel: string;
+  roughQuoteMax?: number | null;
+  roughQuoteMin?: number | null;
+  shortMessagePreview?: string | null;
+  siteVisitPolicy?: string;
+  status?: string;
   statusLabel: string;
   submittedAt: string;
+  updatedAt?: string;
+  visibilityLabel?: string;
+};
+
+export type ProviderProResponseCapabilities = {
+  canEditResponse: boolean;
+  canOpenProResponseForm: boolean;
+  canSubmitResponse: boolean;
+  canViewSubmittedResponse: boolean;
+};
+
+export type ProviderProResponseState = {
+  badgeLabel: string;
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  capabilities: ProviderProResponseCapabilities;
+  helperText: string;
+  status: string;
+  statusLabel: string;
+};
+
+export type ProviderProResponseEditDefaults = {
+  assumptions: string | null;
+  availability: string;
+  currency: string;
+  customerPreparationNotes: string | null;
+  earliestStartDate: string | null;
+  excludedNotes: string | null;
+  includedNotes: string | null;
+  materialsIncluded: string;
+  roughQuoteMax: number | null;
+  roughQuoteMin: number | null;
+  shortMessage: string | null;
+  siteVisitPolicy: string;
 };
 
 export type EligibilitySummary = {
@@ -808,6 +857,12 @@ export type ProviderProRequestDetail = {
   images: DetailImage[];
   myResponse: ProviderProResponseSummary | null;
   nextActions: DetailNextAction[];
+  proResponseBlockedReason?: string | null;
+  proResponseBlockedReasonCode?: string | null;
+  proResponseCapabilities?: ProviderProResponseCapabilities;
+  proResponseState?: ProviderProResponseState;
+  proResponseSummary?: ProviderProResponseSummary | null;
+  responseEditDefaults?: ProviderProResponseEditDefaults | null;
   status: string;
   statusLabel: string;
   timelineLabel: string;

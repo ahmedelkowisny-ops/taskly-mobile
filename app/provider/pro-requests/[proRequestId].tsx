@@ -9,6 +9,7 @@ import { ProviderProRequestDetailResponse } from '@/src/lib/api/domain';
 import { getMockProviderProRequestDetailResponse } from '@/src/lib/api/mockApi';
 import { getProviderProRequestDetail } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -106,15 +107,29 @@ export default function ProviderProRequestDetailScreen() {
             <Info label="Created" value={new Date(request.createdAt).toLocaleDateString()} />
           </AppCard>
 
+          <ProResponseCapabilityCard request={request} />
+
           <Images images={request.images} />
 
           <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <AppText variant="sectionTitle">My response</AppText>
+            <AppText variant="sectionTitle">{t('proResponse')}</AppText>
             {request.myResponse ? (
               <>
                 <StatusBadge label={request.myResponse.statusLabel} tone="success" />
-                <Info label="Quote" value={request.myResponse.roughQuoteLabel} />
+                {request.myResponse.shortMessagePreview ? (
+                  <AppText color={colors.slate700}>{request.myResponse.shortMessagePreview}</AppText>
+                ) : null}
+                <Info label={t('roughQuote')} value={request.myResponse.roughQuoteLabel} />
+                {request.myResponse.materialsIncluded ? (
+                  <Info label={t('materialsIncluded')} value={request.myResponse.materialsIncluded} />
+                ) : null}
+                {request.myResponse.siteVisitPolicy ? (
+                  <Info label={t('siteVisit')} value={request.myResponse.siteVisitPolicy} />
+                ) : null}
                 <Info label="Submitted" value={new Date(request.myResponse.submittedAt).toLocaleDateString()} />
+                {request.myResponse.visibilityLabel ? (
+                  <AppText color={colors.slate700}>{request.myResponse.visibilityLabel}</AppText>
+                ) : null}
               </>
             ) : (
               <AppText color={colors.slate700}>No response has been submitted from this mobile screen.</AppText>
@@ -125,6 +140,45 @@ export default function ProviderProRequestDetailScreen() {
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function ProResponseCapabilityCard({
+  request,
+}: {
+  request: NonNullable<ProviderProRequestDetailResponse['proRequest']>;
+}) {
+  const state = request.proResponseState;
+  const capabilities = request.proResponseCapabilities || state?.capabilities;
+
+  if (!state && !capabilities) return null;
+
+  const canOpenForm = Boolean(capabilities?.canOpenProResponseForm);
+  const ctaLabel = capabilities?.canEditResponse ? t('updateResponse') : t('submitResponse');
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('proResponse')} tone="pro" />
+        {state?.badgeLabel ? <StatusBadge label={state.badgeLabel} tone={getProResponseBadgeTone(state.status)} /> : null}
+      </View>
+      <AppText variant="sectionTitle">{t('responseStatus')}</AppText>
+      {state?.helperText ? <AppText color={colors.slate700}>{state.helperText}</AppText> : null}
+      {request.proResponseBlockedReason ? (
+        <AppText color={colors.warning600}>{request.proResponseBlockedReason}</AppText>
+      ) : null}
+      <AppText color={colors.slate700}>{t('customerLimitedPreviewBeforeUnlock')}</AppText>
+      {canOpenForm ? (
+        <View style={styles.stack}>
+          <AppButton disabled tone="pro" variant="outline">
+            {ctaLabel}
+          </AppButton>
+          <AppText color={colors.slate500} variant="small">
+            {t('responseFormConnectedNext')}
+          </AppText>
+        </View>
+      ) : null}
+    </AppCard>
   );
 }
 
@@ -170,9 +224,17 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
 }
 
 const styles = StyleSheet.create({
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   header: { gap: spacing.sm },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
   stack: { gap: spacing.sm },
 });
+
+function getProResponseBadgeTone(status?: string) {
+  if (status === 'can_submit' || status === 'can_edit') return 'success';
+  if (status === 'response_hidden' || status === 'profile_under_review') return 'warning';
+  if (status === 'submitted_locked') return 'pro';
+  return 'neutral';
+}

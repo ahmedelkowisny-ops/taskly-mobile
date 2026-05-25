@@ -378,10 +378,38 @@ Keep button text short. Avoid wording that implies Taskly performs the renovatio
 - No admin mobile routes or admin workflow changes.
 - No Expo SDK upgrade, dependency changes, native library changes, or app config changes.
 
+## Phase 27B Implementation Note
+
+Phase 27B added backend-authored read-only Provider Pro response state to mobile Provider Pro request list/detail responses.
+
+Fields added:
+
+- `proResponseState`
+- `proResponseCapabilities`
+- `proResponseBlockedReason`
+- `proResponseBlockedReasonCode`
+- `proResponseSummary`
+- `responseEditDefaults` on detail responses when an editable submitted response exists
+
+The mobile Provider Pro list now shows a compact response badge such as `Can respond`, `Response submitted`, `Update available`, `Cannot respond`, or `Under review`. The mobile Provider Pro detail now shows a passive Pro response capability card, existing response summary, backend blocked reason, and a disabled next-phase form placeholder when backend says a response form can open.
+
+Demo mode now includes safe read-only examples for a Pro request that can be responded to and one with a submitted editable response. Demo mode still does not call mutation routes and does not simulate Pro Access payment/unlock.
+
+Still deferred:
+
+- Provider Pro response submit/edit mobile mutation route.
+- Provider Pro response form submission.
+- Pro Access Fee payment/unlock.
+- Customer Pro comparison/unlock UI.
+- Pro chat.
+- Final backend edit restrictions after Pro Access Fee unlock/payment, if product chooses that policy.
+
+Recommended Phase 27C: implement the provider Pro response upsert mutation and mobile structured form using the fields from this read-only state.
+
 ## Recommended Next Phase
 
-Recommended Phase 27B: Provider Pro response read-only/nextActions state.
+Recommended Phase 27C: Provider Pro response implementation.
 
-Reason: current mobile provider Pro detail exposes only `eligibility.isEligibleToRespond`, a generic reason label, a generic `nextAction`, and a small `myResponse` summary. It does not yet expose stable response capabilities, blocked reason codes, editable structured defaults, contact-leakage error shape, or edit policy. Adding this backend-authored read state first will make the later mutation phase safer and keep mobile from inventing Pro response eligibility.
+Reason: Phase 27B now exposes backend-authored response capabilities, blocked reason codes, submitted response summaries, and edit defaults. The next phase can safely add an authenticated backend upsert route and a mobile form without making mobile invent Pro response eligibility.
 
-After Phase 27B confirms sufficient read state, a later implementation phase can add the upsert mutation route and mobile form.
+Phase 27C should reuse backend helpers equivalent to `canProRespondToRequest`, enforce contact-leakage validation server-side, reject forbidden client-owned fields, and return a refreshed provider Pro request detail after submit/update.
