@@ -548,3 +548,31 @@ Phase 28B should:
 - Continue to avoid payment mutation routes and Stripe UI until a later implementation phase.
 
 Only after Phase 28B proves read-only state is sufficient should a later phase implement Pro Access payment setup/finalize.
+
+## Phase 28B Implementation Note
+
+Phase 28B added backend-authored read-only Pro Access state to customer mobile Pro request list/detail responses.
+
+Added fields include:
+
+- `proAccessState`
+- `proAccessPaymentState`
+- `proUnlockState`
+- `proAccessSummary`
+- `proAccessFeeLabel`
+- `proAccessFeeAmount`
+- `proAccessFeeCurrency`
+- `proAccessBlockedReason`
+- `proAccessBlockedReasonCode`
+- `responsePreviewSummary`
+- `unlockedResponseSummary`
+- `comparisonState`
+- `meaningfulResponseCount`
+- `submittedResponseCount`
+- `visiblePreviewResponseCount`
+- `unlockedResponseCount`
+- `proAccessNextActions`
+
+Mobile now displays passive Pro Access/unlock state on Customer Pro list/detail screens, with demo examples for no responses, unlock available, and access unlocked. Payment setup/finalize routes, Stripe UI, Pro Access mutation behavior, Pro chat, and full post-unlock comparison expansion remain deferred.
+
+Recommended next phase: Phase 28C should implement the mobile Pro Access payment setup/finalize contract only after confirming the Phase 28B read-only state is stable across real customer/pro test accounts.

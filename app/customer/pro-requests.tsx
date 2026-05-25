@@ -61,8 +61,8 @@ export default function CustomerProRequestsScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Login is required to load your Pro requests.'
-        : 'Could not load your Pro requests.',
+        ? t('loginRequiredProRequests')
+        : t('couldNotLoadYourProRequests'),
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -77,36 +77,36 @@ export default function CustomerProRequestsScreen() {
     <Screen>
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
-        <StatusBadge label="Customer Pro" tone="pro" />
+        <StatusBadge label={t('customerPro')} tone="pro" />
         <AppText variant="screenTitle">{t('myProRequests')}</AppText>
         <AppText color={colors.slate700}>
-          Start larger professional projects from the Customer Workspace and compare Pro responses only when the backend allows it.
+          {t('customerProIntro')}
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-          <StatusBadge label="Loading" tone="pro" />
-          <AppText variant="sectionTitle">Loading Pro requests</AppText>
-          <AppText color={colors.slate700}>Fetching your read-only Pro request list from Taskly.</AppText>
+          <StatusBadge label={t('loading')} tone="pro" />
+          <AppText variant="sectionTitle">{t('loadingProRequests')}</AppText>
+          <AppText color={colors.slate700}>{t('fetchingCustomerProRequests')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Pro requests need a real session' : 'Could not refresh Pro requests'}
+            {isUnauthorized ? t('proRequestsNeedRealSession') : t('couldNotRefreshProRequests')}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry the request or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadProRequests} tone="pro" variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -118,20 +118,26 @@ export default function CustomerProRequestsScreen() {
             <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={request.statusLabel} tone="pro" />
-                <StatusBadge label={`${request.responsesCount} responses`} tone={request.isUnlocked ? 'success' : 'warning'} />
+                <StatusBadge
+                  label={request.proAccessState?.statusLabel || request.unlockStatusLabel}
+                  tone={getProAccessBadgeTone(request.proAccessState?.status, request.isUnlocked)}
+                />
               </View>
               <AppText variant="sectionTitle">{request.title}</AppText>
               <AppText color={colors.slate700}>
                 {request.categoryLabel} - {request.cityLabel}
               </AppText>
               <AppText color={colors.slate700}>
-                {request.timelineLabel} - {request.unlockStatusLabel}
+                {request.timelineLabel} - {request.responsePreviewSummary || `${request.responsesCount} ${t('responsesReceived')}`}
+              </AppText>
+              <AppText color={colors.slate700}>
+                {request.proAccessSummary || request.unlockStatusLabel}
               </AppText>
               <AppButton
                 onPress={() => router.push(`/customer/pro-requests/${request.id}` as Href)}
                 tone="pro"
                 variant="outline">
-                View details
+                {t('viewDetails')}
               </AppButton>
             </AppCard>
           ))}
@@ -147,10 +153,17 @@ export default function CustomerProRequestsScreen() {
       ) : null}
 
       <AssistantGuideCard
-        body="Provider contact details stay hidden until the allowed unlock/contact flow."
+        body={t('providerContactHiddenUntilUnlock')}
         title={t('unlockAndComparePros')}
         tone="pro"
       />
     </Screen>
   );
+}
+
+function getProAccessBadgeTone(status?: string, isUnlocked?: boolean) {
+  if (isUnlocked || status === 'unlocked' || status === 'credited') return 'success';
+  if (status === 'available' || status === 'payment_failed') return 'pro';
+  if (status === 'payment_pending' || status === 'not_available' || status === 'request_closed') return 'warning';
+  return 'neutral';
 }

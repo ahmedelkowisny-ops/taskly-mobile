@@ -10,6 +10,7 @@ import { CustomerProRequestDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -34,8 +35,8 @@ export default function CustomerProRequestDetailScreen() {
 
     if (status !== 'authenticated') {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this Pro request detail.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredProRequestDetail'));
       return;
     }
 
@@ -44,8 +45,8 @@ export default function CustomerProRequestDetailScreen() {
 
     if (!authToken) {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this Pro request detail.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredProRequestDetail'));
       setIsLoading(false);
       return;
     }
@@ -59,8 +60,8 @@ export default function CustomerProRequestDetailScreen() {
     }
 
     setData(null);
-    setStateLabel(result.status === 404 ? 'Not found' : result.status === 401 || result.status === 403 ? 'Login required' : 'Backend unavailable');
-    setMessage(result.status === 404 ? 'This Pro request was not found or is not available to this account.' : 'Could not load this Pro request detail.');
+    setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
+    setMessage(result.status === 404 ? t('proRequestNotFound') : t('couldNotLoadProRequestDetail'));
   }, [getValidAccessToken, proRequestId, status]);
 
   useFocusEffect(
@@ -75,18 +76,18 @@ export default function CustomerProRequestDetailScreen() {
     <Screen>
       <View style={styles.header}>
         <ModeBadge mode="customer" />
-        <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
+        <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message="Loading Pro request detail." /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('loadingProRequestDetail')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
           <StatusBadge label={stateLabel || 'Notice'} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
-            <AppButton onPress={loadDetail} tone="pro" variant="outline">Retry</AppButton>
-            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">Continue in demo mode</AppButton>
+            <AppButton onPress={loadDetail} tone="pro" variant="outline">{t('retry')}</AppButton>
+            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
           </View>
         </AppCard>
       ) : null}
@@ -102,15 +103,17 @@ export default function CustomerProRequestDetailScreen() {
 
           <AppCard>
             <StatusBadge label={request.unlockStatusLabel} tone={request.isUnlocked ? 'success' : 'warning'} />
-            <Info label="Budget" value={request.budgetLabel} />
-            <Info label="Timeline" value={request.timelineLabel} />
-            <Info label="Responses" value={String(request.responsesCount)} />
+            <Info label={t('budget')} value={request.budgetLabel} />
+            <Info label={t('timeline')} value={request.timelineLabel} />
+            <Info label={t('responsesReceived')} value={String(request.responsesCount)} />
           </AppCard>
+
+          <ProAccessCard request={request} />
 
           <Images images={request.images} />
 
           <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <AppText variant="sectionTitle">Pro responses</AppText>
+            <AppText variant="sectionTitle">{t('proResponses')}</AppText>
             {request.responsePreviews.length ? request.responsePreviews.map((response) => (
               <View key={response.id} style={styles.response}>
                 <StatusBadge label={response.statusLabel} tone={response.isLocked ? 'warning' : 'success'} />
@@ -118,13 +121,47 @@ export default function CustomerProRequestDetailScreen() {
                 <AppText color={colors.slate700}>{response.headline}</AppText>
                 <AppText color={colors.slate700}>{response.roughQuoteLabel}</AppText>
               </View>
-            )) : <AppText color={colors.slate700}>No Pro responses yet.</AppText>}
+            )) : <AppText color={colors.slate700}>{t('noResponsesYet')}</AppText>}
           </AppCard>
 
           <NextActions actions={request.nextActions} />
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function ProAccessCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  const state = request.proAccessState;
+  const nextActions = request.proAccessNextActions;
+  const statusLabel = state?.statusLabel || request.unlockStatusLabel;
+  const isUnlocked = Boolean(request.isUnlocked || nextActions?.canViewUnlockedResponses);
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('proAccess')} tone="pro" />
+        <StatusBadge label={statusLabel} tone={isUnlocked ? 'success' : nextActions?.canUnlockProResponses ? 'pro' : 'warning'} />
+      </View>
+      <AppText variant="sectionTitle">{t('unlockAndComparePros')}</AppText>
+      <AppText color={colors.slate700}>{t('postingIsFree')}</AppText>
+      <AppText color={colors.slate700}>{request.proAccessSummary || state?.helperText || t('unlockAvailableAfterProResponses')}</AppText>
+      <Info label={t('proAccessFee')} value={request.proAccessFeeLabel || request.proAccessPaymentState?.amountLabel || t('toBeConfirmed')} />
+      <Info label={t('responsesReceived')} value={String(request.visiblePreviewResponseCount ?? request.responsesCount)} />
+      <Info label={t('approvedPros')} value={String(request.meaningfulResponseCount ?? state?.meaningfulResponsesCount ?? 0)} />
+      <Info label={t('comparisonState')} value={request.comparisonState?.statusLabel || (isUnlocked ? t('fullComparisonAvailable') : t('limitedPreviewsBeforeUnlock'))} />
+      {request.proAccessBlockedReason ? (
+        <AppText color={colors.warning600}>{request.proAccessBlockedReason}</AppText>
+      ) : null}
+      {nextActions?.canUnlockProResponses ? (
+        <AppText color={colors.slate700}>{t('unlockPaymentConnectedLater')}</AppText>
+      ) : null}
+      {isUnlocked ? (
+        <AppText color={colors.slate700}>{request.unlockedResponseSummary || t('fullComparisonAvailable')}</AppText>
+      ) : (
+        <AppText color={colors.slate700}>{t('proAccessPaymentNotProject')}</AppText>
+      )}
+    </AppCard>
   );
 }
 
@@ -150,7 +187,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
   if (!images.length) return null;
   return (
     <AppCard>
-      <AppText variant="sectionTitle">Images</AppText>
+      <AppText variant="sectionTitle">{t('images')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => (
           <Image
@@ -168,7 +205,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
 function NextActions({ actions }: { actions: { label: string; type: string }[] }) {
   return (
     <AppCard>
-      <AppText variant="sectionTitle">Next steps</AppText>
+      <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
       {actions.map((action) => (
         <AppButton key={action.type} disabled tone="pro" variant="outline">{action.label}</AppButton>
       ))}
@@ -178,6 +215,7 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
 
 const styles = StyleSheet.create({
   header: { gap: spacing.sm },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },

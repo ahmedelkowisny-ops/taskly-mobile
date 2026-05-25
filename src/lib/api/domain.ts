@@ -525,21 +525,77 @@ export type CreateCustomerProRequestPayload = {
 export type CustomerProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;
+  comparisonState?: CustomerProComparisonState;
   createdAt: string;
   id: string;
   isUnlocked: boolean;
+  meaningfulResponseCount?: number;
   nextAction: CustomerNextAction;
+  proAccessBlockedReason?: string | null;
+  proAccessBlockedReasonCode?: string | null;
+  proAccessFeeAmount?: number;
+  proAccessFeeCurrency?: string;
+  proAccessFeeLabel?: string;
+  proAccessNextActions?: CustomerProAccessNextActions;
+  proAccessPaymentState?: CustomerProAccessPaymentState;
+  proAccessState?: CustomerProAccessState;
+  proAccessSummary?: string;
+  proUnlockState?: CustomerProAccessState;
+  responsePreviewSummary?: string;
   responsesCount: number;
+  submittedResponseCount?: number;
   status: string;
   statusLabel: string;
   timelineLabel: string;
   title: string;
+  unlockedResponseCount?: number;
+  unlockedResponseSummary?: string;
   unlockStatusLabel: string;
+  visiblePreviewResponseCount?: number;
 };
 
 export type CustomerProRequestsResponse = {
   emptyState: EmptyStateContent;
   proRequests: CustomerProRequestSummary[];
+};
+
+export type CustomerProAccessState = {
+  hiddenResponsesExcluded: boolean;
+  helperText: string;
+  isUnlocked: boolean;
+  meaningfulResponsesCount: number;
+  status: string;
+  statusLabel: string;
+  submittedResponsesCount: number;
+  totalResponsesCount: number;
+};
+
+export type CustomerProAccessPaymentState = {
+  amountCents: number | null;
+  amountLabel: string | null;
+  currency: string | null;
+  paidAt: string | null;
+  refundedAt: string | null;
+  retryAvailable: boolean;
+  status: string;
+  statusLabel: string;
+};
+
+export type CustomerProAccessNextActions = {
+  blockedReason?: string | null;
+  blockedReasonCode?: string | null;
+  canConfirmProAccessPayment: boolean;
+  canPrepareProAccessPayment: boolean;
+  canRequestProAccessRefund: boolean;
+  canRetryProAccessPayment: boolean;
+  canUnlockProResponses: boolean;
+  canViewUnlockedResponses: boolean;
+};
+
+export type CustomerProComparisonState = {
+  helperText: string;
+  status: string;
+  statusLabel: string;
 };
 
 export type CustomerProResponsePreview = {
@@ -555,19 +611,36 @@ export type CustomerProRequestDetail = {
   budgetLabel: string;
   categoryLabel: string;
   cityLabel: string;
+  comparisonState?: CustomerProComparisonState;
   createdAt: string;
   description: string;
   id: string;
   images: DetailImage[];
   isUnlocked: boolean;
+  meaningfulResponseCount?: number;
   nextActions: DetailNextAction[];
+  proAccessBlockedReason?: string | null;
+  proAccessBlockedReasonCode?: string | null;
+  proAccessFeeAmount?: number;
+  proAccessFeeCurrency?: string;
+  proAccessFeeLabel?: string;
+  proAccessNextActions?: CustomerProAccessNextActions;
+  proAccessPaymentState?: CustomerProAccessPaymentState;
+  proAccessState?: CustomerProAccessState;
+  proAccessSummary?: string;
+  proUnlockState?: CustomerProAccessState;
   responsePreviews: CustomerProResponsePreview[];
+  responsePreviewSummary?: string;
   responsesCount: number;
+  submittedResponseCount?: number;
   status: string;
   statusLabel: string;
   timelineLabel: string;
   title: string;
+  unlockedResponseCount?: number;
+  unlockedResponseSummary?: string;
   unlockStatusLabel: string;
+  visiblePreviewResponseCount?: number;
 };
 
 export type CustomerProRequestDetailResponse = {
