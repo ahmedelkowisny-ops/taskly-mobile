@@ -6,6 +6,7 @@ export {
   approveCustomerTaskCompletion,
   createCustomerProRequest,
   createCustomerTask,
+  finalizeCustomerTaskPayment,
   getCustomerHomeSummary,
   getCustomerProRequestDetail,
   getCustomerProRequests,
@@ -13,6 +14,7 @@ export {
   getCustomerTasks,
   rejectCustomerTaskCompletion,
   selectCustomerTasker,
+  setupCustomerTaskPayment,
 } from './customer';
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
@@ -78,6 +80,8 @@ export type {
   CustomerProResponsePreview,
   CustomerTaskDetail,
   CustomerTaskDetailResponse,
+  CustomerTaskPaymentFinalizeResponse,
+  CustomerTaskPaymentSetupResponse,
   CustomerTaskSummary,
   CustomerTasksResponse,
   DetailImage,
@@ -87,6 +91,7 @@ export type {
   EligibilitySummary,
   ExpressInterestInCoreTaskPayload,
   ExpressInterestInCoreTaskResponse,
+  FinalizeCustomerTaskPaymentPayload,
   MessageThreadSummary,
   MessageAccent,
   MessageContextType,

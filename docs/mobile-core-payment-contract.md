@@ -190,19 +190,20 @@ The current Core payment flow is customer-owned and split across reservation, ca
    - Must return refreshed task detail and `nextActions`.
    - Stops at reservation/payment setup required; it does not start card collection or payment finalization.
 
-3. Phase 24D: Mobile payment setup endpoint contract.
-   - Server creates/reuses Stripe customer and SetupIntent using existing backend rules.
-   - Mobile may receive SetupIntent `clientSecret` only when required by the approved Stripe mobile setup flow.
-   - No PaymentIntent creation or hold from mobile.
+3. Phase 24D: Backend mobile payment setup/finalize endpoints. Implemented.
+   - Server creates/reuses the payment setup state using existing backend rules.
+   - Setup returns a server-created SetupIntent client secret only in live Stripe mode.
+   - Finalize accepts only safe setup references and returns refreshed task detail/nextActions.
+   - No mobile Stripe UI, PaymentIntent creation, hold, capture, release, refund, or card data collection.
 
 4. Phase 24E: Mobile Stripe SDK integration/card collection.
    - Add Stripe mobile SDK only in this phase.
    - Collect card details using server-created setup parameters after the exact Stripe mobile flow is approved.
    - No mobile business logic beyond Stripe SDK collection and backend-authored follow-up.
 
-5. Phase 24F: Mobile payment method save/finalize endpoint.
-   - Backend verifies customer, task, reservation token, saved payment method, schedule, tasker, conflicts, booking, and payment state.
-   - Backend assigns task and returns refreshed task detail/nextActions.
+5. Phase 24F: Mobile payment setup/finalize UI wiring.
+   - Mobile calls the Phase 24D endpoints only after Stripe/card collection is approved.
+   - Backend remains source of truth for refreshed task detail/nextActions.
    - Still no immediate capture/release/refund logic.
 
 6. Phase 24G: Payment error/retry UI.
@@ -229,14 +230,24 @@ Implemented customer Core select/reserve Tasker:
 - Selection creates the existing reservation/booking state and returns refreshed task detail with `paymentState` and `nextActions`.
 - Mobile shows payment setup/card collection as the next step, but the payment action remains separate.
 
+Implemented backend mobile Core payment setup/finalize endpoints:
+
+- `POST /api/mobile/customer/tasks/[taskId]/payment/setup` accepts an empty body only.
+- Setup verifies mobile auth, Customer Workspace access, customer ownership, reserved task state, reservation token/expiry, reserved booking, selected Tasker, schedule, and reservation payment readiness.
+- Setup moves the reservation to `PAYMENT_PENDING`, upserts payment as `INITIATED`, and returns a server-created SetupIntent client secret in live Stripe mode.
+- Setup returns safe fallbacks for `STRIPE_NOT_CONFIGURED`, `MOCK_PAYMENTS`, `PAYMENT_NOT_REQUIRED`, and `SETUP_NOT_AVAILABLE`.
+- `POST /api/mobile/customer/tasks/[taskId]/payment/finalize` accepts only `{ paymentMethodId?: string, setupIntentId?: string }`.
+- Finalize verifies ownership, reservation/booking/payment readiness, selected Tasker, schedule, and schedule conflicts, then assigns the Tasker and sets booking `ACTIVE` while keeping payment `INITIATED`.
+- Setup/finalize responses return refreshed task detail, `paymentState`, and `nextActions`; they do not return Stripe secret keys, raw card data, payment method details, PaymentIntent ids, reservation tokens, fee internals, payout internals, or raw Stripe errors.
+- Mobile API wrappers exist, but no mobile UI calls them yet.
+
 Still future phases:
 
-- Phase 24D mobile payment setup endpoint.
 - Phase 24E Stripe mobile SDK/card collection.
-- Phase 24F payment method save/finalize endpoint.
+- Phase 24F payment setup/finalize UI wiring.
 - Phase 24G active retry/payment error handling.
 
-Phase 24B/24C did not add Stripe SDK code, payment setup/finalize endpoints, mobile card collection, SetupIntent or PaymentIntent creation, client secret handling, capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or payment lifecycle rule changes.
+Phase 24B/24C/24D did not add Stripe SDK code, mobile card collection, PaymentSheet, PaymentIntent creation, hold/capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or payment lifecycle rule changes.
 
 ## Proposed Mobile Endpoint Contracts
 
@@ -289,50 +300,30 @@ Purpose: backend creates or reuses the customer/payment setup state and returns 
 - Request body:
 
 ```ts
-{
-  reservationToken?: string;
-}
+{}
 ```
 
-- Mobile must not send: payment method id unless the design explicitly separates save from setup, customer id, Stripe customer id, Stripe account id, PaymentIntent id, SetupIntent id, fees, commission, payout, amount, task status, booking status, reservation state, provider assignment, lifecycle fields, refund/cancellation/dispute fields.
-- Response, live Stripe:
+- Mobile must not send: payment method id, customer id, Stripe customer id, Stripe account id, PaymentIntent id, SetupIntent id, fees, commission, payout, amount, task status, booking status, reservation state, provider assignment, lifecycle fields, refund/cancellation/dispute fields.
+- Response:
 
 ```ts
 {
-  mode: "stripe_setup";
-  clientSecret: string;
-  customerId?: string;
-  publishableKey?: string;
-  task: CustomerCoreTaskDetail;
-  nextActions: CustomerCoreTaskNextActions;
+  requiresPaymentMethod: boolean;
+  setupIntentClientSecret?: string;
+  task: CustomerCoreTaskDetail | null;
+  paymentState: CustomerCorePaymentState | null;
+  nextActions: CustomerCoreTaskNextActions | null;
+  fallback: {
+    code: "STRIPE_NOT_CONFIGURED" | "MOCK_PAYMENTS" | "PAYMENT_NOT_REQUIRED" | "SETUP_NOT_AVAILABLE";
+    message: string;
+  } | null;
 }
 ```
 
-- Response, already has payment method:
-
-```ts
-{
-  mode: "already_prepared";
-  reasonCode: "ALREADY_HAS_PM";
-  task: CustomerCoreTaskDetail;
-  nextActions: CustomerCoreTaskNextActions;
-}
-```
-
-- Response, mock/dev:
-
-```ts
-{
-  mode: "mock_prepared";
-  task: CustomerCoreTaskDetail;
-  nextActions: CustomerCoreTaskNextActions;
-}
-```
-
-- Safe Stripe fields: SetupIntent client secret, publishable key, ephemeral key if a future PaymentSheet design requires it, Stripe customer id only if needed by Stripe SDK.
-- Never return: Stripe secret key, webhook secret, connected account secret, raw card data, full PaymentMethod object with billing details beyond safe labels, PaymentIntent secret unless a dedicated PaymentIntent mobile flow is designed, transfer ids, payout fields, platform fee internals, cancellation/refund calculations.
-- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `SCHEDULE_REQUIRED`, `TASK_NOT_READY`, `PAYMENT_TERMINAL`, `STRIPE_NOT_CONFIGURED`, `PAYMENT_SETUP_FAILED`.
-- UI wording: "Save card for protected payment flow", "Payment will be authorized close to the scheduled start"; avoid "escrow".
+- Safe Stripe fields: server-created SetupIntent client secret only.
+- Never return: Stripe secret key, webhook secret, connected account secret, raw card data, full PaymentMethod object, PaymentIntent secret, transfer ids, payout fields, platform fee internals, cancellation/refund calculations, reservation token.
+- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `INVALID_REQUEST`, `SCHEDULE_REQUIRED`, `TASK_NOT_RESERVED`, `NO_RESERVED_TASKER`, `RESERVATION_NOT_FOUND`, `RESERVATION_EXPIRED`, `BOOKING_NOT_FOUND`, `INVALID_PAYMENT_STATE`, `PAYMENT_SETUP_NOT_AVAILABLE`, `STRIPE_SETUP_FAILED`, `PAYMENT_SETUP_FAILED`.
+- UI wording: "Save card for protected payment flow", "Payment will be protected through Taskly before the task starts"; avoid "escrow".
 
 ### `POST /api/mobile/customer/tasks/[taskId]/payment/finalize`
 
@@ -348,25 +339,29 @@ Purpose: backend finalizes selection/payment method readiness and assigns the ta
 
 ```ts
 {
-  reservationToken?: string;
+  paymentMethodId?: string;
   setupIntentId?: string;
 }
 ```
 
-- `setupIntentId` should be used only if backend verifies it against Stripe and the task's Stripe customer. Mobile must not send a raw PaymentMethod id unless the backend design intentionally keeps the existing web `savePaymentMethodForTask` style.
+- `setupIntentId` is used only if backend verifies it against Stripe and the task's Stripe customer. `paymentMethodId` follows the existing web `savePaymentMethodForTask` style and must be a Stripe id, not raw card data.
 - Mobile must not send: amount, fee, commission, payout, transfer, payment status, PaymentIntent id, capture/release/refund/cancellation fields, booking status, task status, provider assignment, lifecycle timestamps, Stripe secret/client secret values, local card data.
 - Response:
 
 ```ts
 {
-  message: string;
-  paymentState: CustomerCorePaymentState;
-  task: CustomerCoreTaskDetail;
-  nextActions: CustomerCoreTaskNextActions;
+  task: CustomerCoreTaskDetail | null;
+  paymentState: CustomerCorePaymentState | null;
+  nextActions: CustomerCoreTaskNextActions | null;
+  payment?: {
+    statusLabel: string;
+    warning?: string | null;
+    reasonCode?: string | null;
+  };
 }
 ```
 
-- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `SCHEDULE_REQUIRED`, `INVALID_STATE`, `EXPIRED`, `TOKEN_MISMATCH`, `PAYMENT_METHOD_REQUIRED`, `PAYMENT_SETUP_REQUIRED`, `STRIPE_NOT_CONFIGURED`, tasker conflict codes, `FINALIZE_PAYMENT_FAILED`.
+- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `INVALID_REQUEST`, `SCHEDULE_REQUIRED`, `TASK_NOT_RESERVED`, `NO_RESERVED_TASKER`, `RESERVATION_NOT_FOUND`, `RESERVATION_EXPIRED`, `BOOKING_NOT_FOUND`, `INVALID_PAYMENT_STATE`, `PAYMENT_METHOD_REQUIRED`, `PAYMENT_SETUP_REQUIRED`, `PAYMENT_SETUP_INVALID`, tasker conflict codes, `STRIPE_FINALIZE_FAILED`, `PAYMENT_FINALIZE_FAILED`.
 - UI wording: "Confirm protected payment flow" or "Confirm task"; do not imply immediate capture.
 
 ### `GET /api/mobile/customer/tasks/[taskId]/payment-state`

@@ -9,6 +9,9 @@ import {
   CustomerHomeResponse,
   CustomerProRequestDetailResponse,
   CustomerProRequestsResponse,
+  CustomerTaskPaymentFinalizeResponse,
+  CustomerTaskPaymentSetupResponse,
+  FinalizeCustomerTaskPaymentPayload,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
   RejectCustomerTaskCompletionPayload,
@@ -81,6 +84,32 @@ export function selectCustomerTasker(
   return apiRequest<SelectCustomerTaskerResponse>(endpoints.customer.taskSelectTasker(taskId), {
     authToken,
     body: { taskerId: payload.taskerId },
+    method: 'POST',
+  });
+}
+
+export function setupCustomerTaskPayment(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerTaskPaymentSetupResponse>> {
+  return apiRequest<CustomerTaskPaymentSetupResponse>(endpoints.customer.taskPaymentSetup(taskId), {
+    authToken,
+    body: {},
+    method: 'POST',
+  });
+}
+
+export function finalizeCustomerTaskPayment(
+  taskId: string,
+  payload: FinalizeCustomerTaskPaymentPayload = {},
+  authToken: string,
+): Promise<ApiResult<CustomerTaskPaymentFinalizeResponse>> {
+  return apiRequest<CustomerTaskPaymentFinalizeResponse>(endpoints.customer.taskPaymentFinalize(taskId), {
+    authToken,
+    body: {
+      ...(payload.paymentMethodId ? { paymentMethodId: payload.paymentMethodId } : null),
+      ...(payload.setupIntentId ? { setupIntentId: payload.setupIntentId } : null),
+    },
     method: 'POST',
   });
 }

@@ -1377,6 +1377,75 @@ Confirmations:
 - No payment setup/finalize endpoint was added or called.
 - No capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or payment lifecycle logic was changed.
 
+## Phase 24D Backend Mobile Core Payment Setup/Finalize Endpoints
+
+Phase 24D adds backend mobile payment entry endpoints for the customer Core flow after Tasker selection/reservation. This phase adds API contracts and mobile wrappers only; no mobile Stripe UI, PaymentSheet, card collection, or active payment buttons are connected.
+
+Backend endpoints added:
+
+- `POST /api/mobile/customer/tasks/[taskId]/payment/setup`
+  - Requires mobile auth and Customer Workspace access.
+  - Accepts an empty body only.
+  - Verifies customer ownership, non-deleted task, `RESERVED` task status, selected Tasker, reservation token/expiry, reserved booking, schedule, and `RESERVED`/`PAYMENT_PENDING` reservation state.
+  - Moves the reservation to `PAYMENT_PENDING` when needed, upserts the existing `Payment` as `INITIATED`, and creates a server-side Stripe SetupIntent in live Stripe mode.
+  - Returns `setupIntentClientSecret` only for the server-created SetupIntent. No Stripe secret keys, raw card data, payment method data, PaymentIntent ids, fee/payout internals, or reservation tokens are returned.
+  - In mock/non-live payment mode, saves a mock payment method server-side and returns a `MOCK_PAYMENTS` fallback without exposing the mock payment method id.
+  - If Stripe and mock payments are unavailable, returns a safe `STRIPE_NOT_CONFIGURED` fallback.
+
+- `POST /api/mobile/customer/tasks/[taskId]/payment/finalize`
+  - Requires mobile auth and Customer Workspace access.
+  - Accepts only `{ paymentMethodId?: string, setupIntentId?: string }`.
+  - Verifies customer ownership, reservation/booking/payment readiness, selected Tasker, schedule, and schedule conflicts.
+  - Saves a Stripe payment method reference only after setup has been created server-side, then finalizes the existing reservation flow by assigning the Tasker, setting task `IN_PROGRESS`, setting booking `ACTIVE`, and keeping payment `INITIATED`.
+  - Does not create the later payment hold. Existing `holdScheduledPayments()` remains responsible for `INITIATED -> HOLDING -> HELD`.
+  - Does not capture, release, refund, cancel, dispute, or calculate any mobile-owned payment outcome.
+
+Mobile wrappers added:
+
+- `setupCustomerTaskPayment(taskId, authToken)`
+- `finalizeCustomerTaskPayment(taskId, payload, authToken)`
+
+The wrappers are not called from UI in this phase.
+
+Safe setup response shape:
+
+```ts
+{
+  requiresPaymentMethod: boolean;
+  setupIntentClientSecret?: string;
+  task: CustomerTaskDetail | null;
+  paymentState: CustomerCorePaymentState | null;
+  nextActions: CustomerCoreTaskNextActions | null;
+  fallback: {
+    code: "STRIPE_NOT_CONFIGURED" | "MOCK_PAYMENTS" | "PAYMENT_NOT_REQUIRED" | "SETUP_NOT_AVAILABLE";
+    message: string;
+  } | null;
+}
+```
+
+Safe finalize response shape:
+
+```ts
+{
+  task: CustomerTaskDetail | null;
+  paymentState: CustomerCorePaymentState | null;
+  nextActions: CustomerCoreTaskNextActions | null;
+  payment?: {
+    statusLabel: string;
+    warning?: string | null;
+    reasonCode?: string | null;
+  };
+}
+```
+
+Confirmations:
+
+- No mobile Stripe SDK was added.
+- No mobile card collection UI was added.
+- No PaymentSheet fields or ephemeral key flow were invented.
+- No PaymentIntent creation, hold, capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or payment lifecycle rule was changed.
+- The next phase is mobile Stripe SDK/card collection using the server-created setup response.
+
 Proposed customer payment `nextActions` extension:
 
 ```ts

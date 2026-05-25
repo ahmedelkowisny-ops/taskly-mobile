@@ -312,6 +312,34 @@ export type SelectCustomerTaskerResponse = {
   task: CustomerTaskDetail | null;
 };
 
+export type CustomerTaskPaymentSetupResponse = {
+  fallback: {
+    code: 'MOCK_PAYMENTS' | 'PAYMENT_NOT_REQUIRED' | 'SETUP_NOT_AVAILABLE' | 'STRIPE_NOT_CONFIGURED';
+    message: string;
+  } | null;
+  nextActions: CustomerCoreTaskNextActions | null;
+  paymentState: CustomerCorePaymentState | null;
+  requiresPaymentMethod: boolean;
+  setupIntentClientSecret?: string;
+  task: CustomerTaskDetail | null;
+};
+
+export type FinalizeCustomerTaskPaymentPayload = {
+  paymentMethodId?: string;
+  setupIntentId?: string;
+};
+
+export type CustomerTaskPaymentFinalizeResponse = {
+  nextActions: CustomerCoreTaskNextActions | null;
+  payment?: {
+    reasonCode?: string | null;
+    statusLabel: string;
+    warning?: string | null;
+  };
+  paymentState: CustomerCorePaymentState | null;
+  task: CustomerTaskDetail | null;
+};
+
 export type CustomerImageUploadResponse = {
   image: {
     createdAt: string;

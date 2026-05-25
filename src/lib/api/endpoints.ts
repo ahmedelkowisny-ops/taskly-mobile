@@ -23,6 +23,8 @@ export const endpoints = {
     taskApproveCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/approve-completion`,
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
     taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
+    taskPaymentFinalize: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/payment/finalize`,
+    taskPaymentSetup: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/payment/setup`,
     taskRejectCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/reject-completion`,
     taskSelectTasker: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/select-tasker`,
     tasks: '/api/mobile/customer/tasks',

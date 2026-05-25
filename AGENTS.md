@@ -176,6 +176,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile must not call payment setup or payment finalize from select/reserve work.
 - Mobile must not expose Stripe secrets or client secrets.
 - Select/reserve must not calculate payment, fees, commission, or payout on mobile.
+- Backend mobile payment setup/finalize endpoints must wrap existing payment logic with mobile auth and ownership checks.
+- Mobile payment API wrappers must not be connected to UI until the Stripe/card collection phase.
+- Mobile must never send raw card data or Stripe secrets.
+- Payment setup/finalize must not capture, release, or refund payments.
 - UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 
 # Mobile Auth Rules
