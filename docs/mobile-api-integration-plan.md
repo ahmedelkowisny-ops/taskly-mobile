@@ -1011,6 +1011,34 @@ Scope remains limited:
 - No direct provider accept/reserve was added.
 - No payment capture, release, refund, Stripe flow, booking, assignment, reservation, cancellation, dispute, help, provider cancellation, Pro response, Pro Access payment/unlock, or additional lifecycle logic was added.
 
+## Phase 22E Provider Core Request-Completion Action
+
+Phase 22E connects only the provider Core runtime "Request completion" action for eligible assigned Core tasks that have already started.
+
+Backend behavior:
+
+- Added `POST /api/mobile/provider/core-tasks/[taskId]/request-completion`.
+- The route requires mobile auth and derives the provider/tasker identity from the backend mobile session.
+- The route rejects server-owned fields such as tasker/customer ids, status, reservation, booking, payment, payout, Stripe, assignment, lifecycle, `startedAt`, `completedAt`, and completion approval fields.
+- The backend follows the existing request-completion rules: approved/verified Core tasker, booking exists, authenticated provider is the booking tasker, task is `IN_PROGRESS` or already `PENDING_COMPLETION`, task is started, and completed/cancelled/disputed tasks are blocked.
+- The current web action does not support provider completion notes, so the mobile route accepts an empty body and rejects non-empty `note`.
+- Repeated requests while already `PENDING_COMPLETION` are treated as idempotent and do not create another customer notification.
+- The action moves only `IN_PROGRESS -> PENDING_COMPLETION`, keeps booking active if needed, notifies the customer for review, and returns the refreshed Provider Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Provider Core task detail shows `Request completion` only when `nextActions.canRequestCompletion` is true.
+- The UI asks for confirmation and explains that the customer must approve before the task is completed.
+- After success, the screen refreshes from the backend and shows the pending approval state.
+- Demo mode simulates completion requested locally and does not call the backend.
+- Provider Core task list shows a compact request-completion indicator when the backend response says it is actionable.
+
+Scope remains limited:
+
+- No customer approve/reject completion action was added.
+- The task is not marked completed directly by the provider mobile action.
+- No payment capture, release, refund, Stripe flow, cancellation, dispute, help, provider cancellation, direct accept/reserve, booking creation, assignment, reservation, Pro response, Pro Access payment/unlock, or additional lifecycle logic was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

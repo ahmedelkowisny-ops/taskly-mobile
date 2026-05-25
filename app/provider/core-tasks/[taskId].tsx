@@ -11,6 +11,7 @@ import {
   expressInterestInCoreTask,
   getProviderCoreTaskDetail,
   markProviderCoreTaskOnTheWay,
+  requestProviderCoreTaskCompletion,
   startProviderCoreTask,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -29,6 +30,7 @@ export default function ProviderCoreTaskDetailScreen() {
   const [stateLabel, setStateLabel] = useState<string | null>(null);
   const [isExpressingInterest, setIsExpressingInterest] = useState(false);
   const [isMarkingOnTheWay, setIsMarkingOnTheWay] = useState(false);
+  const [isRequestingCompletion, setIsRequestingCompletion] = useState(false);
   const [isStartingTask, setIsStartingTask] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -137,6 +139,27 @@ export default function ProviderCoreTaskDetailScreen() {
             primary: { label: t('taskStarted'), type: 'task_started' },
           },
           statusLabel: t('taskStarted'),
+        },
+      };
+    });
+  }, []);
+
+  const markDemoCompletionRequested = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskAlreadyWaitingApproval'),
+            blockedReasonCode: 'TASK_PENDING_COMPLETION',
+            canRequestCompletion: false,
+            primary: { label: t('completionRequested'), type: 'await_customer_approval' },
+          },
+          status: 'PENDING_COMPLETION',
+          statusLabel: t('completionRequested'),
         },
       };
     });
@@ -348,6 +371,89 @@ export default function ProviderCoreTaskDetailScreen() {
     ]);
   }, [handleStartTask]);
 
+  const handleRequestCompletion = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+
+    if (status === 'demo') {
+      markDemoCompletionRequested();
+      setActionMessage(t('completionRequested'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsRequestingCompletion(true);
+    const result = await requestProviderCoreTaskCompletion(taskId, authToken);
+    setIsRequestingCompletion(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      }
+      setActionMessage(
+        result.data.alreadyPending ? t('taskAlreadyWaitingApproval') : t('completionRequested'),
+      );
+      return;
+    }
+
+    if (result.error.code === 'TASK_NOT_STARTED') {
+      setActionError(t('taskNotStartedYet'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASK_PENDING_COMPLETION') {
+      setActionError(t('taskAlreadyWaitingApproval'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASK_COMPLETED') {
+      setActionError(t('taskAlreadyCompleted'));
+      void loadDetail();
+      return;
+    }
+
+    if (
+      result.error.code === 'TASK_NOT_IN_PROGRESS' ||
+      result.error.code === 'TASK_CANCELLED' ||
+      result.error.code === 'TASK_DISPUTED'
+    ) {
+      setActionError(t('taskNotReadyYet'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'NOT_ASSIGNED_TASKER') {
+      setActionError(t('notAssignedToTask'));
+      return;
+    }
+
+    if (result.error.code === 'TASKER_NOT_VERIFIED' || result.error.code === 'TASKER_NOT_APPROVED') {
+      setActionError(t('completeVerificationToRespond'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotRequestCompletion'));
+  }, [getValidAccessToken, loadDetail, markDemoCompletionRequested, status, taskId]);
+
+  const confirmRequestCompletion = useCallback(() => {
+    Alert.alert(t('requestCustomerApprovalPrompt'), t('customerMustApproveCompletion'), [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: handleRequestCompletion, text: t('requestCompletion') },
+    ]);
+  }, [handleRequestCompletion]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -392,11 +498,13 @@ export default function ProviderCoreTaskDetailScreen() {
             actionMessage={actionMessage}
             isExpressingInterest={isExpressingInterest}
             isMarkingOnTheWay={isMarkingOnTheWay}
+            isRequestingCompletion={isRequestingCompletion}
             isStartingTask={isStartingTask}
             needsToolsConfirmation={needsToolsConfirmation}
             onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
             onExpressInterest={() => handleExpressInterest()}
             onMarkOnTheWay={handleMarkOnTheWay}
+            onRequestCompletion={confirmRequestCompletion}
             onStartTask={confirmStartTask}
             task={task}
           />
@@ -456,11 +564,13 @@ function ProviderActions({
   actionMessage,
   isExpressingInterest,
   isMarkingOnTheWay,
+  isRequestingCompletion,
   isStartingTask,
   needsToolsConfirmation,
   onConfirmTools,
   onExpressInterest,
   onMarkOnTheWay,
+  onRequestCompletion,
   onStartTask,
   task,
 }: {
@@ -468,21 +578,24 @@ function ProviderActions({
   actionMessage: string | null;
   isExpressingInterest: boolean;
   isMarkingOnTheWay: boolean;
+  isRequestingCompletion: boolean;
   isStartingTask: boolean;
   needsToolsConfirmation: boolean;
   onConfirmTools: () => void;
   onExpressInterest: () => void;
   onMarkOnTheWay: () => void;
+  onRequestCompletion: () => void;
   onStartTask: () => void;
   task: ProviderCoreTaskDetail;
 }) {
   const canExpressInterest = task.nextActions.canExpressInterest;
   const canMarkOnTheWay = task.nextActions.canMarkOnTheWay;
+  const canRequestCompletion = task.nextActions.canRequestCompletion;
   const canStart = task.nextActions.canStart;
   const blockedReason = task.nextActions.blockedReason;
 
   return (
-    <AppCard accentColor={canExpressInterest || canMarkOnTheWay || canStart ? colors.tasklyBlue600 : undefined}>
+    <AppCard accentColor={canExpressInterest || canMarkOnTheWay || canRequestCompletion || canStart ? colors.tasklyBlue600 : undefined}>
       <AppText variant="sectionTitle">Next steps</AppText>
       {canExpressInterest ? (
         <>
@@ -500,6 +613,12 @@ function ProviderActions({
         <>
           <AppText color={colors.slate700}>{t('startTaskPrompt')}</AppText>
           <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
+        </>
+      ) : null}
+      {canRequestCompletion ? (
+        <>
+          <AppText color={colors.slate700}>{t('requestCustomerApprovalPrompt')}</AppText>
+          <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
         </>
       ) : null}
 
@@ -522,6 +641,13 @@ function ProviderActions({
               {t('confirmToolsAndExpressInterest')}
             </AppButton>
           ) : null}
+        </View>
+      ) : canRequestCompletion ? (
+        <View style={styles.stack}>
+          <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
+          <AppButton loading={isRequestingCompletion} onPress={onRequestCompletion}>
+            {isRequestingCompletion ? t('requestingCompletion') : t('requestCompletion')}
+          </AppButton>
         </View>
       ) : canStart ? (
         <View style={styles.stack}>

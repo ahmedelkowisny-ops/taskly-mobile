@@ -24,6 +24,7 @@ export {
   getProviderProRequestDetail,
   getProviderProRequests,
   markProviderCoreTaskOnTheWay,
+  requestProviderCoreTaskCompletion,
   startProviderCoreTask,
 } from './provider';
 export {
@@ -115,6 +116,8 @@ export type {
   ProviderProRequestsResponse,
   ProviderProRequestSummary,
   ProviderProResponseSummary,
+  RequestProviderCoreTaskCompletionPayload,
+  RequestProviderCoreTaskCompletionResponse,
   SendMessageResponse,
   StartProviderCoreTaskResponse,
   PostingRulesResponse,

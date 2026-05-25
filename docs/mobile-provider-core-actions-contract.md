@@ -114,7 +114,7 @@ The provider mobile Core task list is read-only.
    - Keep payment readiness and schedule gates server-side.
    - Confirm whether the existing `startTask` timestamp-only behavior is intentional before mobile labels imply a status transition.
 
-4. Phase 22E: Provider "Request completion".
+4. Phase 22E: Provider "Request completion". Implemented.
    - Use the existing `requestTaskCompletion` server logic.
    - Requires `startedAt` and an active/in-progress task.
 
@@ -322,6 +322,8 @@ Mobile display:
 
 `POST /api/mobile/provider/core-tasks/[taskId]/request-completion`
 
+Status: implemented in Phase 22E.
+
 Request:
 
 ```json
@@ -335,25 +337,17 @@ Checks:
 - Booking exists.
 - Task is `IN_PROGRESS` or already `PENDING_COMPLETION`.
 - Task is not completed.
+- Cancelled and disputed tasks are blocked.
 - `startedAt` exists.
+- Non-empty `note` is rejected because the current web request-completion action has no completion note field.
+- Already `PENDING_COMPLETION` is idempotent and does not create another customer notification.
 
-Success response proposal:
+Success response:
 
 ```json
 {
+  "alreadyPending": false,
   "task": { "...": "ProviderCoreTaskDetail" },
-  "nextActions": {
-    "canExpressInterest": false,
-    "canChat": true,
-    "canMarkOnTheWay": false,
-    "canStart": false,
-    "canRequestCompletion": false,
-    "canCancelOrReportIssue": false,
-    "primary": {
-      "type": "await_customer_approval",
-      "label": "Await customer approval"
-    }
-  }
 }
 ```
 
@@ -363,14 +357,22 @@ Errors:
 - `TASKER_NOT_VERIFIED`
 - `BOOKING_NOT_FOUND`
 - `NOT_ASSIGNED_TASKER`
-- `TASK_ALREADY_COMPLETED`
+- `TASK_COMPLETED`
+- `TASK_CANCELLED`
+- `TASK_DISPUTED`
 - `TASK_NOT_IN_PROGRESS`
 - `TASK_NOT_STARTED`
+- `NOTE_NOT_SUPPORTED`
 
 Mobile display:
 
 - Show only when backend says `canRequestCompletion`.
+- Show a confirmation prompt before calling the endpoint.
+- Explain that the customer must approve before the task is completed.
 - After success, show pending customer approval.
+- Do not add customer approve/reject actions.
+- Do not mark the task completed locally unless the backend response says so in a future customer/payment phase.
+- Do not imply that mobile captures, releases, refunds, or changes payment objects.
 
 ### Cancel / Cannot Attend
 

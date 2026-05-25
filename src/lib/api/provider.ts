@@ -10,6 +10,8 @@ import {
   ProviderProfileResponse,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
+  RequestProviderCoreTaskCompletionPayload,
+  RequestProviderCoreTaskCompletionResponse,
   StartProviderCoreTaskResponse,
 } from './domain';
 import { ApiResult } from './types';
@@ -68,6 +70,19 @@ export function startProviderCoreTask(
   return apiRequest<StartProviderCoreTaskResponse>(endpoints.provider.coreTaskStart(taskId), {
     authToken,
     body: {},
+    method: 'POST',
+  });
+}
+
+export function requestProviderCoreTaskCompletion(
+  taskId: string,
+  authToken: string,
+  payload: RequestProviderCoreTaskCompletionPayload = {},
+): Promise<ApiResult<RequestProviderCoreTaskCompletionResponse>> {
+  const body = payload.note ? { note: payload.note } : {};
+  return apiRequest<RequestProviderCoreTaskCompletionResponse>(endpoints.provider.coreTaskRequestCompletion(taskId), {
+    authToken,
+    body,
     method: 'POST',
   });
 }

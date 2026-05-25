@@ -409,6 +409,15 @@ export type StartProviderCoreTaskResponse = {
   task: ProviderCoreTaskDetail | null;
 };
 
+export type RequestProviderCoreTaskCompletionPayload = {
+  note?: string;
+};
+
+export type RequestProviderCoreTaskCompletionResponse = {
+  alreadyPending: boolean;
+  task: ProviderCoreTaskDetail | null;
+};
+
 export type ProviderProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;

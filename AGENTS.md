@@ -132,6 +132,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Start Task must not create payment, booking, reservation, or assignment records.
 - Start Task must not capture, release, or refund payments.
 - Request Completion remains a separate phase from Start Task.
+- Provider Request Completion must be shown only from backend-authored `nextActions`.
+- Request Completion must not complete the task by itself.
+- Request Completion must not capture, release, or refund payments.
+- Customer approval/rejection remains a separate phase from provider request-completion.
+- Payment completion remains server-authoritative and separate from mobile provider request-completion wiring.
 
 # Mobile Auth Rules
 

@@ -127,6 +127,9 @@ export default function ProviderCoreTasksScreen() {
                 {task.nextActions.canStart ? (
                   <StatusBadge label={t('startTask')} tone="success" />
                 ) : null}
+                {task.nextActions.canRequestCompletion ? (
+                  <StatusBadge label={t('requestCompletion')} tone="success" />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>
