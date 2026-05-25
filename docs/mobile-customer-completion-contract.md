@@ -119,7 +119,7 @@ Mobile must never calculate capture/release/refund eligibility. The backend must
 ## Proposed Phase Order
 
 1. Phase 23B: add customer completion capability `nextActions` to read-only mobile task list/detail responses. Implemented.
-2. Phase 23C: connect customer reject-completion, including reason validation and refreshed detail response.
+2. Phase 23C: connect customer reject-completion, including reason validation and refreshed detail response. Implemented.
 3. Phase 23D: connect customer approve-completion, using only the existing backend payment-sensitive action.
 4. Phase 23E: polish completion decision UI, review/invoice entry points, and support/help copy.
 
@@ -128,6 +128,8 @@ Rejection is recommended before approval because it does not release payment and
 ## Proposed Endpoint: Reject Completion
 
 `POST /api/mobile/customer/tasks/[taskId]/reject-completion`
+
+Phase 23C implementation status: implemented.
 
 Auth and authorization:
 
@@ -196,6 +198,7 @@ Mobile UI:
 - Ask for a short reason.
 - Explain that the provider can continue work and request completion again.
 - Do not mention refunds, disputes, or payment release.
+- Do not show customer approve completion yet.
 
 ## Proposed Endpoint: Approve Completion
 

@@ -4,12 +4,14 @@ import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
+import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { getCustomerTaskDetail } from '@/src/lib/api/customer';
-import { CustomerCoreTaskNextActions, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
+import { getCustomerTaskDetail, rejectCustomerTaskCompletion } from '@/src/lib/api/customer';
+import { CustomerCoreTaskNextActions, CustomerTaskDetail, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -22,10 +24,16 @@ export default function CustomerTaskDetailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [isRejectingCompletion, setIsRejectingCompletion] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
     setStateLabel(null);
+    setActionError(null);
 
     if (status === 'demo') {
       setData(getMockCustomerTaskDetailResponse(taskId));
@@ -71,6 +79,98 @@ export default function CustomerTaskDetailScreen() {
 
   const task = data?.task;
 
+  const markDemoCompletionRejected = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskerCanRequestCompletionAgain'),
+            blockedReasonCode: 'WAITING_FOR_PROVIDER',
+            canApproveCompletion: false,
+            canRejectCompletion: false,
+            primaryAction: 'chat',
+          },
+          status: 'IN_PROGRESS',
+          statusLabel: t('inProgress'),
+          timeline: current.task.timeline.map((item) =>
+            item.id === 'completion'
+              ? { ...item, description: t('taskerCanRequestCompletionAgain'), status: 'upcoming' as const }
+              : item,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const handleRejectCompletion = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+    setRejectionReasonError(null);
+
+    const reason = rejectionReason.trim();
+    if (!reason) {
+      setRejectionReasonError(t('reasonRequired'));
+      return;
+    }
+    if (reason.length > 1000) {
+      setRejectionReasonError(t('messageTooLong'));
+      return;
+    }
+
+    if (!task?.nextActions.canRejectCompletion) {
+      setActionError(t('couldNotRequestChanges'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoCompletionRejected();
+      setRejectionReason('');
+      setActionMessage(t('changesRequested'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsRejectingCompletion(true);
+    const result = await rejectCustomerTaskCompletion(taskId, { reason }, authToken);
+    setIsRejectingCompletion(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setRejectionReason('');
+      setActionMessage(t('changesRequested'));
+      return;
+    }
+
+    if (result.error.code === 'MISSING_REASON') {
+      setRejectionReasonError(t('reasonRequired'));
+      return;
+    }
+    if (result.error.code === 'REASON_TOO_LONG') {
+      setRejectionReasonError(t('messageTooLong'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotRequestChanges'));
+  }, [getValidAccessToken, loadDetail, markDemoCompletionRejected, rejectionReason, status, task?.nextActions.canRejectCompletion, taskId]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -113,6 +213,16 @@ export default function CustomerTaskDetailScreen() {
           <Images images={task.images} />
           <Timeline items={task.timeline} accent="core" />
           <NextActions actions={task.nextActions} tone="core" />
+          <CompletionDecision
+            actionError={actionError}
+            actionMessage={actionMessage}
+            isRejecting={isRejectingCompletion}
+            onReasonChange={setRejectionReason}
+            onReject={handleRejectCompletion}
+            reason={rejectionReason}
+            reasonError={rejectionReasonError}
+            task={task}
+          />
         </>
       ) : null}
     </Screen>
@@ -187,11 +297,59 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
     <AppCard>
       <AppText variant="sectionTitle">Next steps</AppText>
       {isCompletionReview ? (
-        <AppText color={colors.slate700}>Tasker requested completion. Approval actions will be connected next.</AppText>
+        <AppText color={colors.slate700}>{t('completionApprovalConnectedNext')}</AppText>
       ) : actions.blockedReason ? (
         <AppText color={colors.slate700}>{actions.blockedReason}</AppText>
       ) : null}
       <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
+    </AppCard>
+  );
+}
+
+function CompletionDecision({
+  actionError,
+  actionMessage,
+  isRejecting,
+  onReasonChange,
+  onReject,
+  reason,
+  reasonError,
+  task,
+}: {
+  actionError: string | null;
+  actionMessage: string | null;
+  isRejecting: boolean;
+  onReasonChange: (value: string) => void;
+  onReject: () => void;
+  reason: string;
+  reasonError: string | null;
+  task: CustomerTaskDetail;
+}) {
+  if (!task.nextActions.canRejectCompletion) return null;
+
+  return (
+    <AppCard accentColor={colors.warning600}>
+      <StatusBadge label={t('waitingForCustomerApproval')} tone="warning" />
+      <AppText variant="sectionTitle">{t('askForChanges')}</AppText>
+      <AppText color={colors.slate700}>{t('tellTaskerWhatNeedsFixing')}</AppText>
+      <AppText color={colors.slate700}>{t('taskReturnsInProgress')}</AppText>
+      <FormField
+        errorText={reasonError || undefined}
+        helperText={t('taskerCanRequestCompletionAgain')}
+        label={t('reasonForChanges')}
+        multiline
+        onChangeText={onReasonChange}
+        placeholder={t('reasonForChanges')}
+        value={reason}
+      />
+      {actionMessage ? <AppText color={colors.success600}>{actionMessage}</AppText> : null}
+      {actionError ? <AppText color={colors.danger600}>{actionError}</AppText> : null}
+      <AppButton loading={isRejecting} onPress={onReject} tone="neutral" variant="outline">
+        {isRejecting ? t('sendingFeedback') : t('askForChanges')}
+      </AppButton>
+      {task.nextActions.canApproveCompletion ? (
+        <AppText color={colors.slate500} variant="small">{t('completionApprovalConnectedNext')}</AppText>
+      ) : null}
     </AppCard>
   );
 }

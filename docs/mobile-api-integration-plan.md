@@ -1169,6 +1169,33 @@ Scope remains limited:
 - No customer reject-completion mutation was connected.
 - No payment capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or lifecycle mutation was added.
 
+## Phase 23C Customer Core Reject Completion
+
+Phase 23C connects only the customer Core reject-completion action for tasks where the backend-authored `nextActions` allow it.
+
+Backend behavior:
+
+- Added `POST /api/mobile/customer/tasks/[taskId]/reject-completion`.
+- The route requires mobile auth and derives the customer identity from the backend mobile session.
+- The route verifies customer workspace access, task existence, non-deleted state, authenticated customer ownership, `PENDING_COMPLETION` status, assigned tasker, and booking presence before calling the existing rejection logic.
+- The route requires a trimmed `reason`, rejects empty reasons, and limits the reason to 1000 characters.
+- The route rejects server-owned lifecycle, booking, reservation, payment, Stripe, refund, payout, provider, tasker, and status fields.
+- The route blocks completed, cancelled, and disputed tasks with mobile-friendly errors.
+- After rejection, the route returns the refreshed customer Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Added `rejectCustomerTaskCompletion(taskId, { reason })` to the customer API wrapper.
+- Customer Core task detail shows `Ask for changes` only when `task.nextActions.canRejectCompletion` is true.
+- The UI requires a reason, shows sending/success/error state, and refreshes from the backend response.
+- Demo mode simulates the task returning to `IN_PROGRESS` locally and removes completion decision actions without calling the backend.
+- Customer approve completion remains read-only/not connected.
+
+Scope remains limited:
+
+- No customer approve-completion action was added.
+- No payment capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or payment/lifecycle rule change was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

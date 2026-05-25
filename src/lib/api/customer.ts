@@ -10,6 +10,8 @@ import {
   CustomerProRequestsResponse,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
+  RejectCustomerTaskCompletionPayload,
+  RejectCustomerTaskCompletionResponse,
 } from './domain';
 import { ApiResult } from './types';
 
@@ -41,6 +43,18 @@ export function createCustomerTask(
   return apiRequest<CreateCustomerTaskResponse>(endpoints.customer.tasks, {
     authToken,
     body: payload,
+    method: 'POST',
+  });
+}
+
+export function rejectCustomerTaskCompletion(
+  taskId: string,
+  payload: RejectCustomerTaskCompletionPayload,
+  authToken: string,
+): Promise<ApiResult<RejectCustomerTaskCompletionResponse>> {
+  return apiRequest<RejectCustomerTaskCompletionResponse>(endpoints.customer.taskRejectCompletion(taskId), {
+    authToken,
+    body: { reason: payload.reason },
     method: 'POST',
   });
 }

@@ -228,6 +228,16 @@ export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
   };
 };
 
+export type RejectCustomerTaskCompletionPayload = {
+  reason: string;
+};
+
+export type RejectCustomerTaskCompletionResponse = {
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions | null;
+  task: CustomerTaskDetail | null;
+};
+
 export type CustomerImageUploadResponse = {
   image: {
     createdAt: string;

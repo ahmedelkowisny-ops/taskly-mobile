@@ -10,6 +10,7 @@ export {
   getCustomerProRequests,
   getCustomerTaskDetail,
   getCustomerTasks,
+  rejectCustomerTaskCompletion,
 } from './customer';
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
@@ -119,6 +120,8 @@ export type {
   ProviderProResponseSummary,
   RequestProviderCoreTaskCompletionPayload,
   RequestProviderCoreTaskCompletionResponse,
+  RejectCustomerTaskCompletionPayload,
+  RejectCustomerTaskCompletionResponse,
   SendMessageResponse,
   StartProviderCoreTaskResponse,
   PostingRulesResponse,

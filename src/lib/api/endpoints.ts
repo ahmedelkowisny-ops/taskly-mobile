@@ -22,6 +22,7 @@ export const endpoints = {
     proRequests: '/api/mobile/customer/pro-requests',
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
     taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
+    taskRejectCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/reject-completion`,
     tasks: '/api/mobile/customer/tasks',
   },
   messages: {
