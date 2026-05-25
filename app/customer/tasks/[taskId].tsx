@@ -9,9 +9,11 @@ import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   approveCustomerTaskCompletion,
+  cancelCustomerTask,
   finalizeCustomerTaskPayment,
   getCustomerTaskDetail,
   rejectCustomerTaskCompletion,
+  requestCustomerTaskSupport,
   selectCustomerTasker,
   setupCustomerTaskPayment,
 } from '@/src/lib/api/customer';
@@ -49,14 +51,21 @@ export default function CustomerTaskDetailScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [isApprovingCompletion, setIsApprovingCompletion] = useState(false);
+  const [isCancellingTask, setIsCancellingTask] = useState(false);
   const [isRejectingCompletion, setIsRejectingCompletion] = useState(false);
+  const [isRequestingSupport, setIsRequestingSupport] = useState(false);
   const [isCardComplete, setIsCardComplete] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
   const [paymentSetupStage, setPaymentSetupStage] = useState<PaymentSetupStage | null>(null);
   const [selectingTaskerId, setSelectingTaskerId] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellationReasonError, setCancellationReasonError] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
+  const [supportDetails, setSupportDetails] = useState('');
+  const [supportReason, setSupportReason] = useState('');
+  const [supportReasonError, setSupportReasonError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
@@ -269,6 +278,135 @@ export default function CustomerTaskDetailScreen() {
     });
   }, []);
 
+  const markDemoTaskCancelled = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      const wasLate = current.task.cancellationState?.status === 'late_cancellation_available';
+      const cancellationState: CoreCancellationState = {
+        ...(current.task.cancellationState || {
+          blockedReason: null,
+          blockedReasonCode: null,
+          estimatedPolicyOutcomeLabel: null,
+          feeLabel: null,
+          freeCancellationUntil: null,
+          helperText: t('taskCancelled'),
+          policySummary: t('cancellationPolicy'),
+          refundLabel: null,
+          requiresReason: false,
+          status: 'cancelled',
+          statusLabel: t('cancelled'),
+          supportReviewLabel: null,
+        }),
+        blockedReason: t('taskCancelled'),
+        blockedReasonCode: 'TASK_CANCELLED',
+        helperText: wasLate ? t('lateCancellationSubmitted') : t('taskCancelled'),
+        requiresReason: false,
+        status: wasLate ? 'cancelled_late' : 'cancelled_free',
+        statusLabel: t('cancelled'),
+      };
+
+      return {
+        task: {
+          ...current.task,
+          cancellationBlockedReason: cancellationState.blockedReason,
+          cancellationPolicySummary: cancellationState.policySummary,
+          cancellationState,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskCancelled'),
+            blockedReasonCode: 'TASK_CANCELLED',
+            canApproveCompletion: false,
+            canCancel: false,
+            canCancelFree: false,
+            canCancelLate: false,
+            canOpenSupport: false,
+            canPreparePayment: false,
+            canRejectCompletion: false,
+            canRequestHelp: false,
+            canRequestRefund: false,
+            primaryAction: 'none',
+          },
+          paymentState: {
+            ...current.task.paymentState,
+            helperText: t('cancelledByBackendPolicy'),
+            paymentProtected: false,
+            status: current.task.paymentState.status === 'held' ? 'refunded' : 'cancelled',
+            statusLabel: current.task.paymentState.status === 'held' ? t('paymentRefunded') : t('cancelled'),
+          },
+          paymentStatusLabel: current.task.paymentState.status === 'held' ? t('paymentRefunded') : t('cancelled'),
+          status: 'CANCELLED',
+          statusLabel: t('cancelled'),
+        },
+      };
+    });
+  }, []);
+
+  const markDemoSupportRequested = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      const supportState: CoreSupportState = {
+        blockedReason: null,
+        blockedReasonCode: null,
+        helperText: t('supportReviewSubmitted'),
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-support-request',
+        latestRequestType: 'IN_PROGRESS_CANCELLATION_REQUEST',
+        status: 'under_review',
+        statusLabel: t('underSupportReview'),
+        supportReviewLabel: t('supportReviewSubmitted'),
+      };
+      const disputeState: CoreDisputeState = {
+        helperText: t('supportReviewSubmitted'),
+        resolutionLabel: null,
+        status: 'under_review',
+        statusLabel: t('underSupportReview'),
+        supportReviewLabel: t('supportReviewSubmitted'),
+      };
+      const refundState: CoreRefundState = {
+        helperText: t('refundReviewHandledBySupport'),
+        outcomeLabel: null,
+        status: 'under_review',
+        statusLabel: t('refundReview'),
+      };
+
+      return {
+        task: {
+          ...current.task,
+          disputeState,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('underSupportReview'),
+            blockedReasonCode: 'TASK_DISPUTED',
+            canApproveCompletion: false,
+            canCancel: false,
+            canCancelFree: false,
+            canCancelLate: false,
+            canOpenSupport: true,
+            canRejectCompletion: false,
+            canRequestHelp: false,
+            canRequestRefund: false,
+            primaryAction: 'open_support_status',
+          },
+          paymentState: {
+            ...current.task.paymentState,
+            helperText: t('supportReviewSubmitted'),
+            paymentStatus: 'DISPUTED',
+            status: 'disputed',
+            statusLabel: t('underSupportReview'),
+          },
+          paymentStatusLabel: t('underSupportReview'),
+          refundState,
+          status: 'DISPUTED',
+          statusLabel: t('underSupportReview'),
+          supportReviewLabel: t('supportReviewSubmitted'),
+          supportState,
+        },
+      };
+    });
+  }, []);
+
   const finalizePaymentSetup = useCallback(async (authToken: string, payload: { paymentMethodId?: string; setupIntentId?: string }) => {
     setPaymentSetupStage('finalize');
     const finalizeResult = await finalizeCustomerTaskPayment(taskId, payload, authToken);
@@ -464,6 +602,183 @@ export default function CustomerTaskDetailScreen() {
     ]);
   }, [submitPaymentSetup, task?.nextActions]);
 
+  const submitCancelTask = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+    setActionWarning(null);
+    setCancellationReasonError(null);
+
+    if (!task?.nextActions.canCancel) {
+      setActionError(t('cancellationNotAvailable'));
+      return;
+    }
+
+    const reason = cancellationReason.trim();
+    if ((task.nextActions.canCancelLate || task.cancellationState?.requiresReason) && !reason) {
+      setCancellationReasonError(t('reasonRequired'));
+      return;
+    }
+    if (reason.length > 1000) {
+      setCancellationReasonError(t('messageTooLong'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoTaskCancelled();
+      setCancellationReason('');
+      setActionMessage(t('taskCancelled'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsCancellingTask(true);
+    const result = await cancelCustomerTask(taskId, { confirmationAccepted: true, ...(reason ? { reason } : null) }, authToken);
+    setIsCancellingTask(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setCancellationReason('');
+      setActionMessage(result.data.message || t('taskCancelled'));
+      return;
+    }
+
+    if (result.error.code === 'MISSING_REASON') {
+      setCancellationReasonError(t('reasonRequired'));
+      return;
+    }
+    if (result.error.code === 'REASON_TOO_LONG') {
+      setCancellationReasonError(t('messageTooLong'));
+      return;
+    }
+    if (result.error.code === 'CANCELLATION_REQUIRES_SUPPORT') {
+      setActionError(t('cancellationBlockedUseSupport'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotCancelTask'));
+  }, [
+    cancellationReason,
+    getValidAccessToken,
+    loadDetail,
+    markDemoTaskCancelled,
+    status,
+    task?.cancellationState?.requiresReason,
+    task?.nextActions.canCancel,
+    task?.nextActions.canCancelLate,
+    taskId,
+  ]);
+
+  const handleCancelTask = useCallback(() => {
+    if (!task) return;
+
+    const summary = [
+      task.cancellationState?.estimatedPolicyOutcomeLabel,
+      task.cancellationState?.policySummary || task.cancellationPolicySummary,
+      task.nextActions.canCancelLate ? t('lateCancellationConfirmBody') : t('freeCancellationConfirmBody'),
+    ].filter(Boolean).join('\n');
+
+    Alert.alert(
+      task.nextActions.canCancelLate ? t('lateCancellationWarning') : t('confirmCancellation'),
+      summary,
+      [
+        { style: 'cancel', text: t('keepTask') },
+        { onPress: () => void submitCancelTask(), style: 'destructive', text: t('cancelTask') },
+      ],
+    );
+  }, [submitCancelTask, task]);
+
+  const submitSupportRequest = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+    setActionWarning(null);
+    setSupportReasonError(null);
+
+    const reason = supportReason.trim();
+    const details = supportDetails.trim();
+    if (!reason) {
+      setSupportReasonError(t('reasonRequired'));
+      return;
+    }
+    if (reason.length > 2000 || details.length > 6000) {
+      setSupportReasonError(t('messageTooLong'));
+      return;
+    }
+
+    if (!task || !canRequestCustomerSupport(task.nextActions)) {
+      setActionError(t('supportRequestNotAvailable'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoSupportRequested();
+      setSupportDetails('');
+      setSupportReason('');
+      setActionMessage(t('supportRequestSubmitted'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsRequestingSupport(true);
+    const result = await requestCustomerTaskSupport(taskId, { details, reason }, authToken);
+    setIsRequestingSupport(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setSupportDetails('');
+      setSupportReason('');
+      setActionMessage(result.data.message || t('supportRequestSubmitted'));
+      return;
+    }
+
+    if (result.error.code === 'MISSING_REASON') {
+      setSupportReasonError(t('reasonRequired'));
+      return;
+    }
+    if (result.error.code === 'REASON_TOO_LONG' || result.error.code === 'DETAILS_TOO_LONG') {
+      setSupportReasonError(t('messageTooLong'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotRequestSupport'));
+  }, [
+    getValidAccessToken,
+    loadDetail,
+    markDemoSupportRequested,
+    status,
+    supportDetails,
+    supportReason,
+    task,
+    taskId,
+  ]);
+
   const submitApproveCompletion = useCallback(async () => {
     setActionError(null);
     setActionMessage(null);
@@ -637,6 +952,23 @@ export default function CustomerTaskDetailScreen() {
           </AppCard>
 
           <CoreCancellationSupportCard task={task} />
+          <CustomerCancellationSupportActions
+            actionError={actionError}
+            actionMessage={actionMessage}
+            cancellationReason={cancellationReason}
+            cancellationReasonError={cancellationReasonError}
+            isCancelling={isCancellingTask}
+            isRequestingSupport={isRequestingSupport}
+            onCancelTask={handleCancelTask}
+            onCancellationReasonChange={setCancellationReason}
+            onRequestSupport={submitSupportRequest}
+            onSupportDetailsChange={setSupportDetails}
+            onSupportReasonChange={setSupportReason}
+            supportDetails={supportDetails}
+            supportReason={supportReason}
+            supportReasonError={supportReasonError}
+            task={task}
+          />
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
           <PaymentSetupCard
             isCardComplete={isCardComplete}
@@ -873,7 +1205,111 @@ function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
       {support && isRelevantSupportState(support) ? <AppText color={colors.slate700}>{support.helperText}</AppText> : null}
       {dispute && isRelevantDisputeState(dispute) ? <AppText color={colors.slate700}>{dispute.helperText}</AppText> : null}
       {refund && isRelevantRefundState(refund) ? <AppText color={colors.slate700}>{refund.helperText}</AppText> : null}
-      <AppText color={colors.slate500}>{t('readOnlyNoAction')}</AppText>
+      {!task.nextActions.canCancel && !canRequestCustomerSupport(task.nextActions) ? (
+        <AppText color={colors.slate500}>{t('readOnlyNoAction')}</AppText>
+      ) : null}
+    </AppCard>
+  );
+}
+
+function CustomerCancellationSupportActions({
+  actionError,
+  actionMessage,
+  cancellationReason,
+  cancellationReasonError,
+  isCancelling,
+  isRequestingSupport,
+  onCancelTask,
+  onCancellationReasonChange,
+  onRequestSupport,
+  onSupportDetailsChange,
+  onSupportReasonChange,
+  supportDetails,
+  supportReason,
+  supportReasonError,
+  task,
+}: {
+  actionError: string | null;
+  actionMessage: string | null;
+  cancellationReason: string;
+  cancellationReasonError: string | null;
+  isCancelling: boolean;
+  isRequestingSupport: boolean;
+  onCancelTask: () => void;
+  onCancellationReasonChange: (value: string) => void;
+  onRequestSupport: () => void;
+  onSupportDetailsChange: (value: string) => void;
+  onSupportReasonChange: (value: string) => void;
+  supportDetails: string;
+  supportReason: string;
+  supportReasonError: string | null;
+  task: CustomerTaskDetail;
+}) {
+  const canCancel = task.nextActions.canCancel;
+  const canRequestSupport = canRequestCustomerSupport(task.nextActions);
+  if (!canCancel && !canRequestSupport) return null;
+
+  const cancellation = task.cancellationState;
+  const isLateCancellation = task.nextActions.canCancelLate || cancellation?.status === 'late_cancellation_available';
+
+  return (
+    <AppCard accentColor={isLateCancellation || canRequestSupport ? colors.warning600 : colors.slate500}>
+      <StatusBadge
+        label={canRequestSupport ? t('requestSupportReview') : isLateCancellation ? t('lateCancellationWarning') : t('freeCancellationAvailable')}
+        tone={isLateCancellation || canRequestSupport ? 'warning' : 'neutral'}
+      />
+      <AppText variant="sectionTitle">{canRequestSupport ? t('contactSupport') : t('cancelTask')}</AppText>
+      {canCancel ? (
+        <>
+          <AppText color={colors.slate700}>
+            {cancellation?.estimatedPolicyOutcomeLabel || cancellation?.policySummary || task.cancellationPolicySummary || t('cancellationPolicy')}
+          </AppText>
+          {isLateCancellation ? (
+            <>
+              <AppText color={colors.warning600}>{t('protectedPaymentCancellationNote')}</AppText>
+              <FormField
+                errorText={cancellationReasonError || undefined}
+                helperText={t('lateCancellationReasonHelper')}
+                label={t('cancellationReason')}
+                multiline
+                onChangeText={onCancellationReasonChange}
+                placeholder={t('cancellationReason')}
+                value={cancellationReason}
+              />
+            </>
+          ) : null}
+          <AppButton loading={isCancelling} onPress={onCancelTask} tone="neutral" variant="outline">
+            {isCancelling ? t('cancellingTask') : t('cancelTask')}
+          </AppButton>
+        </>
+      ) : null}
+      {canRequestSupport ? (
+        <>
+          <AppText color={colors.slate700}>{task.cancellationBlockedReason || task.supportState?.helperText || t('supportRequestHelper')}</AppText>
+          <FormField
+            errorText={supportReasonError || undefined}
+            helperText={t('supportReasonHelper')}
+            label={t('supportReason')}
+            multiline
+            onChangeText={onSupportReasonChange}
+            placeholder={t('supportReasonPlaceholder')}
+            value={supportReason}
+          />
+          <FormField
+            helperText={t('supportDetailsHelper')}
+            label={t('supportDetails')}
+            multiline
+            onChangeText={onSupportDetailsChange}
+            placeholder={t('supportDetailsPlaceholder')}
+            value={supportDetails}
+          />
+          <AppButton loading={isRequestingSupport} onPress={onRequestSupport} tone="neutral" variant="outline">
+            {isRequestingSupport ? t('submittingSupportRequest') : t('requestSupportReview')}
+          </AppButton>
+        </>
+      ) : null}
+      {actionMessage ? <AppText color={colors.success600}>{actionMessage}</AppText> : null}
+      {actionError ? <AppText color={colors.danger600}>{actionError}</AppText> : null}
     </AppCard>
   );
 }
@@ -1067,6 +1503,11 @@ function isPaymentReadOnlyAction(actions: CustomerCoreTaskNextActions) {
 
 function hasPaymentSetupAction(actions: CustomerCoreTaskNextActions) {
   return actions.canPreparePayment || actions.canConfirmPayment || actions.canRetryPayment;
+}
+
+function canRequestCustomerSupport(actions: CustomerCoreTaskNextActions) {
+  if (actions.canRequestHelp || actions.canRequestRefund) return true;
+  return actions.canOpenSupport === true && actions.primaryAction === 'request_help';
 }
 
 function getPaymentSetupButtonLabel(actions?: CustomerCoreTaskNextActions) {

@@ -599,6 +599,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
   const isPaymentFailed = taskId.includes('payment-failed');
   const isPaymentMethodRequired = taskId.includes('payment-method');
   const isSelecting = taskId.includes('selecting');
+  const isStarted = taskId.includes('started');
   const isSupportReview = taskId.includes('support-review');
   const status = isCompleted
     ? 'COMPLETED'
@@ -608,6 +609,8 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       ? 'RESERVED'
     : isInProgress
       ? 'IN_PROGRESS'
+      : isStarted
+        ? 'IN_PROGRESS'
       : isUpcoming
         ? 'RESERVED'
         : isSelecting
@@ -628,6 +631,17 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
           canOpenSupport: true,
           canRequestHelp: true,
           primaryAction: 'open_support_status',
+        })
+    : isStarted
+      ? createMockCustomerTaskNextActions({
+          blockedReason: 'This task has already started. Request help so Taskly support can review next steps.',
+          blockedReasonCode: 'TASK_ALREADY_STARTED',
+          canChat: true,
+          canOpenSupport: true,
+          canRequestHelp: true,
+          paymentProtected: true,
+          paymentRequired: true,
+          primaryAction: 'request_help',
         })
     : isInProgress
       ? createMockCustomerTaskNextActions({
@@ -680,6 +694,8 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       ? 'Reserved/upcoming'
     : isInProgress
       ? 'In progress'
+      : isStarted
+        ? 'In progress'
       : isUpcoming
         ? 'Reserved/upcoming'
         : isSelecting
@@ -747,6 +763,14 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
         statusLabel: 'Under support review',
         supportReviewLabel: 'Taskly support is reviewing this task.',
       })
+    : isStarted
+      ? createMockCancellationState({
+          blockedReason: 'This task has already started. Request help so Taskly support can review next steps.',
+          blockedReasonCode: 'TASK_ALREADY_STARTED',
+          helperText: 'Direct cancellation is blocked after work starts.',
+          status: 'blocked_after_start',
+          statusLabel: 'Support required',
+        })
     : isInProgress
       ? createMockCancellationState({
           blockedReason: null,
@@ -768,6 +792,14 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
         statusLabel: 'Under support review',
         supportReviewLabel: 'Taskly support is reviewing this task.',
       })
+    : isStarted
+      ? createMockSupportState({
+          blockedReason: null,
+          blockedReasonCode: null,
+          helperText: 'Support can review the task after work has started.',
+          status: 'help_available',
+          statusLabel: 'Help available',
+        })
     : createMockSupportState();
   const disputeState = isSupportReview
     ? createMockDisputeState({

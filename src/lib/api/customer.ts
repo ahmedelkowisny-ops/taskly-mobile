@@ -2,6 +2,8 @@ import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
   ApproveCustomerTaskCompletionResponse,
+  CancelCustomerTaskPayload,
+  CancelCustomerTaskResponse,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
@@ -14,6 +16,8 @@ import {
   FinalizeCustomerTaskPaymentPayload,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
+  RequestCustomerTaskSupportPayload,
+  RequestCustomerTaskSupportResponse,
   RejectCustomerTaskCompletionPayload,
   RejectCustomerTaskCompletionResponse,
   SelectCustomerTaskerPayload,
@@ -49,6 +53,36 @@ export function createCustomerTask(
   return apiRequest<CreateCustomerTaskResponse>(endpoints.customer.tasks, {
     authToken,
     body: payload,
+    method: 'POST',
+  });
+}
+
+export function cancelCustomerTask(
+  taskId: string,
+  payload: CancelCustomerTaskPayload,
+  authToken: string,
+): Promise<ApiResult<CancelCustomerTaskResponse>> {
+  return apiRequest<CancelCustomerTaskResponse>(endpoints.customer.taskCancel(taskId), {
+    authToken,
+    body: {
+      confirmationAccepted: payload.confirmationAccepted === true,
+      ...(payload.reason ? { reason: payload.reason } : null),
+    },
+    method: 'POST',
+  });
+}
+
+export function requestCustomerTaskSupport(
+  taskId: string,
+  payload: RequestCustomerTaskSupportPayload,
+  authToken: string,
+): Promise<ApiResult<RequestCustomerTaskSupportResponse>> {
+  return apiRequest<RequestCustomerTaskSupportResponse>(endpoints.customer.taskSupportRequest(taskId), {
+    authToken,
+    body: {
+      ...(payload.details ? { details: payload.details } : null),
+      reason: payload.reason,
+    },
     method: 'POST',
   });
 }

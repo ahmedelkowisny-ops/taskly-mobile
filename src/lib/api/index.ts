@@ -4,6 +4,7 @@ export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export {
   approveCustomerTaskCompletion,
+  cancelCustomerTask,
   createCustomerProRequest,
   createCustomerTask,
   finalizeCustomerTaskPayment,
@@ -13,6 +14,7 @@ export {
   getCustomerTaskDetail,
   getCustomerTasks,
   rejectCustomerTaskCompletion,
+  requestCustomerTaskSupport,
   selectCustomerTasker,
   setupCustomerTaskPayment,
 } from './customer';
@@ -62,6 +64,8 @@ export type {
   CustomerHomeResponse,
   CustomerNextAction,
   ApproveCustomerTaskCompletionResponse,
+  CancelCustomerTaskPayload,
+  CancelCustomerTaskResponse,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
@@ -131,6 +135,8 @@ export type {
   ProviderProRequestsResponse,
   ProviderProRequestSummary,
   ProviderProResponseSummary,
+  RequestCustomerTaskSupportPayload,
+  RequestCustomerTaskSupportResponse,
   RequestProviderCoreTaskCompletionPayload,
   RequestProviderCoreTaskCompletionResponse,
   RejectCustomerTaskCompletionPayload,

@@ -378,6 +378,41 @@ export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
   };
 };
 
+export type CancelCustomerTaskPayload = {
+  confirmationAccepted?: boolean;
+  reason?: string;
+};
+
+export type CancelCustomerTaskResponse = {
+  alreadyCancelled?: boolean;
+  cancellationState: CoreCancellationState | null;
+  disputeState?: CoreDisputeState | null;
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions | null;
+  paymentState: CustomerCorePaymentState | null;
+  refundState?: CoreRefundState | null;
+  supportReviewLabel?: string | null;
+  supportState?: CoreSupportState | null;
+  task: CustomerTaskDetail | null;
+};
+
+export type RequestCustomerTaskSupportPayload = {
+  details?: string;
+  reason: string;
+};
+
+export type RequestCustomerTaskSupportResponse = {
+  alreadyUnderReview?: boolean;
+  disputeState: CoreDisputeState | null;
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions | null;
+  refundState: CoreRefundState | null;
+  requestId?: string | null;
+  supportReviewLabel?: string | null;
+  supportState: CoreSupportState | null;
+  task: CustomerTaskDetail | null;
+};
+
 export type RejectCustomerTaskCompletionPayload = {
   reason: string;
 };
