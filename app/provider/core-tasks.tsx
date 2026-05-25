@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTasksResponse } from '@/src/lib/api/domain';
+import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { getProviderCoreTasks } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -116,19 +116,10 @@ export default function ProviderCoreTasksScreen() {
           {data.tasks.map((task) => (
             <AppCard key={task.id} accentColor={colors.tasklyBlue600}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                <StatusBadge label={task.statusLabel} tone="core" />
+                <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
                 <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
-                {task.nextActions.canExpressInterest ? (
-                  <StatusBadge label={t('expressInterest')} tone="success" />
-                ) : null}
-                {task.nextActions.canMarkOnTheWay ? (
-                  <StatusBadge label={t('onTheWay')} tone="warning" />
-                ) : null}
-                {task.nextActions.canStart ? (
-                  <StatusBadge label={t('startTask')} tone="success" />
-                ) : null}
-                {task.nextActions.canRequestCompletion ? (
-                  <StatusBadge label={t('requestCompletion')} tone="success" />
+                {getProviderNextActionHint(task) ? (
+                  <StatusBadge label={getProviderNextActionHint(task) || ''} tone="success" />
                 ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
@@ -164,4 +155,57 @@ export default function ProviderCoreTasksScreen() {
       </AppCard>
     </Screen>
   );
+}
+
+function getProviderPrimaryAction(task: ProviderCoreTaskSummary) {
+  const primaryType = task.nextActions.primary?.type;
+
+  if (primaryType === 'express_interest' && task.nextActions.canExpressInterest) return 'express_interest';
+  if (primaryType === 'open_chat' && task.nextActions.canChat) return 'open_chat';
+  if (primaryType === 'mark_on_the_way' && task.nextActions.canMarkOnTheWay) return 'mark_on_the_way';
+  if (primaryType === 'start_task' && task.nextActions.canStart) return 'start_task';
+  if (primaryType === 'request_completion' && task.nextActions.canRequestCompletion) return 'request_completion';
+
+  if (task.nextActions.canExpressInterest) return 'express_interest';
+  if (task.nextActions.canMarkOnTheWay) return 'mark_on_the_way';
+  if (task.nextActions.canStart) return 'start_task';
+  if (task.nextActions.canRequestCompletion) return 'request_completion';
+
+  return 'none';
+}
+
+function getProviderNextActionHint(task: ProviderCoreTaskSummary) {
+  switch (getProviderPrimaryAction(task)) {
+    case 'express_interest':
+      return t('expressInterest');
+    case 'open_chat':
+      return t('openConversation');
+    case 'mark_on_the_way':
+      return t('markOnTheWay');
+    case 'start_task':
+      return t('startTask');
+    case 'request_completion':
+      return t('requestCompletion');
+    default:
+      return null;
+  }
+}
+
+function getProviderTaskPhaseLabel(task: ProviderCoreTaskSummary) {
+  const code = task.nextActions.blockedReasonCode;
+  const primaryType = task.nextActions.primary?.type;
+  const status = task.status.toUpperCase();
+
+  if (code === 'ALREADY_INTERESTED' || primaryType === 'interest_sent') return t('interestSent');
+  if (status === 'OPEN' && task.nextActions.canExpressInterest) return t('available');
+  if (status === 'RESERVED') return t('upcoming');
+  if (code === 'ON_THE_WAY_MARKED' || primaryType === 'on_the_way_marked') return t('onTheWay');
+  if (status === 'IN_PROGRESS') return t('inProgress');
+  if (status === 'PENDING_COMPLETION' || code === 'TASK_PENDING_COMPLETION') return t('waitingForCustomerApproval');
+  if (status === 'COMPLETED' || code === 'TASK_COMPLETED') return t('completed');
+  if (status.includes('CANCELLED') || code === 'TASK_CANCELLED') return t('cancelled');
+  if (status === 'DISPUTED' || code === 'TASK_DISPUTED') return t('disputed');
+  if (status === 'OPEN') return t('available');
+
+  return task.statusLabel || t('notAvailable');
 }

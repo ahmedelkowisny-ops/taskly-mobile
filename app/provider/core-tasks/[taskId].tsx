@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
@@ -454,6 +455,10 @@ export default function ProviderCoreTaskDetailScreen() {
     ]);
   }, [handleRequestCompletion]);
 
+  const handleOpenChat = useCallback(() => {
+    router.push('/provider/messages' as Href);
+  }, [router]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -477,7 +482,7 @@ export default function ProviderCoreTaskDetailScreen() {
       {task ? (
         <>
           <AppCard accentColor={colors.tasklyBlue600}>
-            <StatusBadge label={task.statusLabel} tone="core" />
+            <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
             <AppText variant="screenTitle">{task.title}</AppText>
             <AppText color={colors.slate700}>{task.description}</AppText>
             <AppText color={colors.slate700}>{task.categoryLabel} - {task.cityLabel}</AppText>
@@ -488,7 +493,7 @@ export default function ProviderCoreTaskDetailScreen() {
             <Info label="Price" value={task.priceLabel} />
             <Info label="Customer" value={task.customerPreviewLabel} />
             <Info label="Schedule" value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
-            <Info label="Address" value={task.addressPreviewLabel} />
+            <Info label="Address" value={task.addressPreviewLabel || t('locationSharedWhenReserved')} />
           </AppCard>
 
           <Images images={task.images} />
@@ -504,6 +509,7 @@ export default function ProviderCoreTaskDetailScreen() {
             onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
             onExpressInterest={() => handleExpressInterest()}
             onMarkOnTheWay={handleMarkOnTheWay}
+            onOpenChat={handleOpenChat}
             onRequestCompletion={confirmRequestCompletion}
             onStartTask={confirmStartTask}
             task={task}
@@ -570,6 +576,7 @@ function ProviderActions({
   onConfirmTools,
   onExpressInterest,
   onMarkOnTheWay,
+  onOpenChat,
   onRequestCompletion,
   onStartTask,
   task,
@@ -584,42 +591,44 @@ function ProviderActions({
   onConfirmTools: () => void;
   onExpressInterest: () => void;
   onMarkOnTheWay: () => void;
+  onOpenChat: () => void;
   onRequestCompletion: () => void;
   onStartTask: () => void;
   task: ProviderCoreTaskDetail;
 }) {
-  const canExpressInterest = task.nextActions.canExpressInterest;
-  const canMarkOnTheWay = task.nextActions.canMarkOnTheWay;
-  const canRequestCompletion = task.nextActions.canRequestCompletion;
-  const canStart = task.nextActions.canStart;
-  const blockedReason = task.nextActions.blockedReason;
+  const primaryAction = getPrimaryProviderAction(task);
+  const blockedReason = getProviderBlockedReasonText(task);
+  const hasPrimaryAction = primaryAction !== 'none';
 
   return (
-    <AppCard accentColor={canExpressInterest || canMarkOnTheWay || canRequestCompletion || canStart ? colors.tasklyBlue600 : undefined}>
+    <AppCard accentColor={hasPrimaryAction ? colors.tasklyBlue600 : undefined}>
       <AppText variant="sectionTitle">Next steps</AppText>
-      {canExpressInterest ? (
+      {primaryAction === 'express_interest' ? (
         <>
           <AppText color={colors.slate700}>{t('customerWillChooseTasker')}</AppText>
           <AppText color={colors.slate700}>{t('doesNotReserveTask')}</AppText>
         </>
       ) : null}
-      {canMarkOnTheWay ? (
+      {primaryAction === 'mark_on_the_way' ? (
         <>
           <AppText color={colors.slate700}>{t('letCustomerKnowOnTheWay')}</AppText>
           <AppText color={colors.slate700}>{t('onTheWayDoesNotStartTask')}</AppText>
         </>
       ) : null}
-      {canStart ? (
+      {primaryAction === 'start_task' ? (
         <>
           <AppText color={colors.slate700}>{t('startTaskPrompt')}</AppText>
           <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
         </>
       ) : null}
-      {canRequestCompletion ? (
+      {primaryAction === 'request_completion' ? (
         <>
           <AppText color={colors.slate700}>{t('requestCustomerApprovalPrompt')}</AppText>
           <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
         </>
+      ) : null}
+      {primaryAction === 'open_chat' ? (
+        <AppText color={colors.slate700}>{t('openConversation')}</AppText>
       ) : null}
 
       {actionMessage ? (
@@ -630,7 +639,7 @@ function ProviderActions({
         <AppText color={colors.danger600}>{actionError}</AppText>
       ) : null}
 
-      {canExpressInterest ? (
+      {primaryAction === 'express_interest' ? (
         <View style={styles.stack}>
           <AppText color={colors.slate700}>{t('letCustomerKnowAvailable')}</AppText>
           <AppButton loading={isExpressingInterest} onPress={onExpressInterest}>
@@ -642,34 +651,116 @@ function ProviderActions({
             </AppButton>
           ) : null}
         </View>
-      ) : canRequestCompletion ? (
+      ) : primaryAction === 'open_chat' ? (
+        <AppButton onPress={onOpenChat} variant="outline">
+          {t('openConversation')}
+        </AppButton>
+      ) : primaryAction === 'mark_on_the_way' ? (
         <View style={styles.stack}>
-          <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
-          <AppButton loading={isRequestingCompletion} onPress={onRequestCompletion}>
-            {isRequestingCompletion ? t('requestingCompletion') : t('requestCompletion')}
+          <AppText color={colors.slate700}>{t('actionAvailableNearStart')}</AppText>
+          <AppButton loading={isMarkingOnTheWay} onPress={onMarkOnTheWay}>
+            {isMarkingOnTheWay ? t('markingOnTheWay') : t('markOnTheWay')}
           </AppButton>
         </View>
-      ) : canStart ? (
+      ) : primaryAction === 'start_task' ? (
         <View style={styles.stack}>
           <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
           <AppButton loading={isStartingTask} onPress={onStartTask}>
             {isStartingTask ? t('startingTask') : t('startTask')}
           </AppButton>
         </View>
-      ) : canMarkOnTheWay ? (
+      ) : primaryAction === 'request_completion' ? (
         <View style={styles.stack}>
-          <AppText color={colors.slate700}>{t('onTheWayCloseToStart')}</AppText>
-          <AppButton loading={isMarkingOnTheWay} onPress={onMarkOnTheWay}>
-            {isMarkingOnTheWay ? t('markingOnTheWay') : t('markOnTheWay')}
+          <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
+          <AppButton loading={isRequestingCompletion} onPress={onRequestCompletion}>
+            {isRequestingCompletion ? t('requestingCompletion') : t('requestCompletion')}
           </AppButton>
         </View>
       ) : (
-        <AppButton disabled variant="outline">
-          {blockedReason || task.nextActions.primary?.label || t('alreadyExpressedInterest')}
-        </AppButton>
+        <View style={styles.stack}>
+          <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="neutral" />
+          <AppText color={colors.slate700}>{blockedReason}</AppText>
+          <AppButton disabled variant="outline">
+            {task.nextActions.primary?.label || t('notAvailable')}
+          </AppButton>
+        </View>
       )}
     </AppCard>
   );
+}
+
+type ProviderPrimaryAction = 'express_interest' | 'mark_on_the_way' | 'none' | 'open_chat' | 'request_completion' | 'start_task';
+
+function getPrimaryProviderAction(task: ProviderCoreTaskDetail): ProviderPrimaryAction {
+  const primaryType = task.nextActions.primary?.type;
+
+  if (primaryType === 'express_interest' && task.nextActions.canExpressInterest) return 'express_interest';
+  if (primaryType === 'open_chat' && task.nextActions.canChat) return 'open_chat';
+  if (primaryType === 'mark_on_the_way' && task.nextActions.canMarkOnTheWay) return 'mark_on_the_way';
+  if (primaryType === 'start_task' && task.nextActions.canStart) return 'start_task';
+  if (primaryType === 'request_completion' && task.nextActions.canRequestCompletion) return 'request_completion';
+
+  if (task.nextActions.canExpressInterest) return 'express_interest';
+  if (task.nextActions.canMarkOnTheWay) return 'mark_on_the_way';
+  if (task.nextActions.canStart) return 'start_task';
+  if (task.nextActions.canRequestCompletion) return 'request_completion';
+
+  return 'none';
+}
+
+function getProviderTaskPhaseLabel(task: ProviderCoreTaskDetail) {
+  const code = task.nextActions.blockedReasonCode;
+  const primaryType = task.nextActions.primary?.type;
+  const status = task.status.toUpperCase();
+
+  if (code === 'ALREADY_INTERESTED' || primaryType === 'interest_sent') return t('interestSent');
+  if (status === 'OPEN' && task.nextActions.canExpressInterest) return t('available');
+  if (status === 'RESERVED') return t('upcoming');
+  if (code === 'ON_THE_WAY_MARKED' || primaryType === 'on_the_way_marked') return t('onTheWay');
+  if (status === 'IN_PROGRESS') return t('inProgress');
+  if (status === 'PENDING_COMPLETION' || code === 'TASK_PENDING_COMPLETION') return t('waitingForCustomerApproval');
+  if (status === 'COMPLETED' || code === 'TASK_COMPLETED') return t('completed');
+  if (status.includes('CANCELLED') || code === 'TASK_CANCELLED') return t('cancelled');
+  if (status === 'DISPUTED' || code === 'TASK_DISPUTED') return t('disputed');
+  if (status === 'OPEN') return t('available');
+
+  return task.statusLabel || t('notAvailable');
+}
+
+function getProviderBlockedReasonText(task: ProviderCoreTaskDetail) {
+  switch (task.nextActions.blockedReasonCode) {
+    case 'ALREADY_INTERESTED':
+      return t('alreadyExpressedInterest');
+    case 'NOT_ASSIGNED_TASKER':
+      return t('notAssignedToTask');
+    case 'ON_THE_WAY_MARKED':
+      return t('youAreOnTheWay');
+    case 'PAYMENT_NOT_READY':
+      return t('paymentNotReadyYet');
+    case 'TASK_CANCELLED':
+    case 'TASK_NOT_OPEN':
+      return t('notAvailable');
+    case 'TASK_COMPLETED':
+      return t('taskAlreadyCompleted');
+    case 'TASK_DISPUTED':
+      return t('disputed');
+    case 'TASK_NOT_STARTED':
+      return t('taskNotStartedYet');
+    case 'TASK_PENDING_COMPLETION':
+      return t('taskAlreadyWaitingApproval');
+    case 'TASK_STARTED':
+      return t('taskAlreadyStarted');
+    case 'TASK_NOT_READY':
+      return t('taskNotReadyYet');
+    case 'TOO_EARLY_ON_THE_WAY':
+      return t('actionAvailableNearStart');
+    case 'TOO_EARLY_START_TASK':
+      return t('tooEarlyToStart');
+    case 'TOOLS_CONFIRMATION_REQUIRED':
+      return t('toolsConfirmationRequired');
+    default:
+      return task.nextActions.blockedReason || t('waitingForCustomer');
+  }
 }
 
 function formatSchedule(start: string | null, end: string | null) {

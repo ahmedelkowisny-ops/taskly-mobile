@@ -1039,6 +1039,28 @@ Scope remains limited:
 - The task is not marked completed directly by the provider mobile action.
 - No payment capture, release, refund, Stripe flow, cancellation, dispute, help, provider cancellation, direct accept/reserve, booking creation, assignment, reservation, Pro response, Pro Access payment/unlock, or additional lifecycle logic was added.
 
+## Phase 22F Provider Core Action UI And NextActions Consistency
+
+Phase 22F cleans up the Provider Core task list/detail UI after the express-interest, on-the-way, start, and request-completion mutations.
+
+Behavior:
+
+- Provider Core task actions use backend-authored `nextActions` for availability.
+- The detail screen normalizes one primary action at a time from `nextActions.primary` plus capability flags.
+- The detail screen priority is express interest, chat when backend marks it primary, mark on the way, start task, then request completion.
+- The list screen shows the current provider-facing phase label and one compact next-action hint instead of several simultaneous action badges.
+- Blocked states show short friendly helper text mapped from `blockedReasonCode`; raw backend codes are not shown to the user.
+- Status/phase labels now cover available, interest sent, upcoming/reserved, on the way, in progress, waiting for customer approval, completed, cancelled, disputed, and not available.
+- Provider wording avoids direct accept/reserve language and does not imply payment release or task completion from the provider request-completion action.
+- The provider detail preserves backend privacy behavior for address display and falls back to a generic shared-when-reserved label when no exact address is returned.
+- Demo mode remains local and uses the same one-primary-action display rules.
+
+Scope remains limited:
+
+- No new provider mutations were added.
+- No customer approve/reject completion action was added.
+- No payment capture, release, refund, Stripe flow, cancellation, dispute, help, provider cancellation, direct accept/reserve, Pro response, Pro Access payment/unlock, or lifecycle rule changes were added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

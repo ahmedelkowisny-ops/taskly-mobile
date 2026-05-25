@@ -345,7 +345,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       customerPreviewLabel: 'Customer preview',
-      description: 'Demo provider Core task detail. Accept/start/completion actions are not connected yet.',
+      description: 'Demo provider Core task detail. Actions follow backend-authored nextActions.',
       id: taskId,
       images: [],
       nextActions: {

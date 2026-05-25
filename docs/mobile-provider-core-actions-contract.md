@@ -374,9 +374,67 @@ Mobile display:
 - Do not mark the task completed locally unless the backend response says so in a future customer/payment phase.
 - Do not imply that mobile captures, releases, refunds, or changes payment objects.
 
+## Mobile Provider Core Action UI Rules
+
+Phase 22F aligns the mobile list/detail UI around backend-authored `nextActions`.
+
+Source of truth:
+
+- Backend `nextActions` decides all provider action availability.
+- Mobile may use raw task status for labels, but not for enabling actions.
+- If `nextActions.primary` is present and its capability flag is true, mobile treats it as the primary action.
+- If `nextActions.primary` is missing or stale, mobile falls back to capability flags only.
+
+One-primary-action rule:
+
+- Show at most one primary lifecycle/action button on Provider Core task detail.
+- Priority is:
+  1. `express_interest`
+  2. `open_chat` only when backend marks chat as the primary action
+  3. `mark_on_the_way`
+  4. `start_task`
+  5. `request_completion`
+- List cards should show one compact next-action hint and navigate to detail for action execution.
+- Do not show Start Task and Request Completion together.
+- Do not show On the way after task start unless backend explicitly returns it as primary and actionable.
+
+Wording rules:
+
+- Use "Express interest", "Customer will choose a Tasker", "Mark on the way", "Start task", "Request completion", and "Waiting for customer approval".
+- Do not use "Accept task" or "Reserve task" for provider open-task responses.
+- Do not label provider request-completion as "Complete task".
+- Do not imply payment capture/release/refund from provider actions.
+
+Blocked reason handling:
+
+- Mobile maps `blockedReasonCode` to short friendly text.
+- Raw backend codes must not be shown to users.
+- Useful mappings include payment not ready, near-start schedule gate, waiting for customer, not assigned, task not started, and already waiting for approval.
+
+Provider phase labels:
+
+| Backend/status signal | Mobile label |
+| --- | --- |
+| `OPEN` and can express interest | Available |
+| `ALREADY_INTERESTED` or `interest_sent` | Interest sent |
+| `RESERVED` | Upcoming |
+| `ON_THE_WAY_MARKED` | On the way |
+| `IN_PROGRESS` | In progress |
+| `PENDING_COMPLETION` | Waiting for customer approval |
+| `COMPLETED` | Completed |
+| `CANCELLED*` | Cancelled |
+| `DISPUTED` | Disputed |
+| no available action / unavailable task | Not available |
+
+Customer-private data:
+
+- Provider mobile must render only address/contact data returned by the backend.
+- Before assignment/reservation, use generic location wording if the backend hides exact address.
+- Do not infer or expose private customer contact details on mobile.
+
 ### Cancel / Cannot Attend
 
-No mobile endpoint should be added in Phase 22B-22E.
+No mobile endpoint should be added in Phase 22B-22F.
 
 The current codebase has customer cancellation policy logic and no-show/dispute helpers, but no clearly isolated provider cannot-attend contract for mobile. This should be reviewed as a separate cancellation/dispute phase because it may affect fees, payment state, support review, and customer notifications.
 

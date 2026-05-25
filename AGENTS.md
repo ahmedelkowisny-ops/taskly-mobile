@@ -137,6 +137,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Request Completion must not capture, release, or refund payments.
 - Customer approval/rejection remains a separate phase from provider request-completion.
 - Payment completion remains server-authoritative and separate from mobile provider request-completion wiring.
+- Provider Core mobile UI must use backend-authored `nextActions` for action availability.
+- Provider Core mobile UI should show at most one primary lifecycle action at a time.
+- Provider wording must not imply direct accept/reserve unless the backend flow explicitly supports it.
+- Provider request-completion must not be labeled as completing the task.
+- Do not expose private customer address/contact data before the allowed stage.
 
 # Mobile Auth Rules
 
