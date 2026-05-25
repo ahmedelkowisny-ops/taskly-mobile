@@ -478,6 +478,12 @@ Suggested Phase 25E scope:
 3. Do not add provider mutation buttons yet unless backend `nextActions` and product states are complete.
 4. Keep provider issue/cannot-attend mutations for Phase 25F.
 
+## Phase 25E Implementation Note
+
+- Phase 25E added the provider-safe read-only state fields and provider-specific `nextActions` booleans to mobile provider Core list/detail responses.
+- `nextActions.canDisputeRejection` is intentionally returned as `false` until the backend has an explicit provider-safe signal that a customer rejection is disputeable. The current completion rejection flow returns the task to `IN_PROGRESS`, where the safe provider path is to correct the work and request completion again.
+- No provider issue, cannot-attend, support, or dispute mutation route was added in Phase 25E.
+
 ## Open Questions
 
 - Should provider issue requests reuse `CustomerSupportRequest`, or should backend add a provider-specific support request model?

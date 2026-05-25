@@ -11,6 +11,7 @@ import {
   CoreDisputeState,
   CoreRefundState,
   CoreSupportState,
+  ProviderCoreIssueState,
   ProviderCoreTaskDetail,
   ProviderCoreTaskDetailResponse,
 } from '@/src/lib/api/domain';
@@ -504,6 +505,7 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <Images images={task.images} />
+          <ProviderIssueSupportCard task={task} />
           <ProviderCancellationSupportCard task={task} />
           <Timeline items={task.timeline} />
           <ProviderActions
@@ -569,6 +571,42 @@ function Timeline({ items }: { items: { description: string; id: string; label: 
           <AppText color={colors.slate700}>{item.description}</AppText>
         </View>
       ))}
+    </AppCard>
+  );
+}
+
+function ProviderIssueSupportCard({ task }: { task: ProviderCoreTaskDetail }) {
+  const states = [
+    task.providerIssueState,
+    task.providerSupportState,
+    task.providerCancellationState,
+    task.providerDisputeState,
+  ].filter(Boolean) as ProviderCoreIssueState[];
+  const relevantStates = states.filter(isRelevantProviderIssueState);
+
+  if (!relevantStates.length) return null;
+
+  const primaryState = relevantStates[0];
+
+  return (
+    <AppCard accentColor={getProviderIssueAccent(relevantStates)}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {relevantStates.slice(0, 3).map((state, index) => (
+          <StatusBadge key={`${state.status}-${state.statusLabel}-${index}`} label={getProviderIssueStateLabel(state)} tone={getProviderIssueTone(state)} />
+        ))}
+      </View>
+      <AppText variant="sectionTitle">{t('issueAndSupport')}</AppText>
+      {task.providerSupportReviewLabel ? (
+        <AppText color={colors.slate700}>{task.providerSupportReviewLabel}</AppText>
+      ) : null}
+      {task.providerIssueSummary ? (
+        <AppText color={colors.slate700}>{task.providerIssueSummary}</AppText>
+      ) : null}
+      <AppText color={colors.slate700}>{getProviderIssueHelperText(primaryState)}</AppText>
+      {task.providerBlockedReason && primaryState.status === 'not_available' ? (
+        <AppText color={colors.slate700}>{task.providerBlockedReason}</AppText>
+      ) : null}
+      <AppText color={colors.slate500}>{getProviderIssueReadOnlyText(primaryState)}</AppText>
     </AppCard>
   );
 }
@@ -871,6 +909,49 @@ function getProviderSupportAccent(
   const tone = getProviderSupportTone(cancellation, support, dispute);
   if (tone === 'danger') return colors.danger600;
   if (tone === 'warning') return colors.warning600;
+  return colors.tasklyBlue600;
+}
+
+function isRelevantProviderIssueState(state: ProviderCoreIssueState) {
+  return !['none', 'unknown'].includes(state.status);
+}
+
+function getProviderIssueStateLabel(state: ProviderCoreIssueState) {
+  if (state.status === 'under_review') return t('taskUnderReview');
+  if (state.status === 'submitted') return t('supportRequestSent');
+  if (state.status === 'resolved') return state.statusLabel || t('completed');
+  if (state.status === 'dispute_rejection_available') return t('customerRejectedCompletion');
+  if (state.status === 'not_available') return t('providerActionUnavailable');
+  return t('issueAndSupport');
+}
+
+function getProviderIssueHelperText(state: ProviderCoreIssueState) {
+  if (state.status === 'under_review') return state.helperText || t('paymentProtectedReview');
+  if (state.status === 'dispute_rejection_available') return t('customerRejectedCompletionHelper');
+  if (state.status === 'cannot_attend_available') return t('cannotAttendLater');
+  if (state.status === 'support_available') return t('providerSupportAvailableLater');
+  if (state.status === 'report_available') return t('providerIssueReportingLater');
+  if (state.status === 'not_available') return state.helperText || t('continueWhenTasklyUpdates');
+  return state.helperText;
+}
+
+function getProviderIssueReadOnlyText(state: ProviderCoreIssueState) {
+  if (state.status === 'cannot_attend_available') return t('cannotAttendLater');
+  if (state.status === 'support_available') return t('providerSupportAvailableLater');
+  if (state.status === 'report_available') return t('reportIssueLater');
+  return t('readOnlyNoAction');
+}
+
+function getProviderIssueTone(state: ProviderCoreIssueState): 'core' | 'danger' | 'neutral' | 'success' | 'warning' {
+  if (state.status === 'under_review') return 'danger';
+  if (state.status === 'cannot_attend_available' || state.status === 'report_available' || state.status === 'support_available') return 'warning';
+  if (state.status === 'resolved') return 'neutral';
+  return 'neutral';
+}
+
+function getProviderIssueAccent(states: ProviderCoreIssueState[]) {
+  if (states.some((state) => state.status === 'under_review')) return colors.danger600;
+  if (states.some((state) => ['cannot_attend_available', 'report_available', 'support_available'].includes(state.status))) return colors.warning600;
   return colors.tasklyBlue600;
 }
 

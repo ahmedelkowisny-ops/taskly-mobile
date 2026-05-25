@@ -120,6 +120,7 @@ export type {
   ProResponsePreview,
   ProviderCoreTaskDetail,
   ProviderCoreTaskDetailResponse,
+  ProviderCoreIssueState,
   ProviderCoreTaskNextActions,
   ProviderCoreTasksResponse,
   ProviderCoreTaskSummary,

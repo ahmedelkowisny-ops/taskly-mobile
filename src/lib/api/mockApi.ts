@@ -17,6 +17,7 @@ import {
   CoreSupportState,
   PostingRulesResponse,
   ProviderCoreTasksResponse,
+  ProviderCoreIssueState,
   ProviderCoreTaskNextActions,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
@@ -1000,10 +1001,32 @@ function createMockProviderCoreTaskNextActions(
   return {
     canCancelOrReportIssue: false,
     canChat: false,
+    canDisputeRejection: false,
     canExpressInterest: false,
     canMarkOnTheWay: false,
+    canReportCannotAttend: false,
+    canReportIssue: false,
     canRequestCompletion: false,
+    canRequestProviderSupport: false,
     canStart: false,
+    ...overrides,
+  };
+}
+
+function createMockProviderIssueState(
+  overrides: Partial<ProviderCoreIssueState> = {},
+): ProviderCoreIssueState {
+  return {
+    blockedReason: null,
+    blockedReasonCode: null,
+    helperText: 'Provider issue and support state is provided by backend rules.',
+    latestRequestCreatedAt: null,
+    latestRequestId: null,
+    latestRequestType: null,
+    providerIssueSummary: null,
+    providerSupportReviewLabel: null,
+    status: 'none',
+    statusLabel: 'No provider issue',
     ...overrides,
   };
 }
@@ -1063,10 +1086,33 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         nextActions: createMockProviderCoreTaskNextActions({
           canChat: true,
           canMarkOnTheWay: true,
+          canReportCannotAttend: true,
+          canReportIssue: true,
+          canRequestProviderSupport: true,
+          canCancelOrReportIssue: true,
           primary: { label: 'Mark on the way', method: 'POST', type: 'mark_on_the_way' },
         }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
+        providerCancellationState: createMockProviderIssueState({
+          helperText: 'Cannot-attend reporting will be added later only when allowed by Taskly.',
+          providerIssueSummary: 'Cannot-attend reporting available later',
+          status: 'cannot_attend_available',
+          statusLabel: 'Provider action unavailable',
+        }),
+        providerIssueState: createMockProviderIssueState({
+          helperText: 'Provider support can be requested in a later phase when Taskly enables this action.',
+          providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+          status: 'support_available',
+          statusLabel: 'Provider support available',
+        }),
+        providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+        providerSupportState: createMockProviderIssueState({
+          helperText: 'Provider support request will be added later only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available later',
+          status: 'support_available',
+          statusLabel: 'Provider support available',
+        }),
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'RESERVED',
@@ -1082,11 +1128,26 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Request completion', type: 'request_completion' },
         nextActions: createMockProviderCoreTaskNextActions({
           canChat: true,
+          canReportIssue: true,
           canRequestCompletion: true,
+          canRequestProviderSupport: true,
           primary: { label: 'Request completion', method: 'POST', type: 'request_completion' },
         }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
+        providerIssueState: createMockProviderIssueState({
+          helperText: 'Issue reporting can be requested in a later phase when Taskly enables this action.',
+          providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+          status: 'report_available',
+          statusLabel: 'Issue reporting available',
+        }),
+        providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+        providerSupportState: createMockProviderIssueState({
+          helperText: 'Provider support request will be added later only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available later',
+          status: 'support_available',
+          statusLabel: 'Provider support available',
+        }),
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'IN_PROGRESS',
@@ -1140,10 +1201,48 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
           blockedReason: 'Task is under support review.',
           blockedReasonCode: 'TASK_DISPUTED',
           canChat: true,
+          providerBlockedReason: 'Task is under support review.',
+          providerBlockedReasonCode: 'TASK_DISPUTED',
           primary: { label: 'View task', type: 'view_task' },
         }),
         paymentStatusLabel: 'Under support review',
         priceLabel: 'EUR 55',
+        providerBlockedReason: 'This task is under support review.',
+        providerDisputeState: createMockProviderIssueState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'This task is in a payment protected review.',
+          providerIssueSummary: 'Task under review',
+          providerSupportReviewLabel: 'Support review in progress',
+          status: 'under_review',
+          statusLabel: 'Task under review',
+        }),
+        providerIssueState: createMockProviderIssueState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'Taskly support is reviewing this task and the protected payment flow.',
+          latestRequestCreatedAt: new Date().toISOString(),
+          latestRequestId: 'demo-support-1',
+          latestRequestType: 'TASK_HELP',
+          providerIssueSummary: 'Task under review',
+          providerSupportReviewLabel: 'Support review in progress',
+          status: 'under_review',
+          statusLabel: 'Task under review',
+        }),
+        providerIssueSummary: 'Task under review',
+        providerSupportReviewLabel: 'Support review in progress',
+        providerSupportState: createMockProviderIssueState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'Taskly support is reviewing this task.',
+          latestRequestCreatedAt: new Date().toISOString(),
+          latestRequestId: 'demo-support-1',
+          latestRequestType: 'TASK_HELP',
+          providerIssueSummary: 'Support review in progress',
+          providerSupportReviewLabel: 'Support review in progress',
+          status: 'under_review',
+          statusLabel: 'Support review in progress',
+        }),
         refundState: createMockRefundState({
           helperText: 'Refund outcome is under Taskly support review.',
           status: 'under_review',
@@ -1219,6 +1318,8 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
           blockedReason: 'Task is under support review.',
           blockedReasonCode: 'TASK_DISPUTED',
           canChat: true,
+          providerBlockedReason: 'Task is under support review.',
+          providerBlockedReasonCode: 'TASK_DISPUTED',
           primary: { label: 'View task', type: 'view_task' },
         })
     : isPendingCompletion
@@ -1231,13 +1332,19 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       : isInProgress
         ? createMockProviderCoreTaskNextActions({
             canChat: true,
+            canReportIssue: true,
             canRequestCompletion: true,
+            canRequestProviderSupport: true,
             primary: { label: 'Request completion', method: 'POST', type: 'request_completion' },
           })
         : isUpcoming
           ? createMockProviderCoreTaskNextActions({
               canChat: true,
               canMarkOnTheWay: true,
+              canReportCannotAttend: true,
+              canReportIssue: true,
+              canRequestProviderSupport: true,
+              canCancelOrReportIssue: true,
               primary: { label: 'Mark on the way', method: 'POST', type: 'mark_on_the_way' },
             })
           : isInterested
@@ -1286,6 +1393,100 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
         statusLabel: 'Under support review',
       })
     : createMockRefundState();
+  const providerIssueState = isSupportReview
+    ? createMockProviderIssueState({
+        blockedReason: 'This task is under support review.',
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: 'Taskly support is reviewing this task and the protected payment flow.',
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-support-1',
+        latestRequestType: 'TASK_HELP',
+        providerIssueSummary: 'Task under review',
+        providerSupportReviewLabel: 'Support review in progress',
+        status: 'under_review',
+        statusLabel: 'Task under review',
+      })
+    : isUpcoming
+      ? createMockProviderIssueState({
+          helperText: 'Provider support can be requested in a later phase when Taskly enables this action.',
+          providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+          status: 'support_available',
+          statusLabel: 'Provider support available',
+        })
+      : isInProgress
+        ? createMockProviderIssueState({
+            helperText: 'Issue reporting can be requested in a later phase when Taskly enables this action.',
+            providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+            status: 'report_available',
+            statusLabel: 'Issue reporting available',
+          })
+        : createMockProviderIssueState({
+            blockedReason: nextActions.providerBlockedReason || nextActions.blockedReason || null,
+            blockedReasonCode: nextActions.providerBlockedReasonCode || nextActions.blockedReasonCode || null,
+            helperText: nextActions.providerBlockedReason || nextActions.blockedReason || 'Provider issue actions are not available for this task state.',
+            status: nextActions.providerBlockedReason || nextActions.blockedReason ? 'not_available' : 'none',
+            statusLabel: 'Provider action unavailable',
+          });
+  const providerSupportState = isSupportReview
+    ? createMockProviderIssueState({
+        blockedReason: 'This task is under support review.',
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: 'Taskly support is reviewing this task.',
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-support-1',
+        latestRequestType: 'TASK_HELP',
+        providerIssueSummary: 'Support review in progress',
+        providerSupportReviewLabel: 'Support review in progress',
+        status: 'under_review',
+        statusLabel: 'Support review in progress',
+      })
+    : isUpcoming || isInProgress
+      ? createMockProviderIssueState({
+          helperText: 'Provider support request will be added later only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available later',
+          status: 'support_available',
+          statusLabel: 'Provider support available',
+        })
+      : createMockProviderIssueState();
+  const providerCancellationState = isUpcoming
+    ? createMockProviderIssueState({
+        helperText: 'Cannot-attend reporting will be added later only when allowed by Taskly.',
+        providerIssueSummary: 'Cannot-attend reporting available later',
+        status: 'cannot_attend_available',
+        statusLabel: 'Provider action unavailable',
+      })
+    : isSupportReview
+      ? createMockProviderIssueState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'Taskly support is reviewing this task before any cancellation outcome is shown.',
+          providerIssueSummary: 'Task under review',
+          providerSupportReviewLabel: 'Support review in progress',
+          status: 'under_review',
+          statusLabel: 'Task under review',
+        })
+      : createMockProviderIssueState();
+  const providerDisputeState = isSupportReview
+    ? createMockProviderIssueState({
+        blockedReason: 'This task is under support review.',
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: 'This task is in a payment protected review.',
+        providerIssueSummary: 'Task under review',
+        providerSupportReviewLabel: 'Support review in progress',
+        status: 'under_review',
+        statusLabel: 'Task under review',
+      })
+    : createMockProviderIssueState();
+  const providerSupportReviewLabel =
+    providerIssueState.providerSupportReviewLabel ||
+    providerSupportState.providerSupportReviewLabel ||
+    providerCancellationState.providerSupportReviewLabel ||
+    providerDisputeState.providerSupportReviewLabel;
+  const providerIssueSummary =
+    providerIssueState.providerIssueSummary ||
+    providerSupportState.providerIssueSummary ||
+    providerCancellationState.providerIssueSummary ||
+    providerDisputeState.providerIssueSummary;
 
   return {
     task: {
@@ -1311,6 +1512,13 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
             ? 'Payment released'
             : 'Not paid yet',
       priceLabel: 'EUR 40',
+      providerBlockedReason: providerIssueState.blockedReason,
+      providerCancellationState,
+      providerDisputeState,
+      providerIssueState,
+      providerIssueSummary,
+      providerSupportReviewLabel,
+      providerSupportState,
       refundState,
       scheduledEndAt: null,
       scheduledStartAt: null,

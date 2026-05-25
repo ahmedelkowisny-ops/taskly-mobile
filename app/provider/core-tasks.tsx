@@ -10,6 +10,7 @@ import {
   CoreCancellationState,
   CoreDisputeState,
   CoreSupportState,
+  ProviderCoreIssueState,
   ProviderCoreTaskSummary,
   ProviderCoreTasksResponse,
 } from '@/src/lib/api/domain';
@@ -133,6 +134,12 @@ export default function ProviderCoreTasksScreen() {
                     tone={getProviderCancellationBadgeTone(task.cancellationState, task.supportState, task.disputeState)}
                   />
                 ) : null}
+                {getProviderIssueBadgeLabel(task.providerIssueState, task.providerSupportState, task.providerDisputeState) ? (
+                  <StatusBadge
+                    label={getProviderIssueBadgeLabel(task.providerIssueState, task.providerSupportState, task.providerDisputeState) || ''}
+                    tone={getProviderIssueBadgeTone(task.providerIssueState, task.providerSupportState, task.providerDisputeState)}
+                  />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>
@@ -250,11 +257,52 @@ function getProviderCancellationBadgeTone(
 }
 
 function getProviderSupportSummary(task: ProviderCoreTaskSummary) {
+  if (task.providerSupportReviewLabel) return task.providerSupportReviewLabel;
+  if (isProviderListIssueSummaryRelevant(task.providerIssueState, task.providerSupportState, task.providerDisputeState)) {
+    return task.providerIssueSummary;
+  }
   if (task.supportReviewLabel) return task.supportReviewLabel;
   if (task.cancellationState?.status === 'cancelled_late' || task.cancellationState?.status === 'cancelled') {
     return task.cancellationState.estimatedPolicyOutcomeLabel || task.cancellationState.helperText;
   }
   return null;
+}
+
+function getProviderIssueBadgeLabel(
+  issue?: ProviderCoreIssueState,
+  support?: ProviderCoreIssueState,
+  dispute?: ProviderCoreIssueState,
+) {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || issue?.status === 'under_review') {
+    return t('taskUnderReview');
+  }
+  if (issue?.status === 'dispute_rejection_available' || dispute?.status === 'dispute_rejection_available') {
+    return t('customerRejectedCompletion');
+  }
+  return null;
+}
+
+function getProviderIssueBadgeTone(
+  issue?: ProviderCoreIssueState,
+  support?: ProviderCoreIssueState,
+  dispute?: ProviderCoreIssueState,
+): 'core' | 'danger' | 'neutral' | 'success' | 'warning' {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || issue?.status === 'under_review') return 'danger';
+  return 'neutral';
+}
+
+function isProviderListIssueSummaryRelevant(
+  issue?: ProviderCoreIssueState,
+  support?: ProviderCoreIssueState,
+  dispute?: ProviderCoreIssueState,
+) {
+  return Boolean(
+    dispute?.status === 'under_review' ||
+      support?.status === 'under_review' ||
+      issue?.status === 'under_review' ||
+      issue?.status === 'dispute_rejection_available' ||
+      dispute?.status === 'dispute_rejection_available',
+  );
 }
 
 function getPaymentStatusLabel(label: string) {

@@ -174,6 +174,29 @@ export type CoreDisputeState = {
   supportReviewLabel: string | null;
 };
 
+export type ProviderCoreIssueState = {
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  helperText: string;
+  latestRequestCreatedAt: string | null;
+  latestRequestId: string | null;
+  latestRequestType: string | null;
+  providerIssueSummary: string | null;
+  providerSupportReviewLabel: string | null;
+  status:
+    | 'none'
+    | 'report_available'
+    | 'cannot_attend_available'
+    | 'support_available'
+    | 'dispute_rejection_available'
+    | 'submitted'
+    | 'under_review'
+    | 'resolved'
+    | 'not_available'
+    | 'unknown';
+  statusLabel: string;
+};
+
 export type CustomerCoreTaskNextActions = {
   blockedReason?: string;
   blockedReasonCode?: string;
@@ -613,6 +636,13 @@ export type ProviderCoreTaskSummary = {
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  providerBlockedReason?: string | null;
+  providerCancellationState?: ProviderCoreIssueState;
+  providerDisputeState?: ProviderCoreIssueState;
+  providerIssueState?: ProviderCoreIssueState;
+  providerIssueSummary?: string | null;
+  providerSupportReviewLabel?: string | null;
+  providerSupportState?: ProviderCoreIssueState;
   refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
@@ -634,10 +664,16 @@ export type ProviderCoreTaskNextActions = {
   blockedReasonCode?: string;
   canCancelOrReportIssue: boolean;
   canChat: boolean;
+  canDisputeRejection: boolean;
   canExpressInterest: boolean;
   canMarkOnTheWay: boolean;
+  canReportCannotAttend: boolean;
+  canReportIssue: boolean;
   canRequestCompletion: boolean;
+  canRequestProviderSupport: boolean;
   canStart: boolean;
+  providerBlockedReason?: string;
+  providerBlockedReasonCode?: string;
   primary?: {
     label: string;
     method?: 'POST';
@@ -660,6 +696,13 @@ export type ProviderCoreTaskDetail = {
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  providerBlockedReason?: string | null;
+  providerCancellationState?: ProviderCoreIssueState;
+  providerDisputeState?: ProviderCoreIssueState;
+  providerIssueState?: ProviderCoreIssueState;
+  providerIssueSummary?: string | null;
+  providerSupportReviewLabel?: string | null;
+  providerSupportState?: ProviderCoreIssueState;
   refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
