@@ -1225,6 +1225,24 @@ Scope remains limited:
 - Reject-completion behavior from Phase 23C was not changed.
 - No mobile payment calculation, commission calculation, capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or payment/lifecycle rule change was added.
 
+## Phase 23E Core Journey UI/Status Polish And QA Checklist
+
+Phase 23E polishes Core journey UI wording, demo state labels, and manual QA documentation after the main customer/provider Core actions were connected.
+
+Mobile behavior:
+
+- Customer and provider Core list/detail screens use clearer phase labels for available tasks, interest sent, customer choosing a Tasker, reserved/upcoming, payment preparing, payment protected, in progress, waiting for customer approval, completed, cancelled, disputed, and unavailable states.
+- Customer completion decision copy explains approve-completion through the protected payment flow, ask-for-changes returning the task to in-progress, and friendly payment-not-ready blocking without exposing raw Stripe/payment errors.
+- Provider Core action helper copy clarifies that expressing interest lets the customer choose later, on-the-way only notifies and does not start work, start task means work has begun, and request completion still requires customer approval.
+- Demo Core task rows now cover available, interested, reserved/upcoming, in-progress, pending completion, and completed terminology without adding backend calls.
+- Created `docs/mobile-core-journey-qa-checklist.md` with a full manual Core journey test plan.
+
+Scope remains limited:
+
+- No new mobile mutations were added.
+- No new backend mutations were added.
+- No payment, Stripe, lifecycle, cancellation, dispute, refund, help, auth, Prisma, or backend business logic was changed.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

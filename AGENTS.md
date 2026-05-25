@@ -120,6 +120,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Do not change payment, cancellation, dispute, matching, or lifecycle rules while wiring provider mobile UI.
 - Do not expose customer private address or contact data before the backend explicitly allows it for the current task state.
 - Provider mobile must use "express interest" or "respond" wording for open Core tasks, not "accept" or "reserve", unless the backend flow explicitly changes.
+- Provider mobile must use "express interest," not "accept" or "reserve."
 - Provider mobile must not reserve or assign Core tasks directly.
 - Customer selection and payment setup remain separate from provider interest.
 - Provider interest must be eligibility-checked server-side.
@@ -148,6 +149,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Customer approval may be payment-sensitive and must use existing backend payment logic only.
 - Customer rejection must follow existing backend lifecycle behavior and must not invent dispute, refund, or cancellation rules.
 - Use "payment protected" wording in mobile UI and avoid "escrow".
+- Core journey wording must preserve "payment protected" and must not use "escrow."
 - Do not connect support, dispute, refund, help, or cancellation while wiring completion approval/rejection unless explicitly phased.
 - Customer completion actions must be shown only from backend-authored `nextActions`.
 - Mobile must not infer approve/reject eligibility from raw task status alone.
@@ -162,6 +164,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile must not calculate commission, payout, capture, release, refund, or Stripe behavior.
 - Mobile must not show approve completion unless backend `nextActions.canApproveCompletion` allows it.
 - Use "payment protected" or "protected payment flow" wording for approval; avoid "escrow".
+- UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 
 # Mobile Auth Rules
 

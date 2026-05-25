@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerTasks } from '@/src/lib/api/customer';
-import { CustomerTasksResponse } from '@/src/lib/api/domain';
+import { CustomerTaskSummary, CustomerTasksResponse } from '@/src/lib/api/domain';
 import { getMockCustomerTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
@@ -116,8 +116,8 @@ export default function CustomerTasksScreen() {
           {data.tasks.map((task) => (
             <AppCard key={task.id} accentColor={colors.tasklyBlue600}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                <StatusBadge label={task.statusLabel} tone="core" />
-                <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
+                <StatusBadge label={getCustomerTaskPhaseLabel(task)} tone="core" />
+                <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>
@@ -146,14 +146,41 @@ export default function CustomerTasksScreen() {
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <StatusBadge label="OPEN" tone="core" />
-          <StatusBadge label="PAYMENT PROTECTED" tone="success" />
+          <StatusBadge label={t('customerSelectingTasker')} tone="core" />
+          <StatusBadge label={t('paymentProtected')} tone="success" />
         </View>
         <AppText variant="sectionTitle">{t('paymentProtected')}</AppText>
         <AppText color={colors.slate700}>
-          Safe placeholder wording only: when payments are added, Taskly will show backend-provided payment protection status without duplicating payment rules in the app.
+          Taskly shows payment protection status from the backend. The app does not calculate payment readiness or release rules.
         </AppText>
       </AppCard>
     </Screen>
   );
+}
+
+function getCustomerTaskPhaseLabel(task: CustomerTaskSummary) {
+  const status = task.status.toUpperCase();
+
+  if (status === 'OPEN') return t('customerSelectingTasker');
+  if (status === 'RESERVED') return t('reservedUpcoming');
+  if (status === 'PENDING_COMPLETION') return t('waitingForCustomerApproval');
+  if (status === 'IN_PROGRESS' && task.nextActions.blockedReason === t('taskerCanRequestCompletionAgain')) {
+    return t('changesRequestedShort');
+  }
+  if (status === 'IN_PROGRESS') return t('inProgress');
+  if (status === 'COMPLETED') return t('completed');
+  if (status.includes('CANCELLED')) return t('cancelled');
+  if (status === 'DISPUTED') return t('disputed');
+
+  return task.statusLabel || t('notAvailable');
+}
+
+function getPaymentStatusLabel(label: string) {
+  if (isPaymentProtected(label)) return t('paymentProtected');
+  if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
+  return label;
+}
+
+function isPaymentProtected(label: string) {
+  return label === 'Payment protected' || label === t('paymentProtected');
 }

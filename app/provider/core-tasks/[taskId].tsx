@@ -489,7 +489,7 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <AppCard>
-            <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
+            <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
             <Info label="Price" value={task.priceLabel} />
             <Info label="Customer" value={task.customerPreviewLabel} />
             <Info label="Schedule" value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
@@ -617,13 +617,13 @@ function ProviderActions({
       ) : null}
       {primaryAction === 'start_task' ? (
         <>
-          <AppText color={colors.slate700}>{t('startTaskPrompt')}</AppText>
+          <AppText color={colors.slate700}>{t('startTaskWorkBegun')}</AppText>
           <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
         </>
       ) : null}
       {primaryAction === 'request_completion' ? (
         <>
-          <AppText color={colors.slate700}>{t('requestCustomerApprovalPrompt')}</AppText>
+          <AppText color={colors.slate700}>{t('requestCompletionCustomerApproves')}</AppText>
           <AppText color={colors.slate700}>{t('customerMustApproveCompletion')}</AppText>
         </>
       ) : null}
@@ -715,7 +715,8 @@ function getProviderTaskPhaseLabel(task: ProviderCoreTaskDetail) {
 
   if (code === 'ALREADY_INTERESTED' || primaryType === 'interest_sent') return t('interestSent');
   if (status === 'OPEN' && task.nextActions.canExpressInterest) return t('available');
-  if (status === 'RESERVED') return t('upcoming');
+  if (status === 'RESERVED' && code === 'PAYMENT_NOT_READY') return t('paymentPreparing');
+  if (status === 'RESERVED') return t('reservedUpcoming');
   if (code === 'ON_THE_WAY_MARKED' || primaryType === 'on_the_way_marked') return t('onTheWay');
   if (status === 'IN_PROGRESS') return t('inProgress');
   if (status === 'PENDING_COMPLETION' || code === 'TASK_PENDING_COMPLETION') return t('waitingForCustomerApproval');
@@ -736,7 +737,7 @@ function getProviderBlockedReasonText(task: ProviderCoreTaskDetail) {
     case 'ON_THE_WAY_MARKED':
       return t('youAreOnTheWay');
     case 'PAYMENT_NOT_READY':
-      return t('paymentNotReadyYet');
+      return t('paymentPreparing');
     case 'TASK_CANCELLED':
     case 'TASK_NOT_OPEN':
       return t('notAvailable');
@@ -761,6 +762,16 @@ function getProviderBlockedReasonText(task: ProviderCoreTaskDetail) {
     default:
       return task.nextActions.blockedReason || t('waitingForCustomer');
   }
+}
+
+function getPaymentStatusLabel(label: string) {
+  if (isPaymentProtected(label)) return t('paymentProtected');
+  if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
+  return label;
+}
+
+function isPaymentProtected(label: string) {
+  return label === 'Payment protected' || label === t('paymentProtected');
 }
 
 function formatSchedule(start: string | null, end: string | null) {

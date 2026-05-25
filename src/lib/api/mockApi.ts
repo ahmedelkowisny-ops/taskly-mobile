@@ -7,10 +7,12 @@ import {
   CustomerProRequestDetailResponse,
   CustomerHomeSummary,
   CustomerProRequestsResponse,
+  CustomerCoreTaskNextActions,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
   PostingRulesResponse,
   ProviderCoreTasksResponse,
+  ProviderCoreTaskNextActions,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
   ProviderDashboardSummary,
@@ -197,53 +199,217 @@ export function getMockCustomerHomeResponse(): CustomerHomeResponse {
   };
 }
 
+function createMockCustomerTaskNextActions(
+  overrides: Partial<CustomerCoreTaskNextActions> = {},
+): CustomerCoreTaskNextActions {
+  return {
+    canApproveCompletion: false,
+    canCancel: false,
+    canChat: false,
+    canPreparePayment: false,
+    canRejectCompletion: false,
+    canRequestHelp: false,
+    canReview: false,
+    canSelectTasker: false,
+    canViewInvoice: false,
+    primaryAction: 'none',
+    ...overrides,
+  };
+}
+
 export function getMockCustomerTasksResponse(): CustomerTasksResponse {
   return {
     emptyState: {
       description: 'Demo mode is active. Real Core tasks will load after login and backend data are available.',
       title: 'No demo Core tasks',
     },
-    tasks: [],
+    tasks: [
+      {
+        categoryLabel: 'Furniture Assembly',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-selecting',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'View task status', type: 'view_task_status' },
+        nextActions: createMockCustomerTaskNextActions({ canSelectTasker: true, primaryAction: 'select_tasker' }),
+        paymentStatusLabel: 'Not paid yet',
+        priceLabel: 'EUR 40',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'OPEN',
+        statusLabel: 'Customer choosing Tasker',
+        title: 'Demo task waiting for Tasker choice',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Furniture Assembly',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-upcoming',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Open chat', type: 'chat' },
+        nextActions: createMockCustomerTaskNextActions({ canChat: true, primaryAction: 'chat' }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 40',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'RESERVED',
+        statusLabel: 'Reserved/upcoming',
+        title: 'Demo upcoming Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-in-progress',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Open chat', type: 'chat' },
+        nextActions: createMockCustomerTaskNextActions({
+          blockedReason: 'Waiting for the Tasker to request completion.',
+          blockedReasonCode: 'WAITING_FOR_PROVIDER',
+          canChat: true,
+          primaryAction: 'chat',
+        }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 55',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'IN_PROGRESS',
+        statusLabel: 'In progress',
+        title: 'Demo in-progress Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-pending-completion',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Review completion', type: 'review_completion' },
+        nextActions: createMockCustomerTaskNextActions({
+          canApproveCompletion: true,
+          canChat: true,
+          canRejectCompletion: true,
+          primaryAction: 'approve_completion',
+        }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 55',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'PENDING_COMPLETION',
+        statusLabel: 'Waiting for customer approval',
+        title: 'Demo completion review',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Light Electrical',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-completed',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Review task', type: 'review' },
+        nextActions: createMockCustomerTaskNextActions({
+          blockedReason: 'This task is already completed.',
+          blockedReasonCode: 'ALREADY_COMPLETED',
+          canReview: true,
+          canViewInvoice: true,
+          primaryAction: 'review',
+        }),
+        paymentStatusLabel: 'Payment released',
+        priceLabel: 'EUR 35',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'COMPLETED',
+        statusLabel: 'Completed',
+        title: 'Demo completed Core task',
+        unreadMessagesCount: 0,
+      },
+    ],
   };
 }
 
 export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): CustomerTaskDetailResponse {
+  const isInProgress = taskId.includes('in-progress');
+  const isUpcoming = taskId.includes('upcoming');
+  const isCompleted = taskId.includes('completed');
+  const isSelecting = taskId.includes('selecting');
+  const status = isCompleted
+    ? 'COMPLETED'
+    : isInProgress
+      ? 'IN_PROGRESS'
+      : isUpcoming
+        ? 'RESERVED'
+        : isSelecting
+          ? 'OPEN'
+          : 'PENDING_COMPLETION';
+  const nextActions = isCompleted
+    ? createMockCustomerTaskNextActions({
+        blockedReason: 'This task is already completed.',
+        blockedReasonCode: 'ALREADY_COMPLETED',
+        canReview: true,
+        canViewInvoice: true,
+        primaryAction: 'review',
+      })
+    : isInProgress
+      ? createMockCustomerTaskNextActions({
+          blockedReason: 'Waiting for the Tasker to request completion.',
+          blockedReasonCode: 'WAITING_FOR_PROVIDER',
+          canChat: true,
+          primaryAction: 'chat',
+        })
+      : isUpcoming
+        ? createMockCustomerTaskNextActions({ canChat: true, primaryAction: 'chat' })
+        : isSelecting
+          ? createMockCustomerTaskNextActions({ canSelectTasker: true, primaryAction: 'select_tasker' })
+          : createMockCustomerTaskNextActions({
+              canApproveCompletion: true,
+              canCancel: false,
+              canChat: true,
+              canPreparePayment: false,
+              canRejectCompletion: true,
+              primaryAction: 'approve_completion',
+            });
+  const statusLabel = isCompleted
+    ? 'Completed'
+    : isInProgress
+      ? 'In progress'
+      : isUpcoming
+        ? 'Reserved/upcoming'
+        : isSelecting
+          ? 'Customer choosing Tasker'
+          : 'Waiting for customer approval';
+
   return {
     task: {
       addressPreviewLabel: 'Demo address preview',
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
-      description: 'Demo read-only Core task detail. Completion actions stay disabled until a later mutation phase.',
+      description: 'Demo Core task detail with backend-style next action wording.',
       displayActions: [{ accent: 'core', href: '/customer/tasks', label: 'Review completion', type: 'review_completion' }],
       id: taskId,
       images: [],
-      nextActions: {
-        canApproveCompletion: true,
-        canCancel: false,
-        canChat: true,
-        canPreparePayment: false,
-        canRejectCompletion: true,
-        canRequestHelp: false,
-        canReview: false,
-        canSelectTasker: false,
-        canViewInvoice: false,
-        primaryAction: 'approve_completion',
-      },
-      paymentStatusLabel: 'Payment protected',
+      nextActions,
+      paymentStatusLabel: isSelecting ? 'Not paid yet' : isCompleted ? 'Payment released' : 'Payment protected',
       priceLabel: 'EUR 40',
       scheduledEndAt: null,
       scheduledStartAt: null,
-      status: 'PENDING_COMPLETION',
-      statusLabel: 'Pending completion',
-      taskerPreview: {
-        displayName: 'Demo Tasker',
-        ratingLabel: '5.0 rating',
-        statusLabel: 'Verified',
-      },
+      status,
+      statusLabel,
+      taskerPreview: isSelecting
+        ? null
+        : {
+            displayName: 'Demo Tasker',
+            ratingLabel: '5.0 rating',
+            statusLabel: 'Verified',
+          },
       timeline: [
         { description: 'Demo task posted.', id: 'posted', label: 'Posted', status: 'done' },
         { description: 'Payment state is shown by backend data.', id: 'payment', label: 'Payment protected', status: 'done' },
-        { description: 'Tasker requested completion. Approval actions will be connected next.', id: 'completion', label: 'Completion review', status: 'current' },
+        {
+          description: isCompleted
+            ? 'Completion was approved through the protected payment flow.'
+            : isInProgress
+              ? 'Work is in progress. The Tasker can request completion when ready.'
+              : isUpcoming
+                ? 'The task is reserved for the selected Tasker.'
+                : isSelecting
+                  ? 'The customer chooses a Tasker after interest is sent.'
+                  : 'Tasker requested completion. The customer can approve or ask for changes.',
+          id: 'completion',
+          label: 'Completion review',
+          status: isCompleted ? 'done' : 'current',
+        },
       ],
       title: 'Demo Core task',
     },
@@ -345,44 +511,248 @@ export function getMockProviderDashboardResponse(): ProviderDashboardResponse {
   };
 }
 
+function createMockProviderCoreTaskNextActions(
+  overrides: Partial<ProviderCoreTaskNextActions> = {},
+): ProviderCoreTaskNextActions {
+  return {
+    canCancelOrReportIssue: false,
+    canChat: false,
+    canExpressInterest: false,
+    canMarkOnTheWay: false,
+    canRequestCompletion: false,
+    canStart: false,
+    ...overrides,
+  };
+}
+
 export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
   return {
     emptyState: {
       description: 'Demo mode is active. Real Core task previews load after login and backend data are available.',
       title: 'No demo Core tasks',
     },
-    tasks: [],
+    tasks: [
+      {
+        categoryLabel: 'Furniture Assembly',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-available',
+        nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Express interest', type: 'express_interest' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          canExpressInterest: true,
+          primary: { label: 'Express interest', method: 'POST', type: 'express_interest' },
+        }),
+        paymentStatusLabel: 'Not paid yet',
+        priceLabel: 'EUR 40',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'OPEN',
+        statusLabel: 'Available',
+        title: 'Demo available Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Furniture Assembly',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-interested',
+        nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Interest sent', type: 'interest_sent' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          blockedReason: 'You already expressed interest.',
+          blockedReasonCode: 'ALREADY_INTERESTED',
+          primary: { label: 'Interest sent', type: 'interest_sent' },
+        }),
+        paymentStatusLabel: 'Not paid yet',
+        priceLabel: 'EUR 40',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'OPEN',
+        statusLabel: 'Interest sent',
+        title: 'Demo interest sent',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-upcoming',
+        nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Mark on the way', type: 'mark_on_the_way' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          canChat: true,
+          canMarkOnTheWay: true,
+          primary: { label: 'Mark on the way', method: 'POST', type: 'mark_on_the_way' },
+        }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 55',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'RESERVED',
+        statusLabel: 'Reserved/upcoming',
+        title: 'Demo reserved Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-in-progress',
+        nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Request completion', type: 'request_completion' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          canChat: true,
+          canRequestCompletion: true,
+          primary: { label: 'Request completion', method: 'POST', type: 'request_completion' },
+        }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 55',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'IN_PROGRESS',
+        statusLabel: 'In progress',
+        title: 'Demo in-progress Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-pending-completion',
+        nextAction: { accent: 'core', href: '/provider/core-tasks', label: 'Await customer approval', type: 'await_customer_approval' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          blockedReason: 'Task is already waiting for approval.',
+          blockedReasonCode: 'TASK_PENDING_COMPLETION',
+          canChat: true,
+          primary: { label: 'Await customer approval', type: 'await_customer_approval' },
+        }),
+        paymentStatusLabel: 'Payment protected',
+        priceLabel: 'EUR 55',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'PENDING_COMPLETION',
+        statusLabel: 'Waiting for customer approval',
+        title: 'Demo awaiting customer approval',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Light Electrical',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        id: 'demo-provider-completed',
+        nextAction: { accent: 'neutral', href: '/provider/core-tasks', label: 'View task', type: 'view_task' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          blockedReason: 'Task is already completed.',
+          blockedReasonCode: 'TASK_COMPLETED',
+          primary: { label: 'View task', type: 'view_task' },
+        }),
+        paymentStatusLabel: 'Payment released',
+        priceLabel: 'EUR 35',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'COMPLETED',
+        statusLabel: 'Completed',
+        title: 'Demo completed Core task',
+        unreadMessagesCount: 0,
+      },
+    ],
   };
 }
 
 export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-task'): ProviderCoreTaskDetailResponse {
+  const isInterested = taskId.includes('interested');
+  const isUpcoming = taskId.includes('upcoming');
+  const isInProgress = taskId.includes('in-progress');
+  const isPendingCompletion = taskId.includes('pending-completion');
+  const isCompleted = taskId.includes('completed');
+  const status = isCompleted
+    ? 'COMPLETED'
+    : isPendingCompletion
+      ? 'PENDING_COMPLETION'
+      : isInProgress
+        ? 'IN_PROGRESS'
+        : isUpcoming
+          ? 'RESERVED'
+          : 'OPEN';
+  const nextActions = isCompleted
+    ? createMockProviderCoreTaskNextActions({
+        blockedReason: 'Task is already completed.',
+        blockedReasonCode: 'TASK_COMPLETED',
+        primary: { label: 'View task', type: 'view_task' },
+      })
+    : isPendingCompletion
+      ? createMockProviderCoreTaskNextActions({
+          blockedReason: 'Task is already waiting for approval.',
+          blockedReasonCode: 'TASK_PENDING_COMPLETION',
+          canChat: true,
+          primary: { label: 'Await customer approval', type: 'await_customer_approval' },
+        })
+      : isInProgress
+        ? createMockProviderCoreTaskNextActions({
+            canChat: true,
+            canRequestCompletion: true,
+            primary: { label: 'Request completion', method: 'POST', type: 'request_completion' },
+          })
+        : isUpcoming
+          ? createMockProviderCoreTaskNextActions({
+              canChat: true,
+              canMarkOnTheWay: true,
+              primary: { label: 'Mark on the way', method: 'POST', type: 'mark_on_the_way' },
+            })
+          : isInterested
+            ? createMockProviderCoreTaskNextActions({
+                blockedReason: 'You already expressed interest.',
+                blockedReasonCode: 'ALREADY_INTERESTED',
+                primary: { label: 'Interest sent', type: 'interest_sent' },
+              })
+            : createMockProviderCoreTaskNextActions({
+                canExpressInterest: true,
+                primary: { label: 'Express interest', method: 'POST', type: 'express_interest' },
+              });
+
   return {
     task: {
-      addressPreviewLabel: 'Address shared after selection',
+      addressPreviewLabel: isUpcoming || isInProgress || isPendingCompletion || isCompleted
+        ? 'Demo address preview'
+        : 'Address shared after selection',
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       customerPreviewLabel: 'Customer preview',
       description: 'Demo provider Core task detail. Actions follow backend-authored nextActions.',
       id: taskId,
       images: [],
-      nextActions: {
-        canCancelOrReportIssue: false,
-        canChat: false,
-        canExpressInterest: true,
-        canMarkOnTheWay: false,
-        canRequestCompletion: false,
-        canStart: false,
-        primary: { label: 'Express interest', method: 'POST', type: 'express_interest' },
-      },
-      paymentStatusLabel: 'Not paid yet',
+      nextActions,
+      paymentStatusLabel: isUpcoming || isInProgress || isPendingCompletion ? 'Payment protected' : isCompleted ? 'Payment released' : 'Not paid yet',
       priceLabel: 'EUR 40',
       scheduledEndAt: null,
       scheduledStartAt: null,
-      status: 'OPEN',
-      statusLabel: 'Available',
+      status,
+      statusLabel: isCompleted
+        ? 'Completed'
+        : isPendingCompletion
+          ? 'Waiting for customer approval'
+          : isInProgress
+            ? 'In progress'
+            : isUpcoming
+              ? 'Reserved/upcoming'
+              : isInterested
+                ? 'Interest sent'
+                : 'Available',
       timeline: [
         { description: 'Visible according to demo matching.', id: 'visible', label: 'Visible to you', status: 'done' },
-        { description: 'Provider actions come later.', id: 'next', label: 'Next step', status: 'current' },
+        {
+          description: isCompleted
+            ? 'The customer approved completion.'
+            : isPendingCompletion
+              ? 'Waiting for customer approval.'
+              : isInProgress
+                ? 'Work has begun. You can request completion when ready.'
+                : isUpcoming
+                  ? 'Notify the customer when you are on the way.'
+                  : isInterested
+                    ? 'The customer will choose a Tasker later.'
+                    : 'Express interest. This does not reserve the task.',
+          id: 'next',
+          label: 'Next step',
+          status: isCompleted ? 'done' : 'current',
+        },
       ],
       title: 'Demo provider Core task',
     },
@@ -502,8 +872,8 @@ export function getMockMessageThreadResponse(threadId = 'booking:demo-core-threa
       {
         attachments: [],
         body: isSupport
-          ? 'This is a demo official Taskly message. Sending will be connected later.'
-          : 'This is a demo read-only conversation. Sending will be connected later.',
+          ? 'This is a demo official Taskly message.'
+          : 'This is a demo Core task conversation.',
         createdAt: new Date().toISOString(),
         id: `${threadId}:message-1`,
         isMine: false,

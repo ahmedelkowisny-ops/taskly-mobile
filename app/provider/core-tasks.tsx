@@ -117,7 +117,7 @@ export default function ProviderCoreTasksScreen() {
             <AppCard key={task.id} accentColor={colors.tasklyBlue600}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
-                <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
+                <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
                 {getProviderNextActionHint(task) ? (
                   <StatusBadge label={getProviderNextActionHint(task) || ''} tone="success" />
                 ) : null}
@@ -198,7 +198,8 @@ function getProviderTaskPhaseLabel(task: ProviderCoreTaskSummary) {
 
   if (code === 'ALREADY_INTERESTED' || primaryType === 'interest_sent') return t('interestSent');
   if (status === 'OPEN' && task.nextActions.canExpressInterest) return t('available');
-  if (status === 'RESERVED') return t('upcoming');
+  if (status === 'RESERVED' && code === 'PAYMENT_NOT_READY') return t('paymentPreparing');
+  if (status === 'RESERVED') return t('reservedUpcoming');
   if (code === 'ON_THE_WAY_MARKED' || primaryType === 'on_the_way_marked') return t('onTheWay');
   if (status === 'IN_PROGRESS') return t('inProgress');
   if (status === 'PENDING_COMPLETION' || code === 'TASK_PENDING_COMPLETION') return t('waitingForCustomerApproval');
@@ -208,4 +209,14 @@ function getProviderTaskPhaseLabel(task: ProviderCoreTaskSummary) {
   if (status === 'OPEN') return t('available');
 
   return task.statusLabel || t('notAvailable');
+}
+
+function getPaymentStatusLabel(label: string) {
+  if (isPaymentProtected(label)) return t('paymentProtected');
+  if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
+  return label;
+}
+
+function isPaymentProtected(label: string) {
+  return label === 'Payment protected' || label === t('paymentProtected');
 }

@@ -298,14 +298,14 @@ export default function CustomerTaskDetailScreen() {
       {task ? (
         <>
           <AppCard accentColor={colors.tasklyBlue600}>
-            <StatusBadge label={task.statusLabel} tone="core" />
+            <StatusBadge label={getCustomerTaskPhaseLabel(task)} tone="core" />
             <AppText variant="screenTitle">{task.title}</AppText>
             <AppText color={colors.slate700}>{task.description}</AppText>
             <AppText color={colors.slate700}>{task.categoryLabel} - {task.cityLabel}</AppText>
           </AppCard>
 
           <AppCard>
-            <StatusBadge label={task.paymentStatusLabel} tone={task.paymentStatusLabel === 'Payment protected' ? 'success' : 'neutral'} />
+            <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
             <Info label="Price" value={task.priceLabel} />
             <Info label="Schedule" value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             <Info label="Address" value={task.addressPreviewLabel} />
@@ -389,22 +389,22 @@ function Timeline({ items, accent }: { accent: 'core'; items: { description: str
 function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; tone: 'core' }) {
   const isCompletionReview = actions.canApproveCompletion || actions.canRejectCompletion;
   const label = isCompletionReview
-    ? 'Review completion'
+    ? t('waitingForCustomerApproval')
     : actions.primaryAction === 'prepare_payment'
-      ? 'Review payment status'
+      ? t('paymentPreparing')
       : actions.primaryAction === 'select_tasker'
-        ? 'View task status'
+        ? t('customerSelectingTasker')
         : actions.primaryAction === 'review'
-          ? 'Review task'
-          : 'View task';
+          ? t('completed')
+          : t('notAvailable');
 
   return (
     <AppCard>
       <AppText variant="sectionTitle">Next steps</AppText>
       {isCompletionReview ? (
         <AppText color={colors.slate700}>{t('completionRequested')}</AppText>
-      ) : actions.blockedReason ? (
-        <AppText color={colors.slate700}>{actions.blockedReason}</AppText>
+      ) : actions.blockedReason || actions.blockedReasonCode ? (
+        <AppText color={colors.slate700}>{getCustomerBlockedReasonText(actions)}</AppText>
       ) : null}
       <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
     </AppCard>
@@ -438,17 +438,20 @@ function CompletionDecision({
 }) {
   const canApprove = task.nextActions.canApproveCompletion;
   const canReject = task.nextActions.canRejectCompletion;
-  if (!canApprove && !canReject) return null;
+  const approvalBlockedByPayment = task.nextActions.blockedReasonCode === 'PAYMENT_NOT_READY';
+  if (!canApprove && !canReject && !approvalBlockedByPayment) return null;
 
   return (
     <AppCard accentColor={colors.warning600}>
       <StatusBadge label={t('waitingForCustomerApproval')} tone="warning" />
       <AppText variant="sectionTitle">{t('approveCompletionPrompt')}</AppText>
-      <AppText color={colors.slate700}>{t('paymentReleasedProtectedFlow')}</AppText>
+      <AppText color={colors.slate700}>
+        {canApprove ? t('approveCompletionPaymentReady') : t('approvalWaitingPaymentReady')}
+      </AppText>
       {canReject ? (
         <>
           <AppText color={colors.slate700}>{t('tellTaskerWhatNeedsFixing')}</AppText>
-          <AppText color={colors.slate700}>{t('taskReturnsInProgress')}</AppText>
+          <AppText color={colors.slate700}>{t('askForChangesNotDispute')}</AppText>
           <FormField
             errorText={reasonError || undefined}
             helperText={t('taskerCanRequestCompletionAgain')}
@@ -482,6 +485,52 @@ function formatSchedule(start: string | null, end: string | null) {
   const startLabel = new Date(start).toLocaleString();
   const endLabel = end ? new Date(end).toLocaleTimeString() : '';
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
+}
+
+function getCustomerTaskPhaseLabel(task: CustomerTaskDetail) {
+  const status = task.status.toUpperCase();
+
+  if (status === 'OPEN') return t('customerSelectingTasker');
+  if (status === 'RESERVED') return t('reservedUpcoming');
+  if (status === 'PENDING_COMPLETION') return t('waitingForCustomerApproval');
+  if (status === 'IN_PROGRESS' && task.nextActions.blockedReason === t('taskerCanRequestCompletionAgain')) {
+    return t('changesRequestedShort');
+  }
+  if (status === 'IN_PROGRESS') return t('inProgress');
+  if (status === 'COMPLETED') return t('completed');
+  if (status.includes('CANCELLED')) return t('cancelled');
+  if (status === 'DISPUTED') return t('disputed');
+
+  return task.statusLabel || t('notAvailable');
+}
+
+function getCustomerBlockedReasonText(actions: CustomerCoreTaskNextActions) {
+  switch (actions.blockedReasonCode) {
+    case 'PAYMENT_NOT_READY':
+      return t('approvalWaitingPaymentReady');
+    case 'WAITING_FOR_PROVIDER':
+      return actions.blockedReason || t('waitingForCustomer');
+    case 'ALREADY_COMPLETED':
+      return t('taskAlreadyCompleted');
+    case 'TASK_DISPUTED':
+      return t('disputed');
+    case 'TASK_CANCELLED':
+      return t('cancelled');
+    case 'TASK_NOT_STARTED':
+      return t('taskNotStartedYet');
+    default:
+      return actions.blockedReason || t('notAvailable');
+  }
+}
+
+function getPaymentStatusLabel(label: string) {
+  if (isPaymentProtected(label)) return t('paymentProtected');
+  if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
+  return label;
+}
+
+function isPaymentProtected(label: string) {
+  return label === 'Payment protected' || label === t('paymentProtected');
 }
 
 const styles = StyleSheet.create({
