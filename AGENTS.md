@@ -1,6 +1,10 @@
-# Expo HAS CHANGED
+# Expo SDK Guidance
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before writing any code.
+Use Expo SDK 54 documentation for mobile work because this project currently reports sdkVersion 54.0.0. Do not upgrade Expo SDK during feature phases unless the prompt explicitly scopes an Expo upgrade.
+
+Before changing native/Expo-sensitive features such as Stripe, notifications, deep links, image picker, image manipulation, permissions, or EAS, consult the Expo SDK 54 docs first, including:
+- https://docs.expo.dev/versions/v54.0.0/
+- https://docs.expo.dev/llms-sdk-v54.0.0.txt
 
 # Taskly Mobile Rules
 
