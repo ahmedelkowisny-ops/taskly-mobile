@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
-import { ModeBadge } from '@/src/components/taskly';
+import { FormField, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   CoreCancellationState,
@@ -20,13 +20,18 @@ import {
   expressInterestInCoreTask,
   getProviderCoreTaskDetail,
   markProviderCoreTaskOnTheWay,
+  reportProviderCannotAttend,
+  reportProviderCoreTaskIssue,
   requestProviderCoreTaskCompletion,
+  requestProviderCoreTaskSupport,
   startProviderCoreTask,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+
+type ProviderIssueActionKind = 'cannot_attend' | 'report_issue' | 'support_request';
 
 export default function ProviderCoreTaskDetailScreen() {
   const router = useRouter();
@@ -43,12 +48,20 @@ export default function ProviderCoreTaskDetailScreen() {
   const [isStartingTask, setIsStartingTask] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [providerIssueDetails, setProviderIssueDetails] = useState('');
+  const [providerIssueError, setProviderIssueError] = useState<string | null>(null);
+  const [providerIssueMode, setProviderIssueMode] = useState<ProviderIssueActionKind | null>(null);
+  const [providerIssueReason, setProviderIssueReason] = useState('');
+  const [providerIssueReasonError, setProviderIssueReasonError] = useState<string | null>(null);
+  const [providerIssueSubmittingKind, setProviderIssueSubmittingKind] = useState<ProviderIssueActionKind | null>(null);
+  const [providerIssueSuccess, setProviderIssueSuccess] = useState<string | null>(null);
   const [needsToolsConfirmation, setNeedsToolsConfirmation] = useState(false);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
     setStateLabel(null);
     setActionError(null);
+    setProviderIssueError(null);
 
     if (status === 'demo') {
       setData(getMockProviderCoreTaskDetailResponse(taskId));
@@ -169,6 +182,68 @@ export default function ProviderCoreTaskDetailScreen() {
           },
           status: 'PENDING_COMPLETION',
           statusLabel: t('completionRequested'),
+        },
+      };
+    });
+  }, []);
+
+  const markDemoProviderIssueSubmitted = useCallback((kind: ProviderIssueActionKind) => {
+    setData((current) => {
+      if (!current) return current;
+
+      const supportLabel =
+        kind === 'cannot_attend'
+          ? t('cannotAttendRequestSubmitted')
+          : kind === 'support_request'
+            ? t('supportRequestSubmitted')
+            : t('reportSubmitted');
+      const issueState: ProviderCoreIssueState = {
+        blockedReason: t('taskUnderReview'),
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: t('tasklyWillReviewRequest'),
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-provider-support',
+        latestRequestType:
+          kind === 'cannot_attend'
+            ? 'PROVIDER_CANNOT_ATTEND'
+            : kind === 'support_request'
+              ? 'PROVIDER_SUPPORT_REQUEST'
+              : 'PROVIDER_REPORT_ISSUE',
+        providerIssueSummary: supportLabel,
+        providerSupportReviewLabel: t('supportReviewInProgress'),
+        status: 'under_review',
+        statusLabel: t('taskUnderReview'),
+      };
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskUnderReview'),
+            blockedReasonCode: 'TASK_DISPUTED',
+            canCancelOrReportIssue: false,
+            canDisputeRejection: false,
+            canMarkOnTheWay: false,
+            canReportCannotAttend: false,
+            canReportIssue: false,
+            canRequestCompletion: false,
+            canRequestProviderSupport: false,
+            canStart: false,
+            providerBlockedReason: t('taskUnderReview'),
+            providerBlockedReasonCode: 'TASK_DISPUTED',
+            primary: { label: t('taskUnderReview'), type: 'view_task' },
+          },
+          paymentStatusLabel: t('underSupportReview'),
+          providerBlockedReason: t('taskUnderReview'),
+          providerCancellationState: issueState,
+          providerDisputeState: issueState,
+          providerIssueState: issueState,
+          providerIssueSummary: supportLabel,
+          providerSupportReviewLabel: t('supportReviewInProgress'),
+          providerSupportState: issueState,
+          status: 'DISPUTED',
+          statusLabel: t('taskUnderReview'),
         },
       };
     });
@@ -463,6 +538,127 @@ export default function ProviderCoreTaskDetailScreen() {
     ]);
   }, [handleRequestCompletion]);
 
+  const resetProviderIssueForm = useCallback(() => {
+    setProviderIssueDetails('');
+    setProviderIssueError(null);
+    setProviderIssueMode(null);
+    setProviderIssueReason('');
+    setProviderIssueReasonError(null);
+  }, []);
+
+  const submitProviderIssueAction = useCallback(async (kind: ProviderIssueActionKind) => {
+    setProviderIssueError(null);
+    setProviderIssueSuccess(null);
+    setProviderIssueReasonError(null);
+
+    const reason = providerIssueReason.trim();
+    const details = providerIssueDetails.trim();
+
+    if (reason.length < 3) {
+      setProviderIssueReasonError(t('reasonRequired'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoProviderIssueSubmitted(kind);
+      setProviderIssueSuccess(
+        kind === 'cannot_attend'
+          ? t('cannotAttendRequestSubmitted')
+          : kind === 'support_request'
+            ? t('supportRequestSubmitted')
+            : t('reportSubmitted'),
+      );
+      resetProviderIssueForm();
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setProviderIssueError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProviderIssueError(t('loginRequired'));
+      return;
+    }
+
+    setProviderIssueSubmittingKind(kind);
+    const payload = {
+      ...(details ? { details } : null),
+      reason,
+    };
+    const result =
+      kind === 'cannot_attend'
+        ? await reportProviderCannotAttend(taskId, payload, authToken)
+        : kind === 'support_request'
+          ? await requestProviderCoreTaskSupport(taskId, payload, authToken)
+          : await reportProviderCoreTaskIssue(taskId, payload, authToken);
+    setProviderIssueSubmittingKind(null);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setProviderIssueSuccess(
+        result.data.message ||
+          (kind === 'cannot_attend'
+            ? t('cannotAttendRequestSubmitted')
+            : kind === 'support_request'
+              ? t('supportRequestSubmitted')
+              : t('reportSubmitted')),
+      );
+      resetProviderIssueForm();
+      return;
+    }
+
+    if (result.error.code === 'MISSING_REASON') {
+      setProviderIssueReasonError(t('reasonRequired'));
+      return;
+    }
+
+    if (result.error.code === 'NOT_ASSIGNED_TASKER') {
+      setProviderIssueError(t('notAssignedToTask'));
+      return;
+    }
+
+    if (result.error.code === 'TASKER_NOT_VERIFIED' || result.error.code === 'TASKER_NOT_APPROVED') {
+      setProviderIssueError(t('completeVerificationToRespond'));
+      return;
+    }
+
+    if (result.error.code === 'TASK_CANCELLED' || result.error.code === 'TASK_COMPLETED' || result.error.code === 'PROVIDER_SUPPORT_NOT_AVAILABLE') {
+      setProviderIssueError(t('providerActionUnavailable'));
+      void loadDetail();
+      return;
+    }
+
+    setProviderIssueError(result.error.message || t('somethingWentWrong'));
+  }, [
+    getValidAccessToken,
+    loadDetail,
+    markDemoProviderIssueSubmitted,
+    providerIssueDetails,
+    providerIssueReason,
+    resetProviderIssueForm,
+    status,
+    taskId,
+  ]);
+
+  const confirmProviderIssueAction = useCallback((kind: ProviderIssueActionKind) => {
+    if (kind !== 'cannot_attend') {
+      void submitProviderIssueAction(kind);
+      return;
+    }
+
+    Alert.alert(t('confirmCannotAttend'), t('mayAffectCustomerPaymentProtected'), [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: () => void submitProviderIssueAction(kind), style: 'destructive', text: t('submitReport') },
+    ]);
+  }, [submitProviderIssueAction]);
+
   const handleOpenChat = useCallback(() => {
     router.push('/provider/messages' as Href);
   }, [router]);
@@ -522,6 +718,21 @@ export default function ProviderCoreTaskDetailScreen() {
             onOpenChat={handleOpenChat}
             onRequestCompletion={confirmRequestCompletion}
             onStartTask={confirmStartTask}
+            task={task}
+          />
+          <ProviderIssueActions
+            details={providerIssueDetails}
+            errorMessage={providerIssueError}
+            mode={providerIssueMode}
+            onCancel={resetProviderIssueForm}
+            onDetailsChange={setProviderIssueDetails}
+            onModeChange={setProviderIssueMode}
+            onReasonChange={setProviderIssueReason}
+            onSubmit={confirmProviderIssueAction}
+            reason={providerIssueReason}
+            reasonError={providerIssueReasonError}
+            submittingKind={providerIssueSubmittingKind}
+            successMessage={providerIssueSuccess}
             task={task}
           />
         </>
@@ -771,6 +982,106 @@ function ProviderActions({
   );
 }
 
+function ProviderIssueActions({
+  details,
+  errorMessage,
+  mode,
+  onCancel,
+  onDetailsChange,
+  onModeChange,
+  onReasonChange,
+  onSubmit,
+  reason,
+  reasonError,
+  submittingKind,
+  successMessage,
+  task,
+}: {
+  details: string;
+  errorMessage: string | null;
+  mode: ProviderIssueActionKind | null;
+  onCancel: () => void;
+  onDetailsChange: (value: string) => void;
+  onModeChange: (value: ProviderIssueActionKind) => void;
+  onReasonChange: (value: string) => void;
+  onSubmit: (kind: ProviderIssueActionKind) => void;
+  reason: string;
+  reasonError: string | null;
+  submittingKind: ProviderIssueActionKind | null;
+  successMessage: string | null;
+  task: ProviderCoreTaskDetail;
+}) {
+  const canReportIssue = task.nextActions.canReportIssue;
+  const canRequestSupport = task.nextActions.canRequestProviderSupport;
+  const canReportCannotAttend = task.nextActions.canReportCannotAttend;
+  const hasActions = canReportIssue || canRequestSupport || canReportCannotAttend;
+
+  if (!hasActions && !successMessage && !errorMessage) return null;
+
+  const activeMode = mode;
+  const isSubmitting = Boolean(activeMode && submittingKind === activeMode);
+
+  return (
+    <AppCard accentColor={colors.warning600}>
+      <StatusBadge label={t('issueAndSupport')} tone="warning" />
+      <AppText variant="sectionTitle">{t('issueAndSupport')}</AppText>
+      <AppText color={colors.slate700}>{task.providerIssueSummary || t('tasklyWillReviewRequest')}</AppText>
+      <AppText color={colors.slate700}>{t('mayAffectCustomerPaymentProtected')}</AppText>
+
+      {!activeMode ? (
+        <View style={styles.stack}>
+          {canReportIssue ? (
+            <AppButton onPress={() => onModeChange('report_issue')} tone="neutral" variant="outline">
+              {t('reportIssue')}
+            </AppButton>
+          ) : null}
+          {canRequestSupport ? (
+            <AppButton onPress={() => onModeChange('support_request')} tone="neutral" variant="outline">
+              {t('requestSupport')}
+            </AppButton>
+          ) : null}
+          {canReportCannotAttend ? (
+            <AppButton onPress={() => onModeChange('cannot_attend')} tone="neutral" variant="outline">
+              {t('cannotAttend')}
+            </AppButton>
+          ) : null}
+        </View>
+      ) : (
+        <View style={styles.stack}>
+          <StatusBadge label={getProviderIssueActionLabel(activeMode)} tone={activeMode === 'cannot_attend' ? 'danger' : 'warning'} />
+          <FormField
+            errorText={reasonError || undefined}
+            helperText={t('explainWhatHappened')}
+            label={t('supportReason')}
+            multiline
+            onChangeText={onReasonChange}
+            placeholder={t('explainWhatHappened')}
+            value={reason}
+          />
+          <FormField
+            helperText={t('addDetailsOptional')}
+            label={t('supportDetails')}
+            multiline
+            onChangeText={onDetailsChange}
+            placeholder={t('addDetailsOptional')}
+            value={details}
+          />
+          <AppText color={colors.slate700}>{t('tasklyWillReviewRequest')}</AppText>
+          <AppButton loading={isSubmitting} onPress={() => onSubmit(activeMode)} tone="neutral" variant="outline">
+            {isSubmitting ? t('submittingSupportRequest') : getProviderIssueSubmitLabel(activeMode)}
+          </AppButton>
+          <AppButton disabled={Boolean(submittingKind)} onPress={onCancel} variant="ghost">
+            {t('cancel')}
+          </AppButton>
+        </View>
+      )}
+
+      {successMessage ? <AppText color={colors.success600}>{successMessage}</AppText> : null}
+      {errorMessage ? <AppText color={colors.danger600}>{errorMessage}</AppText> : null}
+    </AppCard>
+  );
+}
+
 type ProviderPrimaryAction = 'express_interest' | 'mark_on_the_way' | 'none' | 'open_chat' | 'request_completion' | 'start_task';
 
 function getPrimaryProviderAction(task: ProviderCoreTaskDetail): ProviderPrimaryAction {
@@ -788,6 +1099,17 @@ function getPrimaryProviderAction(task: ProviderCoreTaskDetail): ProviderPrimary
   if (task.nextActions.canRequestCompletion) return 'request_completion';
 
   return 'none';
+}
+
+function getProviderIssueActionLabel(kind: ProviderIssueActionKind) {
+  if (kind === 'cannot_attend') return t('cannotAttend');
+  if (kind === 'support_request') return t('requestSupport');
+  return t('reportIssue');
+}
+
+function getProviderIssueSubmitLabel(kind: ProviderIssueActionKind) {
+  if (kind === 'support_request') return t('submitSupportRequest');
+  return t('submitReport');
 }
 
 function getProviderTaskPhaseLabel(task: ProviderCoreTaskDetail) {

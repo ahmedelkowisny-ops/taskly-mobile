@@ -31,7 +31,10 @@ export {
   getProviderProRequestDetail,
   getProviderProRequests,
   markProviderCoreTaskOnTheWay,
+  reportProviderCannotAttend,
+  reportProviderCoreTaskIssue,
   requestProviderCoreTaskCompletion,
+  requestProviderCoreTaskSupport,
   startProviderCoreTask,
 } from './provider';
 export {
@@ -121,6 +124,8 @@ export type {
   ProviderCoreTaskDetail,
   ProviderCoreTaskDetailResponse,
   ProviderCoreIssueState,
+  ProviderCoreIssueActionPayload,
+  ProviderCoreIssueActionResponse,
   ProviderCoreTaskNextActions,
   ProviderCoreTasksResponse,
   ProviderCoreTaskSummary,

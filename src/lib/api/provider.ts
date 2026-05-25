@@ -4,6 +4,8 @@ import {
   ExpressInterestInCoreTaskPayload,
   ExpressInterestInCoreTaskResponse,
   MarkProviderCoreTaskOnTheWayResponse,
+  ProviderCoreIssueActionPayload,
+  ProviderCoreIssueActionResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
@@ -83,6 +85,42 @@ export function requestProviderCoreTaskCompletion(
   return apiRequest<RequestProviderCoreTaskCompletionResponse>(endpoints.provider.coreTaskRequestCompletion(taskId), {
     authToken,
     body,
+    method: 'POST',
+  });
+}
+
+export function reportProviderCoreTaskIssue(
+  taskId: string,
+  payload: ProviderCoreIssueActionPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
+  return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskReportIssue(taskId), {
+    authToken,
+    body: payload,
+    method: 'POST',
+  });
+}
+
+export function reportProviderCannotAttend(
+  taskId: string,
+  payload: ProviderCoreIssueActionPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
+  return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskCannotAttend(taskId), {
+    authToken,
+    body: payload,
+    method: 'POST',
+  });
+}
+
+export function requestProviderCoreTaskSupport(
+  taskId: string,
+  payload: ProviderCoreIssueActionPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderCoreIssueActionResponse>> {
+  return apiRequest<ProviderCoreIssueActionResponse>(endpoints.provider.coreTaskSupportRequest(taskId), {
+    authToken,
+    body: payload,
     method: 'POST',
   });
 }

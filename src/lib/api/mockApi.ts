@@ -1095,21 +1095,21 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
         providerCancellationState: createMockProviderIssueState({
-          helperText: 'Cannot-attend reporting will be added later only when allowed by Taskly.',
-          providerIssueSummary: 'Cannot-attend reporting available later',
+          helperText: 'Cannot-attend reporting is available only when allowed by Taskly.',
+          providerIssueSummary: 'Cannot-attend reporting available',
           status: 'cannot_attend_available',
           statusLabel: 'Provider action unavailable',
         }),
         providerIssueState: createMockProviderIssueState({
-          helperText: 'Provider support can be requested in a later phase when Taskly enables this action.',
-          providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+          helperText: 'Provider support can be requested when Taskly enables this action.',
+          providerIssueSummary: 'Provider support is available when Taskly allows it.',
           status: 'support_available',
           statusLabel: 'Provider support available',
         }),
-        providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+        providerIssueSummary: 'Provider support is available when Taskly allows it.',
         providerSupportState: createMockProviderIssueState({
-          helperText: 'Provider support request will be added later only when allowed by Taskly.',
-          providerIssueSummary: 'Provider support available later',
+          helperText: 'Provider support request is available only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available',
           status: 'support_available',
           statusLabel: 'Provider support available',
         }),
@@ -1136,15 +1136,15 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
         providerIssueState: createMockProviderIssueState({
-          helperText: 'Issue reporting can be requested in a later phase when Taskly enables this action.',
-          providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+          helperText: 'Issue reporting can be requested when Taskly enables this action.',
+          providerIssueSummary: 'Issue reporting is available when Taskly allows it.',
           status: 'report_available',
           statusLabel: 'Issue reporting available',
         }),
-        providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+        providerIssueSummary: 'Issue reporting is available when Taskly allows it.',
         providerSupportState: createMockProviderIssueState({
-          helperText: 'Provider support request will be added later only when allowed by Taskly.',
-          providerIssueSummary: 'Provider support available later',
+          helperText: 'Provider support request is available only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available',
           status: 'support_available',
           statusLabel: 'Provider support available',
         }),
@@ -1408,15 +1408,15 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       })
     : isUpcoming
       ? createMockProviderIssueState({
-          helperText: 'Provider support can be requested in a later phase when Taskly enables this action.',
-          providerIssueSummary: 'Provider support will be available later when Taskly allows it.',
+          helperText: 'Provider support can be requested when Taskly enables this action.',
+          providerIssueSummary: 'Provider support is available when Taskly allows it.',
           status: 'support_available',
           statusLabel: 'Provider support available',
         })
       : isInProgress
         ? createMockProviderIssueState({
-            helperText: 'Issue reporting can be requested in a later phase when Taskly enables this action.',
-            providerIssueSummary: 'Issue reporting will be available later when Taskly allows it.',
+            helperText: 'Issue reporting can be requested when Taskly enables this action.',
+            providerIssueSummary: 'Issue reporting is available when Taskly allows it.',
             status: 'report_available',
             statusLabel: 'Issue reporting available',
           })
@@ -1442,16 +1442,16 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       })
     : isUpcoming || isInProgress
       ? createMockProviderIssueState({
-          helperText: 'Provider support request will be added later only when allowed by Taskly.',
-          providerIssueSummary: 'Provider support available later',
+          helperText: 'Provider support request is available only when allowed by Taskly.',
+          providerIssueSummary: 'Provider support available',
           status: 'support_available',
           statusLabel: 'Provider support available',
         })
       : createMockProviderIssueState();
   const providerCancellationState = isUpcoming
     ? createMockProviderIssueState({
-        helperText: 'Cannot-attend reporting will be added later only when allowed by Taskly.',
-        providerIssueSummary: 'Cannot-attend reporting available later',
+        helperText: 'Cannot-attend reporting is available only when allowed by Taskly.',
+        providerIssueSummary: 'Cannot-attend reporting available',
         status: 'cannot_attend_available',
         statusLabel: 'Provider action unavailable',
       })

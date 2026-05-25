@@ -746,6 +746,26 @@ export type RequestProviderCoreTaskCompletionResponse = {
   task: ProviderCoreTaskDetail | null;
 };
 
+export type ProviderCoreIssueActionPayload = {
+  details?: string;
+  reason: string;
+};
+
+export type ProviderCoreIssueActionResponse = {
+  alreadyUnderReview?: boolean;
+  message?: string;
+  nextActions: ProviderCoreTaskNextActions | null;
+  providerBlockedReason?: string | null;
+  providerCancellationState?: ProviderCoreIssueState | null;
+  providerDisputeState?: ProviderCoreIssueState | null;
+  providerIssueState?: ProviderCoreIssueState | null;
+  providerIssueSummary?: string | null;
+  providerSupportReviewLabel?: string | null;
+  providerSupportState?: ProviderCoreIssueState | null;
+  requestId?: string | null;
+  task: ProviderCoreTaskDetail | null;
+};
+
 export type ProviderProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;

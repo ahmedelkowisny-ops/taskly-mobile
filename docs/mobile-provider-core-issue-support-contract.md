@@ -484,6 +484,16 @@ Suggested Phase 25E scope:
 - `nextActions.canDisputeRejection` is intentionally returned as `false` until the backend has an explicit provider-safe signal that a customer rejection is disputeable. The current completion rejection flow returns the task to `IN_PROGRESS`, where the safe provider path is to correct the work and request completion again.
 - No provider issue, cannot-attend, support, or dispute mutation route was added in Phase 25E.
 
+## Phase 25F Implementation Note
+
+- Phase 25F added provider mobile mutation routes for:
+  - `POST /api/mobile/provider/core-tasks/[taskId]/report-issue`
+  - `POST /api/mobile/provider/core-tasks/[taskId]/cannot-attend`
+  - `POST /api/mobile/provider/core-tasks/[taskId]/support-request`
+- Because there is no current provider-specific cancellation/settlement helper, the backend uses a mobile-safe support-review wrapper that creates a support request, moves the task/payment into support review, notifies relevant users/admins, and returns refreshed provider task detail.
+- The wrapper does not calculate or decide provider penalties, customer refunds, payout, commission, capture, release, or final dispute outcome.
+- Provider dispute-rejection remains deferred because the current customer rejection flow returns the task to `IN_PROGRESS`, where the provider can correct the work and request completion again.
+
 ## Open Questions
 
 - Should provider issue requests reuse `CustomerSupportRequest`, or should backend add a provider-specific support request model?

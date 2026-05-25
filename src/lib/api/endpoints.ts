@@ -46,10 +46,13 @@ export const endpoints = {
   },
   provider: {
     coreTaskDetail: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}`,
+    coreTaskCannotAttend: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/cannot-attend`,
     coreTaskInterest: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/interest`,
     coreTaskOnTheWay: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/on-the-way`,
+    coreTaskReportIssue: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/report-issue`,
     coreTaskRequestCompletion: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/request-completion`,
     coreTaskStart: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/start`,
+    coreTaskSupportRequest: (taskId: string) => `/api/mobile/provider/core-tasks/${taskId}/support-request`,
     coreTasks: '/api/mobile/provider/core-tasks',
     dashboard: '/api/mobile/provider/dashboard',
     dashboardSummary: '/api/mobile/provider/dashboard',
