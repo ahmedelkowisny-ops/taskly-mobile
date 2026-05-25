@@ -142,6 +142,16 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Provider wording must not imply direct accept/reserve unless the backend flow explicitly supports it.
 - Provider request-completion must not be labeled as completing the task.
 - Do not expose private customer address/contact data before the allowed stage.
+- Customer completion approval/rejection must use backend-authoritative `nextActions` for action availability.
+- Mobile must not calculate payment capture, release, refund, payout, or Stripe eligibility.
+- Mobile must not approve or reject completion unless the backend confirms customer ownership and task eligibility.
+- Customer approval may be payment-sensitive and must use existing backend payment logic only.
+- Customer rejection must follow existing backend lifecycle behavior and must not invent dispute, refund, or cancellation rules.
+- Use "payment protected" wording in mobile UI and avoid "escrow".
+- Do not connect support, dispute, refund, help, or cancellation while wiring completion approval/rejection unless explicitly phased.
+- Customer completion actions must be shown only from backend-authored `nextActions`.
+- Mobile must not infer approve/reject eligibility from raw task status alone.
+- Exposing completion `nextActions` must not execute payment or lifecycle changes.
 
 # Mobile Auth Rules
 

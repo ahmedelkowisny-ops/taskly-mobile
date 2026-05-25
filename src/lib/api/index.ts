@@ -65,6 +65,7 @@ export type {
   CitiesCatalogResponse,
   CityOption,
   CoreTaskPostingRules,
+  CustomerCoreTaskNextActions,
   CustomerProRequestDetail,
   CustomerProRequestDetailResponse,
   CustomerProRequestSummary,

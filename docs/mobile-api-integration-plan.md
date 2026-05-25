@@ -1061,6 +1061,114 @@ Scope remains limited:
 - No customer approve/reject completion action was added.
 - No payment capture, release, refund, Stripe flow, cancellation, dispute, help, provider cancellation, direct accept/reserve, Pro response, Pro Access payment/unlock, or lifecycle rule changes were added.
 
+## Phase 23A Customer Completion Approval/Rejection Contract Review
+
+Phase 23A reviews the existing web customer completion decision flow and defines the safe mobile contract. No mobile customer approval or rejection mutation is connected in this phase.
+
+Backend findings:
+
+- The active customer dashboard uses `approveCompletion(taskId)` and `rejectCompletion(taskId, reason)` from `D:\Taskly\src\app\actions.ts`.
+- `approveCompletion` is the payment-sensitive path. It allows `PENDING_COMPLETION -> COMPLETED`, requires `startedAt`, captures the Stripe PaymentIntent when it is capturable, updates payment status to `RELEASED`, records transfer/payout state, updates bookings to `COMPLETED`, clears pending interests, and sends customer/tasker/admin notifications.
+- Approval is idempotent only when the task is already `COMPLETED`.
+- Approval can fail when payment authorization is cancelled, not ready for capture, or Stripe capture fails. Transfer failure does not necessarily fail completion; the current logic can complete the task and return a payout warning/pending state.
+- `rejectCompletion` allows `PENDING_COMPLETION -> IN_PROGRESS`, requires a customer-provided reason in the web UI, notifies the tasker with that reason, and does not capture, release, or refund payment.
+- Rejection currently returns success if the task is already `DISPUTED`; otherwise it rejects non-`PENDING_COMPLETION` tasks.
+- Older booking-id helpers (`approveTaskCompletion`, `rejectTaskCompletion`) still exist, but the current customer dashboard calls the task-id actions above.
+- The inspected task-id web actions do not derive the acting customer from mobile auth, so future mobile routes must add explicit mobile auth, customer ownership, and eligibility checks before invoking or reusing the behavior.
+- Mobile customer task detail is read-only today and returns a simple `nextActions` array with `review_completion` for `PENDING_COMPLETION`.
+
+Recommended mobile phase order:
+
+1. Phase 23B: add backend-authored customer completion `nextActions` capability shape to read-only customer task list/detail responses.
+2. Phase 23C: connect reject-completion first, because it follows existing lifecycle logic and does not capture/release payment.
+3. Phase 23D: connect approve-completion through the existing encapsulated backend action/payment flow only.
+4. Phase 23E: polish completion UI, review/invoice entry points, and help/support copy without adding cancellation, dispute, or refund mutations.
+
+Proposed endpoints:
+
+- `POST /api/mobile/customer/tasks/[taskId]/reject-completion`
+  - Requires mobile auth and customer ownership.
+  - Allowed only when backend `nextActions.canRejectCompletion` is true.
+  - Body: `{ "reason": string }`.
+  - Does not accept status, payment, booking, assignment, payout, Stripe, or lifecycle fields.
+  - Returns refreshed customer task detail with backend-authored `nextActions`.
+- `POST /api/mobile/customer/tasks/[taskId]/approve-completion`
+  - Requires mobile auth and customer ownership.
+  - Allowed only when backend `nextActions.canApproveCompletion` is true.
+  - Body: `{}`.
+  - Uses existing backend payment capture/release/payout handling.
+  - Does not accept amounts, payment ids, Stripe ids, booking status, task status, payout, or lifecycle fields from mobile.
+  - Returns refreshed customer task detail with backend-authored `nextActions` and any safe payout/payment warning text.
+
+Proposed customer `nextActions` capability shape:
+
+```ts
+type CustomerCoreTaskNextActions = {
+  canSelectTasker?: boolean;
+  canPreparePayment?: boolean;
+  canChat?: boolean;
+  canCancel?: boolean;
+  canApproveCompletion?: boolean;
+  canRejectCompletion?: boolean;
+  canRequestHelp?: boolean;
+  canViewInvoice?: boolean;
+  canReview?: boolean;
+  blockedReason?: string;
+  blockedReasonCode?: string;
+  primaryAction?:
+    | "select_tasker"
+    | "prepare_payment"
+    | "chat"
+    | "approve_completion"
+    | "reject_completion"
+    | "request_help"
+    | "view_invoice"
+    | "review"
+    | "none";
+};
+```
+
+Risks and unknowns:
+
+- Approval captures/releases payment and can fail on Stripe readiness; mobile must show backend errors and must not calculate payment state locally.
+- Future mobile routes must not expose the existing task-id actions directly without an ownership/auth wrapper.
+- Transfer/payout can be pending even after approval succeeds.
+- Rejection reason should be validated server-side before mobile wiring.
+- Review/invoice visibility after approval should be handled as a separate UI phase because the live task-id approval path does not directly create an invoice or review entry.
+- Support/dispute/refund paths must stay separate from completion approval/rejection.
+
+Scope remains limited:
+
+- No customer approve/reject mutation was connected.
+- No payment capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro response, Pro Access payment/unlock, or lifecycle rule change was added.
+
+## Phase 23B Customer Core Completion NextActions
+
+Phase 23B adds backend-authored customer Core task action capabilities to mobile read-only task list/detail responses. It does not connect customer approve/reject mutations.
+
+Backend behavior:
+
+- Customer Core task list rows now include a structured `nextActions` object in addition to the existing display `nextAction`.
+- Customer Core task detail now returns structured `task.nextActions` plus `task.displayActions` for legacy read-only display copy.
+- Completion approval/rejection flags are calculated server-side from the authenticated customer's own task query.
+- `canApproveCompletion` is true only when the task is `PENDING_COMPLETION`, started, assigned/reserved with a booking, not cancelled/completed/disputed, and payment state is already known as compatible with approval (`HELD`, `HOLDING`, or `RELEASED`).
+- `canRejectCompletion` is true only when the task is `PENDING_COMPLETION`, assigned/reserved with a booking, and not cancelled/completed/disputed.
+- If payment readiness cannot be confirmed from the read-only response, approval remains blocked with `blockedReasonCode: "PAYMENT_NOT_READY"` while rejection can still be available where lifecycle rules allow it.
+- `primaryAction` uses `approve_completion` when a completion decision is ready, `reject_completion` when only rejection is safely available, and otherwise falls back to existing read-only phases such as select tasker, prepare payment, chat, review, request help, or none.
+
+Mobile behavior:
+
+- Mobile domain types now include `CustomerCoreTaskNextActions`.
+- Demo customer task detail includes completion nextActions that represent a pending completion review.
+- The customer task detail screen shows a disabled/read-only completion hint when backend `nextActions` says approval/rejection will be available later.
+- The mobile UI still does not execute approve/reject actions.
+
+Scope remains limited:
+
+- No customer approve-completion mutation was connected.
+- No customer reject-completion mutation was connected.
+- No payment capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or lifecycle mutation was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

@@ -100,6 +100,30 @@ export type CustomerNextAction = {
   type: string;
 };
 
+export type CustomerCoreTaskNextActions = {
+  blockedReason?: string;
+  blockedReasonCode?: string;
+  canApproveCompletion: boolean;
+  canCancel: boolean;
+  canChat: boolean;
+  canPreparePayment: boolean;
+  canRejectCompletion: boolean;
+  canRequestHelp: boolean;
+  canReview: boolean;
+  canSelectTasker: boolean;
+  canViewInvoice: boolean;
+  primaryAction:
+    | 'select_tasker'
+    | 'prepare_payment'
+    | 'chat'
+    | 'approve_completion'
+    | 'reject_completion'
+    | 'request_help'
+    | 'view_invoice'
+    | 'review'
+    | 'none';
+};
+
 export type CustomerHighlight = {
   accent: 'core' | 'neutral' | 'pro' | 'warning';
   description: string;
@@ -132,6 +156,7 @@ export type CustomerTaskSummary = {
   cityLabel: string;
   id: string;
   nextAction: CustomerNextAction;
+  nextActions: CustomerCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;
@@ -158,9 +183,10 @@ export type CustomerTaskDetail = {
   categoryLabel: string;
   cityLabel: string;
   description: string;
+  displayActions?: DetailNextAction[];
   id: string;
   images: DetailImage[];
-  nextActions: DetailNextAction[];
+  nextActions: CustomerCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;
@@ -194,7 +220,7 @@ export type CreateCustomerTaskPayload = {
 };
 
 export type CreateCustomerTaskResponse = CustomerTaskDetailResponse & {
-  nextActions: DetailNextAction[];
+  nextActions: CustomerCoreTaskNextActions;
   uploadState?: {
     imageUploadRequired: boolean;
     maxImages: number;

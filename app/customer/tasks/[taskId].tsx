@@ -6,7 +6,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerTaskDetail } from '@/src/lib/api/customer';
-import { CustomerTaskDetailResponse } from '@/src/lib/api/domain';
+import { CustomerCoreTaskNextActions, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -171,13 +171,27 @@ function Timeline({ items, accent }: { accent: 'core'; items: { description: str
   );
 }
 
-function NextActions({ actions, tone }: { actions: { label: string; type: string }[]; tone: 'core' }) {
+function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; tone: 'core' }) {
+  const isCompletionReview = actions.canApproveCompletion || actions.canRejectCompletion;
+  const label = isCompletionReview
+    ? 'Review completion'
+    : actions.primaryAction === 'prepare_payment'
+      ? 'Review payment status'
+      : actions.primaryAction === 'select_tasker'
+        ? 'View task status'
+        : actions.primaryAction === 'review'
+          ? 'Review task'
+          : 'View task';
+
   return (
     <AppCard>
       <AppText variant="sectionTitle">Next steps</AppText>
-      {actions.map((action) => (
-        <AppButton key={action.type} disabled tone={tone} variant="outline">{action.label}</AppButton>
-      ))}
+      {isCompletionReview ? (
+        <AppText color={colors.slate700}>Tasker requested completion. Approval actions will be connected next.</AppText>
+      ) : actions.blockedReason ? (
+        <AppText color={colors.slate700}>{actions.blockedReason}</AppText>
+      ) : null}
+      <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
     </AppCard>
   );
 }
