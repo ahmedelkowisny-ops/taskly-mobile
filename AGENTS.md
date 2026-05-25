@@ -180,6 +180,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile payment API wrappers must not be connected to UI until the Stripe/card collection phase.
 - Mobile must never send raw card data or Stripe secrets.
 - Payment setup/finalize must not capture, release, or refund payments.
+- Mobile Stripe integration must use a publishable key only.
+- Mobile must never store or send raw card data.
+- Mobile must only confirm backend-created SetupIntent client secrets.
+- Mobile payment UI must respect backend-authored payment `nextActions`.
+- Mobile payment setup must not capture, release, refund, or calculate payment internals.
 - UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 
 # Mobile Auth Rules

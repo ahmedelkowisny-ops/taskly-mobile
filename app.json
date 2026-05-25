@@ -40,6 +40,10 @@
         {
           "photosPermission": "Taskly uses selected photos to help describe tasks and Pro requests before submit."
         }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {}
       ]
     ],
     "experiments": {

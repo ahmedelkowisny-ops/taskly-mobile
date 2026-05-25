@@ -196,21 +196,17 @@ The current Core payment flow is customer-owned and split across reservation, ca
    - Finalize accepts only safe setup references and returns refreshed task detail/nextActions.
    - No mobile Stripe UI, PaymentIntent creation, hold, capture, release, refund, or card data collection.
 
-4. Phase 24E: Mobile Stripe SDK integration/card collection.
-   - Add Stripe mobile SDK only in this phase.
-   - Collect card details using server-created setup parameters after the exact Stripe mobile flow is approved.
-   - No mobile business logic beyond Stripe SDK collection and backend-authored follow-up.
+4. Phase 24E: Mobile Stripe SDK integration/card collection. Implemented.
+   - Adds Stripe mobile SDK and a Customer Core task detail card setup UI.
+   - Uses only the server-created SetupIntent client secret returned by Phase 24D setup.
+   - Calls Phase 24D finalize only after Stripe confirms setup or a documented safe backend fallback applies.
+   - Still no immediate hold, capture, release, refund, cancellation, dispute, or help logic.
 
-5. Phase 24F: Mobile payment setup/finalize UI wiring.
-   - Mobile calls the Phase 24D endpoints only after Stripe/card collection is approved.
-   - Backend remains source of truth for refreshed task detail/nextActions.
-   - Still no immediate capture/release/refund logic.
-
-6. Phase 24G: Payment error/retry UI.
+5. Phase 24F: Payment retry/error polish.
    - Show backend error codes and retry states.
    - Keep cancellation/refund/dispute/help separate.
 
-This order keeps read-only truth first, then selection, then payment setup, then Stripe collection, then backend finalization, then retry polish.
+This order keeps read-only truth first, then selection, then backend setup/finalize endpoints, then Stripe collection/finalization UI, then retry polish.
 
 ## Phase 24B/24C Implementation Status
 
@@ -241,17 +237,43 @@ Implemented backend mobile Core payment setup/finalize endpoints:
 - Setup/finalize responses return refreshed task detail, `paymentState`, and `nextActions`; they do not return Stripe secret keys, raw card data, payment method details, PaymentIntent ids, reservation tokens, fee internals, payout internals, or raw Stripe errors.
 - Mobile API wrappers exist, but no mobile UI calls them yet.
 
-Still future phases:
+Phase 24E implementation:
 
-- Phase 24E Stripe mobile SDK/card collection.
-- Phase 24F payment setup/finalize UI wiring.
-- Phase 24G active retry/payment error handling.
+- `@stripe/stripe-react-native` is installed through Expo.
+- The app is wrapped in `StripeProvider` with `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` only.
+- Customer task detail shows active payment setup only from backend-authored `nextActions.canPreparePayment`, `canConfirmPayment`, or `canRetryPayment`.
+- Card details are entered only through Stripe SDK `CardField`; mobile does not manually collect, store, or send raw card data.
+- Mobile calls setup first, confirms the backend-created SetupIntent client secret with `useConfirmSetupIntent`, then calls finalize with only safe `paymentMethodId`/`setupIntentId` references when available.
+- Missing publishable key, `STRIPE_NOT_CONFIGURED`, `SETUP_NOT_AVAILABLE`, `MOCK_PAYMENTS`, and `PAYMENT_NOT_REQUIRED` use safe fallback behavior.
+- Demo mode simulates payment setup locally and does not call Stripe or backend payment endpoints.
 
-Phase 24B/24C/24D did not add Stripe SDK code, mobile card collection, PaymentSheet, PaymentIntent creation, hold/capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or payment lifecycle rule changes.
+Mobile environment:
+
+```env
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here
+```
+
+Manual test steps:
+
+1. Add a local Stripe publishable key and start the backend plus Expo app.
+2. Create a Core task as a customer.
+3. Have a provider express interest.
+4. Select the Tasker from customer task detail.
+5. Confirm the payment setup card appears only when backend `nextActions` allows it.
+6. Enter a Stripe test card in the SDK card field.
+7. Confirm setup and verify finalize returns refreshed task detail/payment state.
+8. Confirm the task moves into the backend-authored post-finalize state and the actual hold is still scheduled by backend logic.
+9. Confirm missing Stripe key, Stripe-not-configured fallback, and demo mode do not crash or expose Stripe internals.
+
+Future phase:
+
+- Phase 24F active retry/payment error polish.
+
+Phase 24B/24C/24D/24E did not add PaymentSheet, mobile-created Stripe objects, PaymentIntent creation, hold/capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or payment lifecycle rule changes.
 
 ## Proposed Mobile Endpoint Contracts
 
-The select-tasker route is implemented in Phase 24C. Payment setup/finalize routes remain proposals only and must not be created until their dedicated phases.
+The select-tasker route is implemented in Phase 24C. Payment setup/finalize routes are implemented in Phase 24D and are now called by the Phase 24E mobile card setup UI.
 
 ### `POST /api/mobile/customer/tasks/[taskId]/select-tasker`
 
@@ -530,7 +552,8 @@ Mobile retry behavior should be backend-authored:
 ## Confirmation
 
 - No mobile payment implementation was connected in Phase 24A.
-- No mobile payment endpoints were added.
-- No Stripe mobile SDK was added.
-- No SetupIntent or PaymentIntent creation was added for mobile.
-- No payment capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or lifecycle logic was changed.
+- Phase 24D added backend mobile payment setup/finalize endpoints.
+- Phase 24E added Stripe mobile SDK card collection UI using backend-created SetupIntent client secrets only.
+- No mobile-created SetupIntent or PaymentIntent was added.
+- No Stripe secret keys, raw card data, reservation tokens, PaymentIntent client secrets, fee internals, payout internals, or raw Stripe errors are exposed to mobile.
+- No payment hold, capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or lifecycle logic was changed.

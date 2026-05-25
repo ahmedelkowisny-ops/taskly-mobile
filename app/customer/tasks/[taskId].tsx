@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { CardField, useConfirmSetupIntent } from '@stripe/stripe-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
@@ -6,7 +7,14 @@ import { Alert, Image, StyleSheet, View } from 'react-native';
 import { ModeBadge } from '@/src/components/taskly';
 import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { approveCustomerTaskCompletion, getCustomerTaskDetail, rejectCustomerTaskCompletion, selectCustomerTasker } from '@/src/lib/api/customer';
+import {
+  approveCustomerTaskCompletion,
+  finalizeCustomerTaskPayment,
+  getCustomerTaskDetail,
+  rejectCustomerTaskCompletion,
+  selectCustomerTasker,
+  setupCustomerTaskPayment,
+} from '@/src/lib/api/customer';
 import {
   CustomerCorePaymentState,
   CustomerCoreTaskNextActions,
@@ -21,11 +29,14 @@ import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
+type PaymentSetupStage = 'setup' | 'confirm' | 'finalize';
+
 export default function CustomerTaskDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ taskId?: string }>();
   const taskId = String(params.taskId || 'demo-task');
   const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const { confirmSetupIntent } = useConfirmSetupIntent();
   const [data, setData] = useState<CustomerTaskDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,6 +46,10 @@ export default function CustomerTaskDetailScreen() {
   const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [isApprovingCompletion, setIsApprovingCompletion] = useState(false);
   const [isRejectingCompletion, setIsRejectingCompletion] = useState(false);
+  const [isCardComplete, setIsCardComplete] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+  const [paymentSetupStage, setPaymentSetupStage] = useState<PaymentSetupStage | null>(null);
   const [selectingTaskerId, setSelectingTaskerId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
@@ -205,6 +220,174 @@ export default function CustomerTaskDetailScreen() {
     });
   }, []);
 
+  const markDemoPaymentSetupComplete = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: undefined,
+            blockedReasonCode: undefined,
+            canChat: true,
+            canConfirmPayment: false,
+            canPreparePayment: false,
+            canRetryPayment: false,
+            paymentRequired: true,
+            paymentProtected: false,
+            primaryAction: 'chat',
+          },
+          paymentState: {
+            ...current.task.paymentState,
+            bookingStatus: 'ACTIVE',
+            canShowPaymentProtectedBadge: false,
+            helperText: t('paymentProtectedBeforeStart'),
+            paymentProtected: false,
+            paymentRequired: true,
+            paymentStatus: 'INITIATED',
+            reservationState: 'NONE',
+            status: 'hold_scheduled',
+            statusLabel: t('paymentHoldScheduled'),
+            warningCode: null,
+          },
+          paymentStatusLabel: t('paymentHoldScheduled'),
+          status: 'IN_PROGRESS',
+          statusLabel: t('inProgress'),
+          timeline: current.task.timeline.map((item) =>
+            item.id === 'payment'
+              ? { ...item, description: t('paymentHoldScheduledFlow'), status: 'done' as const }
+              : item,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const finalizePaymentSetup = useCallback(async (authToken: string, payload: { paymentMethodId?: string; setupIntentId?: string }) => {
+    setPaymentSetupStage('finalize');
+    const finalizeResult = await finalizeCustomerTaskPayment(taskId, payload, authToken);
+
+    if (finalizeResult.ok) {
+      if (finalizeResult.data.task) {
+        setData({ task: finalizeResult.data.task });
+      } else {
+        await loadDetail();
+      }
+      setPaymentMessage(t('paymentSetupComplete'));
+      return true;
+    }
+
+    setPaymentError(getPaymentSetupErrorText(finalizeResult.error.code, finalizeResult.error.message));
+    return false;
+  }, [loadDetail, taskId]);
+
+  const submitPaymentSetup = useCallback(async () => {
+    setPaymentError(null);
+    setPaymentMessage(null);
+
+    if (!task || !hasPaymentSetupAction(task.nextActions)) {
+      setPaymentError(t('paymentSetupUnavailable'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoPaymentSetupComplete();
+      setPaymentMessage(`${t('paymentSetupComplete')} ${t('demoModeNoRealPayments')}`);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setPaymentError(t('loginRequired'));
+      return;
+    }
+
+    const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+    if (!stripePublishableKey) {
+      setPaymentError(t('paymentsNotConfiguredYet'));
+      return;
+    }
+
+    if (!isCardComplete && !task.nextActions.canConfirmPayment) {
+      setPaymentError(t('paymentMethodRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setPaymentError(t('loginRequired'));
+      return;
+    }
+
+    setPaymentSetupStage('setup');
+    const setupResult = await setupCustomerTaskPayment(taskId, authToken);
+
+    if (!setupResult.ok) {
+      setPaymentSetupStage(null);
+      setPaymentError(getPaymentSetupErrorText(setupResult.error.code, setupResult.error.message));
+      return;
+    }
+
+    const fallbackCode = setupResult.data.fallback?.code;
+    if (setupResult.data.task) {
+      setData({ task: setupResult.data.task });
+    }
+
+    if (fallbackCode === 'STRIPE_NOT_CONFIGURED') {
+      setPaymentSetupStage(null);
+      setPaymentError(t('paymentsNotConfiguredYet'));
+      return;
+    }
+
+    if (fallbackCode === 'SETUP_NOT_AVAILABLE') {
+      setPaymentSetupStage(null);
+      setPaymentError(t('paymentSetupUnavailable'));
+      return;
+    }
+
+    if (fallbackCode === 'MOCK_PAYMENTS' || fallbackCode === 'PAYMENT_NOT_REQUIRED') {
+      await finalizePaymentSetup(authToken, {});
+      setPaymentSetupStage(null);
+      return;
+    }
+
+    const clientSecret = setupResult.data.setupIntentClientSecret;
+    if (!clientSecret) {
+      setPaymentSetupStage(null);
+      setPaymentError(t('paymentSetupUnavailable'));
+      return;
+    }
+
+    setPaymentSetupStage('confirm');
+    const confirmation = await confirmSetupIntent(clientSecret, {
+      paymentMethodType: 'Card',
+    });
+
+    if (confirmation.error) {
+      setPaymentSetupStage(null);
+      setPaymentError(getStripeSetupErrorText(confirmation.error.code));
+      return;
+    }
+
+    const paymentMethodId = confirmation.setupIntent.paymentMethod?.id || confirmation.setupIntent.paymentMethodId || undefined;
+    const setupIntentId = confirmation.setupIntent.id;
+    await finalizePaymentSetup(authToken, {
+      ...(paymentMethodId ? { paymentMethodId } : null),
+      ...(setupIntentId ? { setupIntentId } : null),
+    });
+    setPaymentSetupStage(null);
+  }, [
+    confirmSetupIntent,
+    finalizePaymentSetup,
+    getValidAccessToken,
+    isCardComplete,
+    markDemoPaymentSetupComplete,
+    status,
+    task,
+    taskId,
+  ]);
+
   const submitSelectTasker = useCallback(async (tasker: CustomerInterestedTaskerPreview) => {
     setActionError(null);
     setActionMessage(null);
@@ -269,6 +452,13 @@ export default function CustomerTaskDetailScreen() {
       { onPress: () => void submitSelectTasker(tasker), text: t('chooseTasker') },
     ]);
   }, [submitSelectTasker]);
+
+  const handlePaymentSetup = useCallback(() => {
+    Alert.alert(t('protectedPaymentFlow'), `${t('cardHandledSecurelyByStripe')}\n${t('paymentProtectedReleasedAfterApproval')}`, [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: () => void submitPaymentSetup(), text: getPaymentSetupButtonLabel(task?.nextActions) },
+    ]);
+  }, [submitPaymentSetup, task?.nextActions]);
 
   const submitApproveCompletion = useCallback(async () => {
     setActionError(null);
@@ -443,6 +633,17 @@ export default function CustomerTaskDetailScreen() {
           </AppCard>
 
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
+          <PaymentSetupCard
+            isCardComplete={isCardComplete}
+            isDemoMode={status === 'demo'}
+            onCardCompleteChange={setIsCardComplete}
+            onSetupPayment={handlePaymentSetup}
+            paymentError={paymentError}
+            paymentMessage={paymentMessage}
+            paymentsConfigured={Boolean(process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY)}
+            setupStage={paymentSetupStage}
+            task={task}
+          />
           <InterestedTaskers
             canSelectTasker={task.nextActions.canSelectTasker}
             onSelectTasker={handleSelectTasker}
@@ -524,12 +725,12 @@ function Timeline({ items, accent }: { accent: 'core'; items: { description: str
 }
 
 function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; tone: 'core' }) {
+  if (isPaymentReadOnlyAction(actions)) return null;
+
   const isCompletionReview = actions.canApproveCompletion || actions.canRejectCompletion;
   const label = isCompletionReview
     ? t('waitingForCustomerApproval')
-    : isPaymentReadOnlyAction(actions)
-      ? getReadOnlyPaymentActionLabel(actions)
-      : actions.primaryAction === 'select_tasker'
+    : actions.primaryAction === 'select_tasker'
         ? t('customerSelectingTasker')
         : actions.primaryAction === 'review'
           ? t('completed')
@@ -614,8 +815,6 @@ function PaymentStateCard({
   nextActions: CustomerCoreTaskNextActions;
   paymentState: CustomerCorePaymentState;
 }) {
-  const hasFuturePaymentAction = nextActions.canPreparePayment || nextActions.canConfirmPayment || nextActions.canRetryPayment;
-
   return (
     <AppCard accentColor={getPaymentAccentColor(paymentState)}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -624,11 +823,72 @@ function PaymentStateCard({
       </View>
       <AppText variant="sectionTitle">{t('protectedPaymentFlow')}</AppText>
       <AppText color={colors.slate700}>{getPaymentStateHelperText(paymentState)}</AppText>
-      {hasFuturePaymentAction ? (
-        <AppButton disabled tone="neutral" variant="outline">
-          {getReadOnlyPaymentActionLabel(nextActions)}
-        </AppButton>
+      {hasPaymentSetupAction(nextActions) ? <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText> : null}
+    </AppCard>
+  );
+}
+
+function PaymentSetupCard({
+  isCardComplete,
+  isDemoMode,
+  onCardCompleteChange,
+  onSetupPayment,
+  paymentError,
+  paymentMessage,
+  paymentsConfigured,
+  setupStage,
+  task,
+}: {
+  isCardComplete: boolean;
+  isDemoMode: boolean;
+  onCardCompleteChange: (complete: boolean) => void;
+  onSetupPayment: () => void;
+  paymentError: string | null;
+  paymentMessage: string | null;
+  paymentsConfigured: boolean;
+  setupStage: PaymentSetupStage | null;
+  task: CustomerTaskDetail;
+}) {
+  if (!hasPaymentSetupAction(task.nextActions)) return null;
+
+  const isBusy = setupStage !== null;
+  const canCollectCard = paymentsConfigured && !isDemoMode;
+
+  return (
+    <AppCard accentColor={colors.tasklyBlue600}>
+      <StatusBadge label={t('paymentProtected')} tone="core" />
+      <AppText variant="sectionTitle">{getPaymentSetupButtonLabel(task.nextActions)}</AppText>
+      <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText>
+      <AppText color={colors.slate700}>{t('paymentProtectedReleasedAfterApproval')}</AppText>
+      <AppText color={colors.slate700}>{t('paymentHoldScheduledFlow')}</AppText>
+      {isDemoMode ? <AppText color={colors.slate700}>{t('demoModeNoRealPayments')}</AppText> : null}
+      {!paymentsConfigured && !isDemoMode ? <AppText color={colors.warning600}>{t('paymentsNotConfiguredYet')}</AppText> : null}
+      {canCollectCard ? (
+        <CardField
+          cardStyle={{
+            backgroundColor: colors.white,
+            borderColor: colors.slate100,
+            borderRadius: 8,
+            borderWidth: 1,
+            fontSize: 16,
+            placeholderColor: colors.slate500,
+            textColor: colors.navy900,
+          }}
+          disabled={isBusy}
+          onCardChange={(card) => onCardCompleteChange(Boolean(card.complete))}
+          placeholders={{ number: '4242 4242 4242 4242' }}
+          postalCodeEnabled={false}
+          style={styles.cardField}
+        />
       ) : null}
+      {paymentMessage ? <AppText color={colors.success600}>{paymentMessage}</AppText> : null}
+      {paymentError ? <AppText color={colors.danger600}>{paymentError}</AppText> : null}
+      <AppButton
+        disabled={(!isDemoMode && ((!isCardComplete && !task.nextActions.canConfirmPayment) || !paymentsConfigured)) || isBusy}
+        loading={isBusy}
+        onPress={onSetupPayment}>
+        {setupStage ? getPaymentSetupStageLabel(setupStage) : getPaymentSetupButtonLabel(task.nextActions)}
+      </AppButton>
     </AppCard>
   );
 }
@@ -755,11 +1015,52 @@ function isPaymentReadOnlyAction(actions: CustomerCoreTaskNextActions) {
   return actions.primaryAction === 'prepare_payment' || actions.primaryAction === 'confirm_payment' || actions.primaryAction === 'retry_payment';
 }
 
-function getReadOnlyPaymentActionLabel(actions: CustomerCoreTaskNextActions) {
-  if (actions.canRetryPayment || actions.primaryAction === 'retry_payment') return t('paymentNeedsAttention');
-  if (actions.canPreparePayment || actions.primaryAction === 'prepare_payment') return t('cardCollectionConnectedNext');
-  if (actions.canConfirmPayment || actions.primaryAction === 'confirm_payment') return t('paymentActionComingSoon');
-  return t('paymentActionComingSoon');
+function hasPaymentSetupAction(actions: CustomerCoreTaskNextActions) {
+  return actions.canPreparePayment || actions.canConfirmPayment || actions.canRetryPayment;
+}
+
+function getPaymentSetupButtonLabel(actions?: CustomerCoreTaskNextActions) {
+  if (actions?.canRetryPayment || actions?.primaryAction === 'retry_payment') return t('retryPayment');
+  if (actions?.canConfirmPayment || actions?.primaryAction === 'confirm_payment') return t('continuePaymentSetup');
+  return t('setUpProtectedPayment');
+}
+
+function getPaymentSetupStageLabel(stage: PaymentSetupStage) {
+  if (stage === 'setup') return t('settingUpPayment');
+  if (stage === 'confirm') return t('confirmingCard');
+  return t('finalizingPaymentSetup');
+}
+
+function getPaymentSetupErrorText(code?: string, fallback?: string) {
+  switch (code) {
+    case 'STRIPE_NOT_CONFIGURED':
+    case 'PAYMENT_NOT_CONFIGURED':
+      return t('paymentsNotConfiguredYet');
+    case 'PAYMENT_METHOD_REQUIRED':
+      return t('paymentMethodRequired');
+    case 'PAYMENT_SETUP_NOT_AVAILABLE':
+    case 'PAYMENT_SETUP_REQUIRED':
+    case 'PAYMENT_SETUP_INVALID':
+    case 'SETUP_NOT_AVAILABLE':
+      return t('paymentSetupUnavailable');
+    case 'TASK_NOT_RESERVED':
+    case 'NO_RESERVED_TASKER':
+    case 'RESERVATION_EXPIRED':
+    case 'BOOKING_NOT_FOUND':
+    case 'INVALID_PAYMENT_STATE':
+      return t('taskNoLongerAvailable');
+    case 'UNAUTHORIZED':
+    case 'FORBIDDEN':
+      return t('loginRequired');
+    default:
+      return fallback || t('couldNotSetUpPayment');
+  }
+}
+
+function getStripeSetupErrorText(code?: string) {
+  const normalizedCode = code?.toLowerCase() ?? '';
+  if (normalizedCode.includes('cancel')) return t('cardConfirmationCancelled');
+  return t('couldNotSetUpPayment');
 }
 
 function getPaymentStateLabel(paymentState: CustomerCorePaymentState) {
@@ -834,6 +1135,7 @@ function getPaymentAccentColor(paymentState: CustomerCorePaymentState) {
 }
 
 const styles = StyleSheet.create({
+  cardField: { height: 52, width: '100%' },
   header: { gap: spacing.sm },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

@@ -1510,6 +1510,46 @@ Scope confirmation:
 - No SetupIntent or PaymentIntent creation was added for mobile.
 - No payment capture, release, refund, Stripe, Prisma schema, cancellation, dispute, help, provider action, auth, or lifecycle logic was changed.
 
+## Phase 24E Mobile Core Payment Card Collection UI
+
+Phase 24E connects the mobile Customer Core task detail payment setup UI to the Phase 24D backend payment setup/finalize endpoints using Stripe's mobile SDK. This phase does not add mobile payment holds, capture, release, refund, cancellation, dispute, help, provider actions, Prisma changes, or backend payment rule changes.
+
+Files changed in `D:\Taskly-app`:
+
+- `package.json` / `package-lock.json`: added `@stripe/stripe-react-native`.
+- `app.json`: added the Stripe config plugin.
+- `app/_layout.tsx`: wraps the app in `StripeProvider` using `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` only.
+- `app/customer/tasks/[taskId].tsx`: adds the customer payment setup card and the setup -> card confirmation -> finalize sequence.
+- `src/lib/i18n/en.ts` and `src/lib/i18n/bg.ts`: added protected payment/card setup copy.
+- `.env.example`: documents `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+
+Runtime flow:
+
+1. Customer selects/reserves a Tasker through the Phase 24C flow.
+2. Backend task detail returns payment `nextActions` such as `canPreparePayment`, `canConfirmPayment`, or `canRetryPayment`.
+3. Mobile shows an active payment setup card only when those backend-authored flags allow it.
+4. Mobile calls `setupCustomerTaskPayment(taskId, authToken)`.
+5. If setup returns `setupIntentClientSecret`, mobile confirms that server-created SetupIntent using Stripe SDK `CardField` and `useConfirmSetupIntent`.
+6. Mobile sends only the minimal safe `paymentMethodId` and/or `setupIntentId` to `finalizeCustomerTaskPayment`.
+7. Backend returns refreshed task detail, `paymentState`, and `nextActions`.
+
+Fallback behavior:
+
+- Missing `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` shows "Payments are not configured yet" and does not call Stripe confirmation.
+- `STRIPE_NOT_CONFIGURED` shows a safe unavailable message.
+- `SETUP_NOT_AVAILABLE` shows payment setup unavailable.
+- `MOCK_PAYMENTS` and `PAYMENT_NOT_REQUIRED` skip Stripe UI and call finalize only through the documented backend behavior.
+- Demo mode does not call Stripe or backend payment endpoints; it simulates local payment setup success.
+
+Safety confirmation:
+
+- Mobile receives only a backend-created SetupIntent client secret when the backend returns one.
+- Mobile does not create SetupIntents or PaymentIntents.
+- Mobile does not store or send raw card data.
+- Mobile does not expose Stripe secret keys, reservation tokens, PaymentIntent ids, fee internals, payout internals, or raw Stripe errors.
+- Mobile does not calculate amount, fee, commission, payout, hold, capture, release, refund, or cancellation penalties.
+- The actual hold remains handled later by backend scheduled payment logic.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
