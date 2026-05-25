@@ -1196,6 +1196,35 @@ Scope remains limited:
 - No customer approve-completion action was added.
 - No payment capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or payment/lifecycle rule change was added.
 
+## Phase 23D Customer Core Approve Completion
+
+Phase 23D connects only the customer Core approve-completion action for tasks where backend-authored `nextActions` allow it.
+
+Backend behavior:
+
+- Added `POST /api/mobile/customer/tasks/[taskId]/approve-completion`.
+- The route requires mobile auth and derives the customer identity from the backend mobile session.
+- The route verifies customer workspace access, task existence, non-deleted state, authenticated customer ownership, `PENDING_COMPLETION` status, `startedAt`, assigned tasker, booking presence, and payment state known as compatible with approval before calling the existing approval logic.
+- The route rejects server-owned lifecycle, booking, reservation, payment, Stripe, refund, payout, provider, tasker, amount, and status fields.
+- The route blocks completed, cancelled, and disputed tasks with mobile-friendly errors.
+- The route reuses existing `approveCompletion(taskId)` so Stripe capture/release, transfer/payout handling, booking completion, interest cleanup, and notifications remain server-side.
+- Payment/Stripe errors are mapped to safe mobile messages and raw Stripe errors are not exposed.
+- Existing payout/payment warnings are returned in a safe `payment.warning` field.
+- After approval, the route returns the refreshed customer Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Added `approveCustomerTaskCompletion(taskId)` to the customer API wrapper.
+- Customer Core task detail shows `Approve and release payment` only when `task.nextActions.canApproveCompletion` is true.
+- The completion decision card keeps the Phase 23C `Ask for changes` action when `canRejectCompletion` is true.
+- The approve flow asks for confirmation, shows loading/success/error/warning states, and refreshes from the backend response.
+- Demo mode simulates the task moving to `COMPLETED` locally and removes completion decision actions without calling the backend.
+
+Scope remains limited:
+
+- Reject-completion behavior from Phase 23C was not changed.
+- No mobile payment calculation, commission calculation, capture, release, refund, Stripe, cancellation, dispute, help, provider action, Pro Access payment/unlock, or payment/lifecycle rule change was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

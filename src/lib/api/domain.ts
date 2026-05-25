@@ -238,6 +238,18 @@ export type RejectCustomerTaskCompletionResponse = {
   task: CustomerTaskDetail | null;
 };
 
+export type ApproveCustomerTaskCompletionResponse = {
+  alreadyCompleted?: boolean;
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions | null;
+  payment?: {
+    reasonCode?: string | null;
+    statusLabel: string;
+    warning?: string | null;
+  };
+  task: CustomerTaskDetail | null;
+};
+
 export type CustomerImageUploadResponse = {
   image: {
     createdAt: string;

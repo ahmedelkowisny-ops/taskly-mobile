@@ -3,6 +3,7 @@ export { getCities, getCoreCategories, getPostingRules, getProCategories } from 
 export { createApiClient, apiRequest } from './client';
 export { assertApiBaseUrl, getApiBaseUrl } from './config';
 export {
+  approveCustomerTaskCompletion,
   createCustomerProRequest,
   createCustomerTask,
   getCustomerHomeSummary,
@@ -57,6 +58,7 @@ export type {
   CustomerImageUploadResponse,
   CustomerHomeResponse,
   CustomerNextAction,
+  ApproveCustomerTaskCompletionResponse,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,

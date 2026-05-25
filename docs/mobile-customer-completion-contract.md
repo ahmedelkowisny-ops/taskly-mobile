@@ -120,7 +120,7 @@ Mobile must never calculate capture/release/refund eligibility. The backend must
 
 1. Phase 23B: add customer completion capability `nextActions` to read-only mobile task list/detail responses. Implemented.
 2. Phase 23C: connect customer reject-completion, including reason validation and refreshed detail response. Implemented.
-3. Phase 23D: connect customer approve-completion, using only the existing backend payment-sensitive action.
+3. Phase 23D: connect customer approve-completion, using only the existing backend payment-sensitive action. Implemented.
 4. Phase 23E: polish completion decision UI, review/invoice entry points, and support/help copy.
 
 Rejection is recommended before approval because it does not release payment and is lower risk.
@@ -204,6 +204,8 @@ Mobile UI:
 
 `POST /api/mobile/customer/tasks/[taskId]/approve-completion`
 
+Phase 23D implementation status: implemented.
+
 Auth and authorization:
 
 - Require mobile auth.
@@ -276,6 +278,7 @@ Mobile UI:
 - Use "payment protected" wording before approval.
 - Avoid "escrow".
 - Do not show Stripe/capture/release calculations.
+- Keep reject-completion available only when backend `nextActions.canRejectCompletion` allows it.
 
 ## Proposed Customer NextActions Shape
 

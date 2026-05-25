@@ -157,6 +157,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Customer reject completion must not create dispute, refund, help, or cancellation records unless explicitly phased.
 - Mobile must not show reject completion unless backend `nextActions.canRejectCompletion` allows it.
 - Customer approve completion remains separate from reject-completion wiring.
+- Customer approve completion must require backend mobile auth and customer ownership checks.
+- Customer approve completion must use existing backend payment logic only.
+- Mobile must not calculate commission, payout, capture, release, refund, or Stripe behavior.
+- Mobile must not show approve completion unless backend `nextActions.canApproveCompletion` allows it.
+- Use "payment protected" or "protected payment flow" wording for approval; avoid "escrow".
 
 # Mobile Auth Rules
 

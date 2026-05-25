@@ -1,12 +1,12 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
 import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { getCustomerTaskDetail, rejectCustomerTaskCompletion } from '@/src/lib/api/customer';
+import { approveCustomerTaskCompletion, getCustomerTaskDetail, rejectCustomerTaskCompletion } from '@/src/lib/api/customer';
 import { CustomerCoreTaskNextActions, CustomerTaskDetail, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
@@ -26,6 +26,8 @@ export default function CustomerTaskDetailScreen() {
   const [stateLabel, setStateLabel] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionWarning, setActionWarning] = useState<string | null>(null);
+  const [isApprovingCompletion, setIsApprovingCompletion] = useState(false);
   const [isRejectingCompletion, setIsRejectingCompletion] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
@@ -34,6 +36,7 @@ export default function CustomerTaskDetailScreen() {
     setMessage(null);
     setStateLabel(null);
     setActionError(null);
+    setActionWarning(null);
 
     if (status === 'demo') {
       setData(getMockCustomerTaskDetailResponse(taskId));
@@ -106,9 +109,108 @@ export default function CustomerTaskDetailScreen() {
     });
   }, []);
 
+  const markDemoCompletionApproved = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskAlreadyCompleted'),
+            blockedReasonCode: 'ALREADY_COMPLETED',
+            canApproveCompletion: false,
+            canRejectCompletion: false,
+            canReview: true,
+            canViewInvoice: true,
+            primaryAction: 'review',
+          },
+          paymentStatusLabel: 'Payment released',
+          status: 'COMPLETED',
+          statusLabel: t('completed'),
+          timeline: current.task.timeline.map((item) =>
+            item.id === 'completion'
+              ? { ...item, description: t('completionApproved'), status: 'done' as const }
+              : item,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const submitApproveCompletion = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+    setActionWarning(null);
+
+    if (!task?.nextActions.canApproveCompletion) {
+      setActionError(t('couldNotApproveCompletion'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoCompletionApproved();
+      setActionMessage(t('completionApproved'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsApprovingCompletion(true);
+    const result = await approveCustomerTaskCompletion(taskId, authToken);
+    setIsApprovingCompletion(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setActionMessage(t('completionApproved'));
+      const warning = result.data.payment?.warning;
+      if (warning) {
+        setActionWarning(t('approvedPayoutMayNeedReview'));
+      }
+      return;
+    }
+
+    if (result.error.code === 'PAYMENT_NOT_READY') {
+      setActionError(t('paymentNotReadyYet'));
+      return;
+    }
+    if (result.error.code === 'NOT_PENDING_COMPLETION') {
+      setActionError(t('taskNotWaitingApproval'));
+      return;
+    }
+    if (result.error.code === 'TASK_ALREADY_COMPLETED') {
+      setActionError(t('taskAlreadyCompleted'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotApproveCompletion'));
+  }, [getValidAccessToken, loadDetail, markDemoCompletionApproved, status, task?.nextActions.canApproveCompletion, taskId]);
+
+  const handleApproveCompletion = useCallback(() => {
+    Alert.alert(t('approveCompletionPrompt'), t('paymentReleasedProtectedFlow'), [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: () => void submitApproveCompletion(), text: t('approveCompletion') },
+    ]);
+  }, [submitApproveCompletion]);
+
   const handleRejectCompletion = useCallback(async () => {
     setActionError(null);
     setActionMessage(null);
+    setActionWarning(null);
     setRejectionReasonError(null);
 
     const reason = rejectionReason.trim();
@@ -216,7 +318,10 @@ export default function CustomerTaskDetailScreen() {
           <CompletionDecision
             actionError={actionError}
             actionMessage={actionMessage}
+            actionWarning={actionWarning}
+            isApproving={isApprovingCompletion}
             isRejecting={isRejectingCompletion}
+            onApprove={handleApproveCompletion}
             onReasonChange={setRejectionReason}
             onReject={handleRejectCompletion}
             reason={rejectionReason}
@@ -297,7 +402,7 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
     <AppCard>
       <AppText variant="sectionTitle">Next steps</AppText>
       {isCompletionReview ? (
-        <AppText color={colors.slate700}>{t('completionApprovalConnectedNext')}</AppText>
+        <AppText color={colors.slate700}>{t('completionRequested')}</AppText>
       ) : actions.blockedReason ? (
         <AppText color={colors.slate700}>{actions.blockedReason}</AppText>
       ) : null}
@@ -309,7 +414,10 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
 function CompletionDecision({
   actionError,
   actionMessage,
+  actionWarning,
+  isApproving,
   isRejecting,
+  onApprove,
   onReasonChange,
   onReject,
   reason,
@@ -318,37 +426,52 @@ function CompletionDecision({
 }: {
   actionError: string | null;
   actionMessage: string | null;
+  actionWarning: string | null;
+  isApproving: boolean;
   isRejecting: boolean;
+  onApprove: () => void;
   onReasonChange: (value: string) => void;
   onReject: () => void;
   reason: string;
   reasonError: string | null;
   task: CustomerTaskDetail;
 }) {
-  if (!task.nextActions.canRejectCompletion) return null;
+  const canApprove = task.nextActions.canApproveCompletion;
+  const canReject = task.nextActions.canRejectCompletion;
+  if (!canApprove && !canReject) return null;
 
   return (
     <AppCard accentColor={colors.warning600}>
       <StatusBadge label={t('waitingForCustomerApproval')} tone="warning" />
-      <AppText variant="sectionTitle">{t('askForChanges')}</AppText>
-      <AppText color={colors.slate700}>{t('tellTaskerWhatNeedsFixing')}</AppText>
-      <AppText color={colors.slate700}>{t('taskReturnsInProgress')}</AppText>
-      <FormField
-        errorText={reasonError || undefined}
-        helperText={t('taskerCanRequestCompletionAgain')}
-        label={t('reasonForChanges')}
-        multiline
-        onChangeText={onReasonChange}
-        placeholder={t('reasonForChanges')}
-        value={reason}
-      />
+      <AppText variant="sectionTitle">{t('approveCompletionPrompt')}</AppText>
+      <AppText color={colors.slate700}>{t('paymentReleasedProtectedFlow')}</AppText>
+      {canReject ? (
+        <>
+          <AppText color={colors.slate700}>{t('tellTaskerWhatNeedsFixing')}</AppText>
+          <AppText color={colors.slate700}>{t('taskReturnsInProgress')}</AppText>
+          <FormField
+            errorText={reasonError || undefined}
+            helperText={t('taskerCanRequestCompletionAgain')}
+            label={t('reasonForChanges')}
+            multiline
+            onChangeText={onReasonChange}
+            placeholder={t('reasonForChanges')}
+            value={reason}
+          />
+        </>
+      ) : null}
       {actionMessage ? <AppText color={colors.success600}>{actionMessage}</AppText> : null}
+      {actionWarning ? <AppText color={colors.warning600}>{actionWarning}</AppText> : null}
       {actionError ? <AppText color={colors.danger600}>{actionError}</AppText> : null}
-      <AppButton loading={isRejecting} onPress={onReject} tone="neutral" variant="outline">
-        {isRejecting ? t('sendingFeedback') : t('askForChanges')}
-      </AppButton>
-      {task.nextActions.canApproveCompletion ? (
-        <AppText color={colors.slate500} variant="small">{t('completionApprovalConnectedNext')}</AppText>
+      {canApprove ? (
+        <AppButton loading={isApproving} onPress={onApprove}>
+          {isApproving ? t('approvingCompletion') : t('approveAndReleasePayment')}
+        </AppButton>
+      ) : null}
+      {canReject ? (
+        <AppButton loading={isRejecting} onPress={onReject} tone="neutral" variant="outline">
+          {isRejecting ? t('sendingFeedback') : t('askForChanges')}
+        </AppButton>
       ) : null}
     </AppCard>
   );

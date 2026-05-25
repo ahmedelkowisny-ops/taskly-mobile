@@ -1,6 +1,7 @@
 import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
+  ApproveCustomerTaskCompletionResponse,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
@@ -55,6 +56,17 @@ export function rejectCustomerTaskCompletion(
   return apiRequest<RejectCustomerTaskCompletionResponse>(endpoints.customer.taskRejectCompletion(taskId), {
     authToken,
     body: { reason: payload.reason },
+    method: 'POST',
+  });
+}
+
+export function approveCustomerTaskCompletion(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<ApproveCustomerTaskCompletionResponse>> {
+  return apiRequest<ApproveCustomerTaskCompletionResponse>(endpoints.customer.taskApproveCompletion(taskId), {
+    authToken,
+    body: {},
     method: 'POST',
   });
 }
