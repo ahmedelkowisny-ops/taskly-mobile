@@ -6,8 +6,14 @@ import { Alert, Image, StyleSheet, View } from 'react-native';
 import { ModeBadge } from '@/src/components/taskly';
 import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { approveCustomerTaskCompletion, getCustomerTaskDetail, rejectCustomerTaskCompletion } from '@/src/lib/api/customer';
-import { CustomerCorePaymentState, CustomerCoreTaskNextActions, CustomerTaskDetail, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
+import { approveCustomerTaskCompletion, getCustomerTaskDetail, rejectCustomerTaskCompletion, selectCustomerTasker } from '@/src/lib/api/customer';
+import {
+  CustomerCorePaymentState,
+  CustomerCoreTaskNextActions,
+  CustomerInterestedTaskerPreview,
+  CustomerTaskDetail,
+  CustomerTaskDetailResponse,
+} from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -29,6 +35,7 @@ export default function CustomerTaskDetailScreen() {
   const [actionWarning, setActionWarning] = useState<string | null>(null);
   const [isApprovingCompletion, setIsApprovingCompletion] = useState(false);
   const [isRejectingCompletion, setIsRejectingCompletion] = useState(false);
+  const [selectingTaskerId, setSelectingTaskerId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
 
@@ -148,6 +155,120 @@ export default function CustomerTaskDetailScreen() {
       };
     });
   }, []);
+
+  const markDemoTaskerSelected = useCallback((tasker: CustomerInterestedTaskerPreview) => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          interestedTaskers: [],
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: undefined,
+            blockedReasonCode: undefined,
+            canChat: true,
+            canPreparePayment: true,
+            canSelectTasker: false,
+            paymentRequired: true,
+            primaryAction: 'prepare_payment',
+          },
+          paymentState: {
+            ...current.task.paymentState,
+            bookingStatus: 'RESERVED',
+            canShowPaymentProtectedBadge: false,
+            helperText: t('cardCollectionConnectedNext'),
+            paymentProtected: false,
+            paymentRequired: true,
+            paymentStatus: null,
+            reservationState: 'RESERVED',
+            status: 'payment_method_required',
+            statusLabel: 'Payment method required',
+            warningCode: null,
+          },
+          paymentStatusLabel: 'Payment method required',
+          status: 'RESERVED',
+          statusLabel: t('reservedUpcoming'),
+          taskerPreview: {
+            displayName: tasker.displayName,
+            ratingLabel: tasker.ratingLabel,
+            statusLabel: tasker.statusLabel,
+          },
+          timeline: current.task.timeline.map((item) =>
+            item.id === 'payment'
+              ? { ...item, description: t('cardCollectionConnectedNext'), status: 'current' as const }
+              : item,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const submitSelectTasker = useCallback(async (tasker: CustomerInterestedTaskerPreview) => {
+    setActionError(null);
+    setActionMessage(null);
+    setActionWarning(null);
+
+    if (!task?.nextActions.canSelectTasker) {
+      setActionError(t('taskNoLongerAvailable'));
+      return;
+    }
+
+    if (status === 'demo') {
+      markDemoTaskerSelected(tasker);
+      setActionMessage(t('taskerSelected'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setSelectingTaskerId(tasker.taskerId);
+    const result = await selectCustomerTasker(taskId, { taskerId: tasker.taskerId }, authToken);
+    setSelectingTaskerId(null);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      } else {
+        await loadDetail();
+      }
+      setActionMessage(t('taskerSelected'));
+      return;
+    }
+
+    switch (result.error.code) {
+      case 'TASK_NOT_OPEN':
+      case 'TASK_ALREADY_RESERVED':
+        setActionError(t('taskNoLongerAvailable'));
+        return;
+      case 'TASKER_NOT_FOUND':
+      case 'TASKER_INTEREST_REQUIRED':
+      case 'TASKER_NOT_ELIGIBLE':
+      case 'TASK_CITY_MISMATCH':
+      case 'TASKER_TIME_CONFLICT':
+        setActionError(t('taskerNotAvailableAnymore'));
+        return;
+      default:
+        setActionError(result.error.message || t('couldNotSelectTasker'));
+    }
+  }, [getValidAccessToken, loadDetail, markDemoTaskerSelected, status, task?.nextActions.canSelectTasker, taskId]);
+
+  const handleSelectTasker = useCallback((tasker: CustomerInterestedTaskerPreview) => {
+    Alert.alert(t('chooseThisTasker'), `${t('nextStepPaymentSetup')}\n${t('paymentProtectedBeforeStart')}`, [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: () => void submitSelectTasker(tasker), text: t('chooseTasker') },
+    ]);
+  }, [submitSelectTasker]);
 
   const submitApproveCompletion = useCallback(async () => {
     setActionError(null);
@@ -322,6 +443,12 @@ export default function CustomerTaskDetailScreen() {
           </AppCard>
 
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
+          <InterestedTaskers
+            canSelectTasker={task.nextActions.canSelectTasker}
+            onSelectTasker={handleSelectTasker}
+            selectingTaskerId={selectingTaskerId}
+            taskers={task.interestedTaskers}
+          />
           <Images images={task.images} />
           <Timeline items={task.timeline} accent="core" />
           <NextActions actions={task.nextActions} tone="core" />
@@ -417,6 +544,65 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
         <AppText color={colors.slate700}>{getCustomerBlockedReasonText(actions)}</AppText>
       ) : null}
       <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
+    </AppCard>
+  );
+}
+
+function InterestedTaskers({
+  canSelectTasker,
+  onSelectTasker,
+  selectingTaskerId,
+  taskers,
+}: {
+  canSelectTasker: boolean;
+  onSelectTasker: (tasker: CustomerInterestedTaskerPreview) => void;
+  selectingTaskerId: string | null;
+  taskers: CustomerInterestedTaskerPreview[];
+}) {
+  if (!canSelectTasker) return null;
+
+  return (
+    <AppCard accentColor={colors.tasklyBlue600}>
+      <StatusBadge label={t('chooseTasker')} tone="core" />
+      <AppText variant="sectionTitle">{t('chooseTasker')}</AppText>
+      <AppText color={colors.slate700}>{t('nextStepPaymentSetup')}</AppText>
+      {taskers.length === 0 ? (
+        <AppText color={colors.slate700}>{t('noInterestedTaskersYet')}</AppText>
+      ) : (
+        <View style={styles.stack}>
+          {taskers.map((tasker) => (
+            <AppCard key={tasker.id}>
+              <View style={styles.taskerRow}>
+                {tasker.profileImageUrl ? (
+                  <Image
+                    accessibilityLabel={tasker.displayName}
+                    source={{ uri: resolveApiMediaUrl(tasker.profileImageUrl) }}
+                    style={styles.taskerImage}
+                  />
+                ) : (
+                  <View style={styles.taskerInitials}>
+                    <AppText color={colors.tasklyBlue700} variant="bodyStrong">
+                      {getTaskerInitials(tasker.displayName)}
+                    </AppText>
+                  </View>
+                )}
+                <View style={styles.taskerBody}>
+                  <AppText variant="bodyStrong">{tasker.displayName}</AppText>
+                  <AppText color={colors.slate700}>{`${tasker.ratingLabel} - ${tasker.completedTasksLabel}`}</AppText>
+                  {tasker.bioPreview ? <AppText color={colors.slate700}>{tasker.bioPreview}</AppText> : null}
+                  {tasker.toolsConfirmed ? <StatusBadge label={t('taskerToolsConfirmed')} tone="success" /> : null}
+                </View>
+              </View>
+              <AppButton
+                loading={selectingTaskerId === tasker.taskerId}
+                onPress={() => onSelectTasker(tasker)}
+                variant="outline">
+                {selectingTaskerId === tasker.taskerId ? t('choosingTasker') : t('selectTasker')}
+              </AppButton>
+            </AppCard>
+          ))}
+        </View>
+      )}
     </AppCard>
   );
 }
@@ -540,6 +726,12 @@ function getCustomerTaskPhaseLabel(task: CustomerTaskDetail) {
   return task.statusLabel || t('notAvailable');
 }
 
+function getTaskerInitials(displayName: string) {
+  const words = displayName.trim().split(/\s+/).filter(Boolean);
+  const initials = words.slice(0, 2).map((word) => word[0]?.toUpperCase()).join('');
+  return initials || 'T';
+}
+
 function getCustomerBlockedReasonText(actions: CustomerCoreTaskNextActions) {
   switch (actions.blockedReasonCode) {
     case 'PAYMENT_NOT_READY':
@@ -647,5 +839,16 @@ const styles = StyleSheet.create({
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
   stack: { gap: spacing.sm },
+  taskerBody: { flex: 1, gap: spacing.xs },
+  taskerImage: { borderRadius: 24, height: 48, width: 48 },
+  taskerInitials: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: 24,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  taskerRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md },
   timelineItem: { gap: spacing.xs },
 });

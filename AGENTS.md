@@ -172,6 +172,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile payment buttons must not be active until payment mutations are explicitly implemented.
 - Use "payment protected" wording and avoid "escrow."
 - Payment implementation must remain separate from cancellation, refund, dispute, and help flows unless explicitly phased.
+- Customer select/reserve Tasker must use backend-authenticated ownership checks.
+- Mobile must not call payment setup or payment finalize from select/reserve work.
+- Mobile must not expose Stripe secrets or client secrets.
+- Select/reserve must not calculate payment, fees, commission, or payout on mobile.
 - UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 
 # Mobile Auth Rules

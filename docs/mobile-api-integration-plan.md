@@ -1350,6 +1350,33 @@ Confirmations:
 - No SetupIntent or PaymentIntent creation/confirmation was added for mobile.
 - No capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or task lifecycle logic was changed.
 
+## Phase 24C Customer Core Select/Reserve Tasker
+
+Phase 24C connects the mobile customer action for choosing an interested Tasker on an open Core task. The action is intentionally limited to customer-owned selection/reservation and stops before any payment setup or card collection work.
+
+Backend behavior:
+
+- Added `POST /api/mobile/customer/tasks/[taskId]/select-tasker`.
+- The route requires mobile auth and Customer Workspace access.
+- The route accepts only `{ taskerId }`; server-owned task, lifecycle, reservation, booking, payment, Stripe, fee, commission, payout, refund, and cancellation fields are rejected.
+- The backend verifies task existence, customer ownership, non-deleted task state, `OPEN` task status, schedule readiness, interested Tasker state, Tasker existence, Tasker verification, city/category eligibility, matching preflight, and schedule conflicts.
+- Selection uses the same reservation boundary as the existing web flow: task becomes `RESERVED`, `reservationState` becomes `RESERVED`, `reservedTaskerId` and a reservation token/expiry are set, a `Booking` is created in `RESERVED`, and Tasker interest statuses move to `SELECTED`/`NOT_SELECTED`.
+- The response returns refreshed customer Core task detail with backend-authored `paymentState` and `nextActions`.
+
+Mobile behavior:
+
+- Customer task detail shows safe interested Tasker previews when `task.nextActions.canSelectTasker` is true.
+- Selecting a Tasker shows a confirmation that the next step is payment setup and payment will be protected through Taskly before the task starts.
+- On success, the screen refreshes from the backend response and shows the reserved/payment-method-required state from `paymentState`.
+- Demo mode simulates the reserved/payment-required state locally and does not create real booking/payment/lifecycle changes.
+
+Confirmations:
+
+- No mobile card collection was added.
+- No Stripe mobile SDK, SetupIntent, PaymentIntent, or client secret handling was added.
+- No payment setup/finalize endpoint was added or called.
+- No capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or payment lifecycle logic was changed.
+
 Proposed customer payment `nextActions` extension:
 
 ```ts

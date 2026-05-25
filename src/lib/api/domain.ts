@@ -215,6 +215,19 @@ export type CustomerTaskerPreview = {
   statusLabel: string;
 };
 
+export type CustomerInterestedTaskerPreview = {
+  bioPreview: string | null;
+  completedTasksLabel: string;
+  displayName: string;
+  id: string;
+  interestId: string;
+  profileImageUrl: string | null;
+  ratingLabel: string;
+  statusLabel: string;
+  taskerId: string;
+  toolsConfirmed: boolean;
+};
+
 export type CustomerTaskDetail = {
   addressPreviewLabel: string;
   categoryLabel: string;
@@ -223,6 +236,7 @@ export type CustomerTaskDetail = {
   displayActions?: DetailNextAction[];
   id: string;
   images: DetailImage[];
+  interestedTaskers: CustomerInterestedTaskerPreview[];
   nextActions: CustomerCoreTaskNextActions;
   paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
@@ -285,6 +299,16 @@ export type ApproveCustomerTaskCompletionResponse = {
     statusLabel: string;
     warning?: string | null;
   };
+  task: CustomerTaskDetail | null;
+};
+
+export type SelectCustomerTaskerPayload = {
+  taskerId: string;
+};
+
+export type SelectCustomerTaskerResponse = {
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions | null;
   task: CustomerTaskDetail | null;
 };
 

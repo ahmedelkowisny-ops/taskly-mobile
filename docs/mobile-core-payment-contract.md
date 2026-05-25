@@ -184,10 +184,11 @@ The current Core payment flow is customer-owned and split across reservation, ca
    - Include payment state, payment required/prepared/protected indicators, and blocked reasons from backend logic.
    - Mobile displays these fields as read-only payment status only; payment buttons remain inactive.
 
-2. Phase 24C: Mobile customer select/reserve tasker entry point.
+2. Phase 24C: Mobile customer select/reserve tasker entry point. Implemented.
    - Only if product wants selection in mobile before payment.
    - Must wrap the existing `reserveTasker` behavior through a dedicated mobile route with mobile auth and customer ownership.
    - Must return refreshed task detail and `nextActions`.
+   - Stops at reservation/payment setup required; it does not start card collection or payment finalization.
 
 3. Phase 24D: Mobile payment setup endpoint contract.
    - Server creates/reuses Stripe customer and SetupIntent using existing backend rules.
@@ -210,7 +211,7 @@ The current Core payment flow is customer-owned and split across reservation, ca
 
 This order keeps read-only truth first, then selection, then payment setup, then Stripe collection, then backend finalization, then retry polish.
 
-## Phase 24B Implementation Status
+## Phase 24B/24C Implementation Status
 
 Implemented read-only customer Core payment state and payment-related nextActions:
 
@@ -220,19 +221,26 @@ Implemented read-only customer Core payment state and payment-related nextAction
 - Demo mode covers tasker selection needed, payment method required, held/protected payment, released payment, and failed payment.
 - Future payment actions are represented as disabled informational UI only.
 
+Implemented customer Core select/reserve Tasker:
+
+- Mobile customer detail can show safe interested Tasker previews without contact details.
+- `POST /api/mobile/customer/tasks/[taskId]/select-tasker` accepts only `{ taskerId }`.
+- Backend verifies mobile auth, Customer Workspace access, customer ownership, task status, schedule readiness, interested Tasker state, Tasker verification, city/category eligibility, matching preflight, and schedule conflicts.
+- Selection creates the existing reservation/booking state and returns refreshed task detail with `paymentState` and `nextActions`.
+- Mobile shows payment setup/card collection as the next step, but the payment action remains separate.
+
 Still future phases:
 
-- Phase 24C mobile customer select/reserve tasker mutation.
 - Phase 24D mobile payment setup endpoint.
 - Phase 24E Stripe mobile SDK/card collection.
 - Phase 24F payment method save/finalize endpoint.
 - Phase 24G active retry/payment error handling.
 
-Phase 24B did not add Stripe SDK code, payment endpoints, mobile card collection, SetupIntent or PaymentIntent creation, client secret handling, capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or lifecycle rule changes.
+Phase 24B/24C did not add Stripe SDK code, payment setup/finalize endpoints, mobile card collection, SetupIntent or PaymentIntent creation, client secret handling, capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or payment lifecycle rule changes.
 
 ## Proposed Mobile Endpoint Contracts
 
-These are proposals only. Do not create these routes until their dedicated phases.
+The select-tasker route is implemented in Phase 24C. Payment setup/finalize routes remain proposals only and must not be created until their dedicated phases.
 
 ### `POST /api/mobile/customer/tasks/[taskId]/select-tasker`
 
@@ -241,8 +249,8 @@ Purpose: customer selects a provider and creates the short reservation lock.
 - Auth: mobile auth required.
 - Workspace: customer workspace access required.
 - Ownership: task `authorId` must equal authenticated customer id.
-- Task requirements: not deleted, scheduled start/end present, task currently selectable according to existing `reserveTasker` rules.
-- Provider requirements: selected tasker id must be backend-validated for verification, city, category/capability, and schedule conflicts.
+- Task requirements: not deleted, scheduled start/end present, task currently `OPEN`, and selectable according to existing reservation rules.
+- Provider requirements: selected tasker id must have an active interest and be backend-validated for verification, city, category/capability, matching preflight, and schedule conflicts.
 - Request body:
 
 ```ts
@@ -256,18 +264,17 @@ Purpose: customer selects a provider and creates the short reservation lock.
 
 ```ts
 {
-  reservationToken?: string;
-  bookingId?: string;
   task: CustomerCoreTaskDetail;
   nextActions: CustomerCoreTaskNextActions;
+  message?: string;
 }
 ```
 
 - Notes:
-  - Returning `reservationToken` is currently needed by the web flow, but mobile should prefer not to persist it long term.
-  - A safer alternative is for the backend to keep token lookup server-side and let later mobile payment routes use the latest valid reservation for the task.
-- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `SCHEDULE_REQUIRED`, `TASK_CITY_MISMATCH`, category/capability mismatch codes, schedule conflict codes, `TASK_ALREADY_RESERVED`, `VALIDATION_ERROR`.
-- UI wording: "Select provider" or "Choose provider"; avoid "accept" or "reserve" as provider wording.
+  - The mobile response does not return reservation tokens or Stripe/payment secrets.
+  - Later mobile payment routes must look up the latest valid server-side reservation instead of trusting mobile-supplied reservation/payment fields.
+- Error states: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `INVALID_REQUEST`, `INVALID_TASKER`, `SCHEDULE_REQUIRED`, `TASK_NOT_OPEN`, `TASKER_INTEREST_REQUIRED`, `TASKER_NOT_FOUND`, `TASK_CITY_MISMATCH`, category/capability mismatch codes, schedule conflict codes, `TASK_ALREADY_RESERVED`, `SELECT_TASKER_FAILED`.
+- UI wording: "Choose Tasker" or "Select Tasker"; avoid provider-side wording that implies the Tasker accepts/reserves directly.
 
 ### `POST /api/mobile/customer/tasks/[taskId]/payment/setup`
 

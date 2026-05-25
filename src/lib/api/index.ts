@@ -12,6 +12,7 @@ export {
   getCustomerTaskDetail,
   getCustomerTasks,
   rejectCustomerTaskCompletion,
+  selectCustomerTasker,
 } from './customer';
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
@@ -69,6 +70,7 @@ export type {
   CityOption,
   CoreTaskPostingRules,
   CustomerCoreTaskNextActions,
+  CustomerInterestedTaskerPreview,
   CustomerProRequestDetail,
   CustomerProRequestDetailResponse,
   CustomerProRequestSummary,
@@ -124,6 +126,8 @@ export type {
   RequestProviderCoreTaskCompletionResponse,
   RejectCustomerTaskCompletionPayload,
   RejectCustomerTaskCompletionResponse,
+  SelectCustomerTaskerPayload,
+  SelectCustomerTaskerResponse,
   SendMessageResponse,
   StartProviderCoreTaskResponse,
   PostingRulesResponse,

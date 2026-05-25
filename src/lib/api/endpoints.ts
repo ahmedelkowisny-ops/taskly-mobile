@@ -24,6 +24,7 @@ export const endpoints = {
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
     taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
     taskRejectCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/reject-completion`,
+    taskSelectTasker: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/select-tasker`,
     tasks: '/api/mobile/customer/tasks',
   },
   messages: {
