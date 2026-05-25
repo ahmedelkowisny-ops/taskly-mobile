@@ -256,7 +256,7 @@ export const en = {
   paymentProtectedBeforeStart: 'Payment will be protected through Taskly before the task starts.',
   paymentProtectedUntilApprove: 'Payment protected until you approve completion.',
   paymentNeedsAttention: 'Payment needs attention.',
-  cardCollectionConnectedNext: 'Card collection will be connected next.',
+  cardCollectionConnectedNext: 'Enter card details in task detail.',
   paymentMethodRequired: 'Payment method required',
   paymentBeingPrepared: 'Payment is being prepared',
   paymentHeld: 'Payment is held',

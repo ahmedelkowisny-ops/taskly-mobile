@@ -279,7 +279,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         }),
         paymentState: createMockCustomerPaymentState({
           bookingStatus: 'RESERVED',
-          helperText: 'Card collection will be connected next.',
+          helperText: 'Enter card details in task detail.',
           paymentRequired: true,
           reservationState: 'RESERVED',
           status: 'payment_method_required',
@@ -432,7 +432,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         }),
         paymentState: createMockCustomerPaymentState({
           bookingStatus: 'RESERVED',
-          helperText: 'Payment needs attention. Retry will be available after payment actions are connected.',
+          helperText: 'Payment needs attention. Open task detail to retry payment setup.',
           paymentRequired: true,
           paymentStatus: 'FAILED',
           reservationState: 'RESERVED',
@@ -542,7 +542,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
     : isPaymentFailed
       ? createMockCustomerPaymentState({
           bookingStatus: 'RESERVED',
-          helperText: 'Payment needs attention. Retry will be available after payment actions are connected.',
+          helperText: 'Payment needs attention. Open task detail to retry payment setup.',
           paymentRequired: true,
           paymentStatus: 'FAILED',
           reservationState: 'RESERVED',
@@ -553,7 +553,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       : isPaymentMethodRequired
         ? createMockCustomerPaymentState({
             bookingStatus: 'RESERVED',
-            helperText: 'Card collection will be connected next.',
+            helperText: 'Enter card details in task detail.',
             paymentRequired: true,
             reservationState: 'RESERVED',
             status: 'payment_method_required',
