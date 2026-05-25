@@ -6,7 +6,14 @@ import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTaskDetail, ProviderCoreTaskDetailResponse } from '@/src/lib/api/domain';
+import {
+  CoreCancellationState,
+  CoreDisputeState,
+  CoreRefundState,
+  CoreSupportState,
+  ProviderCoreTaskDetail,
+  ProviderCoreTaskDetailResponse,
+} from '@/src/lib/api/domain';
 import { getMockProviderCoreTaskDetailResponse } from '@/src/lib/api/mockApi';
 import {
   expressInterestInCoreTask,
@@ -497,6 +504,7 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <Images images={task.images} />
+          <ProviderCancellationSupportCard task={task} />
           <Timeline items={task.timeline} />
           <ProviderActions
             actionError={actionError}
@@ -561,6 +569,42 @@ function Timeline({ items }: { items: { description: string; id: string; label: 
           <AppText color={colors.slate700}>{item.description}</AppText>
         </View>
       ))}
+    </AppCard>
+  );
+}
+
+function ProviderCancellationSupportCard({ task }: { task: ProviderCoreTaskDetail }) {
+  const cancellation = task.cancellationState;
+  const support = task.supportState;
+  const dispute = task.disputeState;
+  const refund = task.refundState;
+  const shouldShow =
+    isRelevantProviderCancellationState(cancellation) ||
+    isRelevantProviderSupportState(support) ||
+    isRelevantProviderDisputeState(dispute) ||
+    isRelevantProviderRefundState(refund);
+
+  if (!shouldShow) return null;
+
+  return (
+    <AppCard accentColor={getProviderSupportAccent(cancellation, support, dispute)}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {cancellation && isRelevantProviderCancellationState(cancellation) ? (
+          <StatusBadge label={getProviderCancellationLabel(cancellation)} tone={getProviderSupportTone(cancellation, support, dispute)} />
+        ) : null}
+        {support && isRelevantProviderSupportState(support) ? (
+          <StatusBadge label={getProviderSupportLabel(support)} tone="warning" />
+        ) : null}
+        {refund && isRelevantProviderRefundState(refund) ? (
+          <StatusBadge label={refund.statusLabel} tone="neutral" />
+        ) : null}
+      </View>
+      <AppText variant="sectionTitle">{t('cancellationAndSupport')}</AppText>
+      {cancellation ? <AppText color={colors.slate700}>{cancellation.helperText}</AppText> : null}
+      {task.supportReviewLabel ? <AppText color={colors.slate700}>{task.supportReviewLabel}</AppText> : null}
+      {dispute && isRelevantProviderDisputeState(dispute) ? <AppText color={colors.slate700}>{dispute.helperText}</AppText> : null}
+      {refund && isRelevantProviderRefundState(refund) ? <AppText color={colors.slate700}>{refund.helperText}</AppText> : null}
+      <AppText color={colors.slate500}>{t('readOnlyNoAction')}</AppText>
     </AppCard>
   );
 }
@@ -779,6 +823,55 @@ function formatSchedule(start: string | null, end: string | null) {
   const startLabel = new Date(start).toLocaleString();
   const endLabel = end ? new Date(end).toLocaleTimeString() : '';
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
+}
+
+function isRelevantProviderCancellationState(state?: CoreCancellationState) {
+  return Boolean(state && ['cancelled', 'cancelled_free', 'cancelled_late', 'support_review'].includes(state.status));
+}
+
+function isRelevantProviderSupportState(state?: CoreSupportState) {
+  return Boolean(state && state.status !== 'none' && state.status !== 'unknown');
+}
+
+function isRelevantProviderDisputeState(state?: CoreDisputeState) {
+  return Boolean(state && state.status !== 'none' && state.status !== 'unknown');
+}
+
+function isRelevantProviderRefundState(state?: CoreRefundState) {
+  return Boolean(state && state.status !== 'not_available' && state.status !== 'not_requested' && state.status !== 'unknown');
+}
+
+function getProviderCancellationLabel(state: CoreCancellationState) {
+  if (state.status === 'support_review') return t('underSupportReview');
+  if (state.status === 'cancelled' || state.status === 'cancelled_free' || state.status === 'cancelled_late') return t('cancelled');
+  return state.statusLabel || t('backendPolicyState');
+}
+
+function getProviderSupportLabel(state: CoreSupportState) {
+  if (state.status === 'under_review') return t('underSupportReview');
+  if (state.status === 'support_submitted') return t('supportRequestSent');
+  return state.statusLabel || t('support');
+}
+
+function getProviderSupportTone(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+): 'core' | 'danger' | 'neutral' | 'success' | 'warning' {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || cancellation?.status === 'support_review') return 'danger';
+  if (cancellation?.status === 'cancelled' || cancellation?.status === 'cancelled_free' || cancellation?.status === 'cancelled_late') return 'neutral';
+  return 'warning';
+}
+
+function getProviderSupportAccent(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+) {
+  const tone = getProviderSupportTone(cancellation, support, dispute);
+  if (tone === 'danger') return colors.danger600;
+  if (tone === 'warning') return colors.warning600;
+  return colors.tasklyBlue600;
 }
 
 const styles = StyleSheet.create({

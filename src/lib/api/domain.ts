@@ -100,20 +100,101 @@ export type CustomerNextAction = {
   type: string;
 };
 
+export type CoreCancellationState = {
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  estimatedPolicyOutcomeLabel: string | null;
+  feeLabel: string | null;
+  freeCancellationUntil: string | null;
+  helperText: string;
+  policySummary: string;
+  refundLabel: string | null;
+  requiresReason: boolean;
+  status:
+    | 'not_available'
+    | 'free_cancellation_available'
+    | 'late_cancellation_available'
+    | 'blocked_after_start'
+    | 'cancelled_free'
+    | 'cancelled_late'
+    | 'cancelled'
+    | 'support_required'
+    | 'support_review'
+    | 'unknown';
+  statusLabel: string;
+  supportReviewLabel: string | null;
+};
+
+export type CoreSupportState = {
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  helperText: string;
+  latestRequestCreatedAt: string | null;
+  latestRequestId: string | null;
+  latestRequestType: string | null;
+  status:
+    | 'none'
+    | 'help_available'
+    | 'refund_review_available'
+    | 'support_submitted'
+    | 'under_review'
+    | 'resolved'
+    | 'unknown';
+  statusLabel: string;
+  supportReviewLabel: string | null;
+};
+
+export type CoreRefundState = {
+  helperText: string;
+  outcomeLabel: string | null;
+  status:
+    | 'not_requested'
+    | 'request_available'
+    | 'requested'
+    | 'under_review'
+    | 'refunded'
+    | 'rejected'
+    | 'not_available'
+    | 'unknown';
+  statusLabel: string;
+};
+
+export type CoreDisputeState = {
+  helperText: string;
+  resolutionLabel: string | null;
+  status:
+    | 'none'
+    | 'opened'
+    | 'under_review'
+    | 'resolved_customer_favor'
+    | 'resolved_late_cancellation'
+    | 'rejected'
+    | 'unknown';
+  statusLabel: string;
+  supportReviewLabel: string | null;
+};
+
 export type CustomerCoreTaskNextActions = {
   blockedReason?: string;
   blockedReasonCode?: string;
   canApproveCompletion: boolean;
   canCancel: boolean;
+  canCancelFree?: boolean;
+  canCancelLate?: boolean;
   canChat: boolean;
   canConfirmPayment: boolean;
+  canOpenSupport?: boolean;
   canPreparePayment: boolean;
   canRejectCompletion: boolean;
   canRequestHelp: boolean;
+  canRequestRefund?: boolean;
   canRetryPayment: boolean;
   canReview: boolean;
   canSelectTasker: boolean;
   canViewInvoice: boolean;
+  cancellationBlockedReason?: string;
+  cancellationBlockedReasonCode?: string;
+  estimatedPolicyOutcomeLabel?: string;
   paymentProtected: boolean;
   paymentRequired: boolean;
   primaryAction:
@@ -124,7 +205,10 @@ export type CustomerCoreTaskNextActions = {
     | 'chat'
     | 'approve_completion'
     | 'reject_completion'
+    | 'cancel_task'
+    | 'open_support_status'
     | 'request_help'
+    | 'request_refund_review'
     | 'view_invoice'
     | 'review'
     | 'none';
@@ -188,18 +272,25 @@ export type CustomerHomeResponse = {
 };
 
 export type CustomerTaskSummary = {
+  cancellationBlockedReason?: string | null;
+  cancellationPolicySummary?: string;
+  cancellationState?: CoreCancellationState;
   categoryLabel: string;
   cityLabel: string;
+  disputeState?: CoreDisputeState;
   id: string;
   nextAction: CustomerNextAction;
   nextActions: CustomerCoreTaskNextActions;
   paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
   priceLabel: string;
+  refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
   status: string;
   statusLabel: string;
+  supportReviewLabel?: string | null;
+  supportState?: CoreSupportState;
   title: string;
   unreadMessagesCount: number;
 };
@@ -230,10 +321,14 @@ export type CustomerInterestedTaskerPreview = {
 
 export type CustomerTaskDetail = {
   addressPreviewLabel: string;
+  cancellationBlockedReason?: string | null;
+  cancellationPolicySummary?: string;
+  cancellationState?: CoreCancellationState;
   categoryLabel: string;
   cityLabel: string;
   description: string;
   displayActions?: DetailNextAction[];
+  disputeState?: CoreDisputeState;
   id: string;
   images: DetailImage[];
   interestedTaskers: CustomerInterestedTaskerPreview[];
@@ -241,10 +336,13 @@ export type CustomerTaskDetail = {
   paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
   priceLabel: string;
+  refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
   status: string;
   statusLabel: string;
+  supportReviewLabel?: string | null;
+  supportState?: CoreSupportState;
   taskerPreview: CustomerTaskerPreview | null;
   timeline: DetailTimelineItem[];
   title: string;
@@ -468,18 +566,25 @@ export type ProRequestDetail = ProRequestSummary & {
 };
 
 export type ProviderCoreTaskSummary = {
+  cancellationBlockedReason?: string | null;
+  cancellationPolicySummary?: string;
+  cancellationState?: CoreCancellationState;
   categoryLabel: string;
   cityLabel: string;
   customerPreviewLabel: string;
+  disputeState?: CoreDisputeState;
   id: string;
   nextAction: ProviderNextAction;
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
   status: string;
   statusLabel: string;
+  supportReviewLabel?: string | null;
+  supportState?: CoreSupportState;
   title: string;
   unreadMessagesCount: number;
 };
@@ -507,19 +612,26 @@ export type ProviderCoreTaskNextActions = {
 
 export type ProviderCoreTaskDetail = {
   addressPreviewLabel: string;
+  cancellationBlockedReason?: string | null;
+  cancellationPolicySummary?: string;
+  cancellationState?: CoreCancellationState;
   categoryLabel: string;
   cityLabel: string;
   customerPreviewLabel: string;
   description: string;
+  disputeState?: CoreDisputeState;
   id: string;
   images: DetailImage[];
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
   status: string;
   statusLabel: string;
+  supportReviewLabel?: string | null;
+  supportState?: CoreSupportState;
   timeline: DetailTimelineItem[];
   title: string;
 };

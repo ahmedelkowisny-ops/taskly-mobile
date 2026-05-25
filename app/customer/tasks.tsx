@@ -7,7 +7,13 @@ import { View } from 'react-native';
 import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerTasks } from '@/src/lib/api/customer';
-import { CustomerCorePaymentState, CustomerTaskSummary, CustomerTasksResponse } from '@/src/lib/api/domain';
+import {
+  CoreCancellationState,
+  CoreSupportState,
+  CustomerCorePaymentState,
+  CustomerTaskSummary,
+  CustomerTasksResponse,
+} from '@/src/lib/api/domain';
 import { getMockCustomerTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
@@ -118,12 +124,21 @@ export default function CustomerTasksScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={getCustomerTaskPhaseLabel(task)} tone="core" />
                 <StatusBadge label={getPaymentStateLabel(task.paymentState)} tone={getPaymentStateTone(task.paymentState)} />
+                {getCancellationBadgeLabel(task.cancellationState) ? (
+                  <StatusBadge label={getCancellationBadgeLabel(task.cancellationState) || ''} tone={getCancellationBadgeTone(task.cancellationState)} />
+                ) : null}
+                {getSupportBadgeLabel(task.supportState) ? (
+                  <StatusBadge label={getSupportBadgeLabel(task.supportState) || ''} tone="warning" />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>
                 {task.categoryLabel} - {task.cityLabel}
               </AppText>
               <AppText color={colors.slate700}>{getPaymentStateHelperText(task.paymentState)}</AppText>
+              {getCorePolicySummary(task) ? (
+                <AppText color={colors.slate700}>{getCorePolicySummary(task)}</AppText>
+              ) : null}
               <AppText color={colors.slate700}>
                 {task.priceLabel}
                 {task.scheduledStartAt ? ` - ${new Date(task.scheduledStartAt).toLocaleDateString()}` : ''}
@@ -179,6 +194,56 @@ function getCustomerTaskPhaseLabel(task: CustomerTaskSummary) {
   if (status === 'DISPUTED') return t('disputed');
 
   return task.statusLabel || t('notAvailable');
+}
+
+function getCancellationBadgeLabel(state?: CoreCancellationState) {
+  if (!state) return null;
+  switch (state.status) {
+    case 'free_cancellation_available':
+      return t('freeCancellationAvailable');
+    case 'late_cancellation_available':
+      return t('lateCancellationMayApply');
+    case 'blocked_after_start':
+      return t('supportRequired');
+    case 'cancelled_free':
+    case 'cancelled_late':
+    case 'cancelled':
+      return t('cancelled');
+    case 'support_review':
+      return t('underSupportReview');
+    default:
+      return null;
+  }
+}
+
+function getCancellationBadgeTone(state?: CoreCancellationState) {
+  if (!state) return 'neutral';
+  if (state.status === 'free_cancellation_available') return 'success';
+  if (state.status === 'late_cancellation_available' || state.status === 'blocked_after_start') return 'warning';
+  if (state.status === 'support_review') return 'danger';
+  return 'neutral';
+}
+
+function getSupportBadgeLabel(state?: CoreSupportState) {
+  if (!state) return null;
+  if (state.status === 'under_review') return t('underSupportReview');
+  if (state.status === 'support_submitted') return t('supportRequestSent');
+  if (state.status === 'help_available') return t('supportRequired');
+  return null;
+}
+
+function getCorePolicySummary(task: CustomerTaskSummary) {
+  const cancellation = task.cancellationState;
+  if (!cancellation) return null;
+  if (
+    cancellation.status === 'free_cancellation_available' ||
+    cancellation.status === 'late_cancellation_available' ||
+    cancellation.status === 'blocked_after_start' ||
+    cancellation.status === 'support_review'
+  ) {
+    return cancellation.estimatedPolicyOutcomeLabel || cancellation.helperText;
+  }
+  return task.supportReviewLabel || null;
 }
 
 function hasFuturePaymentAction(task: CustomerTaskSummary) {

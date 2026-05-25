@@ -11,6 +11,10 @@ import {
   CustomerCorePaymentState,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
+  CoreCancellationState,
+  CoreDisputeState,
+  CoreRefundState,
+  CoreSupportState,
   PostingRulesResponse,
   ProviderCoreTasksResponse,
   ProviderCoreTaskNextActions,
@@ -240,6 +244,68 @@ function createMockCustomerPaymentState(
   };
 }
 
+function createMockCancellationState(
+  overrides: Partial<CoreCancellationState> = {},
+): CoreCancellationState {
+  return {
+    blockedReason: 'Cancellation is not available for this task state.',
+    blockedReasonCode: 'CANCELLATION_NOT_AVAILABLE',
+    estimatedPolicyOutcomeLabel: null,
+    feeLabel: null,
+    freeCancellationUntil: null,
+    helperText: 'Cancellation status is provided by the backend.',
+    policySummary: 'Free cancellation is available until 24 hours before the scheduled start. Backend policy decides late-cancellation outcomes.',
+    refundLabel: null,
+    requiresReason: false,
+    status: 'not_available',
+    statusLabel: 'Cancellation not available',
+    supportReviewLabel: null,
+    ...overrides,
+  };
+}
+
+function createMockSupportState(
+  overrides: Partial<CoreSupportState> = {},
+): CoreSupportState {
+  return {
+    blockedReason: 'Support is not needed for this task state.',
+    blockedReasonCode: 'SUPPORT_NOT_AVAILABLE',
+    helperText: 'Support status appears here only when backend review is needed.',
+    latestRequestCreatedAt: null,
+    latestRequestId: null,
+    latestRequestType: null,
+    status: 'none',
+    statusLabel: 'No support request',
+    supportReviewLabel: null,
+    ...overrides,
+  };
+}
+
+function createMockRefundState(
+  overrides: Partial<CoreRefundState> = {},
+): CoreRefundState {
+  return {
+    helperText: 'Refund status is provided by backend payment handling.',
+    outcomeLabel: null,
+    status: 'not_requested',
+    statusLabel: 'No refund request',
+    ...overrides,
+  };
+}
+
+function createMockDisputeState(
+  overrides: Partial<CoreDisputeState> = {},
+): CoreDisputeState {
+  return {
+    helperText: 'No support review is open for this task.',
+    resolutionLabel: null,
+    status: 'none',
+    statusLabel: 'No support review',
+    supportReviewLabel: null,
+    ...overrides,
+  };
+}
+
 export function getMockCustomerTasksResponse(): CustomerTasksResponse {
   return {
     emptyState: {
@@ -333,11 +399,25 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         nextActions: createMockCustomerTaskNextActions({
           blockedReason: 'Waiting for the Tasker to request completion.',
           blockedReasonCode: 'WAITING_FOR_PROVIDER',
+          canCancel: true,
+          canCancelFree: true,
           canChat: true,
+          estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
           paymentProtected: true,
           paymentRequired: true,
           primaryAction: 'chat',
         }),
+        cancellationPolicySummary: 'Free cancellation is available until 24 hours before the scheduled start.',
+        cancellationState: createMockCancellationState({
+          blockedReason: null,
+          blockedReasonCode: null,
+          estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
+          freeCancellationUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          helperText: 'Backend policy allows free cancellation before the deadline.',
+          status: 'free_cancellation_available',
+          statusLabel: 'Free cancellation available',
+        }),
+        disputeState: createMockDisputeState(),
         paymentState: createMockCustomerPaymentState({
           bookingStatus: 'ACTIVE',
           canShowPaymentProtectedBadge: true,
@@ -351,11 +431,70 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
+        refundState: createMockRefundState(),
         scheduledEndAt: null,
-        scheduledStartAt: null,
+        scheduledStartAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         status: 'IN_PROGRESS',
         statusLabel: 'In progress',
+        supportState: createMockSupportState(),
         title: 'Demo in-progress Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        cancellationPolicySummary: 'Direct cancellation is blocked while Taskly support is reviewing the task.',
+        cancellationState: createMockCancellationState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'Taskly support is reviewing this task.',
+          status: 'support_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        disputeState: createMockDisputeState({
+          helperText: 'Taskly support is reviewing this task.',
+          status: 'under_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        id: 'demo-customer-support-review',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'View task', type: 'view_task' },
+        nextActions: createMockCustomerTaskNextActions({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          canOpenSupport: true,
+          canRequestHelp: true,
+          primaryAction: 'open_support_status',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          helperText: 'Taskly support is reviewing this task.',
+          paymentStatus: 'DISPUTED',
+          status: 'disputed',
+          statusLabel: 'Under support review',
+        }),
+        paymentStatusLabel: 'Under support review',
+        priceLabel: 'EUR 55',
+        refundState: createMockRefundState({
+          helperText: 'Refund review is handled by Taskly support.',
+          status: 'under_review',
+          statusLabel: 'Refund review',
+        }),
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'DISPUTED',
+        statusLabel: 'Support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+        supportState: createMockSupportState({
+          helperText: 'Taskly support is reviewing this task.',
+          latestRequestCreatedAt: new Date().toISOString(),
+          latestRequestId: 'demo-support-1',
+          latestRequestType: 'TASK_HELP',
+          status: 'under_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        title: 'Demo support review',
         unreadMessagesCount: 0,
       },
       {
@@ -460,8 +599,11 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
   const isPaymentFailed = taskId.includes('payment-failed');
   const isPaymentMethodRequired = taskId.includes('payment-method');
   const isSelecting = taskId.includes('selecting');
+  const isSupportReview = taskId.includes('support-review');
   const status = isCompleted
     ? 'COMPLETED'
+    : isSupportReview
+      ? 'DISPUTED'
     : isPaymentFailed || isPaymentMethodRequired
       ? 'RESERVED'
     : isInProgress
@@ -479,11 +621,22 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
         canViewInvoice: true,
         primaryAction: 'review',
       })
+    : isSupportReview
+      ? createMockCustomerTaskNextActions({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          canOpenSupport: true,
+          canRequestHelp: true,
+          primaryAction: 'open_support_status',
+        })
     : isInProgress
       ? createMockCustomerTaskNextActions({
           blockedReason: 'Waiting for the Tasker to request completion.',
           blockedReasonCode: 'WAITING_FOR_PROVIDER',
+          canCancel: true,
+          canCancelFree: true,
           canChat: true,
+          estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
           paymentProtected: true,
           paymentRequired: true,
           primaryAction: 'chat',
@@ -521,6 +674,8 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
             });
   const statusLabel = isCompleted
     ? 'Completed'
+    : isSupportReview
+      ? 'Support review'
     : isPaymentFailed || isPaymentMethodRequired
       ? 'Reserved/upcoming'
     : isInProgress
@@ -539,6 +694,13 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
         status: 'released',
         statusLabel: 'Payment released',
       })
+    : isSupportReview
+      ? createMockCustomerPaymentState({
+          helperText: 'Taskly support is reviewing this task.',
+          paymentStatus: 'DISPUTED',
+          status: 'disputed',
+          statusLabel: 'Under support review',
+        })
     : isPaymentFailed
       ? createMockCustomerPaymentState({
           bookingStatus: 'RESERVED',
@@ -576,14 +738,64 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
               status: 'held',
               statusLabel: 'Payment held',
             });
+  const cancellationState = isSupportReview
+    ? createMockCancellationState({
+        blockedReason: 'This task is under support review.',
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: 'Taskly support is reviewing this task.',
+        status: 'support_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : isInProgress
+      ? createMockCancellationState({
+          blockedReason: null,
+          blockedReasonCode: null,
+          estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
+          freeCancellationUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          helperText: 'Backend policy allows free cancellation before the deadline.',
+          status: 'free_cancellation_available',
+          statusLabel: 'Free cancellation available',
+        })
+      : createMockCancellationState();
+  const supportState = isSupportReview
+    ? createMockSupportState({
+        helperText: 'Taskly support is reviewing this task.',
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-support-1',
+        latestRequestType: 'TASK_HELP',
+        status: 'under_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : createMockSupportState();
+  const disputeState = isSupportReview
+    ? createMockDisputeState({
+        helperText: 'Taskly support is reviewing this task.',
+        status: 'under_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : createMockDisputeState();
+  const refundState = isSupportReview
+    ? createMockRefundState({
+        helperText: 'Refund review is handled by Taskly support.',
+        status: 'under_review',
+        statusLabel: 'Refund review',
+      })
+    : createMockRefundState();
 
   return {
     task: {
       addressPreviewLabel: 'Demo address preview',
+      cancellationBlockedReason: cancellationState.blockedReason,
+      cancellationPolicySummary: cancellationState.policySummary,
+      cancellationState,
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       description: 'Demo Core task detail with backend-style next action wording.',
       displayActions: [{ accent: 'core', href: '/customer/tasks', label: 'Review completion', type: 'review_completion' }],
+      disputeState,
       id: taskId,
       images: [],
       interestedTaskers: isSelecting
@@ -618,10 +830,13 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       paymentState,
       paymentStatusLabel: paymentState.statusLabel,
       priceLabel: 'EUR 40',
+      refundState,
       scheduledEndAt: null,
-      scheduledStartAt: null,
+      scheduledStartAt: isInProgress ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() : null,
       status,
       statusLabel,
+      supportReviewLabel: supportState.supportReviewLabel || disputeState.supportReviewLabel || cancellationState.supportReviewLabel,
+      supportState,
       taskerPreview: isSelecting
         ? null
         : {
@@ -869,6 +1084,57 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         unreadMessagesCount: 0,
       },
       {
+        cancellationPolicySummary: 'Cancellation and support outcomes are decided by backend policy.',
+        cancellationState: createMockCancellationState({
+          blockedReason: 'This task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          helperText: 'Taskly support is reviewing this task.',
+          status: 'support_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        categoryLabel: 'General Mounting',
+        cityLabel: 'Sofia',
+        customerPreviewLabel: 'Customer preview',
+        disputeState: createMockDisputeState({
+          helperText: 'Taskly support is reviewing this task.',
+          status: 'under_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        id: 'demo-provider-support-review',
+        nextAction: { accent: 'neutral', href: '/provider/core-tasks', label: 'View task', type: 'view_task' },
+        nextActions: createMockProviderCoreTaskNextActions({
+          blockedReason: 'Task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          canChat: true,
+          primary: { label: 'View task', type: 'view_task' },
+        }),
+        paymentStatusLabel: 'Under support review',
+        priceLabel: 'EUR 55',
+        refundState: createMockRefundState({
+          helperText: 'Refund outcome is under Taskly support review.',
+          status: 'under_review',
+          statusLabel: 'Under support review',
+        }),
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'DISPUTED',
+        statusLabel: 'Support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+        supportState: createMockSupportState({
+          helperText: 'Taskly support is reviewing this task.',
+          latestRequestCreatedAt: new Date().toISOString(),
+          latestRequestId: 'demo-support-1',
+          latestRequestType: 'TASK_HELP',
+          status: 'under_review',
+          statusLabel: 'Under support review',
+          supportReviewLabel: 'Taskly support is reviewing this task.',
+        }),
+        title: 'Demo support review',
+        unreadMessagesCount: 0,
+      },
+      {
         categoryLabel: 'Light Electrical',
         cityLabel: 'Sofia',
         customerPreviewLabel: 'Customer preview',
@@ -898,8 +1164,11 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
   const isInProgress = taskId.includes('in-progress');
   const isPendingCompletion = taskId.includes('pending-completion');
   const isCompleted = taskId.includes('completed');
+  const isSupportReview = taskId.includes('support-review');
   const status = isCompleted
     ? 'COMPLETED'
+    : isSupportReview
+      ? 'DISPUTED'
     : isPendingCompletion
       ? 'PENDING_COMPLETION'
       : isInProgress
@@ -913,6 +1182,13 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
         blockedReasonCode: 'TASK_COMPLETED',
         primary: { label: 'View task', type: 'view_task' },
       })
+    : isSupportReview
+      ? createMockProviderCoreTaskNextActions({
+          blockedReason: 'Task is under support review.',
+          blockedReasonCode: 'TASK_DISPUTED',
+          canChat: true,
+          primary: { label: 'View task', type: 'view_task' },
+        })
     : isPendingCompletion
       ? createMockProviderCoreTaskNextActions({
           blockedReason: 'Task is already waiting for approval.',
@@ -942,26 +1218,75 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
                 canExpressInterest: true,
                 primary: { label: 'Express interest', method: 'POST', type: 'express_interest' },
               });
+  const cancellationState = isSupportReview
+    ? createMockCancellationState({
+        blockedReason: 'This task is under support review.',
+        blockedReasonCode: 'TASK_DISPUTED',
+        helperText: 'Taskly support is reviewing this task.',
+        status: 'support_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : createMockCancellationState();
+  const supportState = isSupportReview
+    ? createMockSupportState({
+        helperText: 'Taskly support is reviewing this task.',
+        latestRequestCreatedAt: new Date().toISOString(),
+        latestRequestId: 'demo-support-1',
+        latestRequestType: 'TASK_HELP',
+        status: 'under_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : createMockSupportState();
+  const disputeState = isSupportReview
+    ? createMockDisputeState({
+        helperText: 'Taskly support is reviewing this task.',
+        status: 'under_review',
+        statusLabel: 'Under support review',
+        supportReviewLabel: 'Taskly support is reviewing this task.',
+      })
+    : createMockDisputeState();
+  const refundState = isSupportReview
+    ? createMockRefundState({
+        helperText: 'Refund outcome is under Taskly support review.',
+        status: 'under_review',
+        statusLabel: 'Under support review',
+      })
+    : createMockRefundState();
 
   return {
     task: {
-      addressPreviewLabel: isUpcoming || isInProgress || isPendingCompletion || isCompleted
+      addressPreviewLabel: isUpcoming || isInProgress || isPendingCompletion || isCompleted || isSupportReview
         ? 'Demo address preview'
         : 'Address shared after selection',
+      cancellationBlockedReason: cancellationState.blockedReason,
+      cancellationPolicySummary: cancellationState.policySummary,
+      cancellationState,
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       customerPreviewLabel: 'Customer preview',
       description: 'Demo provider Core task detail. Actions follow backend-authored nextActions.',
+      disputeState,
       id: taskId,
       images: [],
       nextActions,
-      paymentStatusLabel: isUpcoming || isInProgress || isPendingCompletion ? 'Payment protected' : isCompleted ? 'Payment released' : 'Not paid yet',
+      paymentStatusLabel: isSupportReview
+        ? 'Under support review'
+        : isUpcoming || isInProgress || isPendingCompletion
+          ? 'Payment protected'
+          : isCompleted
+            ? 'Payment released'
+            : 'Not paid yet',
       priceLabel: 'EUR 40',
+      refundState,
       scheduledEndAt: null,
       scheduledStartAt: null,
       status,
       statusLabel: isCompleted
         ? 'Completed'
+        : isSupportReview
+          ? 'Support review'
         : isPendingCompletion
           ? 'Waiting for customer approval'
           : isInProgress
@@ -971,6 +1296,8 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
               : isInterested
                 ? 'Interest sent'
                 : 'Available',
+      supportReviewLabel: supportState.supportReviewLabel || disputeState.supportReviewLabel || cancellationState.supportReviewLabel,
+      supportState,
       timeline: [
         { description: 'Visible according to demo matching.', id: 'visible', label: 'Visible to you', status: 'done' },
         {

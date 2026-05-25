@@ -16,6 +16,10 @@ import {
   setupCustomerTaskPayment,
 } from '@/src/lib/api/customer';
 import {
+  CoreCancellationState,
+  CoreDisputeState,
+  CoreRefundState,
+  CoreSupportState,
   CustomerCorePaymentState,
   CustomerCoreTaskNextActions,
   CustomerInterestedTaskerPreview,
@@ -632,6 +636,7 @@ export default function CustomerTaskDetailScreen() {
             {task.taskerPreview ? <Info label="Tasker" value={`${task.taskerPreview.displayName} - ${task.taskerPreview.ratingLabel}`} /> : null}
           </AppCard>
 
+          <CoreCancellationSupportCard task={task} />
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
           <PaymentSetupCard
             isCardComplete={isCardComplete}
@@ -824,6 +829,51 @@ function PaymentStateCard({
       <AppText variant="sectionTitle">{t('protectedPaymentFlow')}</AppText>
       <AppText color={colors.slate700}>{getPaymentStateHelperText(paymentState)}</AppText>
       {hasPaymentSetupAction(nextActions) ? <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText> : null}
+    </AppCard>
+  );
+}
+
+function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
+  const cancellation = task.cancellationState;
+  const support = task.supportState;
+  const dispute = task.disputeState;
+  const refund = task.refundState;
+  const shouldShow =
+    isRelevantCancellationState(cancellation) ||
+    isRelevantSupportState(support) ||
+    isRelevantDisputeState(dispute) ||
+    isRelevantRefundState(refund);
+
+  if (!shouldShow) return null;
+
+  return (
+    <AppCard accentColor={getCancellationSupportAccent(cancellation, support, dispute)}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {cancellation ? (
+          <StatusBadge label={getCancellationStateLabel(cancellation)} tone={getCancellationSupportTone(cancellation, support, dispute)} />
+        ) : null}
+        {support && isRelevantSupportState(support) ? (
+          <StatusBadge label={getSupportStateLabel(support)} tone="warning" />
+        ) : null}
+        {refund && isRelevantRefundState(refund) ? (
+          <StatusBadge label={getRefundStateLabel(refund)} tone="neutral" />
+        ) : null}
+      </View>
+      <AppText variant="sectionTitle">{t('cancellationAndSupport')}</AppText>
+      {cancellation ? <AppText color={colors.slate700}>{cancellation.helperText}</AppText> : null}
+      {cancellation?.estimatedPolicyOutcomeLabel ? (
+        <AppText color={colors.slate700}>{cancellation.estimatedPolicyOutcomeLabel}</AppText>
+      ) : null}
+      {cancellation?.feeLabel ? (
+        <AppText color={colors.slate700}>{`${t('lateCancellationMayApply')}: ${cancellation.feeLabel}`}</AppText>
+      ) : null}
+      {cancellation?.refundLabel ? (
+        <AppText color={colors.slate700}>{`${t('refundReview')}: ${cancellation.refundLabel}`}</AppText>
+      ) : null}
+      {support && isRelevantSupportState(support) ? <AppText color={colors.slate700}>{support.helperText}</AppText> : null}
+      {dispute && isRelevantDisputeState(dispute) ? <AppText color={colors.slate700}>{dispute.helperText}</AppText> : null}
+      {refund && isRelevantRefundState(refund) ? <AppText color={colors.slate700}>{refund.helperText}</AppText> : null}
+      <AppText color={colors.slate500}>{t('readOnlyNoAction')}</AppText>
     </AppCard>
   );
 }
@@ -1131,6 +1181,78 @@ function getPaymentAccentColor(paymentState: CustomerCorePaymentState) {
   if (paymentState.status === 'failed' || paymentState.status === 'disputed') return colors.danger600;
   if (paymentState.status === 'payment_method_required' || paymentState.status === 'unknown') return colors.warning600;
   if (paymentState.canShowPaymentProtectedBadge || paymentState.paymentProtected) return colors.success600;
+  return colors.tasklyBlue600;
+}
+
+function isRelevantCancellationState(state?: CoreCancellationState) {
+  return Boolean(state && state.status !== 'not_available' && state.status !== 'unknown');
+}
+
+function isRelevantSupportState(state?: CoreSupportState) {
+  return Boolean(state && state.status !== 'none' && state.status !== 'unknown');
+}
+
+function isRelevantDisputeState(state?: CoreDisputeState) {
+  return Boolean(state && state.status !== 'none' && state.status !== 'unknown');
+}
+
+function isRelevantRefundState(state?: CoreRefundState) {
+  return Boolean(state && state.status !== 'not_requested' && state.status !== 'not_available' && state.status !== 'unknown');
+}
+
+function getCancellationStateLabel(state: CoreCancellationState) {
+  switch (state.status) {
+    case 'free_cancellation_available':
+      return t('freeCancellationAvailable');
+    case 'late_cancellation_available':
+      return t('lateCancellationMayApply');
+    case 'blocked_after_start':
+    case 'support_required':
+      return t('supportRequired');
+    case 'support_review':
+      return t('underSupportReview');
+    case 'cancelled':
+    case 'cancelled_free':
+    case 'cancelled_late':
+      return t('cancelled');
+    default:
+      return state.statusLabel || t('cancellationNotAvailable');
+  }
+}
+
+function getSupportStateLabel(state: CoreSupportState) {
+  if (state.status === 'under_review') return t('underSupportReview');
+  if (state.status === 'support_submitted') return t('supportRequestSent');
+  if (state.status === 'help_available') return t('supportRequired');
+  return state.statusLabel || t('support');
+}
+
+function getRefundStateLabel(state: CoreRefundState) {
+  if (state.status === 'under_review') return t('refundReview');
+  if (state.status === 'refunded') return state.statusLabel;
+  return state.statusLabel || t('refundReview');
+}
+
+function getCancellationSupportTone(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+): 'core' | 'danger' | 'neutral' | 'success' | 'warning' {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || cancellation?.status === 'support_review') return 'danger';
+  if (cancellation?.status === 'free_cancellation_available') return 'success';
+  if (cancellation?.status === 'late_cancellation_available' || cancellation?.status === 'blocked_after_start') return 'warning';
+  return 'neutral';
+}
+
+function getCancellationSupportAccent(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+) {
+  const tone = getCancellationSupportTone(cancellation, support, dispute);
+  if (tone === 'danger') return colors.danger600;
+  if (tone === 'warning') return colors.warning600;
+  if (tone === 'success') return colors.success600;
   return colors.tasklyBlue600;
 }
 

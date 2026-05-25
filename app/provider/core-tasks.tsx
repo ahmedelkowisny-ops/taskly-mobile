@@ -6,7 +6,13 @@ import { View } from 'react-native';
 
 import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
+import {
+  CoreCancellationState,
+  CoreDisputeState,
+  CoreSupportState,
+  ProviderCoreTaskSummary,
+  ProviderCoreTasksResponse,
+} from '@/src/lib/api/domain';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { getProviderCoreTasks } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -121,6 +127,12 @@ export default function ProviderCoreTasksScreen() {
                 {getProviderNextActionHint(task) ? (
                   <StatusBadge label={getProviderNextActionHint(task) || ''} tone="success" />
                 ) : null}
+                {getProviderCancellationBadgeLabel(task.cancellationState, task.supportState, task.disputeState) ? (
+                  <StatusBadge
+                    label={getProviderCancellationBadgeLabel(task.cancellationState, task.supportState, task.disputeState) || ''}
+                    tone={getProviderCancellationBadgeTone(task.cancellationState, task.supportState, task.disputeState)}
+                  />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
               <AppText color={colors.slate700}>
@@ -129,6 +141,9 @@ export default function ProviderCoreTasksScreen() {
               <AppText color={colors.slate700}>
                 {task.priceLabel} - {task.customerPreviewLabel}
               </AppText>
+              {getProviderSupportSummary(task) ? (
+                <AppText color={colors.slate700}>{getProviderSupportSummary(task)}</AppText>
+              ) : null}
               <AppButton
                 onPress={() => router.push(`/provider/core-tasks/${task.id}` as Href)}
                 variant="outline">
@@ -209,6 +224,37 @@ function getProviderTaskPhaseLabel(task: ProviderCoreTaskSummary) {
   if (status === 'OPEN') return t('available');
 
   return task.statusLabel || t('notAvailable');
+}
+
+function getProviderCancellationBadgeLabel(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+) {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || cancellation?.status === 'support_review') {
+    return t('underSupportReview');
+  }
+  if (cancellation?.status === 'cancelled_late' || cancellation?.status === 'cancelled_free' || cancellation?.status === 'cancelled') {
+    return t('cancelled');
+  }
+  return null;
+}
+
+function getProviderCancellationBadgeTone(
+  cancellation?: CoreCancellationState,
+  support?: CoreSupportState,
+  dispute?: CoreDisputeState,
+): 'core' | 'danger' | 'neutral' | 'success' | 'warning' {
+  if (dispute?.status === 'under_review' || support?.status === 'under_review' || cancellation?.status === 'support_review') return 'danger';
+  return 'neutral';
+}
+
+function getProviderSupportSummary(task: ProviderCoreTaskSummary) {
+  if (task.supportReviewLabel) return task.supportReviewLabel;
+  if (task.cancellationState?.status === 'cancelled_late' || task.cancellationState?.status === 'cancelled') {
+    return task.cancellationState.estimatedPolicyOutcomeLabel || task.cancellationState.helperText;
+  }
+  return null;
 }
 
 function getPaymentStatusLabel(label: string) {
