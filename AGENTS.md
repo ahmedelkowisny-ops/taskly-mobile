@@ -164,6 +164,11 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile must not calculate commission, payout, capture, release, refund, or Stripe behavior.
 - Mobile must not show approve completion unless backend `nextActions.canApproveCompletion` allows it.
 - Use "payment protected" or "protected payment flow" wording for approval; avoid "escrow".
+- Mobile payment flows must use backend-created Stripe objects only.
+- Mobile must never receive Stripe secret keys, webhook secrets, connected account secrets, or raw card data.
+- Mobile must not calculate fees, commissions, holds, captures, releases, refunds, payouts, or cancellation penalties.
+- Mobile payment UI must use backend-authored payment `nextActions` and blocked reasons.
+- Payment implementation must remain separate from cancellation, refund, dispute, and help flows unless explicitly phased.
 - UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 
 # Mobile Auth Rules

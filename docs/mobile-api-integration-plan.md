@@ -1243,6 +1243,152 @@ Scope remains limited:
 - No new backend mutations were added.
 - No payment, Stripe, lifecycle, cancellation, dispute, refund, help, auth, Prisma, or backend business logic was changed.
 
+## Phase 24A Mobile Core Payment Entry Point Contract Review
+
+Phase 24A reviews the existing backend/web Core payment setup, hold, and finalization flow and defines the safe future mobile API/action contract. This phase is documentation only.
+
+Backend files inspected in `D:\Taskly`:
+
+- `prisma/schema.prisma`
+- `src/app/actions.ts`
+- `src/app/actions/payments.ts`
+- `src/lib/stripe-ops.ts`
+- `src/components/customer/CustomerDashboardContent.tsx`
+- `src/components/SaveCardSetupForm.tsx`
+- `src/lib/mobile-customer-readonly.ts`
+- `src/lib/mobile-provider-readonly.ts`
+- `src/lib/mobile-provider-core-actions.ts`
+- Existing mobile customer/provider route patterns under `src/app/api/mobile/*`
+
+Mobile files inspected in `D:\Taskly-app`:
+
+- `docs/mobile-core-journey-qa-checklist.md`
+- `docs/mobile-customer-completion-contract.md`
+- `docs/mobile-provider-core-actions-contract.md`
+- `src/lib/api/domain.ts`
+- `src/lib/api/endpoints.ts`
+- `AGENTS.md`
+
+Current backend payment flow summary:
+
+- Customer selection is performed by `reserveTasker(taskId, taskerId)`.
+- Selection requires customer ownership, schedule, city/category/capability checks, verified tasker checks, and schedule conflict checks.
+- Selection sets task `status = RESERVED`, `reservationState = RESERVED`, stores `reservedTaskerId`, `reservationToken`, `reservationExpiresAt`, creates a `Booking` with `status = RESERVED`, and updates interest statuses.
+- `startPayment(taskId, reservationToken)` moves the selected task from `reservationState = RESERVED` to `PAYMENT_PENDING`; it does not create Stripe objects.
+- `finalizePayment(taskId, reservationToken)` finalizes the customer-owned selection only after payment method readiness. It upserts a `Payment` as `INITIATED`, assigns `taskerId`, sets task `status = IN_PROGRESS`, clears reservation token/expiry, and sets booking `status = ACTIVE`.
+- In live Stripe mode, `finalizePayment` returns `PAYMENT_METHOD_REQUIRED` when no saved payment method exists and resets `reservationState` to `RESERVED`.
+- `createSetupIntentForTask(taskId)` creates/reuses the `Payment` as `INITIATED`, creates a Stripe customer if needed, and returns a SetupIntent `clientSecret` in live mode.
+- Web card collection uses Stripe.js `confirmCardSetup` in `SaveCardSetupForm`, then calls `savePaymentMethodForTask`.
+- `savePaymentMethodForTask` stores the server-verified Stripe customer/payment method relationship and leaves payment `INITIATED`.
+- The manual hold does not happen during finalization. `holdScheduledPayments()` later authorizes payment near scheduled start by creating a manual-capture PaymentIntent and moving payment `INITIATED -> HOLDING -> HELD`.
+- Customer approval later captures/releases through existing `approveCompletion` logic and moves payment to `RELEASED`.
+
+Payment state machine:
+
+- `TaskStatus`: `OPEN -> RESERVED -> IN_PROGRESS -> PENDING_COMPLETION -> COMPLETED`; support/cancellation paths include `DISPUTED`, `CANCELLED_BY_CUSTOMER_GRACE`, `CANCELLED_BY_CUSTOMER_LATE`, and `CANCELLED`.
+- `ReservationState`: `NONE -> RESERVED -> PAYMENT_PENDING`; current successful finalization resets to `NONE`; approval sets `RELEASED`. `PAID_HELD`, `REFUNDED`, and `FAILED` exist but are not mobile-owned entry transitions.
+- `BookingStatus`: selection creates `RESERVED`, expiry sets `EXPIRED`, finalization sets `ACTIVE`, approval sets `COMPLETED`, cancellation paths set `CANCELLED`.
+- `PaymentStatus`: setup/finalization creates `INITIATED`; scheduled hold sets `HOLDING` then `HELD`; approval sets `RELEASED`; other backend paths include `DISPUTED`, `REFUNDED`, `CANCELLED_WITH_FEE`, and `FAILED`.
+- Assignment currently happens at payment finalization after a payment method is saved/prepared, before the scheduled hold succeeds.
+- Provider runtime readiness currently treats a saved payment method or payment status `INITIATED`, `HOLDING`, `HELD`, or legacy `PAID_HELD` as execution-ready.
+
+Recommended mobile phase order:
+
+1. Phase 24B: backend-authored customer payment `nextActions` and read-only payment state alignment.
+2. Phase 24C: mobile customer select/reserve tasker endpoint, if product wants customer selection in mobile before payment.
+3. Phase 24D: mobile payment setup endpoint contract returning only server-created Stripe setup parameters.
+4. Phase 24E: mobile Stripe SDK/card collection using approved server-created setup parameters.
+5. Phase 24F: mobile payment method save/finalization endpoint returning refreshed task detail and `nextActions`.
+6. Phase 24G: payment error/retry UI driven by backend reason codes.
+
+Proposed future mobile endpoints:
+
+- `POST /api/mobile/customer/tasks/[taskId]/select-tasker`
+  - Wraps existing customer-owned selection behavior.
+  - Requires mobile auth, customer workspace access, customer ownership, schedule, provider eligibility, city/category/capability checks, and schedule conflict checks.
+  - Body should include only `{ taskerId }`.
+  - Must reject mobile-supplied status, reservation, booking, payment, Stripe, assignment, lifecycle, fee, commission, payout, refund, cancellation, and dispute fields.
+
+- `POST /api/mobile/customer/tasks/[taskId]/payment/setup`
+  - Creates/reuses server-side payment setup state and returns safe Stripe setup data.
+  - Requires customer ownership, valid selected/reserved tasker, schedule, reservation/booking readiness, and non-terminal payment state.
+  - May return a server-created SetupIntent client secret when required by the approved Stripe mobile setup flow.
+  - Must never return Stripe secret keys, webhook secrets, raw card data, transfer ids, payout internals, or mobile-calculated fees.
+
+- `POST /api/mobile/customer/tasks/[taskId]/payment/finalize`
+  - Confirms backend-known payment method readiness and finalizes assignment through existing backend rules.
+  - Requires customer ownership, reservation/booking readiness, schedule, selected tasker, conflict checks, and payment setup readiness.
+  - Returns refreshed task detail, payment state, and `nextActions`.
+  - Must not capture, release, refund, cancel, dispute, or calculate fees/payouts from mobile.
+
+- `GET /api/mobile/customer/tasks/[taskId]/payment-state`
+  - Optional read-only endpoint if task detail does not carry enough state.
+  - Must not create Stripe objects or mutate task/payment state.
+
+Proposed customer payment `nextActions` extension:
+
+```ts
+nextActions: {
+  canSelectTasker?: boolean;
+  canPreparePayment?: boolean;
+  canConfirmPayment?: boolean;
+  canRetryPayment?: boolean;
+  canChat?: boolean;
+  canCancel?: boolean;
+  canApproveCompletion?: boolean;
+  canRejectCompletion?: boolean;
+  canRequestHelp?: boolean;
+  paymentRequired?: boolean;
+  paymentProtected?: boolean;
+  blockedReason?: string;
+  blockedReasonCode?: string;
+  primaryAction?:
+    | "select_tasker"
+    | "prepare_payment"
+    | "confirm_payment"
+    | "retry_payment"
+    | "chat"
+    | "approve_completion"
+    | "reject_completion"
+    | "request_help"
+    | "none";
+}
+```
+
+Stripe safety rules:
+
+- Mobile payment flows must use backend-created Stripe objects only.
+- Mobile must never receive Stripe secret keys, webhook secrets, connected account secrets, or raw card data.
+- Mobile may receive a SetupIntent client secret only when created server-side for the authenticated customer's task.
+- Mobile must not create, capture, release, cancel, refund, or transfer PaymentIntents directly.
+- Mobile must not calculate amount, fee, commission, net payout, hold, release, refund, cancellation penalty, or provider eligibility.
+- Backend must verify customer ownership, task state, booking/reservation, selected tasker, schedule, payment state, Stripe customer, and SetupIntent/PaymentMethod ownership.
+- Payment implementation must stay separate from cancellation, refund, dispute, help, provider runtime actions, Pro Access payment/unlock, and completion approval/rejection phases.
+
+Risky or unclear areas:
+
+- Whether mobile should pass reservation tokens or let backend resolve the latest valid reservation server-side.
+- Whether mobile should send a `paymentMethodId` after Stripe setup flow completion or send a `setupIntentId` for backend verification and derivation.
+- Whether Stripe PaymentSheet or another Stripe mobile setup flow should be used.
+- Whether mobile setup should return ephemeral key/customer parameters for PaymentSheet.
+- Whether `STRIPE_NOT_CONFIGURED` should block mobile users or use mock behavior in development.
+- Whether mock payments should be supported through future mobile routes.
+- Provider runtime readiness currently permits saved payment method/`INITIATED` before `HELD`; backend/product should confirm mobile copy around this.
+- The hold is scheduled near start, not immediate at finalization.
+- Cancellation/refund/dispute/help and Pro Access payment/unlock remain separate review phases.
+
+Documentation created:
+
+- `docs/mobile-core-payment-contract.md`
+
+Scope confirmation:
+
+- No mobile payment APIs were added.
+- No Stripe mobile SDK was added.
+- No card collection was connected.
+- No SetupIntent or PaymentIntent creation was added for mobile.
+- No payment capture, release, refund, Stripe, Prisma schema, cancellation, dispute, help, provider action, auth, or lifecycle logic was changed.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.
