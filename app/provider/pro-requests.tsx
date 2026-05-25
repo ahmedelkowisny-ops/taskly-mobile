@@ -61,8 +61,8 @@ export default function ProviderProRequestsScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Login or Provider Workspace access is required.'
-        : 'Could not load Pro request previews.',
+        ? t('loginOrProviderAccessRequired')
+        : t('couldNotLoadProRequestPreviews'),
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -79,33 +79,33 @@ export default function ProviderProRequestsScreen() {
         <ModeBadge mode="providerPro" />
         <AppText variant="screenTitle">{t('proRequests')}</AppText>
         <AppText color={colors.slate700}>
-          Approved Pros see requests based on approved categories and cities inside the Provider Workspace.
+          {t('providerProRequestsIntro')}
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-          <StatusBadge label="Loading" tone="pro" />
-          <AppText variant="sectionTitle">Loading Pro request previews</AppText>
-          <AppText color={colors.slate700}>Fetching read-only Pro matches from the backend.</AppText>
+          <StatusBadge label={t('loading')} tone="pro" />
+          <AppText variant="sectionTitle">{t('loadingProRequestPreviews')}</AppText>
+          <AppText color={colors.slate700}>{t('fetchingProMatches')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Pro requests need Provider access' : 'Could not refresh Pro requests'}
+            {isUnauthorized ? t('proRequestsNeedProviderAccess') : t('couldNotRefreshProRequests')}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadProRequests} tone="pro" variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -134,7 +134,7 @@ export default function ProviderProRequestsScreen() {
                 onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
                 tone="pro"
                 variant="outline">
-                View details
+                {t('viewDetails')}
               </AppButton>
             </AppCard>
           ))}
@@ -148,15 +148,15 @@ export default function ProviderProRequestsScreen() {
       ) : null}
 
       <AppCard accentColor={colors.proAmber500}>
-        <StatusBadge label="Pro only" tone="pro" />
+        <StatusBadge label={t('proOnly')} tone="pro" />
         <AppText color={colors.slate700}>
-          Keep contact details inside Taskly until the allowed unlock/contact flow.
+          {t('keepContactDetailsInsideTaskly')}
         </AppText>
       </AppCard>
 
       <AssistantGuideCard
-        body="Pro work uses approved categories and cities inside the Provider Workspace. It does not require Stripe verification for a Pro-only flow."
-        title="Pro request guidance"
+        body={t('proRequestGuidanceBody')}
+        title={t('proRequestGuidanceTitle')}
         tone="pro"
       />
     </Screen>

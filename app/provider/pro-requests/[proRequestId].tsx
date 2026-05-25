@@ -144,7 +144,7 @@ export default function ProviderProRequestDetailScreen() {
       setData(submitOrUpdateMockProviderProResponse(proRequestId, payload));
       setIsSubmittingResponse(false);
       setIsFormOpen(false);
-      setResponseNotice(t('responseSubmitted'));
+      setResponseNotice(request?.myResponse ? t('responseUpdated') : t('responseSubmitted'));
       return;
     }
 
@@ -175,7 +175,7 @@ export default function ProviderProRequestDetailScreen() {
         <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message="Loading provider Pro request detail." /> : null}
+      {isLoading ? <StateCard label="Loading" message={t('loadingProviderProDetail')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
@@ -199,9 +199,9 @@ export default function ProviderProRequestDetailScreen() {
 
           <AppCard>
             <StatusBadge label={request.eligibility.reasonLabel} tone={request.eligibility.isEligibleToRespond ? 'success' : 'warning'} />
-            <Info label="Budget" value={request.budgetLabel} />
-            <Info label="Timeline" value={request.timelineLabel} />
-            <Info label="Created" value={new Date(request.createdAt).toLocaleDateString()} />
+            <Info label={t('budget')} value={request.budgetLabel} />
+            <Info label={t('timeline')} value={request.timelineLabel} />
+            <Info label={t('created')} value={new Date(request.createdAt).toLocaleDateString()} />
           </AppCard>
 
           {responseNotice ? (
@@ -242,13 +242,13 @@ export default function ProviderProRequestDetailScreen() {
                 {request.myResponse.siteVisitPolicy ? (
                   <Info label={t('siteVisit')} value={request.myResponse.siteVisitPolicy} />
                 ) : null}
-                <Info label="Submitted" value={new Date(request.myResponse.submittedAt).toLocaleDateString()} />
+                <Info label={t('submitted')} value={new Date(request.myResponse.submittedAt).toLocaleDateString()} />
                 {request.myResponse.visibilityLabel ? (
                   <AppText color={colors.slate700}>{request.myResponse.visibilityLabel}</AppText>
                 ) : null}
               </>
             ) : (
-              <AppText color={colors.slate700}>No response has been submitted from this mobile screen.</AppText>
+              <AppText color={colors.slate700}>{t('noProResponseSubmitted')}</AppText>
             )}
           </AppCard>
 
@@ -271,7 +271,8 @@ function ProResponseCapabilityCard({
 
   if (!state && !capabilities) return null;
 
-  const canOpenForm = Boolean(capabilities?.canOpenProResponseForm);
+  const canSubmitOrEdit = Boolean(capabilities?.canSubmitResponse || capabilities?.canEditResponse);
+  const canOpenForm = Boolean(capabilities?.canOpenProResponseForm && canSubmitOrEdit);
   const ctaLabel = capabilities?.canEditResponse ? t('updateResponse') : t('submitResponse');
 
   return (
@@ -550,7 +551,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
   if (!images.length) return null;
   return (
     <AppCard>
-      <AppText variant="sectionTitle">Images</AppText>
+      <AppText variant="sectionTitle">{t('images')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => <Image key={image.id} accessibilityLabel={image.alt} source={{ uri: image.url }} style={styles.image} />)}
       </View>
@@ -561,7 +562,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
 function NextActions({ actions }: { actions: { label: string; type: string }[] }) {
   return (
     <AppCard>
-      <AppText variant="sectionTitle">Next steps</AppText>
+      <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
       {actions.map((action) => (
         <AppButton key={action.type} disabled tone="pro" variant="outline">{action.label}</AppButton>
       ))}
