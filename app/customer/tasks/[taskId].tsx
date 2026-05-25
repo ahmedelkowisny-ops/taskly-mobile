@@ -7,7 +7,7 @@ import { ModeBadge } from '@/src/components/taskly';
 import { FormField } from '@/src/components/taskly/FormField';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { approveCustomerTaskCompletion, getCustomerTaskDetail, rejectCustomerTaskCompletion } from '@/src/lib/api/customer';
-import { CustomerCoreTaskNextActions, CustomerTaskDetail, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
+import { CustomerCorePaymentState, CustomerCoreTaskNextActions, CustomerTaskDetail, CustomerTaskDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -125,6 +125,16 @@ export default function CustomerTaskDetailScreen() {
             canReview: true,
             canViewInvoice: true,
             primaryAction: 'review',
+          },
+          paymentState: {
+            ...current.task.paymentState,
+            canShowPaymentProtectedBadge: false,
+            helperText: t('paymentReleasedProtectedFlow'),
+            paymentProtected: false,
+            paymentStatus: 'RELEASED',
+            status: 'released',
+            statusLabel: 'Payment released',
+            warningCode: null,
           },
           paymentStatusLabel: 'Payment released',
           status: 'COMPLETED',
@@ -305,13 +315,13 @@ export default function CustomerTaskDetailScreen() {
           </AppCard>
 
           <AppCard>
-            <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
             <Info label="Price" value={task.priceLabel} />
             <Info label="Schedule" value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             <Info label="Address" value={task.addressPreviewLabel} />
             {task.taskerPreview ? <Info label="Tasker" value={`${task.taskerPreview.displayName} - ${task.taskerPreview.ratingLabel}`} /> : null}
           </AppCard>
 
+          <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
           <Images images={task.images} />
           <Timeline items={task.timeline} accent="core" />
           <NextActions actions={task.nextActions} tone="core" />
@@ -390,8 +400,8 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
   const isCompletionReview = actions.canApproveCompletion || actions.canRejectCompletion;
   const label = isCompletionReview
     ? t('waitingForCustomerApproval')
-    : actions.primaryAction === 'prepare_payment'
-      ? t('paymentPreparing')
+    : isPaymentReadOnlyAction(actions)
+      ? getReadOnlyPaymentActionLabel(actions)
       : actions.primaryAction === 'select_tasker'
         ? t('customerSelectingTasker')
         : actions.primaryAction === 'review'
@@ -407,6 +417,32 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
         <AppText color={colors.slate700}>{getCustomerBlockedReasonText(actions)}</AppText>
       ) : null}
       <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
+    </AppCard>
+  );
+}
+
+function PaymentStateCard({
+  nextActions,
+  paymentState,
+}: {
+  nextActions: CustomerCoreTaskNextActions;
+  paymentState: CustomerCorePaymentState;
+}) {
+  const hasFuturePaymentAction = nextActions.canPreparePayment || nextActions.canConfirmPayment || nextActions.canRetryPayment;
+
+  return (
+    <AppCard accentColor={getPaymentAccentColor(paymentState)}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <StatusBadge label={getPaymentStateLabel(paymentState)} tone={getPaymentStateTone(paymentState)} />
+        {paymentState.paymentRequired ? <StatusBadge label={t('protectedPaymentFlow')} tone="neutral" /> : null}
+      </View>
+      <AppText variant="sectionTitle">{t('protectedPaymentFlow')}</AppText>
+      <AppText color={colors.slate700}>{getPaymentStateHelperText(paymentState)}</AppText>
+      {hasFuturePaymentAction ? (
+        <AppButton disabled tone="neutral" variant="outline">
+          {getReadOnlyPaymentActionLabel(nextActions)}
+        </AppButton>
+      ) : null}
     </AppCard>
   );
 }
@@ -523,14 +559,86 @@ function getCustomerBlockedReasonText(actions: CustomerCoreTaskNextActions) {
   }
 }
 
-function getPaymentStatusLabel(label: string) {
-  if (isPaymentProtected(label)) return t('paymentProtected');
-  if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
-  return label;
+function isPaymentReadOnlyAction(actions: CustomerCoreTaskNextActions) {
+  return actions.primaryAction === 'prepare_payment' || actions.primaryAction === 'confirm_payment' || actions.primaryAction === 'retry_payment';
 }
 
-function isPaymentProtected(label: string) {
-  return label === 'Payment protected' || label === t('paymentProtected');
+function getReadOnlyPaymentActionLabel(actions: CustomerCoreTaskNextActions) {
+  if (actions.canRetryPayment || actions.primaryAction === 'retry_payment') return t('paymentNeedsAttention');
+  if (actions.canPreparePayment || actions.primaryAction === 'prepare_payment') return t('cardCollectionConnectedNext');
+  if (actions.canConfirmPayment || actions.primaryAction === 'confirm_payment') return t('paymentActionComingSoon');
+  return t('paymentActionComingSoon');
+}
+
+function getPaymentStateLabel(paymentState: CustomerCorePaymentState) {
+  if (paymentState.canShowPaymentProtectedBadge || paymentState.paymentProtected) return t('paymentProtected');
+
+  switch (paymentState.status) {
+    case 'not_required_yet':
+      return t('paymentNotRequiredYet');
+    case 'tasker_selection_needed':
+      return t('taskerSelectionNeeded');
+    case 'reservation_pending':
+      return t('paymentReservationPending');
+    case 'payment_method_required':
+      return t('paymentMethodRequired');
+    case 'payment_pending':
+    case 'payment_initiated':
+    case 'holding':
+      return t('paymentBeingPrepared');
+    case 'hold_scheduled':
+      return t('paymentHoldScheduled');
+    case 'held':
+      return t('paymentHeld');
+    case 'released':
+      return t('paymentReleased');
+    case 'failed':
+      return t('paymentFailed');
+    case 'refunded':
+    case 'cancelled':
+    case 'disputed':
+      return paymentState.statusLabel || t('paymentNeedsAttention');
+    default:
+      return t('paymentStateUnavailable');
+  }
+}
+
+function getPaymentStateHelperText(paymentState: CustomerCorePaymentState) {
+  switch (paymentState.status) {
+    case 'tasker_selection_needed':
+      return t('paymentProtectedBeforeStart');
+    case 'payment_method_required':
+      return t('cardCollectionConnectedNext');
+    case 'payment_pending':
+    case 'payment_initiated':
+    case 'hold_scheduled':
+    case 'holding':
+      return t('paymentProtectedBeforeStart');
+    case 'held':
+      return t('paymentProtectedUntilApprove');
+    case 'released':
+      return t('paymentReleasedProtectedFlow');
+    case 'failed':
+      return t('paymentNeedsAttention');
+    case 'unknown':
+      return t('paymentStateUnavailable');
+    default:
+      return paymentState.helperText || t('paymentProtectedBeforeStart');
+  }
+}
+
+function getPaymentStateTone(paymentState: CustomerCorePaymentState) {
+  if (paymentState.canShowPaymentProtectedBadge || paymentState.paymentProtected) return 'success';
+  if (paymentState.status === 'failed' || paymentState.status === 'disputed') return 'danger';
+  if (paymentState.status === 'payment_method_required' || paymentState.status === 'unknown') return 'warning';
+  return 'neutral';
+}
+
+function getPaymentAccentColor(paymentState: CustomerCorePaymentState) {
+  if (paymentState.status === 'failed' || paymentState.status === 'disputed') return colors.danger600;
+  if (paymentState.status === 'payment_method_required' || paymentState.status === 'unknown') return colors.warning600;
+  if (paymentState.canShowPaymentProtectedBadge || paymentState.paymentProtected) return colors.success600;
+  return colors.tasklyBlue600;
 }
 
 const styles = StyleSheet.create({

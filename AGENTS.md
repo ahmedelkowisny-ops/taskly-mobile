@@ -168,6 +168,9 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - Mobile must never receive Stripe secret keys, webhook secrets, connected account secrets, or raw card data.
 - Mobile must not calculate fees, commissions, holds, captures, releases, refunds, payouts, or cancellation penalties.
 - Mobile payment UI must use backend-authored payment `nextActions` and blocked reasons.
+- Mobile may display backend-authored payment state, but must not expose Stripe internals.
+- Mobile payment buttons must not be active until payment mutations are explicitly implemented.
+- Use "payment protected" wording and avoid "escrow."
 - Payment implementation must remain separate from cancellation, refund, dispute, and help flows unless explicitly phased.
 - UI polish phases must not change payment, lifecycle, auth, Prisma, or backend business logic.
 

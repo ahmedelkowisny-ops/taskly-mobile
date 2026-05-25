@@ -1325,6 +1325,31 @@ Proposed future mobile endpoints:
   - Optional read-only endpoint if task detail does not carry enough state.
   - Must not create Stripe objects or mutate task/payment state.
 
+## Phase 24B Customer Core Payment State And NextActions
+
+Phase 24B adds read-only backend-authored payment state to mobile customer Core task list/detail responses. It lets mobile show payment readiness without connecting customer selection, card collection, Stripe SDK, payment setup, payment finalization, capture, release, refund, cancellation, dispute, or help actions.
+
+Backend response additions:
+
+- Customer Core task list/detail now include a safe `paymentState` object with `paymentRequired`, `paymentProtected`, normalized display `status`, `statusLabel`, optional `helperText`, raw enum labels for `paymentStatus`, `reservationState`, and `bookingStatus`, `canShowPaymentProtectedBadge`, and optional `warningCode`.
+- Customer Core task `nextActions` now include payment-related read-only flags: `canPreparePayment`, `canConfirmPayment`, `canRetryPayment`, `paymentRequired`, and `paymentProtected`.
+- The mobile response does not expose Stripe object IDs, client secrets, secret keys, raw card data, payment method IDs, raw Stripe errors, fee calculations, commission, payout, hold, release, refund, or cancellation internals.
+
+Mobile behavior:
+
+- Customer task list/detail render the backend-authored `paymentState` as safe labels and helper text.
+- Mobile shows a “payment protected” badge only when `paymentState.canShowPaymentProtectedBadge` or `nextActions.paymentProtected` says so.
+- Future payment steps from `canPreparePayment`, `canConfirmPayment`, or `canRetryPayment` are displayed as disabled informational UI only.
+- Demo mode includes examples for tasker selection needed, payment method required, payment protected/held, payment released, and payment failed.
+
+Confirmations:
+
+- No mobile payment mutations were connected.
+- No select-tasker mutation was added.
+- No Stripe mobile SDK or card collection was added.
+- No SetupIntent or PaymentIntent creation/confirmation was added for mobile.
+- No capture, release, refund, cancellation, dispute, help, provider action, Prisma schema, or task lifecycle logic was changed.
+
 Proposed customer payment `nextActions` extension:
 
 ```ts

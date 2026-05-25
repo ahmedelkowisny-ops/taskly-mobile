@@ -179,9 +179,10 @@ The current Core payment flow is customer-owned and split across reservation, ca
 
 ## Recommended Mobile Phase Order
 
-1. Phase 24B: Backend-authored customer payment nextActions/read-only state alignment.
+1. Phase 24B: Backend-authored customer payment nextActions/read-only state alignment. Implemented.
    - Extend customer task list/detail read-only responses with payment capability fields before any button is wired.
    - Include payment state, payment required/prepared/protected indicators, and blocked reasons from backend logic.
+   - Mobile displays these fields as read-only payment status only; payment buttons remain inactive.
 
 2. Phase 24C: Mobile customer select/reserve tasker entry point.
    - Only if product wants selection in mobile before payment.
@@ -208,6 +209,26 @@ The current Core payment flow is customer-owned and split across reservation, ca
    - Keep cancellation/refund/dispute/help separate.
 
 This order keeps read-only truth first, then selection, then payment setup, then Stripe collection, then backend finalization, then retry polish.
+
+## Phase 24B Implementation Status
+
+Implemented read-only customer Core payment state and payment-related nextActions:
+
+- Customer Core task list/detail responses now include `paymentState` with safe display fields only.
+- Customer Core task `nextActions` include payment readiness flags for `canPreparePayment`, `canConfirmPayment`, `canRetryPayment`, `paymentRequired`, and `paymentProtected`.
+- Mobile customer task list/detail display the backend-authored payment state and “payment protected” badge when allowed.
+- Demo mode covers tasker selection needed, payment method required, held/protected payment, released payment, and failed payment.
+- Future payment actions are represented as disabled informational UI only.
+
+Still future phases:
+
+- Phase 24C mobile customer select/reserve tasker mutation.
+- Phase 24D mobile payment setup endpoint.
+- Phase 24E Stripe mobile SDK/card collection.
+- Phase 24F payment method save/finalize endpoint.
+- Phase 24G active retry/payment error handling.
+
+Phase 24B did not add Stripe SDK code, payment endpoints, mobile card collection, SetupIntent or PaymentIntent creation, client secret handling, capture/release/refund changes, cancellation/refund/dispute/help mutations, Prisma schema changes, or lifecycle rule changes.
 
 ## Proposed Mobile Endpoint Contracts
 

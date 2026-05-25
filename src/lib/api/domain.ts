@@ -106,15 +106,21 @@ export type CustomerCoreTaskNextActions = {
   canApproveCompletion: boolean;
   canCancel: boolean;
   canChat: boolean;
+  canConfirmPayment: boolean;
   canPreparePayment: boolean;
   canRejectCompletion: boolean;
   canRequestHelp: boolean;
+  canRetryPayment: boolean;
   canReview: boolean;
   canSelectTasker: boolean;
   canViewInvoice: boolean;
+  paymentProtected: boolean;
+  paymentRequired: boolean;
   primaryAction:
     | 'select_tasker'
     | 'prepare_payment'
+    | 'confirm_payment'
+    | 'retry_payment'
     | 'chat'
     | 'approve_completion'
     | 'reject_completion'
@@ -122,6 +128,36 @@ export type CustomerCoreTaskNextActions = {
     | 'view_invoice'
     | 'review'
     | 'none';
+};
+
+export type CustomerCorePaymentStateStatus =
+  | 'not_required_yet'
+  | 'tasker_selection_needed'
+  | 'reservation_pending'
+  | 'payment_method_required'
+  | 'payment_pending'
+  | 'payment_initiated'
+  | 'hold_scheduled'
+  | 'holding'
+  | 'held'
+  | 'released'
+  | 'failed'
+  | 'refunded'
+  | 'cancelled'
+  | 'disputed'
+  | 'unknown';
+
+export type CustomerCorePaymentState = {
+  bookingStatus: string | null;
+  canShowPaymentProtectedBadge: boolean;
+  helperText?: string;
+  paymentProtected: boolean;
+  paymentRequired: boolean;
+  paymentStatus: string | null;
+  reservationState: string | null;
+  status: CustomerCorePaymentStateStatus;
+  statusLabel: string;
+  warningCode: string | null;
 };
 
 export type CustomerHighlight = {
@@ -157,6 +193,7 @@ export type CustomerTaskSummary = {
   id: string;
   nextAction: CustomerNextAction;
   nextActions: CustomerCoreTaskNextActions;
+  paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;
@@ -187,6 +224,7 @@ export type CustomerTaskDetail = {
   id: string;
   images: DetailImage[];
   nextActions: CustomerCoreTaskNextActions;
+  paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
   priceLabel: string;
   scheduledEndAt: string | null;

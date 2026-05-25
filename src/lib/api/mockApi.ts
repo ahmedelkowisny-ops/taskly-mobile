@@ -8,6 +8,7 @@ import {
   CustomerHomeSummary,
   CustomerProRequestsResponse,
   CustomerCoreTaskNextActions,
+  CustomerCorePaymentState,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
   PostingRulesResponse,
@@ -206,13 +207,35 @@ function createMockCustomerTaskNextActions(
     canApproveCompletion: false,
     canCancel: false,
     canChat: false,
+    canConfirmPayment: false,
     canPreparePayment: false,
     canRejectCompletion: false,
     canRequestHelp: false,
+    canRetryPayment: false,
     canReview: false,
     canSelectTasker: false,
     canViewInvoice: false,
+    paymentProtected: false,
+    paymentRequired: false,
     primaryAction: 'none',
+    ...overrides,
+  };
+}
+
+function createMockCustomerPaymentState(
+  overrides: Partial<CustomerCorePaymentState> = {},
+): CustomerCorePaymentState {
+  return {
+    bookingStatus: null,
+    canShowPaymentProtectedBadge: false,
+    helperText: 'Payment will be protected through Taskly before the task starts.',
+    paymentProtected: false,
+    paymentRequired: false,
+    paymentStatus: null,
+    reservationState: null,
+    status: 'tasker_selection_needed',
+    statusLabel: 'Tasker selection needed',
+    warningCode: null,
     ...overrides,
   };
 }
@@ -230,6 +253,11 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         id: 'demo-customer-selecting',
         nextAction: { accent: 'core', href: '/customer/tasks', label: 'View task status', type: 'view_task_status' },
         nextActions: createMockCustomerTaskNextActions({ canSelectTasker: true, primaryAction: 'select_tasker' }),
+        paymentState: createMockCustomerPaymentState({
+          helperText: 'Choose a Tasker before payment is prepared.',
+          status: 'tasker_selection_needed',
+          statusLabel: 'Tasker selection needed',
+        }),
         paymentStatusLabel: 'Not paid yet',
         priceLabel: 'EUR 40',
         scheduledEndAt: null,
@@ -242,9 +270,52 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
       {
         categoryLabel: 'Furniture Assembly',
         cityLabel: 'Sofia',
+        id: 'demo-customer-payment-method',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Review payment status', type: 'review_payment_status' },
+        nextActions: createMockCustomerTaskNextActions({
+          canPreparePayment: true,
+          paymentRequired: true,
+          primaryAction: 'prepare_payment',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'RESERVED',
+          helperText: 'Card collection will be connected next.',
+          paymentRequired: true,
+          reservationState: 'RESERVED',
+          status: 'payment_method_required',
+          statusLabel: 'Payment method required',
+        }),
+        paymentStatusLabel: 'Payment pending',
+        priceLabel: 'EUR 40',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'RESERVED',
+        statusLabel: 'Reserved/upcoming',
+        title: 'Demo payment method required',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Furniture Assembly',
+        cityLabel: 'Sofia',
         id: 'demo-customer-upcoming',
         nextAction: { accent: 'core', href: '/customer/tasks', label: 'Open chat', type: 'chat' },
-        nextActions: createMockCustomerTaskNextActions({ canChat: true, primaryAction: 'chat' }),
+        nextActions: createMockCustomerTaskNextActions({
+          canChat: true,
+          paymentProtected: true,
+          paymentRequired: true,
+          primaryAction: 'chat',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'ACTIVE',
+          canShowPaymentProtectedBadge: true,
+          helperText: 'Payment protected until you approve completion.',
+          paymentProtected: true,
+          paymentRequired: true,
+          paymentStatus: 'HELD',
+          reservationState: 'NONE',
+          status: 'held',
+          statusLabel: 'Payment held',
+        }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 40',
         scheduledEndAt: null,
@@ -263,7 +334,20 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
           blockedReason: 'Waiting for the Tasker to request completion.',
           blockedReasonCode: 'WAITING_FOR_PROVIDER',
           canChat: true,
+          paymentProtected: true,
+          paymentRequired: true,
           primaryAction: 'chat',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'ACTIVE',
+          canShowPaymentProtectedBadge: true,
+          helperText: 'Payment protected until you approve completion.',
+          paymentProtected: true,
+          paymentRequired: true,
+          paymentStatus: 'HELD',
+          reservationState: 'NONE',
+          status: 'held',
+          statusLabel: 'Payment held',
         }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
@@ -283,7 +367,20 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
           canApproveCompletion: true,
           canChat: true,
           canRejectCompletion: true,
+          paymentProtected: true,
+          paymentRequired: true,
           primaryAction: 'approve_completion',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'ACTIVE',
+          canShowPaymentProtectedBadge: true,
+          helperText: 'Payment protected until you approve completion.',
+          paymentProtected: true,
+          paymentRequired: true,
+          paymentStatus: 'HELD',
+          reservationState: 'NONE',
+          status: 'held',
+          statusLabel: 'Payment held',
         }),
         paymentStatusLabel: 'Payment protected',
         priceLabel: 'EUR 55',
@@ -306,6 +403,14 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
           canViewInvoice: true,
           primaryAction: 'review',
         }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'COMPLETED',
+          helperText: "Payment was released through Taskly's protected payment flow.",
+          paymentStatus: 'RELEASED',
+          reservationState: 'RELEASED',
+          status: 'released',
+          statusLabel: 'Payment released',
+        }),
         paymentStatusLabel: 'Payment released',
         priceLabel: 'EUR 35',
         scheduledEndAt: null,
@@ -313,6 +418,35 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         status: 'COMPLETED',
         statusLabel: 'Completed',
         title: 'Demo completed Core task',
+        unreadMessagesCount: 0,
+      },
+      {
+        categoryLabel: 'Minor Plumbing Fix',
+        cityLabel: 'Sofia',
+        id: 'demo-customer-payment-failed',
+        nextAction: { accent: 'core', href: '/customer/tasks', label: 'Review payment status', type: 'review_payment_status' },
+        nextActions: createMockCustomerTaskNextActions({
+          canRetryPayment: true,
+          paymentRequired: true,
+          primaryAction: 'retry_payment',
+        }),
+        paymentState: createMockCustomerPaymentState({
+          bookingStatus: 'RESERVED',
+          helperText: 'Payment needs attention. Retry will be available after payment actions are connected.',
+          paymentRequired: true,
+          paymentStatus: 'FAILED',
+          reservationState: 'RESERVED',
+          status: 'failed',
+          statusLabel: 'Payment failed',
+          warningCode: 'PAYMENT_FAILED',
+        }),
+        paymentStatusLabel: 'Payment failed',
+        priceLabel: 'EUR 45',
+        scheduledEndAt: null,
+        scheduledStartAt: null,
+        status: 'RESERVED',
+        statusLabel: 'Reserved/upcoming',
+        title: 'Demo payment needs attention',
         unreadMessagesCount: 0,
       },
     ],
@@ -323,9 +457,13 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
   const isInProgress = taskId.includes('in-progress');
   const isUpcoming = taskId.includes('upcoming');
   const isCompleted = taskId.includes('completed');
+  const isPaymentFailed = taskId.includes('payment-failed');
+  const isPaymentMethodRequired = taskId.includes('payment-method');
   const isSelecting = taskId.includes('selecting');
   const status = isCompleted
     ? 'COMPLETED'
+    : isPaymentFailed || isPaymentMethodRequired
+      ? 'RESERVED'
     : isInProgress
       ? 'IN_PROGRESS'
       : isUpcoming
@@ -346,10 +484,29 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
           blockedReason: 'Waiting for the Tasker to request completion.',
           blockedReasonCode: 'WAITING_FOR_PROVIDER',
           canChat: true,
+          paymentProtected: true,
+          paymentRequired: true,
           primaryAction: 'chat',
         })
+      : isPaymentFailed
+        ? createMockCustomerTaskNextActions({
+            canRetryPayment: true,
+            paymentRequired: true,
+            primaryAction: 'retry_payment',
+          })
+        : isPaymentMethodRequired
+          ? createMockCustomerTaskNextActions({
+              canPreparePayment: true,
+              paymentRequired: true,
+              primaryAction: 'prepare_payment',
+            })
       : isUpcoming
-        ? createMockCustomerTaskNextActions({ canChat: true, primaryAction: 'chat' })
+        ? createMockCustomerTaskNextActions({
+            canChat: true,
+            paymentProtected: true,
+            paymentRequired: true,
+            primaryAction: 'chat',
+          })
         : isSelecting
           ? createMockCustomerTaskNextActions({ canSelectTasker: true, primaryAction: 'select_tasker' })
           : createMockCustomerTaskNextActions({
@@ -358,10 +515,14 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
               canChat: true,
               canPreparePayment: false,
               canRejectCompletion: true,
+              paymentProtected: true,
+              paymentRequired: true,
               primaryAction: 'approve_completion',
             });
   const statusLabel = isCompleted
     ? 'Completed'
+    : isPaymentFailed || isPaymentMethodRequired
+      ? 'Reserved/upcoming'
     : isInProgress
       ? 'In progress'
       : isUpcoming
@@ -369,6 +530,52 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
         : isSelecting
           ? 'Customer choosing Tasker'
           : 'Waiting for customer approval';
+  const paymentState = isCompleted
+    ? createMockCustomerPaymentState({
+        bookingStatus: 'COMPLETED',
+        helperText: "Payment was released through Taskly's protected payment flow.",
+        paymentStatus: 'RELEASED',
+        reservationState: 'RELEASED',
+        status: 'released',
+        statusLabel: 'Payment released',
+      })
+    : isPaymentFailed
+      ? createMockCustomerPaymentState({
+          bookingStatus: 'RESERVED',
+          helperText: 'Payment needs attention. Retry will be available after payment actions are connected.',
+          paymentRequired: true,
+          paymentStatus: 'FAILED',
+          reservationState: 'RESERVED',
+          status: 'failed',
+          statusLabel: 'Payment failed',
+          warningCode: 'PAYMENT_FAILED',
+        })
+      : isPaymentMethodRequired
+        ? createMockCustomerPaymentState({
+            bookingStatus: 'RESERVED',
+            helperText: 'Card collection will be connected next.',
+            paymentRequired: true,
+            reservationState: 'RESERVED',
+            status: 'payment_method_required',
+            statusLabel: 'Payment method required',
+          })
+        : isSelecting
+          ? createMockCustomerPaymentState({
+              helperText: 'Choose a Tasker before payment is prepared.',
+              status: 'tasker_selection_needed',
+              statusLabel: 'Tasker selection needed',
+            })
+          : createMockCustomerPaymentState({
+              bookingStatus: 'ACTIVE',
+              canShowPaymentProtectedBadge: true,
+              helperText: 'Payment protected until you approve completion.',
+              paymentProtected: true,
+              paymentRequired: true,
+              paymentStatus: 'HELD',
+              reservationState: 'NONE',
+              status: 'held',
+              statusLabel: 'Payment held',
+            });
 
   return {
     task: {
@@ -380,7 +587,8 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       id: taskId,
       images: [],
       nextActions,
-      paymentStatusLabel: isSelecting ? 'Not paid yet' : isCompleted ? 'Payment released' : 'Payment protected',
+      paymentState,
+      paymentStatusLabel: paymentState.statusLabel,
       priceLabel: 'EUR 40',
       scheduledEndAt: null,
       scheduledStartAt: null,
