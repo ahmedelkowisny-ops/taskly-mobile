@@ -984,6 +984,33 @@ Scope remains limited:
 - No direct provider accept/reserve was added.
 - No payment, Stripe, booking, assignment, reservation, cancellation, refund, dispute, help, provider cancellation, Pro response, Pro Access payment/unlock, or lifecycle transition logic was added.
 
+## Phase 22D Provider Core Start-Task Action
+
+Phase 22D connects only the provider Core runtime "Start task" action for eligible assigned Core tasks.
+
+Backend behavior:
+
+- Added `POST /api/mobile/provider/core-tasks/[taskId]/start`.
+- The route requires mobile auth and derives the provider/tasker identity from the backend mobile session.
+- The route rejects server-owned fields such as tasker/customer ids, status, reservation, booking, payment, Stripe, assignment, lifecycle, `startedAt`, and `completedAt` fields.
+- The backend reuses the existing start-task rules: approved/verified Core tasker, task existence, assignment/reservation to the authenticated tasker, task `RESERVED` or `IN_PROGRESS`, schedule presence, payment execution readiness, start time reached unless `onTheWayAt` exists, and not after scheduled end.
+- The action is idempotent when `startedAt` is already set.
+- The action sets only `startedAt` and returns the refreshed Provider Core task detail shape with backend-authored `nextActions`.
+
+Mobile behavior:
+
+- Provider Core task detail shows `Start task` only when `nextActions.canStart` is true.
+- The UI asks for confirmation and explains that the action should be used only when ready to begin the work.
+- After success, the screen refreshes from the backend and disables repeat starting.
+- Demo mode simulates start locally and does not call the backend.
+- Provider Core task list shows a compact start-available indicator when the backend response says it is actionable.
+
+Scope remains limited:
+
+- No Request Completion action was added.
+- No direct provider accept/reserve was added.
+- No payment capture, release, refund, Stripe flow, booking, assignment, reservation, cancellation, dispute, help, provider cancellation, Pro response, Pro Access payment/unlock, or additional lifecycle logic was added.
+
 ## I) Recommended Integration Order
 
 1. API client foundation and environment config.

@@ -109,7 +109,7 @@ The provider mobile Core task list is read-only.
    - Use the existing `markOnTheWay` server logic.
    - Keep the two-hour schedule gate server-side.
 
-3. Phase 22D: Provider "Start task".
+3. Phase 22D: Provider "Start task". Implemented.
    - Use the existing `startTask` server logic.
    - Keep payment readiness and schedule gates server-side.
    - Confirm whether the existing `startTask` timestamp-only behavior is intentional before mobile labels imply a status transition.
@@ -270,6 +270,8 @@ Mobile display:
 
 `POST /api/mobile/provider/core-tasks/[taskId]/start`
 
+Status: implemented in Phase 22D.
+
 Request:
 
 ```json
@@ -292,8 +294,7 @@ Success response proposal:
 ```json
 {
   "task": { "...": "ProviderCoreTaskDetail" },
-  "startedAt": "2026-05-24T10:15:00.000Z",
-  "nextActions": { "...": "ProviderCoreTaskNextActions" }
+  "startedAt": "2026-05-24T10:15:00.000Z"
 }
 ```
 
@@ -311,7 +312,11 @@ Errors:
 Mobile display:
 
 - Show only when backend says `canStart`.
+- Show a confirmation prompt before calling the endpoint.
+- Explain that the provider should use it only when ready to begin the work.
 - Keep helper copy schedule-aware for too-early cases.
+- Do not show or connect Request Completion in this phase.
+- Do not imply that mobile captures, releases, refunds, or changes payment objects.
 
 ### Request Completion
 

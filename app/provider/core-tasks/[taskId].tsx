@@ -1,13 +1,18 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderCoreTaskDetail, ProviderCoreTaskDetailResponse } from '@/src/lib/api/domain';
 import { getMockProviderCoreTaskDetailResponse } from '@/src/lib/api/mockApi';
-import { expressInterestInCoreTask, getProviderCoreTaskDetail, markProviderCoreTaskOnTheWay } from '@/src/lib/api/provider';
+import {
+  expressInterestInCoreTask,
+  getProviderCoreTaskDetail,
+  markProviderCoreTaskOnTheWay,
+  startProviderCoreTask,
+} from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -24,6 +29,7 @@ export default function ProviderCoreTaskDetailScreen() {
   const [stateLabel, setStateLabel] = useState<string | null>(null);
   const [isExpressingInterest, setIsExpressingInterest] = useState(false);
   const [isMarkingOnTheWay, setIsMarkingOnTheWay] = useState(false);
+  const [isStartingTask, setIsStartingTask] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [needsToolsConfirmation, setNeedsToolsConfirmation] = useState(false);
@@ -110,6 +116,27 @@ export default function ProviderCoreTaskDetailScreen() {
             canMarkOnTheWay: false,
             primary: { label: t('onTheWay'), type: 'on_the_way_marked' },
           },
+        },
+      };
+    });
+  }, []);
+
+  const markDemoTaskStarted = useCallback(() => {
+    setData((current) => {
+      if (!current) return current;
+
+      return {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            blockedReason: t('taskAlreadyStarted'),
+            blockedReasonCode: 'TASK_STARTED',
+            canMarkOnTheWay: false,
+            canStart: false,
+            primary: { label: t('taskStarted'), type: 'task_started' },
+          },
+          statusLabel: t('taskStarted'),
         },
       };
     });
@@ -244,6 +271,83 @@ export default function ProviderCoreTaskDetailScreen() {
     setActionError(result.error.message || t('couldNotMarkOnTheWay'));
   }, [getValidAccessToken, loadDetail, markDemoOnTheWay, status, taskId]);
 
+  const handleStartTask = useCallback(async () => {
+    setActionError(null);
+    setActionMessage(null);
+
+    if (status === 'demo') {
+      markDemoTaskStarted();
+      setActionMessage(t('taskStarted'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setActionError(t('loginRequired'));
+      return;
+    }
+
+    setIsStartingTask(true);
+    const result = await startProviderCoreTask(taskId, authToken);
+    setIsStartingTask(false);
+
+    if (result.ok) {
+      if (result.data.task) {
+        setData({ task: result.data.task });
+      }
+      setActionMessage(t('taskStarted'));
+      return;
+    }
+
+    if (result.error.code === 'TOO_EARLY_START_TASK') {
+      setActionError(t('tooEarlyToStart'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'PAYMENT_NOT_READY') {
+      setActionError(t('paymentNotReadyYet'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASK_STARTED') {
+      setActionError(t('taskAlreadyStarted'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'TASK_NOT_READY' || result.error.code === 'TOO_LATE_START_TASK') {
+      setActionError(t('taskNotReadyYet'));
+      void loadDetail();
+      return;
+    }
+
+    if (result.error.code === 'NOT_ASSIGNED_TASKER') {
+      setActionError(t('notAssignedToTask'));
+      return;
+    }
+
+    if (result.error.code === 'TASKER_NOT_VERIFIED' || result.error.code === 'TASKER_NOT_APPROVED') {
+      setActionError(t('completeVerificationToRespond'));
+      return;
+    }
+
+    setActionError(result.error.message || t('couldNotStartTask'));
+  }, [getValidAccessToken, loadDetail, markDemoTaskStarted, status, taskId]);
+
+  const confirmStartTask = useCallback(() => {
+    Alert.alert(t('startTaskPrompt'), t('startTaskReadyOnly'), [
+      { style: 'cancel', text: t('cancel') },
+      { onPress: handleStartTask, text: t('startTask') },
+    ]);
+  }, [handleStartTask]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -288,10 +392,12 @@ export default function ProviderCoreTaskDetailScreen() {
             actionMessage={actionMessage}
             isExpressingInterest={isExpressingInterest}
             isMarkingOnTheWay={isMarkingOnTheWay}
+            isStartingTask={isStartingTask}
             needsToolsConfirmation={needsToolsConfirmation}
             onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
             onExpressInterest={() => handleExpressInterest()}
             onMarkOnTheWay={handleMarkOnTheWay}
+            onStartTask={confirmStartTask}
             task={task}
           />
         </>
@@ -350,28 +456,33 @@ function ProviderActions({
   actionMessage,
   isExpressingInterest,
   isMarkingOnTheWay,
+  isStartingTask,
   needsToolsConfirmation,
   onConfirmTools,
   onExpressInterest,
   onMarkOnTheWay,
+  onStartTask,
   task,
 }: {
   actionError: string | null;
   actionMessage: string | null;
   isExpressingInterest: boolean;
   isMarkingOnTheWay: boolean;
+  isStartingTask: boolean;
   needsToolsConfirmation: boolean;
   onConfirmTools: () => void;
   onExpressInterest: () => void;
   onMarkOnTheWay: () => void;
+  onStartTask: () => void;
   task: ProviderCoreTaskDetail;
 }) {
   const canExpressInterest = task.nextActions.canExpressInterest;
   const canMarkOnTheWay = task.nextActions.canMarkOnTheWay;
+  const canStart = task.nextActions.canStart;
   const blockedReason = task.nextActions.blockedReason;
 
   return (
-    <AppCard accentColor={canExpressInterest || canMarkOnTheWay ? colors.tasklyBlue600 : undefined}>
+    <AppCard accentColor={canExpressInterest || canMarkOnTheWay || canStart ? colors.tasklyBlue600 : undefined}>
       <AppText variant="sectionTitle">Next steps</AppText>
       {canExpressInterest ? (
         <>
@@ -383,6 +494,12 @@ function ProviderActions({
         <>
           <AppText color={colors.slate700}>{t('letCustomerKnowOnTheWay')}</AppText>
           <AppText color={colors.slate700}>{t('onTheWayDoesNotStartTask')}</AppText>
+        </>
+      ) : null}
+      {canStart ? (
+        <>
+          <AppText color={colors.slate700}>{t('startTaskPrompt')}</AppText>
+          <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
         </>
       ) : null}
 
@@ -405,6 +522,13 @@ function ProviderActions({
               {t('confirmToolsAndExpressInterest')}
             </AppButton>
           ) : null}
+        </View>
+      ) : canStart ? (
+        <View style={styles.stack}>
+          <AppText color={colors.slate700}>{t('startTaskReadyOnly')}</AppText>
+          <AppButton loading={isStartingTask} onPress={onStartTask}>
+            {isStartingTask ? t('startingTask') : t('startTask')}
+          </AppButton>
         </View>
       ) : canMarkOnTheWay ? (
         <View style={styles.stack}>

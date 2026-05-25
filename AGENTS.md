@@ -128,6 +128,10 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v53.0.0/ before 
 - On-the-way does not start the task.
 - On-the-way must not create payment, booking, reservation, or assignment records.
 - Start Task and Request Completion remain separate phases from on-the-way.
+- Provider Start Task must be shown only from backend-authored `nextActions`.
+- Start Task must not create payment, booking, reservation, or assignment records.
+- Start Task must not capture, release, or refund payments.
+- Request Completion remains a separate phase from Start Task.
 
 # Mobile Auth Rules
 

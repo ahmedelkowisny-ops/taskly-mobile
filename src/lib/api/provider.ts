@@ -10,6 +10,7 @@ import {
   ProviderProfileResponse,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
+  StartProviderCoreTaskResponse,
 } from './domain';
 import { ApiResult } from './types';
 
@@ -54,6 +55,17 @@ export function markProviderCoreTaskOnTheWay(
   authToken: string,
 ): Promise<ApiResult<MarkProviderCoreTaskOnTheWayResponse>> {
   return apiRequest<MarkProviderCoreTaskOnTheWayResponse>(endpoints.provider.coreTaskOnTheWay(taskId), {
+    authToken,
+    body: {},
+    method: 'POST',
+  });
+}
+
+export function startProviderCoreTask(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<StartProviderCoreTaskResponse>> {
+  return apiRequest<StartProviderCoreTaskResponse>(endpoints.provider.coreTaskStart(taskId), {
     authToken,
     body: {},
     method: 'POST',

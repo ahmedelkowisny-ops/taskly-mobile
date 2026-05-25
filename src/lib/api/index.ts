@@ -24,6 +24,7 @@ export {
   getProviderProRequestDetail,
   getProviderProRequests,
   markProviderCoreTaskOnTheWay,
+  startProviderCoreTask,
 } from './provider';
 export {
   getMockCitiesCatalogResponse,
@@ -115,6 +116,7 @@ export type {
   ProviderProRequestSummary,
   ProviderProResponseSummary,
   SendMessageResponse,
+  StartProviderCoreTaskResponse,
   PostingRulesResponse,
   ProRequestPostingRules,
   TaskDetail,

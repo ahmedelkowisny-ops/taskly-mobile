@@ -404,6 +404,11 @@ export type MarkProviderCoreTaskOnTheWayResponse = {
   task: ProviderCoreTaskDetail | null;
 };
 
+export type StartProviderCoreTaskResponse = {
+  startedAt: string | null;
+  task: ProviderCoreTaskDetail | null;
+};
+
 export type ProviderProRequestSummary = {
   categoryLabel: string;
   cityLabel: string;
