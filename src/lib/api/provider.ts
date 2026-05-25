@@ -10,6 +10,8 @@ import {
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
   ProviderProfileResponse,
+  ProviderProResponseMutationResponse,
+  ProviderProResponsePayload,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
   RequestProviderCoreTaskCompletionPayload,
@@ -149,9 +151,38 @@ export function getProviderProRequestDetail(
   });
 }
 
+export function submitOrUpdateProviderProResponse(
+  proRequestId: string,
+  payload: ProviderProResponsePayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProResponseMutationResponse>> {
+  return apiRequest<ProviderProResponseMutationResponse>(endpoints.provider.proRequestResponse(proRequestId), {
+    authToken,
+    body: toProviderProResponseBody(payload),
+    method: 'POST',
+  });
+}
+
 export function getProviderProfile(authToken: string): Promise<ApiResult<ProviderProfileResponse>> {
   return apiRequest<ProviderProfileResponse>(endpoints.provider.profile, {
     authToken,
     method: 'GET',
   });
+}
+
+function toProviderProResponseBody(payload: ProviderProResponsePayload) {
+  return {
+    ...(payload.assumptions ? { assumptions: payload.assumptions } : null),
+    ...(payload.availability ? { availability: payload.availability } : null),
+    ...(payload.currency ? { currency: payload.currency } : null),
+    ...(payload.customerPreparationNotes ? { customerPreparationNotes: payload.customerPreparationNotes } : null),
+    ...(payload.earliestStartDate ? { earliestStartDate: payload.earliestStartDate } : null),
+    ...(payload.excludedNotes ? { excludedNotes: payload.excludedNotes } : null),
+    ...(payload.includedNotes ? { includedNotes: payload.includedNotes } : null),
+    ...(payload.materialsIncluded !== undefined ? { materialsIncluded: payload.materialsIncluded } : null),
+    ...(payload.roughQuoteMax !== undefined ? { roughQuoteMax: payload.roughQuoteMax } : null),
+    ...(payload.roughQuoteMin !== undefined ? { roughQuoteMin: payload.roughQuoteMin } : null),
+    ...(payload.siteVisitPolicy ? { siteVisitPolicy: payload.siteVisitPolicy } : null),
+    shortMessage: payload.shortMessage,
+  };
 }

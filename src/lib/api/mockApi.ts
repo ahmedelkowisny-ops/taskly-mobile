@@ -23,6 +23,7 @@ import {
   ProviderDashboardResponse,
   ProviderDashboardSummary,
   ProviderProfileResponse,
+  ProviderProResponsePayload,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
   MessageThreadDetailResponse,
@@ -1752,6 +1753,128 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
         : null,
       status: 'OPEN',
       statusLabel: 'Open',
+      timelineLabel: 'Flexible',
+      title: 'Demo provider Pro request',
+    },
+  };
+}
+
+export function submitOrUpdateMockProviderProResponse(
+  proRequestId: string,
+  payload: ProviderProResponsePayload,
+): ProviderProRequestDetailResponse {
+  const now = new Date().toISOString();
+  const min = payload.roughQuoteMin ?? null;
+  const max = payload.roughQuoteMax ?? null;
+  const roughQuoteLabel =
+    min !== null && max !== null
+      ? `EUR ${min.toFixed(2)} - EUR ${max.toFixed(2)}`
+      : min !== null
+        ? `From EUR ${min.toFixed(2)}`
+        : max !== null
+          ? `Up to EUR ${max.toFixed(2)}`
+          : 'Rough quote not set';
+
+  return {
+    proRequest: {
+      budgetLabel: 'Budget not set',
+      categoryLabel: 'Renovation',
+      cityLabel: 'Sofia',
+      createdAt: now,
+      description: 'Demo provider Pro request detail. Demo responses stay local and do not call the backend.',
+      eligibility: { isEligibleToRespond: false, reasonLabel: 'Update response' },
+      id: proRequestId,
+      images: [],
+      myResponse: {
+        canEdit: true,
+        currency: 'EUR',
+        customerPreviewLabel: 'Customer sees a limited preview before access is unlocked.',
+        hiddenFromCustomer: false,
+        id: 'demo-response-local',
+        materialsIncluded:
+          payload.materialsIncluded === true
+            ? 'LABOR_AND_MATERIALS'
+            : payload.materialsIncluded === false
+              ? 'LABOR_ONLY'
+              : 'NEEDS_CONFIRMATION',
+        roughQuoteLabel,
+        roughQuoteMax: max,
+        roughQuoteMin: min,
+        shortMessagePreview: payload.shortMessage,
+        siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
+        status: 'SUBMITTED',
+        statusLabel: 'Response submitted',
+        submittedAt: now,
+        updatedAt: now,
+        visibilityLabel: 'Visible in customer preview rules',
+      },
+      nextActions: [{ accent: 'pro', href: '/provider/pro-requests', label: 'View response status', type: 'view_pro_response_status' }],
+      proResponseBlockedReason: null,
+      proResponseBlockedReasonCode: null,
+      proResponseCapabilities: {
+        canEditResponse: true,
+        canOpenProResponseForm: true,
+        canSubmitResponse: false,
+        canViewSubmittedResponse: true,
+      },
+      proResponseState: {
+        badgeLabel: 'Update available',
+        blockedReason: null,
+        blockedReasonCode: null,
+        capabilities: {
+          canEditResponse: true,
+          canOpenProResponseForm: true,
+          canSubmitResponse: false,
+          canViewSubmittedResponse: true,
+        },
+        helperText: 'Demo response saved locally. Backend validation will run in real mode.',
+        status: 'can_edit',
+        statusLabel: 'Update response',
+      },
+      proResponseSummary: {
+        canEdit: true,
+        currency: 'EUR',
+        customerPreviewLabel: 'Customer sees a limited preview before access is unlocked.',
+        hiddenFromCustomer: false,
+        id: 'demo-response-local',
+        materialsIncluded:
+          payload.materialsIncluded === true
+            ? 'LABOR_AND_MATERIALS'
+            : payload.materialsIncluded === false
+              ? 'LABOR_ONLY'
+              : 'NEEDS_CONFIRMATION',
+        roughQuoteLabel,
+        roughQuoteMax: max,
+        roughQuoteMin: min,
+        shortMessagePreview: payload.shortMessage,
+        siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
+        status: 'SUBMITTED',
+        statusLabel: 'Response submitted',
+        submittedAt: now,
+        updatedAt: now,
+        visibilityLabel: 'Visible in customer preview rules',
+      },
+      responseEditDefaults: {
+        assumptions: payload.assumptions || null,
+        availability: payload.availability || 'DEPENDS_ON_PROJECT',
+        currency: 'EUR',
+        customerPreparationNotes: payload.customerPreparationNotes || null,
+        earliestStartDate: payload.earliestStartDate || null,
+        excludedNotes: payload.excludedNotes || null,
+        includedNotes: payload.includedNotes || null,
+        materialsIncluded:
+          payload.materialsIncluded === true
+            ? 'LABOR_AND_MATERIALS'
+            : payload.materialsIncluded === false
+              ? 'LABOR_ONLY'
+              : 'NEEDS_CONFIRMATION',
+        roughQuoteMax: max,
+        roughQuoteMin: min,
+        shortMessage: payload.shortMessage,
+        siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
+      },
+      status: 'RESPONSES_RECEIVED',
+      statusLabel: 'Responses received',
       timelineLabel: 'Flexible',
       title: 'Demo provider Pro request',
     },

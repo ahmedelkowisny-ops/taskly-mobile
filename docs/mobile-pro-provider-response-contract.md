@@ -413,3 +413,44 @@ Recommended Phase 27C: Provider Pro response implementation.
 Reason: Phase 27B now exposes backend-authored response capabilities, blocked reason codes, submitted response summaries, and edit defaults. The next phase can safely add an authenticated backend upsert route and a mobile form without making mobile invent Pro response eligibility.
 
 Phase 27C should reuse backend helpers equivalent to `canProRespondToRequest`, enforce contact-leakage validation server-side, reject forbidden client-owned fields, and return a refreshed provider Pro request detail after submit/update.
+
+## Phase 27C Implementation Note
+
+Phase 27C added safe mobile Provider Pro response submit/edit support.
+
+Backend route added:
+
+- `POST /api/mobile/provider/pro-requests/[proRequestId]/response`
+
+Route shape decision:
+
+- A singular `response` upsert route was chosen because mobile only edits the authenticated provider's own response for a Pro request. The client never sends `responseId`, `proProfileId`, or provider identity. The backend resolves the Pro profile from mobile auth and upserts by `(proRequestId, proProfileId)`, matching existing backend/web behavior.
+
+Backend enforcement preserved:
+
+- Requires mobile auth and Provider Workspace access.
+- Uses backend `canProRespondToRequest` for Pro approval, category, city, request state, and existing response editability gates.
+- Rejects client-owned fields such as provider/profile/customer ids, response status, visibility, unlock/payment state, moderation state, and scoring/ranking fields.
+- Validates `shortMessage`, rough quote values/range, and JSON body shape.
+- Runs `hasProResponseContactLeakageInFields` server-side before saving.
+- Sets response status and visibility server-side.
+- Returns the refreshed provider Pro request detail with `proResponseState`, `proResponseCapabilities`, blocked reason/code, `proResponseSummary`, `responseEditDefaults`, and updated `nextActions`.
+
+Mobile work added:
+
+- `submitOrUpdateProviderProResponse(proRequestId, payload, authToken)` API wrapper.
+- `ProviderProResponsePayload` and mutation response typing.
+- Provider Pro detail response form for short message, rough quote min/max, materials included, included/excluded notes, availability, earliest start date, site visit policy, customer preparation, and assumptions.
+- Form opens only when backend `proResponseCapabilities.canOpenProResponseForm` is true and submit/edit capability is available.
+- On success, mobile closes the form and uses the refreshed backend response.
+- Demo mode saves response state locally and does not call the backend mutation route.
+
+Still deferred:
+
+- Pro Access Fee payment/unlock.
+- Customer Pro comparison/unlock UI.
+- Pro chat.
+- Admin moderation enhancements.
+- Product decision on restricting edits after Pro Access Fee unlock/payment.
+
+Recommended next phase: QA the Provider Pro response flow on mobile and backend, including blocked states, contact leakage, rough quote validation, demo behavior, and customer locked preview impact.

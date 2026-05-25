@@ -3,15 +3,48 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-import { ModeBadge } from '@/src/components/taskly';
+import { FormField, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderProRequestDetailResponse } from '@/src/lib/api/domain';
-import { getMockProviderProRequestDetailResponse } from '@/src/lib/api/mockApi';
-import { getProviderProRequestDetail } from '@/src/lib/api/provider';
+import { ProviderProRequestDetailResponse, ProviderProResponsePayload } from '@/src/lib/api/domain';
+import {
+  getMockProviderProRequestDetailResponse,
+  submitOrUpdateMockProviderProResponse,
+} from '@/src/lib/api/mockApi';
+import { getProviderProRequestDetail, submitOrUpdateProviderProResponse } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+
+type ResponseFormValues = {
+  assumptions: string;
+  availability: string;
+  customerPreparationNotes: string;
+  earliestStartDate: string;
+  excludedNotes: string;
+  includedNotes: string;
+  materialsIncluded: boolean | null;
+  roughQuoteMax: string;
+  roughQuoteMin: string;
+  shortMessage: string;
+  siteVisitPolicy: string;
+};
+
+type ResponseFormErrors = Partial<Record<keyof ResponseFormValues | 'form', string>>;
+
+const emptyFormValues: ResponseFormValues = {
+  assumptions: '',
+  availability: '',
+  customerPreparationNotes: '',
+  earliestStartDate: '',
+  excludedNotes: '',
+  includedNotes: '',
+  materialsIncluded: null,
+  roughQuoteMax: '',
+  roughQuoteMin: '',
+  shortMessage: '',
+  siteVisitPolicy: '',
+};
 
 export default function ProviderProRequestDetailScreen() {
   const router = useRouter();
@@ -22,10 +55,16 @@ export default function ProviderProRequestDetailScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
+  const [formValues, setFormValues] = useState<ResponseFormValues>(emptyFormValues);
+  const [formErrors, setFormErrors] = useState<ResponseFormErrors>({});
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
+  const [responseNotice, setResponseNotice] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
     setStateLabel(null);
+    setResponseNotice(null);
 
     if (status === 'demo') {
       setData(getMockProviderProRequestDetailResponse(proRequestId));
@@ -71,6 +110,64 @@ export default function ProviderProRequestDetailScreen() {
 
   const request = data?.proRequest;
 
+  const openResponseForm = useCallback(() => {
+    if (!request) return;
+    setFormErrors({});
+    setResponseNotice(null);
+    setFormValues(getInitialResponseFormValues(request));
+    setIsFormOpen(true);
+  }, [request]);
+
+  const closeResponseForm = useCallback(() => {
+    setFormErrors({});
+    setIsFormOpen(false);
+  }, []);
+
+  const updateFormValue = useCallback(<Key extends keyof ResponseFormValues,>(key: Key, value: ResponseFormValues[Key]) => {
+    setFormValues((current) => ({ ...current, [key]: value }));
+    setFormErrors((current) => ({ ...current, [key]: undefined, form: undefined }));
+  }, []);
+
+  const submitResponse = useCallback(async () => {
+    const validation = validateResponseForm(formValues);
+    if (Object.keys(validation).length > 0) {
+      setFormErrors(validation);
+      return;
+    }
+
+    setFormErrors({});
+    setResponseNotice(null);
+    setIsSubmittingResponse(true);
+    const payload = toResponsePayload(formValues);
+
+    if (status === 'demo') {
+      setData(submitOrUpdateMockProviderProResponse(proRequestId, payload));
+      setIsSubmittingResponse(false);
+      setIsFormOpen(false);
+      setResponseNotice(t('responseSubmitted'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsSubmittingResponse(false);
+      setFormErrors({ form: t('loginRequired') });
+      return;
+    }
+
+    const result = await submitOrUpdateProviderProResponse(proRequestId, payload, authToken);
+    setIsSubmittingResponse(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setIsFormOpen(false);
+      setResponseNotice(request?.myResponse ? t('responseUpdated') : t('responseSubmitted'));
+      return;
+    }
+
+    setFormErrors(getResponseErrorMessages(result.error.details, result.error.message));
+  }, [formValues, getValidAccessToken, proRequestId, request?.myResponse, status]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -107,7 +204,26 @@ export default function ProviderProRequestDetailScreen() {
             <Info label="Created" value={new Date(request.createdAt).toLocaleDateString()} />
           </AppCard>
 
-          <ProResponseCapabilityCard request={request} />
+          {responseNotice ? (
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+              <StatusBadge label={responseNotice} tone="success" />
+              <AppText color={colors.slate700}>{t('customerLimitedPreviewBeforeUnlock')}</AppText>
+            </AppCard>
+          ) : null}
+
+          <ProResponseCapabilityCard onOpenForm={openResponseForm} request={request} />
+
+          {isFormOpen ? (
+            <ProResponseForm
+              errors={formErrors}
+              isEditing={Boolean(request.proResponseCapabilities?.canEditResponse)}
+              isSubmitting={isSubmittingResponse}
+              onCancel={closeResponseForm}
+              onChange={updateFormValue}
+              onSubmit={submitResponse}
+              values={formValues}
+            />
+          ) : null}
 
           <Images images={request.images} />
 
@@ -144,8 +260,10 @@ export default function ProviderProRequestDetailScreen() {
 }
 
 function ProResponseCapabilityCard({
+  onOpenForm,
   request,
 }: {
+  onOpenForm: () => void;
   request: NonNullable<ProviderProRequestDetailResponse['proRequest']>;
 }) {
   const state = request.proResponseState;
@@ -170,14 +288,148 @@ function ProResponseCapabilityCard({
       <AppText color={colors.slate700}>{t('customerLimitedPreviewBeforeUnlock')}</AppText>
       {canOpenForm ? (
         <View style={styles.stack}>
-          <AppButton disabled tone="pro" variant="outline">
+          <AppButton onPress={onOpenForm} tone="pro" variant="outline">
             {ctaLabel}
           </AppButton>
           <AppText color={colors.slate500} variant="small">
-            {t('responseFormConnectedNext')}
+            {t('fullComparisonUnlockedByCustomer')}
           </AppText>
         </View>
       ) : null}
+    </AppCard>
+  );
+}
+
+function ProResponseForm({
+  errors,
+  isEditing,
+  isSubmitting,
+  onCancel,
+  onChange,
+  onSubmit,
+  values,
+}: {
+  errors: ResponseFormErrors;
+  isEditing: boolean;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onChange: <Key extends keyof ResponseFormValues>(key: Key, value: ResponseFormValues[Key]) => void;
+  onSubmit: () => void;
+  values: ResponseFormValues;
+}) {
+  return (
+    <AppCard accentColor={colors.proOrange600}>
+      <StatusBadge label={isEditing ? t('updateResponse') : t('respondToProRequest')} tone="pro" />
+      <AppText variant="sectionTitle">{t('yourResponse')}</AppText>
+      {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
+
+      <FormField
+        errorText={errors.shortMessage}
+        helperText={t('pleaseRemoveContactDetails')}
+        label={t('shortMessage')}
+        multiline
+        onChangeText={(value) => onChange('shortMessage', value)}
+        placeholder={t('shortMessage')}
+        value={values.shortMessage}
+      />
+
+      <AppCard backgroundColor={colors.proOrange50}>
+        <AppText variant="bodyStrong">{t('roughQuote')}</AppText>
+        <View style={styles.twoColumn}>
+          <FormField
+            errorText={errors.roughQuoteMin}
+            keyboardType="decimal-pad"
+            label={t('minimumQuote')}
+            onChangeText={(value) => onChange('roughQuoteMin', value)}
+            placeholder="EUR"
+            value={values.roughQuoteMin}
+          />
+          <FormField
+            errorText={errors.roughQuoteMax}
+            keyboardType="decimal-pad"
+            label={t('maximumQuote')}
+            onChangeText={(value) => onChange('roughQuoteMax', value)}
+            placeholder="EUR"
+            value={values.roughQuoteMax}
+          />
+        </View>
+      </AppCard>
+
+      <AppCard backgroundColor={colors.proOrange50}>
+        <AppText variant="bodyStrong">{t('materialsIncluded')}</AppText>
+        <View style={styles.segmentRow}>
+          <AppButton
+            onPress={() => onChange('materialsIncluded', true)}
+            tone="pro"
+            variant={values.materialsIncluded === true ? 'filled' : 'outline'}>
+            {t('yes')}
+          </AppButton>
+          <AppButton
+            onPress={() => onChange('materialsIncluded', false)}
+            tone="pro"
+            variant={values.materialsIncluded === false ? 'filled' : 'outline'}>
+            {t('no')}
+          </AppButton>
+          <AppButton
+            onPress={() => onChange('materialsIncluded', null)}
+            tone="neutral"
+            variant={values.materialsIncluded === null ? 'filled' : 'outline'}>
+            {t('toBeConfirmed')}
+          </AppButton>
+        </View>
+      </AppCard>
+
+      <FormField
+        label={t('whatIsIncluded')}
+        multiline
+        onChangeText={(value) => onChange('includedNotes', value)}
+        value={values.includedNotes}
+      />
+      <FormField
+        label={t('whatIsNotIncluded')}
+        multiline
+        onChangeText={(value) => onChange('excludedNotes', value)}
+        value={values.excludedNotes}
+      />
+      <FormField
+        label={t('availability')}
+        onChangeText={(value) => onChange('availability', value)}
+        placeholder="NEXT_WEEK"
+        value={values.availability}
+      />
+      <FormField
+        label={t('earliestStartDate')}
+        onChangeText={(value) => onChange('earliestStartDate', value)}
+        placeholder="2026-06-01"
+        value={values.earliestStartDate}
+      />
+      <FormField
+        label={t('siteVisitPolicy')}
+        onChangeText={(value) => onChange('siteVisitPolicy', value)}
+        placeholder="DEPENDS"
+        value={values.siteVisitPolicy}
+      />
+      <FormField
+        label={t('customerPreparation')}
+        multiline
+        onChangeText={(value) => onChange('customerPreparationNotes', value)}
+        value={values.customerPreparationNotes}
+      />
+      <FormField
+        label={t('assumptions')}
+        multiline
+        onChangeText={(value) => onChange('assumptions', value)}
+        value={values.assumptions}
+      />
+
+      <View style={styles.stack}>
+        <AppButton loading={isSubmitting} onPress={onSubmit} tone="pro">
+          {isEditing ? t('updateResponse') : t('saveResponse')}
+        </AppButton>
+        <AppButton disabled={isSubmitting} onPress={onCancel} tone="neutral" variant="ghost">
+          {t('cancel')}
+        </AppButton>
+      </View>
     </AppCard>
   );
 }
@@ -198,6 +450,100 @@ function Info({ label, value }: { label: string; value: string }) {
       <AppText color={colors.slate700}>{value}</AppText>
     </View>
   );
+}
+
+function getInitialResponseFormValues(request: NonNullable<ProviderProRequestDetailResponse['proRequest']>): ResponseFormValues {
+  const defaults = request.responseEditDefaults;
+  return {
+    assumptions: defaults?.assumptions || '',
+    availability: defaults?.availability || '',
+    customerPreparationNotes: defaults?.customerPreparationNotes || '',
+    earliestStartDate: defaults?.earliestStartDate || '',
+    excludedNotes: defaults?.excludedNotes || '',
+    includedNotes: defaults?.includedNotes || '',
+    materialsIncluded: defaults?.materialsIncluded
+      ? defaults.materialsIncluded === 'LABOR_AND_MATERIALS' || defaults.materialsIncluded === 'PARTIAL_MATERIALS'
+      : null,
+    roughQuoteMax: defaults?.roughQuoteMax ? String(defaults.roughQuoteMax) : '',
+    roughQuoteMin: defaults?.roughQuoteMin ? String(defaults.roughQuoteMin) : '',
+    shortMessage: defaults?.shortMessage || '',
+    siteVisitPolicy: defaults?.siteVisitPolicy || '',
+  };
+}
+
+function toNumberOrNull(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const amount = Number(trimmed.replace(',', '.'));
+  return Number.isFinite(amount) && amount > 0 ? Number(amount.toFixed(2)) : Number.NaN;
+}
+
+function hasObviousContactDetails(values: ResponseFormValues) {
+  const merged = Object.values(values)
+    .filter((value) => typeof value === 'string')
+    .join('\n');
+
+  return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(merged) ||
+    /(?:\+?\d[\d\s().-]{6,}\d)/.test(merged) ||
+    /(https?:\/\/|www\.|telegram|viber|whatsapp|facebook|instagram|@\w{2,})/i.test(merged);
+}
+
+function validateResponseForm(values: ResponseFormValues): ResponseFormErrors {
+  const errors: ResponseFormErrors = {};
+  const min = toNumberOrNull(values.roughQuoteMin);
+  const max = toNumberOrNull(values.roughQuoteMax);
+
+  if (!values.shortMessage.trim()) {
+    errors.shortMessage = t('shortMessageRequired');
+  }
+  if (Number.isNaN(min)) {
+    errors.roughQuoteMin = t('quoteRangeInvalid');
+  }
+  if (Number.isNaN(max)) {
+    errors.roughQuoteMax = t('quoteRangeInvalid');
+  }
+  if (min !== null && max !== null && !Number.isNaN(min) && !Number.isNaN(max) && max < min) {
+    errors.roughQuoteMax = t('quoteRangeInvalid');
+  }
+  if (hasObviousContactDetails(values)) {
+    errors.form = t('pleaseRemoveContactDetails');
+  }
+
+  return errors;
+}
+
+function toResponsePayload(values: ResponseFormValues): ProviderProResponsePayload {
+  const min = toNumberOrNull(values.roughQuoteMin);
+  const max = toNumberOrNull(values.roughQuoteMax);
+
+  return {
+    assumptions: values.assumptions.trim(),
+    availability: values.availability.trim(),
+    currency: 'EUR',
+    customerPreparationNotes: values.customerPreparationNotes.trim(),
+    earliestStartDate: values.earliestStartDate.trim() || null,
+    excludedNotes: values.excludedNotes.trim(),
+    includedNotes: values.includedNotes.trim(),
+    materialsIncluded: values.materialsIncluded,
+    roughQuoteMax: Number.isNaN(max) ? null : max,
+    roughQuoteMin: Number.isNaN(min) ? null : min,
+    shortMessage: values.shortMessage.trim(),
+    siteVisitPolicy: values.siteVisitPolicy.trim(),
+  };
+}
+
+function getResponseErrorMessages(details: unknown, fallbackMessage: string): ResponseFormErrors {
+  if (details && typeof details === 'object' && 'fieldErrors' in details) {
+    const fieldErrors = (details as { fieldErrors?: Record<string, unknown> }).fieldErrors;
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      return Object.entries(fieldErrors).reduce<ResponseFormErrors>((acc, [key, value]) => {
+        acc[key as keyof ResponseFormValues] = String(value);
+        return acc;
+      }, {});
+    }
+  }
+
+  return { form: fallbackMessage };
 }
 
 function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
@@ -229,7 +575,9 @@ const styles = StyleSheet.create({
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  segmentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   stack: { gap: spacing.sm },
+  twoColumn: { gap: spacing.md },
 });
 
 function getProResponseBadgeTone(status?: string) {

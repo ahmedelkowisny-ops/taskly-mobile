@@ -58,6 +58,7 @@ export const endpoints = {
     dashboardSummary: '/api/mobile/provider/dashboard',
     messages: '/api/mobile/provider/messages',
     proRequestDetail: (proRequestId: string) => `/api/mobile/provider/pro-requests/${proRequestId}`,
+    proRequestResponse: (proRequestId: string) => `/api/mobile/provider/pro-requests/${proRequestId}/response`,
     proRequests: '/api/mobile/provider/pro-requests',
     profile: '/api/mobile/provider/profile',
   },

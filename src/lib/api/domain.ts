@@ -841,6 +841,23 @@ export type ProviderProResponseEditDefaults = {
   siteVisitPolicy: string;
 };
 
+export type ProviderProResponsePayload = {
+  assumptions?: string;
+  availability?: string;
+  currency?: string;
+  customerPreparationNotes?: string;
+  earliestStartDate?: string | null;
+  excludedNotes?: string;
+  includedNotes?: string;
+  materialsIncluded?: boolean | null;
+  roughQuoteMax?: number | null;
+  roughQuoteMin?: number | null;
+  shortMessage: string;
+  siteVisitPolicy?: string;
+};
+
+export type ProviderProResponseMutationResponse = ProviderProRequestDetailResponse;
+
 export type EligibilitySummary = {
   isEligibleToRespond: boolean;
   reasonLabel: string;
