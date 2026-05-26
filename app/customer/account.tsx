@@ -1,7 +1,13 @@
 import { Href, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge, SessionStatusCard, WorkspaceSwitchHint } from '@/src/components/taskly';
+import {
+  AssistantGuideCard,
+  ModeBadge,
+  NotificationSettingsCard,
+  SessionStatusCard,
+  WorkspaceSwitchHint,
+} from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -37,6 +43,8 @@ export default function CustomerAccountScreen() {
       </AppCard>
 
       <SessionStatusCard compact onLoginPress={() => router.push(LOGIN_ROUTE)} />
+
+      <NotificationSettingsCard workspace="customer" />
 
       <AssistantGuideCard
         body="Account screens should explain missing data, payment readiness, and trust steps inline without opening blocking popups."

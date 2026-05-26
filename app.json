@@ -42,6 +42,16 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "color": "#2F5F8E",
+          "defaultChannel": "taskly-default",
+          "sounds": [
+            "./assets/sounds/taskly_notification.wav"
+          ]
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {}
       ]

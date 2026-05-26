@@ -4,6 +4,7 @@ export { FormField } from './FormField';
 export { FormSection } from './FormSection';
 export { ImagePickerPlaceholder } from './ImagePickerPlaceholder';
 export { ModeBadge } from './ModeBadge';
+export { NotificationSettingsCard } from './NotificationSettingsCard';
 export { ProviderStatusCard } from './ProviderStatusCard';
 export { SelectOptionCard } from './SelectOptionCard';
 export { SessionStatusCard } from './SessionStatusCard';

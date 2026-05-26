@@ -41,7 +41,8 @@ export const endpoints = {
   },
   notifications: {
     preferences: '/api/mobile/notifications/preferences',
-    registerPushToken: '/api/mobile/notifications/register-push-token',
+    registerPushToken: '/api/mobile/notifications/register-token',
+    unregisterPushToken: '/api/mobile/notifications/unregister-token',
   },
   payments: {
     corePaymentStatus: (taskId: string) => `/api/mobile/payments/core-tasks/${taskId}/status`,

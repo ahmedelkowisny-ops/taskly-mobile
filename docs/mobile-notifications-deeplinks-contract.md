@@ -1,11 +1,13 @@
 # Mobile Notifications And Deep Links Contract
 
-Phase 31A documents the safe future contract for mobile push notifications and deep links across Core and Pro workflows. This is documentation only. Do not install `expo-notifications`, add push token routes, add notification sending hooks, add deep-link routing code, change app config, change payment/support/Pro/site visit logic, or upgrade Expo in this phase.
+Phase 31A documents the safe future contract for mobile push notifications and deep links across Core and Pro workflows.
+
+Phase 31B adds the push token registration and notification settings foundation. It does not add backend event sending hooks or full deep-link routing.
 
 ## Expo SDK 54 Reference Notes
 
 - The app currently reports Expo SDK `54.0.0`; future notification work must use SDK 54-compatible packages and docs.
-- Expo SDK 54 lists `Notifications` and `Linking` as SDK modules. `expo-linking` is already installed in the app, but `expo-notifications` is not installed.
+- Expo SDK 54 lists `Notifications` and `Linking` as SDK modules. `expo-linking` is already installed, and Phase 31B installs `expo-notifications`.
 - Expo push notifications require a native/device setup phase. Android push notification testing should use a development build or production build rather than Expo Go.
 - Expo linking supports custom schemes and universal/app links. Expo Router can map app routes to incoming links once scheme/link handling is configured.
 
@@ -44,7 +46,7 @@ Reference docs:
 ## Existing Mobile Notification And Deep-Link Readiness
 
 - `expo-linking` is installed.
-- `expo-notifications` is not installed.
+- Phase 31B installs `expo-notifications`.
 - `app.json` has the current custom scheme `tasklyapp`.
 - Expo Router routes exist for:
   - `/customer/tasks`
@@ -64,23 +66,56 @@ Reference docs:
 - Mobile auth uses `AuthProvider`, `useAuth()`, and token storage through `src/lib/auth/tokenStorage.ts`.
 - API calls go through `src/lib/api/client.ts`.
 - Endpoint constants already contain placeholders for mobile notification preferences and push registration, but no mobile notification API wrapper or backend mobile route was found.
-- No push token storage exists in mobile.
-- No mobile notification permission prompt exists.
-- Account screens mention future notification preferences, but no settings controls exist.
+- Phase 31B adds local push token storage.
+- Phase 31B adds a delayed notification permission/settings shell in Account screens.
+- Customer and Provider account screens include notification preference controls.
 - Message routes are role-specific, so a future generic notification target such as `/messages/[threadId]` needs a safe resolver or must include workspace-specific routes.
 
 ## Missing Mobile API And Deep-Link Gaps
 
-- No mobile Expo push token registration route.
-- No mobile push token unregister route.
-- No mobile notification preferences route implementation.
-- No mobile notification API wrapper.
-- No Expo push token database model or mobile-safe extension to existing push subscription storage.
-- No `expo-notifications` installation or app config plugin setup.
-- No permission UX or account notification preference UI.
+- Phase 31B adds mobile Expo push token registration, unregister, and preferences routes.
+- Phase 31B adds mobile notification API wrappers.
+- Phase 31B adds Expo-native token and preference persistence.
+- Phase 31B installs `expo-notifications` and configures the app plugin.
+- Phase 31B adds an Account/settings permission UX shell.
 - No mobile notification event audit/read model.
 - No deep-link intake/resolver logic for auth redirects, workspace mismatch, or inaccessible resources.
 - No mobile notification payload schema for Core vs Pro labeling.
+
+## Phase 31B Implementation Note
+
+- Installed SDK 54-compatible `expo-notifications` and configured the app plugin with the existing `taskly-default` Android channel.
+- Registered the existing custom sound asset `./assets/sounds/taskly_notification.wav` in the Expo notifications plugin. Runtime channel setup uses that sound only when `soundEnabled` is true.
+- Added backend models for native mobile push tokens and mobile notification preferences. This is separate from existing web/PWA `WebPushSubscription` storage.
+- Added mobile routes:
+  - `POST /api/mobile/notifications/register-token`
+  - `POST /api/mobile/notifications/unregister-token`
+  - `GET /api/mobile/notifications/preferences`
+  - `PATCH /api/mobile/notifications/preferences`
+- Added preference fields:
+  - `pushEnabled`
+  - `soundEnabled`
+  - `vibrationEnabled`
+  - `coreAlertsEnabled`
+  - `proAlertsEnabled`
+  - `messageAlertsEnabled`
+  - `paymentAlertsEnabled`
+  - `completionAlertsEnabled`
+  - `supportAlertsEnabled`
+  - `siteVisitAlertsEnabled`
+  - `marketingAlertsEnabled` defaults to false and is not surfaced in mobile UI.
+- Added mobile wrappers, local token storage, and a notification service that requests permission only when the user taps `Enable alerts`.
+- Added Customer and Provider account notification settings cards. Demo mode updates settings locally and never registers a real push token.
+- Logout performs best-effort unregister of the stored mobile token before clearing auth tokens.
+- No backend event sending hooks were added.
+- No full deep-link routing was added.
+
+Sound and vibration notes:
+
+- Sound and vibration are stored as user preferences.
+- Android channel setup uses the custom sound asset when sound is enabled and an empty vibration pattern when vibration is disabled.
+- iOS sound and vibration remain subject to device/system notification settings. Future event sending should map these preferences into notification payload behavior where supported.
+- Custom sound asset changes require a new native build to be fully reflected.
 
 ## Proposed Push Token Registration Contract
 
@@ -103,11 +138,11 @@ Suggested payload:
 
 ```ts
 type MobilePushTokenRegistrationPayload = {
-  expoPushToken: string;
-  nativePushToken?: string | null;
-  platform: 'ios' | 'android';
+  token: string;
+  tokenType: 'expo' | 'native';
+  platform: 'ios' | 'android' | 'web' | 'unknown';
   deviceId?: string | null;
-  appWorkspace: 'customer' | 'provider' | 'both';
+  appWorkspace?: 'customer' | 'provider' | 'both';
   locale?: 'en' | 'bg';
   timezone?: string;
   appVersion?: string;
@@ -163,7 +198,7 @@ Unregister payload:
 
 ```ts
 type MobilePushTokenUnregisterPayload = {
-  expoPushToken?: string;
+  token?: string;
   deviceId?: string | null;
 };
 ```
@@ -172,18 +207,17 @@ Preferences payload:
 
 ```ts
 type MobileNotificationPreferencesPatch = {
-  coreCustomer?: boolean;
-  coreProvider?: boolean;
-  proCustomer?: boolean;
-  proProvider?: boolean;
-  messages?: boolean;
-  paymentUpdates?: boolean;
-  siteVisitUpdates?: boolean;
-  quietHours?: {
-    enabled: boolean;
-    startLocalTime?: string;
-    endLocalTime?: string;
-  };
+  pushEnabled?: boolean;
+  soundEnabled?: boolean;
+  vibrationEnabled?: boolean;
+  coreAlertsEnabled?: boolean;
+  proAlertsEnabled?: boolean;
+  messageAlertsEnabled?: boolean;
+  paymentAlertsEnabled?: boolean;
+  completionAlertsEnabled?: boolean;
+  supportAlertsEnabled?: boolean;
+  siteVisitAlertsEnabled?: boolean;
+  marketingAlertsEnabled?: boolean;
 };
 ```
 
@@ -381,12 +415,9 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ## Non-Scope
 
-- Installing `expo-notifications`.
-- Implementing push token registration.
-- Implementing unregister/preferences routes.
 - Implementing notification sending hooks.
 - Implementing deep-link routing or redirect handling.
-- Changing `app.json`, app scheme, associated domains, or native build config.
+- Changing the app scheme, associated domains, or broad native build config beyond the Phase 31B notification plugin foundation.
 - Changing Core payment/cancellation/support logic.
 - Changing Pro Access payment logic.
 - Changing Provider Pro response logic.
@@ -397,14 +428,14 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ## Recommended Next Phases
 
-### Phase 31B: Push Token Registration And Read-Only Notification Settings
+### Phase 31B: Push Token Registration And Notification Settings Foundation
 
-- Install SDK 54-compatible `expo-notifications` only if explicitly scoped.
-- Add mobile-safe token registration/unregister routes.
-- Add mobile API wrappers and domain types.
-- Add read-only/default notification settings state.
-- Add delayed permission UX shell without event hooks.
-- Keep demo mode from registering real tokens.
+- Added SDK 54-compatible notification package/setup.
+- Added mobile-safe token registration/unregister routes.
+- Added mobile API wrappers and domain types.
+- Added stored notification settings with sound and vibration preferences.
+- Added delayed permission UX shell without event hooks.
+- Kept demo mode from registering real tokens.
 
 ### Phase 31C: Backend Event Notification Hooks
 

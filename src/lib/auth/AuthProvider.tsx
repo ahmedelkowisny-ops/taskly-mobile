@@ -15,6 +15,7 @@ import {
   getRefreshToken,
   saveAuthTokens,
 } from '@/src/lib/auth/tokenStorage';
+import { unregisterStoredNotificationToken } from '@/src/lib/notifications/mobileNotifications';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error' | 'demo';
 
@@ -230,19 +231,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [memoryAccessToken]);
 
   const logout = useCallback(async () => {
+    const accessToken = memoryAccessToken ?? (await getAccessToken());
     const refreshToken = await getRefreshToken();
 
     if (refreshToken) {
       await logoutMobileSession(refreshToken);
     }
 
+    await unregisterStoredNotificationToken(accessToken);
     await clearAuthTokens();
     setMemoryAccessToken(null);
     setSession(null);
     setStatus('unauthenticated');
     setError(null);
     setIsDemoMode(false);
-  }, []);
+  }, [memoryAccessToken]);
 
   const useDemoSession = useCallback(() => {
     void clearAuthTokens();

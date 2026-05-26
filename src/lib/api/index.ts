@@ -23,6 +23,12 @@ export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageU
 export { resolveApiMediaUrl } from './media';
 export { getMessageThread, getMessageThreads, sendMessage, sendMessageImage } from './messages';
 export {
+  getNotificationPreferences,
+  registerNotificationToken,
+  unregisterNotificationToken,
+  updateNotificationPreferences,
+} from './notifications';
+export {
   expressInterestInCoreTask,
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
@@ -116,7 +122,13 @@ export type {
   MessageThreadsResponse,
   MarkProviderCoreTaskOnTheWayResponse,
   NextAction,
+  NotificationPreferenceUpdatePayload,
+  NotificationPreferences,
+  NotificationPreferencesResponse,
   NotificationPreferenceSummary,
+  NotificationTokenRegistrationPayload,
+  NotificationTokenRegistrationResponse,
+  NotificationTokenUnregisterPayload,
   PaymentActionState,
   ProRequestDetail,
   ProRequestSummary,

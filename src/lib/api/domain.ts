@@ -73,6 +73,55 @@ export type PostingRulesResponse = {
   proRequest: ProRequestPostingRules;
 };
 
+export type NotificationPreferences = {
+  completionAlertsEnabled: boolean;
+  coreAlertsEnabled: boolean;
+  marketingAlertsEnabled: boolean;
+  messageAlertsEnabled: boolean;
+  paymentAlertsEnabled: boolean;
+  proAlertsEnabled: boolean;
+  pushEnabled: boolean;
+  siteVisitAlertsEnabled: boolean;
+  soundEnabled: boolean;
+  supportAlertsEnabled: boolean;
+  vibrationEnabled: boolean;
+};
+
+export type NotificationPreferenceUpdatePayload = Partial<NotificationPreferences>;
+
+export type NotificationTokenRegistrationPayload = {
+  appVersion?: string | null;
+  appWorkspace?: 'both' | 'customer' | 'provider';
+  deviceId?: string | null;
+  locale?: 'bg' | 'en';
+  platform: 'android' | 'ios' | 'unknown' | 'web';
+  timezone?: string | null;
+  token: string;
+  tokenType: 'expo' | 'native';
+};
+
+export type NotificationTokenUnregisterPayload = {
+  deviceId?: string | null;
+  token?: string | null;
+};
+
+export type NotificationPreferencesResponse = {
+  preferences: NotificationPreferences;
+};
+
+export type NotificationTokenRegistrationResponse = NotificationPreferencesResponse & {
+  tokenRegistration: {
+    appWorkspace?: string | null;
+    deactivated?: number;
+    id?: string;
+    isActive: boolean;
+    lastSeenAt?: string;
+    platform?: string;
+    registeredAt?: string;
+    tokenType?: string;
+  };
+};
+
 export type DetailImage = {
   alt: string;
   id: string;
