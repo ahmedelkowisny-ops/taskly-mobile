@@ -1100,6 +1100,83 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
   const list = getMockCustomerProRequestsResponse().proRequests;
   const summary = list.find((request) => request.id === proRequestId) || list[1];
   const isUnlocked = Boolean(summary.isUnlocked);
+  const unlockedComparison = {
+    canViewFullComparison: isUnlocked,
+    comparisonLabel: 'Full comparison',
+    emptyStateLabel: isUnlocked ? null : 'No visible Pro responses yet',
+    helperText: isUnlocked
+      ? 'Compare backend-returned details from approved independent Pros. Final agreement is between you and the Pro.'
+      : 'Unlock Pro Access to compare approved Pro responses.',
+    responseCount: isUnlocked ? 2 : 0,
+    responses: isUnlocked
+      ? [
+          {
+            assumptions: 'Final price depends on confirmed measurements and hidden installation conditions.',
+            availability: 'Next Week',
+            categoryLabel: 'Bathroom Renovation',
+            cityLabel: 'Sofia',
+            contactPolicyLabel: 'Contact details are shared only when Taskly allows it.',
+            currency: 'EUR',
+            customerPreparationNotes: 'Please prepare photos and approximate measurements before the site visit.',
+            displayName: 'Approved Pro Studio',
+            earliestStartDate: null,
+            excludedNotes: 'Tiles, sanitaryware, and specialty fixtures are quoted after selection.',
+            includedNotes: 'Labor, waterproofing, and standard installation materials.',
+            independentProLabel: 'Independent Pro',
+            materialsIncluded: 'Labor And Materials',
+            portfolioCount: 4,
+            proProfileId: 'demo-pro-profile-1',
+            profileImageUrl: null,
+            profileSummary: 'Renovation team focused on compact bathroom upgrades in Sofia.',
+            profileVerifiedLabel: 'Reviewed by Taskly',
+            responseId: 'demo-response-1',
+            responseStatus: 'SUBMITTED',
+            roughQuoteLabel: 'EUR 900.00 - EUR 1,200.00',
+            roughQuoteMax: 1200,
+            roughQuoteMin: 900,
+            shortMessage: 'We can handle the project after a quick site visit.',
+            siteVisitPolicy: 'Needed',
+            submittedAt: summary.createdAt,
+            tradeName: 'Approved Pro Studio',
+            updatedAt: summary.createdAt,
+            visibilityLabel: 'Visible after Pro Access unlock',
+            yearsExperienceLabel: '8+ years',
+          },
+          {
+            assumptions: 'Quote assumes no structural changes and normal working-hour access.',
+            availability: 'This Month',
+            categoryLabel: 'Bathroom Renovation',
+            cityLabel: 'Sofia',
+            contactPolicyLabel: 'Contact details are shared only when Taskly allows it.',
+            currency: 'EUR',
+            customerPreparationNotes: 'Share preferred fixtures and target finish level.',
+            displayName: 'Urban Bath Pro',
+            earliestStartDate: null,
+            excludedNotes: 'Custom cabinetry and premium fixtures are separate.',
+            includedNotes: 'Labor and standard consumables.',
+            independentProLabel: 'Independent Pro',
+            materialsIncluded: 'Needs Confirmation',
+            portfolioCount: 2,
+            proProfileId: 'demo-pro-profile-2',
+            profileImageUrl: null,
+            profileSummary: 'Independent Pro for bathroom refreshes and tile work.',
+            profileVerifiedLabel: 'Reviewed by Taskly',
+            responseId: 'demo-response-2',
+            responseStatus: 'SUBMITTED',
+            roughQuoteLabel: 'EUR 1,100.00 - EUR 1,450.00',
+            roughQuoteMax: 1450,
+            roughQuoteMin: 1100,
+            shortMessage: 'I can provide a detailed estimate after reviewing the site.',
+            siteVisitPolicy: 'Depends',
+            submittedAt: summary.createdAt,
+            tradeName: 'Urban Bath Pro',
+            updatedAt: summary.createdAt,
+            visibilityLabel: 'Visible after Pro Access unlock',
+            yearsExperienceLabel: '6+ years',
+          },
+        ]
+      : [],
+  };
   return {
     proRequest: {
       budgetLabel: 'Budget not set',
@@ -1123,6 +1200,7 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       proAccessState: summary.proAccessState,
       proAccessSummary: summary.proAccessSummary,
       proUnlockState: summary.proUnlockState,
+      unlockedComparison,
       responsePreviews: summary.responsesCount
         ? [
           {

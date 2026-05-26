@@ -7,7 +7,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { createCustomerProAccessCheckout, getCustomerProRequestDetail } from '@/src/lib/api/customer';
-import { CustomerProRequestDetailResponse } from '@/src/lib/api/domain';
+import { CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -219,7 +219,10 @@ export default function CustomerProRequestDetailScreen() {
 
           <Images images={request.images} />
 
-          <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+          <UnlockedComparisonSection request={request} />
+
+          {!request.unlockedComparison?.canViewFullComparison ? (
+            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
             <AppText variant="sectionTitle">{t('proResponses')}</AppText>
             {request.responsePreviews.length ? request.responsePreviews.map((response) => (
               <View key={response.id} style={styles.response}>
@@ -229,12 +232,100 @@ export default function CustomerProRequestDetailScreen() {
                 <AppText color={colors.slate700}>{response.roughQuoteLabel}</AppText>
               </View>
             )) : <AppText color={colors.slate700}>{t('noResponsesYet')}</AppText>}
-          </AppCard>
+            </AppCard>
+          ) : null}
 
           <NextActions actions={request.nextActions} />
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function UnlockedComparisonSection({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  const comparison = request.unlockedComparison;
+  if (!comparison?.canViewFullComparison) return null;
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('proAccessUnlocked')} tone="success" />
+        <StatusBadge label={comparison.comparisonLabel || t('fullComparison')} tone="pro" />
+      </View>
+      <AppText variant="sectionTitle">{t('compareApprovedPros')}</AppText>
+      <AppText color={colors.slate700}>{comparison.helperText || t('comparisonChoiceHelper')}</AppText>
+      {comparison.responses.length ? (
+        <View style={styles.stack}>
+          {comparison.responses.map((response) => (
+            <ComparisonResponseCard key={response.responseId} response={response} />
+          ))}
+        </View>
+      ) : (
+        <AppText color={colors.slate700}>{comparison.emptyStateLabel || t('noVisibleProResponsesYet')}</AppText>
+      )}
+      <AppText color={colors.slate700}>{t('contactDetailsSharedWhenAllowed')}</AppText>
+    </AppCard>
+  );
+}
+
+function ComparisonResponseCard({ response }: { response: CustomerUnlockedProComparisonResponse }) {
+  const profileImageUrl = response.profileImageUrl ? resolveApiMediaUrl(response.profileImageUrl) : null;
+  const notes = [
+    { label: t('whatIsIncluded'), value: response.includedNotes },
+    { label: t('whatIsNotIncluded'), value: response.excludedNotes },
+    { label: t('assumptions'), value: response.assumptions },
+    { label: t('customerPreparation'), value: response.customerPreparationNotes },
+  ].filter((item) => Boolean(item.value));
+
+  return (
+    <View style={styles.comparisonCard}>
+      <View style={styles.profileRow}>
+        {profileImageUrl ? (
+          <Image
+            accessibilityLabel={response.displayName}
+            source={{ uri: profileImageUrl }}
+            style={styles.profileImage}
+          />
+        ) : null}
+        <View style={styles.profileText}>
+          <AppText variant="bodyStrong">{response.displayName}</AppText>
+          {response.tradeName ? <AppText color={colors.slate500}>{response.tradeName}</AppText> : null}
+          <View style={styles.badgeRow}>
+            <StatusBadge label={response.profileVerifiedLabel || t('reviewedByTaskly')} tone="success" />
+            <StatusBadge label={response.independentProLabel || t('independentPro')} tone="pro" />
+          </View>
+        </View>
+      </View>
+
+      {response.profileSummary ? <AppText color={colors.slate700}>{response.profileSummary}</AppText> : null}
+      {response.shortMessage ? <AppText color={colors.slate700}>{response.shortMessage}</AppText> : null}
+
+      <View style={styles.infoGrid}>
+        <Info label={t('roughQuote')} value={response.roughQuoteLabel} />
+        <Info label={t('materialsIncluded')} value={response.materialsIncluded || t('toBeConfirmed')} />
+        <Info label={t('siteVisit')} value={response.siteVisitPolicy || t('toBeConfirmed')} />
+        <Info label={t('availability')} value={response.availability || t('toBeConfirmed')} />
+        <Info label={t('earliestStart')} value={response.earliestStartDate || t('toBeConfirmed')} />
+        <Info label={t('portfolio')} value={`${response.portfolioCount}`} />
+      </View>
+
+      {response.yearsExperienceLabel || response.categoryLabel || response.cityLabel ? (
+        <AppText color={colors.slate500} variant="caption">
+          {[response.yearsExperienceLabel, response.categoryLabel, response.cityLabel].filter(Boolean).join(' - ')}
+        </AppText>
+      ) : null}
+
+      {notes.map((item) => (
+        <View key={item.label} style={styles.noteBlock}>
+          <AppText color={colors.slate500} variant="small">{item.label}</AppText>
+          <AppText color={colors.slate700}>{String(item.value)}</AppText>
+        </View>
+      ))}
+
+      <AppText color={colors.slate500} variant="caption">
+        {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
+      </AppText>
+    </View>
   );
 }
 
@@ -372,9 +463,22 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
 const styles = StyleSheet.create({
   header: { gap: spacing.sm },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  comparisonCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proAmber500,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  infoGrid: { gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  noteBlock: { gap: spacing.xs },
+  profileImage: { backgroundColor: colors.proOrange50, borderRadius: 8, height: 56, width: 56 },
+  profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  profileText: { flex: 1, gap: spacing.xs },
   response: { gap: spacing.xs },
   stack: { gap: spacing.sm },
 });

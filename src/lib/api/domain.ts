@@ -607,6 +607,48 @@ export type CustomerProResponsePreview = {
   statusLabel: string;
 };
 
+export type CustomerUnlockedProComparisonResponse = {
+  assumptions: string | null;
+  availability: string | null;
+  categoryLabel: string;
+  cityLabel: string;
+  contactPolicyLabel: string;
+  currency: string;
+  customerPreparationNotes: string | null;
+  displayName: string;
+  earliestStartDate: string | null;
+  excludedNotes: string | null;
+  includedNotes: string | null;
+  independentProLabel: string;
+  materialsIncluded: string | null;
+  portfolioCount: number;
+  proProfileId: string;
+  profileImageUrl: string | null;
+  profileSummary: string | null;
+  profileVerifiedLabel: string;
+  responseId: string;
+  responseStatus: string;
+  roughQuoteLabel: string;
+  roughQuoteMax: number | null;
+  roughQuoteMin: number | null;
+  shortMessage: string | null;
+  siteVisitPolicy: string | null;
+  submittedAt: string;
+  tradeName: string | null;
+  updatedAt: string;
+  visibilityLabel: string;
+  yearsExperienceLabel: string | null;
+};
+
+export type CustomerUnlockedProComparison = {
+  canViewFullComparison: boolean;
+  comparisonLabel: string;
+  emptyStateLabel: string | null;
+  helperText: string;
+  responseCount: number;
+  responses: CustomerUnlockedProComparisonResponse[];
+};
+
 export type CustomerProRequestDetail = {
   budgetLabel: string;
   categoryLabel: string;
@@ -637,6 +679,7 @@ export type CustomerProRequestDetail = {
   statusLabel: string;
   timelineLabel: string;
   title: string;
+  unlockedComparison?: CustomerUnlockedProComparison | null;
   unlockedResponseCount?: number;
   unlockedResponseSummary?: string;
   unlockStatusLabel: string;

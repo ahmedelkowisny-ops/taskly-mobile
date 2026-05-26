@@ -525,7 +525,7 @@ Keep Bulgarian button labels short. Prefer explanatory text below the CTA instea
 ## Non-Scope
 
 - No Pro Access refund/support routes.
-- No full customer comparison UI implementation.
+- No comparison mutations, Pro chat, site-visit invites, or advanced ranking/filtering.
 - No Pro chat.
 - No admin workflow changes.
 - No Core payment, cancellation, support, refund, payout, commission, or dispute changes.
@@ -620,3 +620,31 @@ Deferred after Phase 28C:
 - Pro Access refund/support route.
 - Deep-link polish for store builds and dedicated return URL handling.
 - Real-device Checkout return testing against configured Stripe webhook/return URLs.
+
+## Phase 28E Implementation Note
+
+Phase 28E added the first read-only Customer mobile comparison view after Pro Access is paid/unlocked.
+
+Backend read model update:
+
+- Customer Pro request detail now returns `unlockedComparison` only as backend-shaped read data.
+- The comparison model is detail-only and uses submitted responses from approved Pro profiles.
+- Hidden/admin-disabled responses remain excluded.
+- Returned response/profile fields are safe customer comparison fields: Pro display/trade name, reviewed/independent labels, profile summary, rough quote range, materials/site visit/availability notes, included/excluded notes, assumptions, customer preparation notes, portfolio count, category/city summaries, and safe profile image URL.
+- The read model does not return admin-only fields, Stripe/payment internals, ranking internals, payout data, moderation internals, or private contact details.
+
+Mobile update:
+
+- Customer Pro request detail renders a `Compare approved Pros` section only when backend `unlockedComparison.canViewFullComparison` is true.
+- Before unlock, the screen keeps the existing Pro Access card and limited response preview behavior.
+- After unlock, comparison cards show only backend-returned fields and include copy that the final agreement is between the customer and the independent Pro.
+- Demo mode includes local safe unlocked comparison examples and does not call payment routes or simulate real settlement.
+
+Still deferred:
+
+- Pro chat.
+- Site visit invite flow.
+- Pro Access refund/support route.
+- Deep-link/store Checkout polish.
+- Advanced ranking, sorting, and filtering.
+- Admin moderation enhancements.
