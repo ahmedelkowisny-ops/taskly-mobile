@@ -117,6 +117,56 @@ Sound and vibration notes:
 - iOS sound and vibration remain subject to device/system notification settings. Future event sending should map these preferences into notification payload behavior where supported.
 - Custom sound asset changes require a new native build to be fully reflected.
 
+## Phase 31C Implementation Note
+
+- Added a backend Expo mobile push sender that uses `MobilePushToken` and `MobileNotificationPreference`.
+- Mobile push sending is best-effort. It logs failures and does not throw through the business action that triggered the notification.
+- The sender loads active Expo tokens for the backend-decided recipient user.
+- The sender applies preference gates:
+  - `pushEnabled`
+  - `coreAlertsEnabled`
+  - `proAlertsEnabled`
+  - `messageAlertsEnabled`
+  - `paymentAlertsEnabled`
+  - `completionAlertsEnabled`
+  - `supportAlertsEnabled`
+  - `siteVisitAlertsEnabled`
+- Sound is included only when `soundEnabled` is true, using `taskly_notification.wav`.
+- Android channel routing is included only when `vibrationEnabled` is true. Full per-device channel migration remains a later QA/build concern because Android channels are device-level native state.
+- Expo ticket errors that clearly indicate `DeviceNotRegistered` deactivate the stored mobile token.
+- Safe data payload fields are included for future deep-link routing:
+  - `type`
+  - `workspace`
+  - `category`
+  - `entityType`
+  - `entityId`
+  - `routeHint`
+  - `createdAt`
+- No full mobile deep-link routing was added.
+- No mobile notification history UI was added.
+
+First event hooks added:
+
+- Core task interest: `core.task.interest`, customer recipient, `core` category.
+- Customer selects a Tasker: `core.task.selected`, provider recipient, `core` category.
+- Provider requests completion: `core.task.completion_requested`, customer recipient, `completion` category.
+- Customer rejects completion: `core.task.completion_rejected`, provider recipient, `completion` category.
+- Customer approves completion: `core.task.completed`, provider recipient, `completion` category.
+- Provider submits a first Pro response: `pro.response.submitted`, customer recipient, `pro` category.
+- Pro Access unlock succeeds after verified payment: `pro.access.unlocked`, customer recipient, `pro` and `payment` categories.
+- Customer invites a Pro for site visit: `pro.site_visit.invited`, provider recipient, `site_visit` category.
+- Provider accepts, declines, or proposes another site visit time:
+  - `pro.site_visit.accepted`
+  - `pro.site_visit.declined`
+  - `pro.site_visit.proposed_time`
+  - customer recipient, `site_visit` category.
+
+Sensitive-data protections:
+
+- Push title/body copy is generic and does not include addresses, phone numbers, emails, payment object ids, Stripe ids, admin notes, support details, free-text invite messages, ranking, moderation data, or hidden Pro response data.
+- Entity ids are included only in the data payload for future routing, and screens must still refetch from backend APIs.
+- Support/issue mobile push hooks are deferred because the safe recipient behavior needs a separate product pass.
+
 ## Proposed Push Token Registration Contract
 
 Suggested future route:
@@ -361,7 +411,7 @@ Pro provider events:
 - Use `Pro request` or `Pro site visit` for Pro workflow notifications.
 - Use `Taskly message` only when the thread context is clear in the payload or body.
 - Do not use public version labels.
-- Do not use `escrow`.
+- Use approved protected payment wording only.
 - Payment wording should use `payment protected` or `payment update`.
 - Pro notifications should use `approved Pros` and `independent Pros` where relevant.
 
@@ -415,7 +465,6 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ## Non-Scope
 
-- Implementing notification sending hooks.
 - Implementing deep-link routing or redirect handling.
 - Changing the app scheme, associated domains, or broad native build config beyond the Phase 31B notification plugin foundation.
 - Changing Core payment/cancellation/support logic.
@@ -439,10 +488,10 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ### Phase 31C: Backend Event Notification Hooks
 
-- Add backend event hooks for selected Core and Pro events.
-- Extend template/event taxonomy for Pro and site visit events.
-- Respect preferences and de-duplicate noisy events.
-- Keep Telegram/email parallel where useful.
+- Added backend event hooks for selected Core and Pro events.
+- Added mobile Expo event taxonomy for Core, Pro, completion, payment, and site visit updates.
+- Respects preferences and avoids duplicate interest/edit notifications where the hook can safely detect repeats.
+- Kept Telegram/email parallel where already present.
 
 ### Phase 31D: Deep-Link Routing
 
