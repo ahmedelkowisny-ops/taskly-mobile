@@ -390,7 +390,7 @@ Provider site visit payloads must not accept:
 | Site visit accepted | Site visit accepted | Огледът е приет |
 | Site visit declined | Site visit declined | Огледът е отказан |
 | Pro proposed another time | Pro proposed another time | Pro предложи друг час |
-| Cancel invite | Cancel invite | Откажи поканата |
+| Cancel invite | Cancel invite | Отмени поканата |
 | This is only a site visit, not a final work agreement | This is only a site visit, not a final work agreement | Това е само оглед, не финална уговорка |
 | Independent Pros are responsible for their own quotes and work | Independent Pros are responsible for their own quotes and work | Независимите Pro отговарят за офертите и работата си |
 | Contact details are shared only when allowed by Taskly | Contact details are shared only when allowed by Taskly | Контакти се споделят само когато Taskly го позволи |
