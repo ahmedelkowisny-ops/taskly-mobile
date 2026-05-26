@@ -1100,16 +1100,14 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
   const list = getMockCustomerProRequestsResponse().proRequests;
   const summary = list.find((request) => request.id === proRequestId) || list[1];
   const isUnlocked = Boolean(summary.isUnlocked);
-  const unlockedComparison = {
-    canViewFullComparison: isUnlocked,
-    comparisonLabel: 'Full comparison',
-    emptyStateLabel: isUnlocked ? null : 'No visible Pro responses yet',
-    helperText: isUnlocked
-      ? 'Compare backend-returned details from approved independent Pros. Final agreement is between you and the Pro.'
-      : 'Unlock Pro Access to compare approved Pro responses.',
-    responseCount: isUnlocked ? 2 : 0,
-    responses: isUnlocked
-      ? [
+  const unlockedComparison = isUnlocked
+    ? {
+        canViewFullComparison: true,
+        comparisonLabel: 'Full comparison',
+        emptyStateLabel: null,
+        helperText: 'Compare backend-returned details from approved independent Pros. Final agreement is between you and the Pro.',
+        responseCount: 2,
+        responses: [
           {
             assumptions: 'Final price depends on confirmed measurements and hidden installation conditions.',
             availability: 'Next Week',
@@ -1174,9 +1172,9 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
             visibilityLabel: 'Visible after Pro Access unlock',
             yearsExperienceLabel: '6+ years',
           },
-        ]
-      : [],
-  };
+        ],
+      }
+    : null;
   return {
     proRequest: {
       budgetLabel: 'Budget not set',
