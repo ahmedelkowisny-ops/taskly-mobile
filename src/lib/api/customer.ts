@@ -4,6 +4,7 @@ import {
   ApproveCustomerTaskCompletionResponse,
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,
+  CustomerProAccessCheckoutResponse,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
@@ -162,6 +163,17 @@ export function getCustomerProRequestDetail(
   return apiRequest<CustomerProRequestDetailResponse>(endpoints.customer.proRequestDetail(proRequestId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function createCustomerProAccessCheckout(
+  proRequestId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerProAccessCheckoutResponse>> {
+  return apiRequest<CustomerProAccessCheckoutResponse>(endpoints.customer.proRequestAccessCheckout(proRequestId), {
+    authToken,
+    body: {},
+    method: 'POST',
   });
 }
 

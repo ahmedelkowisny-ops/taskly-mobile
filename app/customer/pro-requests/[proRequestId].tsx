@@ -1,11 +1,12 @@
 import { useFocusEffect } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { getCustomerProRequestDetail } from '@/src/lib/api/customer';
+import { createCustomerProAccessCheckout, getCustomerProRequestDetail } from '@/src/lib/api/customer';
 import { CustomerProRequestDetailResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
@@ -21,7 +22,11 @@ export default function CustomerProRequestDetailScreen() {
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<CustomerProRequestDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStartingProAccessPayment, setIsStartingProAccessPayment] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [proAccessPaymentError, setProAccessPaymentError] = useState<string | null>(null);
+  const [proAccessPaymentMessage, setProAccessPaymentMessage] = useState<string | null>(null);
+  const [showProAccessConfirm, setShowProAccessConfirm] = useState(false);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
@@ -63,6 +68,78 @@ export default function CustomerProRequestDetailScreen() {
     setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
     setMessage(result.status === 404 ? t('proRequestNotFound') : t('couldNotLoadProRequestDetail'));
   }, [getValidAccessToken, proRequestId, status]);
+
+  const refreshAccessStatus = useCallback(async () => {
+    setProAccessPaymentError(null);
+    if (status === 'demo') {
+      setData(getMockCustomerProRequestDetailResponse('demo-pro-unlocked'));
+      setProAccessPaymentMessage(t('demoProAccessUnlocked'));
+      return;
+    }
+    setProAccessPaymentMessage(t('paymentBeingConfirmed'));
+    await loadDetail();
+  }, [loadDetail, status]);
+
+  const openProAccessConfirm = useCallback(() => {
+    setProAccessPaymentError(null);
+    setProAccessPaymentMessage(null);
+    setShowProAccessConfirm(true);
+  }, []);
+
+  const startProAccessCheckout = useCallback(async () => {
+    setProAccessPaymentError(null);
+    setProAccessPaymentMessage(null);
+
+    if (status === 'demo') {
+      setData(getMockCustomerProRequestDetailResponse('demo-pro-unlocked'));
+      setShowProAccessConfirm(false);
+      setProAccessPaymentMessage(t('demoProAccessUnlocked'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setProAccessPaymentError(t('loginRequiredProRequestDetail'));
+      return;
+    }
+
+    setIsStartingProAccessPayment(true);
+
+    try {
+      const authToken = await getValidAccessToken();
+      if (!authToken) {
+        setProAccessPaymentError(t('loginRequiredProRequestDetail'));
+        return;
+      }
+
+      const result = await createCustomerProAccessCheckout(proRequestId, authToken);
+
+      if (!result.ok) {
+        setProAccessPaymentError(result.error.message || t('couldNotStartPayment'));
+        return;
+      }
+
+      setData(result.data);
+      setShowProAccessConfirm(false);
+
+      if (result.data.alreadyUnlocked || result.data.proRequest.isUnlocked) {
+        setProAccessPaymentMessage(t('accessUnlocked'));
+        return;
+      }
+
+      if (!result.data.checkoutUrl) {
+        setProAccessPaymentError(t('couldNotStartPayment'));
+        return;
+      }
+
+      await WebBrowser.openBrowserAsync(result.data.checkoutUrl);
+      setProAccessPaymentMessage(t('paymentBeingConfirmed'));
+      await loadDetail();
+    } catch {
+      setProAccessPaymentError(t('couldNotStartPayment'));
+    } finally {
+      setIsStartingProAccessPayment(false);
+    }
+  }, [getValidAccessToken, loadDetail, proRequestId, status]);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,7 +185,37 @@ export default function CustomerProRequestDetailScreen() {
             <Info label={t('responsesReceived')} value={String(request.responsesCount)} />
           </AppCard>
 
-          <ProAccessCard request={request} />
+          <ProAccessCard
+            isStartingPayment={isStartingProAccessPayment}
+            onRefreshAccessStatus={refreshAccessStatus}
+            onStartPayment={openProAccessConfirm}
+            request={request}
+          />
+
+          {showProAccessConfirm ? (
+            <ProAccessPaymentConfirmCard
+              isStartingPayment={isStartingProAccessPayment}
+              onCancel={() => setShowProAccessConfirm(false)}
+              onConfirm={startProAccessCheckout}
+              request={request}
+            />
+          ) : null}
+
+          {proAccessPaymentMessage ? (
+            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+              <StatusBadge label={t('proAccessPayment')} tone="pro" />
+              <AppText color={colors.slate700}>{proAccessPaymentMessage}</AppText>
+              <AppButton onPress={refreshAccessStatus} tone="pro" variant="outline">{t('refreshAccessStatus')}</AppButton>
+            </AppCard>
+          ) : null}
+
+          {proAccessPaymentError ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('couldNotStartPayment')} tone="warning" />
+              <AppText color={colors.slate700}>{proAccessPaymentError}</AppText>
+              <AppButton onPress={openProAccessConfirm} tone="pro" variant="outline">{t('retry')}</AppButton>
+            </AppCard>
+          ) : null}
 
           <Images images={request.images} />
 
@@ -131,11 +238,26 @@ export default function CustomerProRequestDetailScreen() {
   );
 }
 
-function ProAccessCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+function ProAccessCard({
+  isStartingPayment,
+  onRefreshAccessStatus,
+  onStartPayment,
+  request,
+}: {
+  isStartingPayment: boolean;
+  onRefreshAccessStatus: () => void;
+  onStartPayment: () => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
   const state = request.proAccessState;
   const nextActions = request.proAccessNextActions;
   const statusLabel = state?.statusLabel || request.unlockStatusLabel;
   const isUnlocked = Boolean(request.isUnlocked || nextActions?.canViewUnlockedResponses);
+  const canStartPayment = Boolean(
+    !isUnlocked &&
+    nextActions?.canUnlockProResponses &&
+    (nextActions.canPrepareProAccessPayment || nextActions.canRetryProAccessPayment),
+  );
 
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -153,14 +275,48 @@ function ProAccessCard({ request }: { request: CustomerProRequestDetailResponse[
       {request.proAccessBlockedReason ? (
         <AppText color={colors.warning600}>{request.proAccessBlockedReason}</AppText>
       ) : null}
-      {nextActions?.canUnlockProResponses ? (
-        <AppText color={colors.slate700}>{t('unlockPaymentConnectedLater')}</AppText>
+      {canStartPayment ? (
+        <AppButton loading={isStartingPayment} onPress={onStartPayment} tone="pro">
+          {t('unlockAndComparePros')}
+        </AppButton>
+      ) : nextActions?.canUnlockProResponses ? (
+        <AppText color={colors.slate700}>{t('paymentNotReadyYet')}</AppText>
       ) : null}
+      <AppButton onPress={onRefreshAccessStatus} tone="pro" variant="outline">{t('refreshAccessStatus')}</AppButton>
       {isUnlocked ? (
         <AppText color={colors.slate700}>{request.unlockedResponseSummary || t('fullComparisonAvailable')}</AppText>
       ) : (
         <AppText color={colors.slate700}>{t('proAccessPaymentNotProject')}</AppText>
       )}
+    </AppCard>
+  );
+}
+
+function ProAccessPaymentConfirmCard({
+  isStartingPayment,
+  onCancel,
+  onConfirm,
+  request,
+}: {
+  isStartingPayment: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <StatusBadge label={t('secureCheckout')} tone="pro" />
+      <AppText variant="sectionTitle">{t('proAccessPayment')}</AppText>
+      <AppText color={colors.slate700}>{t('postingWasFree')}</AppText>
+      <AppText color={colors.slate700}>{t('prosHaveResponded')}</AppText>
+      <Info label={t('proAccessFee')} value={request.proAccessFeeLabel || request.proAccessPaymentState?.amountLabel || t('toBeConfirmed')} />
+      <AppText color={colors.slate700}>{t('proAccessPaymentNotProject')}</AppText>
+      <AppText color={colors.slate700}>{t('independentProsResponsible')}</AppText>
+      <AppText color={colors.slate700}>{t('returnToTasklyAfterPayment')}</AppText>
+      <View style={styles.stack}>
+        <AppButton loading={isStartingPayment} onPress={onConfirm} tone="pro">{t('continueToSecurePayment')}</AppButton>
+        <AppButton disabled={isStartingPayment} onPress={onCancel} tone="neutral" variant="outline">{t('cancel')}</AppButton>
+      </View>
     </AppCard>
   );
 }

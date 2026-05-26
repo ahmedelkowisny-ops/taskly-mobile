@@ -647,6 +647,12 @@ export type CustomerProRequestDetailResponse = {
   proRequest: CustomerProRequestDetail;
 };
 
+export type CustomerProAccessCheckoutResponse = CustomerProRequestDetailResponse & {
+  alreadyUnlocked?: boolean;
+  checkoutUrl?: string | null;
+  sessionId?: string | null;
+};
+
 export type CreateCustomerProRequestResponse = CustomerProRequestDetailResponse & {
   nextActions: DetailNextAction[];
   uploadState?: {

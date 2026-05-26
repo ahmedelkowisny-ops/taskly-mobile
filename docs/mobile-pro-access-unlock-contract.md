@@ -489,7 +489,7 @@ Future mobile mutations should be scoped separately and must:
 - Explain secure payment and what happens next.
 - Say the payment unlocks comparison access, not the renovation work.
 - Do not use raw Stripe jargon.
-- Do not use `escrow`.
+- Do not use payment-holding wording for Pro Access.
 - Do not imply Taskly performs the project.
 
 ### After unlock
@@ -576,3 +576,48 @@ Added fields include:
 Mobile now displays passive Pro Access/unlock state on Customer Pro list/detail screens, with demo examples for no responses, unlock available, and access unlocked. Payment setup/finalize routes, Stripe UI, Pro Access mutation behavior, Pro chat, and full post-unlock comparison expansion remain deferred.
 
 Recommended next phase: Phase 28C should implement the mobile Pro Access payment setup/finalize contract only after confirming the Phase 28B read-only state is stable across real customer/pro test accounts.
+
+## Phase 28C Implementation Note
+
+Phase 28C implemented a mobile-safe Stripe Checkout launch flow for Customer Pro Access.
+
+Chosen approach:
+
+- Reuse the existing backend/web Stripe Checkout source of truth instead of introducing a new PaymentIntent/PaymentSheet path.
+- Add a shared backend helper for Pro Access Checkout eligibility, pending payment upsert, Stripe Checkout Session creation, metadata, amount, currency, and idempotency.
+- Keep webhook/checkout-return finalization authoritative. Mobile never marks access as paid or unlocked from client state alone.
+
+Backend route added:
+
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/access/checkout`
+
+The route:
+
+- Requires mobile auth.
+- Requires Customer Workspace access.
+- Requires customer ownership through the shared backend Checkout helper.
+- Requires at least one submitted approved-Pro response.
+- Rejects forbidden client-owned payment/unlock fields such as amount, currency, fee, customer id, access status, payment status, visibility, Stripe metadata, client secret, checkout URL, and session id.
+- Uses backend Pro Access fee constants and Stripe server configuration only.
+- Returns a mobile-safe `checkoutUrl`, `sessionId`, `alreadyUnlocked`, and refreshed customer Pro request detail.
+
+Mobile wrapper added:
+
+- `createCustomerProAccessCheckout(proRequestId, authToken)`
+
+Mobile UI behavior added:
+
+- Customer Pro request detail now shows an active unlock CTA only when backend `proAccessNextActions` allow payment preparation/retry and unlock.
+- Before Checkout, the app shows a confirmation card explaining that posting was free, Pro responses are available, the backend fee label, and that Pro Access unlocks comparison access rather than renovation work.
+- The app opens the backend-created Checkout URL with Expo SDK 54 `expo-web-browser`.
+- After Checkout closes, the app refreshes Pro request detail from the backend and shows pending confirmation/unlocked state based only on backend response fields.
+- A manual `Refresh access status` action is available.
+- Demo mode simulates local unlock only and does not call Stripe or backend payment routes.
+
+Deferred after Phase 28C:
+
+- Full customer comparison UI expansion beyond backend-returned read-only previews.
+- Pro chat.
+- Pro Access refund/support route.
+- Deep-link polish for store builds and dedicated return URL handling.
+- Real-device Checkout return testing against configured Stripe webhook/return URLs.
