@@ -78,9 +78,13 @@ export function NotificationDeepLinkHandler() {
         return;
       }
 
-      router.push(getDeepLinkFallbackRoute());
+      openTarget({
+        href: getDeepLinkFallbackRoute(),
+        source: 'notification',
+        workspace: 'customer',
+      });
     },
-    [openTarget, router],
+    [openTarget],
   );
 
   const handleUrl = useCallback(

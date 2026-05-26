@@ -105,6 +105,11 @@ Reference docs:
   - `supportAlertsEnabled`
   - `siteVisitAlertsEnabled`
   - `marketingAlertsEnabled` defaults to false and is not surfaced in mobile UI.
+- Product default decision:
+  - `pushEnabled` defaults to false until the user enables alerts and grants permission.
+  - `soundEnabled` and `vibrationEnabled` default to true.
+  - Core, Pro, message, payment, completion, support, and site visit alert preferences default to true.
+  - Marketing alerts default to false or remain absent from active mobile UI.
 - Added mobile wrappers, local token storage, and a notification service that requests permission only when the user taps `Enable alerts`.
 - Added Customer and Provider account notification settings cards. Demo mode updates settings locally and never registers a real push token.
 - Logout performs best-effort unregister of the stored mobile token before clearing auth tokens.
@@ -114,8 +119,9 @@ Reference docs:
 Sound and vibration notes:
 
 - Sound and vibration are stored as user preferences.
+- After the user enables push notifications, Taskly uses sound and vibration by default unless the user turns those preferences off.
 - Android channel setup uses the custom sound asset when sound is enabled and an empty vibration pattern when vibration is disabled.
-- iOS sound and vibration remain subject to device/system notification settings. Future event sending should map these preferences into notification payload behavior where supported.
+- iOS sound and vibration remain subject to device/system notification settings. Silent mode, Focus, Do Not Disturb, and Android notification-channel settings may override app preferences.
 - Custom sound asset changes require a new native build to be fully reflected.
 
 ## Phase 31C Implementation Note
@@ -210,6 +216,25 @@ Deferred after Phase 31D:
 - Notification history/inbox UI.
 - Advanced Android channel migration strategy.
 - Store-build testing for cold-start notification taps.
+
+## Phase 31E QA Note
+
+- Added `docs/mobile-notifications-real-device-qa-checklist.md`.
+- The checklist covers permission UX, token registration/unregister, preferences, sound, vibration, Android channels, iOS limitations, backend event delivery, and notification tap routing.
+- Real-device QA should use Android and iOS physical devices where possible.
+- Expo Go is not sufficient for full Android remote push/custom sound verification on SDK 54; use a development build or internal/production build.
+- Custom sound verification requires a native build that includes `assets/sounds/taskly_notification.wav` through the Expo notifications plugin.
+- Android channel sound/vibration changes can be affected by existing device-level channel state; clear app data/reinstall for final channel QA.
+- Push payloads remain routing hints only. Destination screens must continue refetching details from backend APIs.
+- Phase 31E made only a small routing fallback hardening fix for unsupported notification payloads.
+
+Deferred after Phase 31E:
+
+- Notification history/inbox UI.
+- Message notification hooks if later scoped.
+- Advanced Android channel migration strategy.
+- Store-build cold-start testing.
+- Production APNs/FCM/EAS credential hardening if needed.
 
 ## Proposed Push Token Registration Contract
 
@@ -544,5 +569,5 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ### Phase 31E: Real-Device Notification QA
 
-- Test on physical iOS/Android or development builds.
-- Verify permissions, token registration, notification delivery, deep-link open behavior, disabled preferences, logout/unregister, and privacy-safe payloads.
+- Added the real-device notification QA checklist.
+- Verify permissions, token registration, notification delivery, sound/vibration behavior, deep-link open behavior, disabled preferences, logout/unregister, and privacy-safe payloads on device builds.
