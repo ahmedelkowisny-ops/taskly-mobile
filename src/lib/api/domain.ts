@@ -592,6 +592,58 @@ export type CustomerProAccessNextActions = {
   canViewUnlockedResponses: boolean;
 };
 
+export type ProSiteVisitState = {
+  activeInviteCount: number;
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  helperText: string;
+  status: string;
+  statusLabel: string;
+};
+
+export type ProSiteVisitInviteSummary = {
+  accessNotesPreview: string | null;
+  createdAt: string;
+  id: string;
+  messagePreview: string | null;
+  preferredDate: string | null;
+  preferredTimeWindow: string | null;
+  proDisplayName: string;
+  proProfileId: string;
+  proRequestId: string;
+  proResponseId: string | null;
+  proposedAt: string | null;
+  scheduledAt: string | null;
+  status: string;
+  statusLabel: string;
+  updatedAt: string;
+};
+
+export type ProSiteVisitNextActions = {
+  blockedReason?: string | null;
+  blockedReasonCode?: string | null;
+  canAcceptSiteVisit: boolean;
+  canCancelSiteVisitInvite: boolean;
+  canDeclineSiteVisit: boolean;
+  canInviteForSiteVisit: boolean;
+  canProposeSiteVisitTime: boolean;
+};
+
+export type ProContactVisibilityState = {
+  allowedContactFields: string[];
+  helperText: string;
+  state: string;
+  stateLabel: string;
+};
+
+export type ProAddressVisibilityState = {
+  accessNotesLabel: string | null;
+  addressLabel: string | null;
+  helperText: string;
+  state: string;
+  stateLabel: string;
+};
+
 export type CustomerProComparisonState = {
   helperText: string;
   status: string;
@@ -650,10 +702,13 @@ export type CustomerUnlockedProComparison = {
 };
 
 export type CustomerProRequestDetail = {
+  addressVisibilityState?: ProAddressVisibilityState;
+  allowedContactFields?: string[];
   budgetLabel: string;
   categoryLabel: string;
   cityLabel: string;
   comparisonState?: CustomerProComparisonState;
+  contactVisibilityState?: ProContactVisibilityState;
   createdAt: string;
   description: string;
   id: string;
@@ -675,6 +730,12 @@ export type CustomerProRequestDetail = {
   responsePreviewSummary?: string;
   responsesCount: number;
   submittedResponseCount?: number;
+  siteVisitBlockedReason?: string | null;
+  siteVisitBlockedReasonCode?: string | null;
+  siteVisitInvites?: ProSiteVisitInviteSummary[];
+  siteVisitNextActions?: ProSiteVisitNextActions;
+  siteVisitState?: ProSiteVisitState;
+  siteVisitSummary?: string;
   status: string;
   statusLabel: string;
   timelineLabel: string;
@@ -986,9 +1047,12 @@ export type EligibilitySummary = {
 };
 
 export type ProviderProRequestDetail = {
+  addressVisibilityState?: ProAddressVisibilityState;
+  allowedContactFields?: string[];
   budgetLabel: string;
   categoryLabel: string;
   cityLabel: string;
+  contactVisibilityState?: ProContactVisibilityState;
   createdAt: string;
   description: string;
   eligibility: EligibilitySummary;
@@ -1002,6 +1066,12 @@ export type ProviderProRequestDetail = {
   proResponseState?: ProviderProResponseState;
   proResponseSummary?: ProviderProResponseSummary | null;
   responseEditDefaults?: ProviderProResponseEditDefaults | null;
+  siteVisitBlockedReason?: string | null;
+  siteVisitBlockedReasonCode?: string | null;
+  siteVisitInvites?: ProSiteVisitInviteSummary[];
+  siteVisitNextActions?: ProSiteVisitNextActions;
+  siteVisitState?: ProSiteVisitState;
+  siteVisitSummary?: string;
   status: string;
   statusLabel: string;
   timelineLabel: string;

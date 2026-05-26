@@ -1096,10 +1096,123 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
   };
 }
 
+function getMockCustomerSiteVisitModel(proRequestId: string, isUnlocked: boolean, now: string) {
+  if (!isUnlocked) {
+    return {
+      addressVisibilityState: {
+        accessNotesLabel: null,
+        addressLabel: null,
+        helperText: 'Exact address is hidden until a site visit flow allows sharing.',
+        state: 'hidden',
+        stateLabel: 'Address hidden',
+      },
+      allowedContactFields: [],
+      contactVisibilityState: {
+        allowedContactFields: [],
+        helperText: 'Contact details are hidden until Taskly allows sharing for a site visit.',
+        state: 'hidden',
+        stateLabel: 'Contact details hidden',
+      },
+      siteVisitBlockedReason: 'Site visit actions will be available after Pro Access unlock when allowed.',
+      siteVisitBlockedReasonCode: 'PRO_ACCESS_NOT_UNLOCKED',
+      siteVisitInvites: [],
+      siteVisitNextActions: {
+        blockedReason: 'Site visit actions will be available after Pro Access unlock when allowed.',
+        blockedReasonCode: 'PRO_ACCESS_NOT_UNLOCKED',
+        canAcceptSiteVisit: false,
+        canCancelSiteVisitInvite: false,
+        canDeclineSiteVisit: false,
+        canInviteForSiteVisit: false,
+        canProposeSiteVisitTime: false,
+      },
+      siteVisitState: {
+        activeInviteCount: 0,
+        blockedReason: 'Site visit actions will be available after Pro Access unlock when allowed.',
+        blockedReasonCode: 'PRO_ACCESS_NOT_UNLOCKED',
+        helperText: 'Site visit actions will be available after Pro Access unlock when allowed.',
+        status: 'blocked',
+        statusLabel: 'Site visit unavailable',
+      },
+      siteVisitSummary: 'Site visit actions will be available after Pro Access unlock when allowed.',
+    };
+  }
+
+  const isAccepted = proRequestId.includes('accepted');
+  const isDeclined = proRequestId.includes('declined');
+  const isProposed = proRequestId.includes('proposed');
+  const status = isAccepted ? 'accepted' : isDeclined ? 'declined' : isProposed ? 'alternate_time_proposed' : 'invited';
+  const statusLabel =
+    status === 'accepted'
+      ? 'Site visit accepted'
+      : status === 'declined'
+        ? 'Site visit declined'
+        : status === 'alternate_time_proposed'
+          ? 'Another time proposed'
+          : 'Invite sent';
+  const shared = status === 'accepted';
+
+  return {
+    addressVisibilityState: {
+      accessNotesLabel: null,
+      addressLabel: shared ? 'Address shared for site visit' : null,
+      helperText: shared ? 'Address details are shared only for the allowed site visit flow.' : 'Exact address is hidden until a site visit flow allows sharing.',
+      state: shared ? 'shared_for_site_visit' : 'area_only',
+      stateLabel: shared ? 'Address shared for site visit' : 'City/area only',
+    },
+    allowedContactFields: shared ? ['address', 'accessNotes'] : [],
+    contactVisibilityState: {
+      allowedContactFields: shared ? ['address', 'accessNotes'] : [],
+      helperText: shared ? 'Contact details are shared only for the allowed site visit flow.' : 'Contact details are hidden until Taskly allows sharing for a site visit.',
+      state: shared ? 'shared_for_site_visit' : 'allowed_after_site_visit_invite',
+      stateLabel: shared ? 'Contact details shared for site visit' : 'Contact details hidden',
+    },
+    siteVisitBlockedReason: null,
+    siteVisitBlockedReasonCode: null,
+    siteVisitInvites: [
+      {
+        accessNotesPreview: null,
+        createdAt: now,
+        id: 'demo-site-visit-1',
+        messagePreview: 'Demo site visit note. No real contact details are shared.',
+        preferredDate: now.slice(0, 10),
+        preferredTimeWindow: now,
+        proDisplayName: 'Approved Pro Studio',
+        proProfileId: 'demo-pro-profile-1',
+        proRequestId,
+        proResponseId: 'demo-response-1',
+        proposedAt: isProposed ? now : null,
+        scheduledAt: now,
+        status,
+        statusLabel,
+        updatedAt: now,
+      },
+    ],
+    siteVisitNextActions: {
+      blockedReason: null,
+      blockedReasonCode: null,
+      canAcceptSiteVisit: false,
+      canCancelSiteVisitInvite: status === 'invited',
+      canDeclineSiteVisit: false,
+      canInviteForSiteVisit: false,
+      canProposeSiteVisitTime: false,
+    },
+    siteVisitState: {
+      activeInviteCount: status === 'invited' || status === 'accepted' ? 1 : 0,
+      blockedReason: null,
+      blockedReasonCode: null,
+      helperText: 'Site visit state is demo read-only data. This is only a site visit, not a final work agreement.',
+      status,
+      statusLabel,
+    },
+    siteVisitSummary: `${statusLabel} with Approved Pro Studio.`,
+  };
+}
+
 export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro-request'): CustomerProRequestDetailResponse {
   const list = getMockCustomerProRequestsResponse().proRequests;
   const summary = list.find((request) => request.id === proRequestId) || list[1];
   const isUnlocked = Boolean(summary.isUnlocked);
+  const siteVisitModel = getMockCustomerSiteVisitModel(proRequestId, isUnlocked, summary.createdAt);
   const unlockedComparison = isUnlocked
     ? {
         canViewFullComparison: true,
@@ -1177,6 +1290,7 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
     : null;
   return {
     proRequest: {
+      ...siteVisitModel,
       budgetLabel: 'Budget not set',
       categoryLabel: summary.categoryLabel,
       cityLabel: summary.cityLabel,
@@ -1946,8 +2060,121 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
   };
 }
 
+function getMockProviderSiteVisitModel(proRequestId: string, hasSubmittedResponse: boolean, now: string) {
+  if (!hasSubmittedResponse) {
+    return {
+      addressVisibilityState: {
+        accessNotesLabel: null,
+        addressLabel: null,
+        helperText: 'Only city/area context is available before address sharing is allowed.',
+        state: 'city_only',
+        stateLabel: 'City/area only',
+      },
+      allowedContactFields: [],
+      contactVisibilityState: {
+        allowedContactFields: [],
+        helperText: 'Customer contact details are hidden until Taskly allows sharing.',
+        state: 'hidden',
+        stateLabel: 'Contact details hidden',
+      },
+      siteVisitBlockedReason: 'Submit an approved Pro response before site visit invitations can be received.',
+      siteVisitBlockedReasonCode: 'PRO_RESPONSE_REQUIRED',
+      siteVisitInvites: [],
+      siteVisitNextActions: {
+        blockedReason: 'Submit an approved Pro response before site visit invitations can be received.',
+        blockedReasonCode: 'PRO_RESPONSE_REQUIRED',
+        canAcceptSiteVisit: false,
+        canCancelSiteVisitInvite: false,
+        canDeclineSiteVisit: false,
+        canInviteForSiteVisit: false,
+        canProposeSiteVisitTime: false,
+      },
+      siteVisitState: {
+        activeInviteCount: 0,
+        blockedReason: 'Submit an approved Pro response before site visit invitations can be received.',
+        blockedReasonCode: 'PRO_RESPONSE_REQUIRED',
+        helperText: 'Site visit invitations will appear here when a customer sends one.',
+        status: 'blocked',
+        statusLabel: 'Site visit unavailable',
+      },
+      siteVisitSummary: 'Site visit invitations will appear here when a customer sends one.',
+    };
+  }
+
+  const accepted = proRequestId.includes('accepted');
+  const proposed = proRequestId.includes('proposed');
+  const declined = proRequestId.includes('declined');
+  const status = accepted ? 'accepted' : proposed ? 'alternate_time_proposed' : declined ? 'declined' : 'invited';
+  const statusLabel =
+    status === 'accepted'
+      ? 'Site visit accepted'
+      : status === 'alternate_time_proposed'
+        ? 'Another time proposed'
+        : status === 'declined'
+          ? 'Site visit declined'
+          : 'Invite received';
+
+  return {
+    addressVisibilityState: {
+      accessNotesLabel: accepted ? 'Use building entrance after 18:00.' : null,
+      addressLabel: accepted ? 'Demo address shared for site visit' : null,
+      helperText: accepted ? 'Address is shown only for the accepted site visit flow.' : 'Only city/area context is available before address sharing is allowed.',
+      state: accepted ? 'shared_for_site_visit' : 'city_only',
+      stateLabel: accepted ? 'Address shared for site visit' : 'City/area only',
+    },
+    allowedContactFields: accepted ? ['address', 'accessNotes'] : [],
+    contactVisibilityState: {
+      allowedContactFields: accepted ? ['address', 'accessNotes'] : [],
+      helperText: accepted ? 'Only backend-allowed site visit contact details are shown.' : 'Customer contact details are hidden until Taskly allows sharing.',
+      state: accepted ? 'shared_for_site_visit' : 'allowed_after_site_visit_invite',
+      stateLabel: accepted ? 'Contact details shared for site visit' : 'Contact details hidden',
+    },
+    siteVisitBlockedReason: null,
+    siteVisitBlockedReasonCode: null,
+    siteVisitInvites: [
+      {
+        accessNotesPreview: accepted ? 'Use building entrance after 18:00.' : null,
+        createdAt: now,
+        id: 'demo-provider-site-visit',
+        messagePreview: 'Customer requested a site visit. Demo mode uses safe placeholder details.',
+        preferredDate: now.slice(0, 10),
+        preferredTimeWindow: now,
+        proDisplayName: 'Your Pro profile',
+        proProfileId: 'demo-provider-profile',
+        proRequestId,
+        proResponseId: 'demo-response-submitted',
+        proposedAt: proposed ? now : null,
+        scheduledAt: now,
+        status,
+        statusLabel,
+        updatedAt: now,
+      },
+    ],
+    siteVisitNextActions: {
+      blockedReason: null,
+      blockedReasonCode: null,
+      canAcceptSiteVisit: status === 'invited',
+      canCancelSiteVisitInvite: false,
+      canDeclineSiteVisit: status === 'invited',
+      canInviteForSiteVisit: false,
+      canProposeSiteVisitTime: status === 'invited',
+    },
+    siteVisitState: {
+      activeInviteCount: status === 'invited' || status === 'accepted' ? 1 : 0,
+      blockedReason: null,
+      blockedReasonCode: null,
+      helperText: 'This is only a site visit invitation, not a final work agreement.',
+      status,
+      statusLabel,
+    },
+    siteVisitSummary: statusLabel,
+  };
+}
+
 export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-provider-pro'): ProviderProRequestDetailResponse {
   const hasSubmittedResponse = proRequestId.includes('submitted');
+  const now = new Date().toISOString();
+  const siteVisitModel = getMockProviderSiteVisitModel(proRequestId, hasSubmittedResponse, now);
   const proResponseCapabilities = hasSubmittedResponse
     ? {
         canEditResponse: true,
@@ -2003,6 +2230,7 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
 
   return {
     proRequest: {
+      ...siteVisitModel,
       budgetLabel: 'Budget not set',
       categoryLabel: 'Renovation',
       cityLabel: 'Sofia',
@@ -2047,6 +2275,7 @@ export function submitOrUpdateMockProviderProResponse(
   payload: ProviderProResponsePayload,
 ): ProviderProRequestDetailResponse {
   const now = new Date().toISOString();
+  const siteVisitModel = getMockProviderSiteVisitModel(proRequestId, true, now);
   const min = payload.roughQuoteMin ?? null;
   const max = payload.roughQuoteMax ?? null;
   const roughQuoteLabel =
@@ -2060,6 +2289,7 @@ export function submitOrUpdateMockProviderProResponse(
 
   return {
     proRequest: {
+      ...siteVisitModel,
       budgetLabel: 'Budget not set',
       categoryLabel: 'Renovation',
       cityLabel: 'Sofia',

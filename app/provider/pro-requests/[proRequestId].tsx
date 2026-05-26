@@ -252,6 +252,8 @@ export default function ProviderProRequestDetailScreen() {
             )}
           </AppCard>
 
+          <SiteVisitStateCard request={request} />
+
           <NextActions actions={request.nextActions} />
         </>
       ) : null}
@@ -297,6 +299,62 @@ function ProResponseCapabilityCard({
           </AppText>
         </View>
       ) : null}
+    </AppCard>
+  );
+}
+
+function SiteVisitStateCard({ request }: { request: NonNullable<ProviderProRequestDetailResponse['proRequest']> }) {
+  const state = request.siteVisitState;
+  const invites = request.siteVisitInvites || [];
+  if (!state || (!invites.length && state.status === 'none')) return null;
+
+  const contactState = request.contactVisibilityState;
+  const addressState = request.addressVisibilityState;
+  const allowedFields = request.allowedContactFields || contactState?.allowedContactFields || [];
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('siteVisit')} tone="pro" />
+        <StatusBadge label={state.statusLabel} tone={getSiteVisitTone(state.status)} />
+      </View>
+      <AppText variant="sectionTitle">{t('siteVisitInvitations')}</AppText>
+      <AppText color={colors.slate700}>{request.siteVisitSummary || state.helperText}</AppText>
+      <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+      {request.siteVisitBlockedReason ? (
+        <AppText color={colors.warning600}>{request.siteVisitBlockedReason}</AppText>
+      ) : null}
+
+      {invites.map((invite) => (
+        <View key={invite.id} style={styles.siteVisitInvite}>
+          <StatusBadge label={invite.statusLabel} tone={getSiteVisitTone(invite.status)} />
+          {invite.preferredDate ? <Info label={t('preferredTime')} value={invite.preferredDate} /> : null}
+          {invite.messagePreview ? <Info label={t('shortMessage')} value={invite.messagePreview} /> : null}
+          {invite.accessNotesPreview ? <Info label={t('accessNotes')} value={invite.accessNotesPreview} /> : null}
+        </View>
+      ))}
+
+      {contactState ? (
+        <Info
+          label={t('sharedDetails')}
+          value={contactState.state === 'shared_for_site_visit' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
+        />
+      ) : null}
+      {addressState ? (
+        <Info
+          label={t('siteVisit')}
+          value={
+            addressState.state === 'shared_for_site_visit'
+              ? addressState.addressLabel || t('addressSharedForSiteVisit')
+              : addressState.state === 'city_only'
+                ? t('cityAreaOnly')
+                : t('addressHidden')
+          }
+        />
+      ) : null}
+      {allowedFields.length ? <Info label={t('allowedContactFields')} value={allowedFields.join(', ')} /> : null}
+      <AppText color={colors.slate500} variant="caption">{t('contactDetailsSharedWhenAllowed')}</AppText>
+      <AppText color={colors.slate500} variant="caption">{t('independentProsResponsible')}</AppText>
     </AppCard>
   );
 }
@@ -577,6 +635,14 @@ const styles = StyleSheet.create({
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
   segmentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  siteVisitInvite: {
+    backgroundColor: colors.white,
+    borderColor: colors.proAmber500,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.sm,
+  },
   stack: { gap: spacing.sm },
   twoColumn: { gap: spacing.md },
 });
@@ -585,5 +651,12 @@ function getProResponseBadgeTone(status?: string) {
   if (status === 'can_submit' || status === 'can_edit') return 'success';
   if (status === 'response_hidden' || status === 'profile_under_review') return 'warning';
   if (status === 'submitted_locked') return 'pro';
+  return 'neutral';
+}
+
+function getSiteVisitTone(status?: string) {
+  if (status === 'accepted' || status === 'completed' || status === 'invite_available') return 'success';
+  if (status === 'invited' || status === 'alternate_time_proposed') return 'pro';
+  if (status === 'declined' || status === 'cancelled' || status === 'blocked') return 'warning';
   return 'neutral';
 }

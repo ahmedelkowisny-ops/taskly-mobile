@@ -425,3 +425,52 @@ Rationale:
 - It also gives backend a place to settle alternate-time representation and contact/address visibility semantics before any invite action can share sensitive data.
 
 Only after read-only state is stable should a later phase implement customer invite and provider response mutations.
+
+## Phase 29B Implementation Note
+
+Phase 29B added backend-authored read-only site visit/contact/address state to Customer and Provider mobile Pro request detail responses.
+
+Fields added to mobile detail shapes:
+
+- `siteVisitState`
+- `siteVisitSummary`
+- `siteVisitInvites`
+- `siteVisitNextActions`
+- `siteVisitBlockedReason`
+- `siteVisitBlockedReasonCode`
+- `contactVisibilityState`
+- `addressVisibilityState`
+- `allowedContactFields`
+
+Customer mobile behavior:
+
+- Customer Pro detail can now show a passive site visit state card after Pro Access unlock/comparison when relevant.
+- The card shows invite status, selected approved Pro, preferred date/time if stored, safe message/access-note previews if returned, backend blocked reason, and contact/address sharing summary.
+- No invite or cancel button was added.
+
+Provider mobile behavior:
+
+- Provider Pro detail can now show a passive site visit invitation/status card when the backend returns an invitation for that provider's approved Pro profile.
+- The card shows invitation status, preferred date/time if stored, safe message/access-note previews if returned, and backend-authored contact/address visibility.
+- Provider accept, decline, and propose-time buttons were not added.
+
+Contact/address behavior:
+
+- Phone and email are not returned by the new mobile read models.
+- Provider exact address/access notes are eligible for display only when the backend read model sees an accepted/completed site visit invite for that provider relationship.
+- Before that allowed state, mobile shows city/area-only or hidden summaries.
+- Mobile still renders only fields explicitly returned by the backend.
+
+Demo behavior:
+
+- Demo mode includes safe read-only examples for no invite, invite sent, accepted, declined, and alternate-time states.
+- Demo mode does not call site visit mutation routes and does not expose real contact/address details.
+
+Deferred after Phase 29B:
+
+- Customer invite mutation.
+- Customer cancel invite mutation.
+- Provider accept/decline/propose-time mutations.
+- Site visit notifications.
+- Pro chat.
+- Admin workflow enhancements.

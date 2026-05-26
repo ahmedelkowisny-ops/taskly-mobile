@@ -221,6 +221,8 @@ export default function CustomerProRequestDetailScreen() {
 
           <UnlockedComparisonSection request={request} />
 
+          <SiteVisitStateCard request={request} />
+
           {!request.unlockedComparison?.canViewFullComparison ? (
             <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
             <AppText variant="sectionTitle">{t('proResponses')}</AppText>
@@ -326,6 +328,71 @@ function ComparisonResponseCard({ response }: { response: CustomerUnlockedProCom
         {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
       </AppText>
     </View>
+  );
+}
+
+function SiteVisitStateCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  const state = request.siteVisitState;
+  if (!state || (!request.isUnlocked && !request.siteVisitInvites?.length)) return null;
+
+  const invites = request.siteVisitInvites || [];
+  const contactState = request.contactVisibilityState;
+  const addressState = request.addressVisibilityState;
+  const allowedFields = request.allowedContactFields || contactState?.allowedContactFields || [];
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('siteVisit')} tone="pro" />
+        <StatusBadge label={state.statusLabel} tone={getSiteVisitTone(state.status)} />
+      </View>
+      <AppText variant="sectionTitle">{t('siteVisitInvitations')}</AppText>
+      <AppText color={colors.slate700}>{request.siteVisitSummary || state.helperText}</AppText>
+      <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+      {request.siteVisitBlockedReason ? (
+        <AppText color={colors.warning600}>{request.siteVisitBlockedReason}</AppText>
+      ) : null}
+
+      {invites.length ? (
+        <View style={styles.stack}>
+          {invites.map((invite) => (
+            <View key={invite.id} style={styles.siteVisitInvite}>
+              <StatusBadge label={invite.statusLabel} tone={getSiteVisitTone(invite.status)} />
+              <Info label={t('approvedPros')} value={invite.proDisplayName} />
+              {invite.preferredDate ? <Info label={t('preferredTime')} value={invite.preferredDate} /> : null}
+              {invite.messagePreview ? <Info label={t('shortMessage')} value={invite.messagePreview} /> : null}
+              {invite.accessNotesPreview ? <Info label={t('accessNotes')} value={invite.accessNotesPreview} /> : null}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <AppText color={colors.slate700}>{t('noSiteVisitInvitesYet')}</AppText>
+      )}
+
+      {contactState ? (
+        <Info
+          label={t('sharedDetails')}
+          value={contactState.state === 'shared_for_site_visit' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
+        />
+      ) : null}
+      {addressState ? (
+        <Info
+          label={t('siteVisit')}
+          value={
+            addressState.state === 'shared_for_site_visit'
+              ? t('addressSharedForSiteVisit')
+              : addressState.state === 'area_only'
+                ? t('cityAreaOnly')
+                : t('addressHidden')
+          }
+        />
+      ) : null}
+      {allowedFields.length ? (
+        <Info label={t('allowedContactFields')} value={allowedFields.join(', ')} />
+      ) : null}
+      <AppText color={colors.slate500} variant="caption">{t('contactDetailsSharedWhenAllowed')}</AppText>
+      <AppText color={colors.slate500} variant="caption">{t('independentProsResponsible')}</AppText>
+    </AppCard>
   );
 }
 
@@ -480,5 +547,20 @@ const styles = StyleSheet.create({
   profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
   profileText: { flex: 1, gap: spacing.xs },
   response: { gap: spacing.xs },
+  siteVisitInvite: {
+    backgroundColor: colors.white,
+    borderColor: colors.proAmber500,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.sm,
+  },
   stack: { gap: spacing.sm },
 });
+
+function getSiteVisitTone(status?: string) {
+  if (status === 'accepted' || status === 'completed' || status === 'invite_available') return 'success';
+  if (status === 'invited' || status === 'alternate_time_proposed') return 'pro';
+  if (status === 'declined' || status === 'cancelled' || status === 'blocked') return 'warning';
+  return 'neutral';
+}
