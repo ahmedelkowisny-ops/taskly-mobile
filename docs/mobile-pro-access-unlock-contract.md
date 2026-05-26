@@ -9,7 +9,7 @@ Use Expo SDK 54 documentation for mobile work because this project currently rep
 - Backend/web remains authoritative for Pro Access fee amount, currency, payment state, unlock state, response visibility, meaningful response eligibility, refunds/support, matching, contact-leakage protection, and lifecycle rules.
 - Mobile must use typed backend APIs through `src/lib/api/client.ts`, centralized endpoint paths in `src/lib/api/endpoints.ts`, and backend-authored `nextActions`.
 - Mobile must not call Prisma, store secrets, calculate Pro Access fees/refunds, infer unlock eligibility, create Stripe objects directly, expose contact details before the allowed flow, or duplicate response visibility rules.
-- Taskly is a marketplace/intermediary. Copy must talk about independent Pros, approved Pros, and comparing professionals; it must not imply Taskly performs the renovation or project.
+- Taskly is a marketplace/intermediary. Copy must talk about independent Pros, approved Pros, and comparing professionals; it must not present Taskly as the renovation or project provider.
 
 ## Existing Backend/Web Pro Access Logic Found
 
@@ -490,7 +490,7 @@ Future mobile mutations should be scoped separately and must:
 - Say the payment unlocks comparison access, not the renovation work.
 - Do not use raw Stripe jargon.
 - Do not use payment-holding wording for Pro Access.
-- Do not imply Taskly performs the project.
+- Do not present Taskly as the project provider.
 
 ### After unlock
 
@@ -524,9 +524,8 @@ Keep Bulgarian button labels short. Prefer explanatory text below the CTA instea
 
 ## Non-Scope
 
-- No Pro Access payment/unlock routes in mobile.
-- No Stripe UI or Stripe SDK changes.
-- No customer comparison/unlock UI implementation.
+- No Pro Access refund/support routes.
+- No full customer comparison UI implementation.
 - No Pro chat.
 - No admin workflow changes.
 - No Core payment, cancellation, support, refund, payout, commission, or dispute changes.
