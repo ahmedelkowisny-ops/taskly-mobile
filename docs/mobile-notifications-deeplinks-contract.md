@@ -14,8 +14,9 @@ Phase 31B adds the push token registration and notification settings foundation.
 Reference docs:
 
 - https://docs.expo.dev/versions/v54.0.0/
-- https://docs.expo.dev/push-notifications/overview/
-- https://docs.expo.dev/linking/overview/
+- https://docs.expo.dev/versions/v54.0.0/sdk/notifications/
+- https://docs.expo.dev/versions/v54.0.0/sdk/linking/
+- https://docs.expo.dev/versions/v54.0.0/sdk/router/
 
 ## Existing Backend Notification Patterns Found
 
@@ -79,7 +80,7 @@ Reference docs:
 - Phase 31B installs `expo-notifications` and configures the app plugin.
 - Phase 31B adds an Account/settings permission UX shell.
 - No mobile notification event audit/read model.
-- No deep-link intake/resolver logic for auth redirects, workspace mismatch, or inaccessible resources.
+- Phase 31D adds deep-link intake/resolver logic for auth redirects, workspace mismatch, and inaccessible resources.
 - No mobile notification payload schema for Core vs Pro labeling.
 
 ## Phase 31B Implementation Note
@@ -166,6 +167,49 @@ Sensitive-data protections:
 - Push title/body copy is generic and does not include addresses, phone numbers, emails, payment object ids, Stripe ids, admin notes, support details, free-text invite messages, ranking, moderation data, or hidden Pro response data.
 - Entity ids are included only in the data payload for future routing, and screens must still refetch from backend APIs.
 - Support/issue mobile push hooks are deferred because the safe recipient behavior needs a separate product pass.
+
+## Phase 31D Implementation Note
+
+- Added a central mobile deep-link resolver in `src/lib/navigation/deepLinks.ts`.
+- Added root notification tap handling in `NotificationDeepLinkHandler`.
+- Added `app/+native-intent.tsx` to sanitize incoming native URL paths before Expo Router opens them.
+- Kept the existing app scheme `tasklyapp`; no app config or native build config changes were made.
+- Notification payloads are treated only as routing hints. The app maps safe fields to internal routes and does not display payload content as resource data.
+- Target screens continue to refetch details through existing backend API wrappers after navigation.
+
+Supported notification and URL targets:
+
+- Customer Core task: `/customer/tasks/[taskId]`
+- Provider Core task: `/provider/core-tasks/[taskId]`
+- Customer Pro request: `/customer/pro-requests/[proRequestId]`
+- Provider Pro request: `/provider/pro-requests/[proRequestId]`
+- Customer message thread: `/customer/messages/[encodedThreadId]`
+- Provider message thread: `/provider/messages/[encodedThreadId]`
+- Customer notification settings fallback: `/customer/account`
+- Provider notification settings fallback: `/provider/account`
+
+Payload parsing rules:
+
+- Supported payload fields are `type`, `workspace`, `category`, `entityType`, `entityId`, `routeHint`, and `createdAt`.
+- The resolver builds routes from `workspace`, `entityType`, and `entityId` when possible.
+- `routeHint` is used only as a fallback and only when it matches a known safe app route.
+- Entity ids are URL-encoded for routing and rejected if they contain path/query separators.
+- Unsupported notification payloads fall back to a safe workspace home route.
+
+Auth and workspace behavior:
+
+- If session restore is still loading, the target is kept pending in memory.
+- If the user is logged out, the app routes to login and preserves the intended target in memory.
+- After successful login/session restore, the pending target opens only if the restored session can access the target workspace.
+- If workspace access is not available, the app routes to a safe workspace home fallback.
+- If the resource is unavailable or unauthorized, the target screen's backend fetch remains responsible for showing not found or unauthorized state.
+
+Deferred after Phase 31D:
+
+- Real-device notification QA.
+- Notification history/inbox UI.
+- Advanced Android channel migration strategy.
+- Store-build testing for cold-start notification taps.
 
 ## Proposed Push Token Registration Contract
 
@@ -465,7 +509,6 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ## Non-Scope
 
-- Implementing deep-link routing or redirect handling.
 - Changing the app scheme, associated domains, or broad native build config beyond the Phase 31B notification plugin foundation.
 - Changing Core payment/cancellation/support logic.
 - Changing Pro Access payment logic.
@@ -495,9 +538,9 @@ Bulgarian button labels should stay short. Longer privacy and permission explana
 
 ### Phase 31D: Deep-Link Routing
 
-- Add deep-link intake/resolver behavior.
-- Handle auth redirects, workspace mismatch, unauthorized resources, and encoded message thread ids.
-- Ensure every opened route fetches fresh backend data.
+- Added deep-link intake/resolver behavior.
+- Handles auth redirects, workspace mismatch, unsupported payloads, and encoded message thread ids.
+- Every opened route still fetches fresh backend data from the destination screen.
 
 ### Phase 31E: Real-Device Notification QA
 

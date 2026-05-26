@@ -5,6 +5,11 @@ import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'rea
 import { TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import {
+  canOpenDeepLinkTarget,
+  consumePendingDeepLinkTarget,
+  getDeepLinkFallbackRoute,
+} from '@/src/lib/navigation/deepLinks';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -31,7 +36,12 @@ export default function LoginScreen() {
 
     if (result.ok) {
       setPassword('');
-      router.replace('/');
+      const pendingTarget = consumePendingDeepLinkTarget();
+      if (pendingTarget && canOpenDeepLinkTarget({ session: result.data, status: 'authenticated', target: pendingTarget })) {
+        router.replace(pendingTarget.href);
+      } else {
+        router.replace(pendingTarget ? getDeepLinkFallbackRoute(pendingTarget.workspace) : '/');
+      }
       return;
     }
 

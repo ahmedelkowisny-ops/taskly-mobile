@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { NotificationDeepLinkHandler } from '@/src/components/taskly/NotificationDeepLinkHandler';
 import { AuthProvider } from '@/src/lib/auth/AuthProvider';
 
 export default function RootLayout() {
@@ -24,6 +25,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StripeProvider publishableKey={stripePublishableKey}>
         <AuthProvider>
+          <NotificationDeepLinkHandler />
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
