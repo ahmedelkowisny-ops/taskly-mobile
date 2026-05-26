@@ -5,6 +5,9 @@ import {
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,
   CustomerProAccessCheckoutResponse,
+  CustomerProSiteVisitActionResponse,
+  CustomerProSiteVisitCancelPayload,
+  CustomerProSiteVisitInvitePayload,
   CreateCustomerProRequestPayload,
   CreateCustomerProRequestResponse,
   CreateCustomerTaskPayload,
@@ -177,6 +180,31 @@ export function createCustomerProAccessCheckout(
   });
 }
 
+export function createCustomerProSiteVisitInvite(
+  proRequestId: string,
+  payload: CustomerProSiteVisitInvitePayload,
+  authToken: string,
+): Promise<ApiResult<CustomerProSiteVisitActionResponse>> {
+  return apiRequest<CustomerProSiteVisitActionResponse>(endpoints.customer.proRequestSiteVisits(proRequestId), {
+    authToken,
+    body: toCustomerProSiteVisitInviteBody(payload),
+    method: 'POST',
+  });
+}
+
+export function cancelCustomerProSiteVisitInvite(
+  proRequestId: string,
+  siteVisitId: string,
+  payload: CustomerProSiteVisitCancelPayload,
+  authToken: string,
+): Promise<ApiResult<CustomerProSiteVisitActionResponse>> {
+  return apiRequest<CustomerProSiteVisitActionResponse>(endpoints.customer.proRequestSiteVisitCancel(proRequestId, siteVisitId), {
+    authToken,
+    body: payload.reason ? { reason: payload.reason } : {},
+    method: 'POST',
+  });
+}
+
 export function createCustomerProRequest(
   payload: CreateCustomerProRequestPayload,
   authToken: string,
@@ -186,4 +214,15 @@ export function createCustomerProRequest(
     body: payload,
     method: 'POST',
   });
+}
+
+function toCustomerProSiteVisitInviteBody(payload: CustomerProSiteVisitInvitePayload) {
+  return {
+    ...(payload.accessNotes ? { accessNotes: payload.accessNotes } : null),
+    ...(payload.addressConfirmation !== undefined ? { addressConfirmation: payload.addressConfirmation } : null),
+    ...(payload.message ? { message: payload.message } : null),
+    ...(payload.preferredDate ? { preferredDate: payload.preferredDate } : null),
+    ...(payload.preferredTimeWindow ? { preferredTimeWindow: payload.preferredTimeWindow } : null),
+    proResponseId: payload.proResponseId,
+  };
 }

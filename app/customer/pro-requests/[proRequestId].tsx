@@ -4,16 +4,41 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-import { ModeBadge } from '@/src/components/taskly';
+import { FormField, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { createCustomerProAccessCheckout, getCustomerProRequestDetail } from '@/src/lib/api/customer';
+import {
+  cancelCustomerProSiteVisitInvite,
+  createCustomerProAccessCheckout,
+  createCustomerProSiteVisitInvite,
+  getCustomerProRequestDetail,
+} from '@/src/lib/api/customer';
 import { CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
-import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
+import {
+  cancelMockCustomerProSiteVisitInvite,
+  createMockCustomerProSiteVisitInvite,
+  getMockCustomerProRequestDetailResponse,
+} from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
+
+type CustomerSiteVisitFormValues = {
+  accessNotes: string;
+  message: string;
+  preferredDate: string;
+  preferredTimeWindow: string;
+};
+
+type CustomerSiteVisitFormErrors = Partial<Record<keyof CustomerSiteVisitFormValues | 'form', string>>;
+
+const emptyCustomerSiteVisitForm: CustomerSiteVisitFormValues = {
+  accessNotes: '',
+  message: '',
+  preferredDate: '',
+  preferredTimeWindow: '',
+};
 
 export default function CustomerProRequestDetailScreen() {
   const router = useRouter();
@@ -27,6 +52,12 @@ export default function CustomerProRequestDetailScreen() {
   const [proAccessPaymentError, setProAccessPaymentError] = useState<string | null>(null);
   const [proAccessPaymentMessage, setProAccessPaymentMessage] = useState<string | null>(null);
   const [showProAccessConfirm, setShowProAccessConfirm] = useState(false);
+  const [siteVisitActionError, setSiteVisitActionError] = useState<string | null>(null);
+  const [siteVisitFormErrors, setSiteVisitFormErrors] = useState<CustomerSiteVisitFormErrors>({});
+  const [siteVisitFormResponse, setSiteVisitFormResponse] = useState<CustomerUnlockedProComparisonResponse | null>(null);
+  const [siteVisitFormValues, setSiteVisitFormValues] = useState<CustomerSiteVisitFormValues>(emptyCustomerSiteVisitForm);
+  const [siteVisitNotice, setSiteVisitNotice] = useState<string | null>(null);
+  const [isUpdatingSiteVisit, setIsUpdatingSiteVisit] = useState(false);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
@@ -85,6 +116,113 @@ export default function CustomerProRequestDetailScreen() {
     setProAccessPaymentMessage(null);
     setShowProAccessConfirm(true);
   }, []);
+
+  const openSiteVisitInvite = useCallback((response: CustomerUnlockedProComparisonResponse) => {
+    setSiteVisitActionError(null);
+    setSiteVisitNotice(null);
+    setSiteVisitFormErrors({});
+    setSiteVisitFormResponse(response);
+    setSiteVisitFormValues(emptyCustomerSiteVisitForm);
+  }, []);
+
+  const closeSiteVisitInvite = useCallback(() => {
+    setSiteVisitFormResponse(null);
+    setSiteVisitFormErrors({});
+  }, []);
+
+  const updateSiteVisitFormValue = useCallback(<Key extends keyof CustomerSiteVisitFormValues>(
+    key: Key,
+    value: CustomerSiteVisitFormValues[Key],
+  ) => {
+    setSiteVisitFormValues((current) => ({ ...current, [key]: value }));
+    setSiteVisitFormErrors((current) => ({ ...current, [key]: undefined, form: undefined }));
+  }, []);
+
+  const submitSiteVisitInvite = useCallback(async () => {
+    if (!siteVisitFormResponse) return;
+    const errors = validateCustomerSiteVisitForm(siteVisitFormValues);
+    if (Object.keys(errors).length > 0) {
+      setSiteVisitFormErrors(errors);
+      return;
+    }
+
+    setSiteVisitActionError(null);
+    setSiteVisitNotice(null);
+    setIsUpdatingSiteVisit(true);
+
+    if (status === 'demo') {
+      setData(createMockCustomerProSiteVisitInvite(proRequestId, siteVisitFormResponse.responseId));
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitFormResponse(null);
+      setSiteVisitNotice(t('siteVisitInviteSent'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitFormErrors({ form: t('loginRequired') });
+      return;
+    }
+
+    const result = await createCustomerProSiteVisitInvite(
+      proRequestId,
+      {
+        accessNotes: siteVisitFormValues.accessNotes.trim(),
+        addressConfirmation: true,
+        message: siteVisitFormValues.message.trim(),
+        preferredDate: siteVisitFormValues.preferredDate.trim() || null,
+        preferredTimeWindow: siteVisitFormValues.preferredTimeWindow.trim(),
+        proResponseId: siteVisitFormResponse.responseId,
+      },
+      authToken,
+    );
+    setIsUpdatingSiteVisit(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setSiteVisitFormResponse(null);
+      setSiteVisitNotice(t('siteVisitInviteSent'));
+      return;
+    }
+
+    setSiteVisitFormErrors(getCustomerSiteVisitErrorMessages(result.error.details, result.error.message));
+  }, [getValidAccessToken, proRequestId, siteVisitFormResponse, siteVisitFormValues, status]);
+
+  const cancelSiteVisitInvite = useCallback(async () => {
+    const request = data?.proRequest;
+    const invite = request?.siteVisitInvites?.find((item) => item.status === 'invited' || item.status === 'alternate_time_proposed');
+    if (!invite) return;
+
+    setSiteVisitActionError(null);
+    setSiteVisitNotice(null);
+    setIsUpdatingSiteVisit(true);
+
+    if (status === 'demo') {
+      setData(cancelMockCustomerProSiteVisitInvite(proRequestId));
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitNotice(t('siteVisitCancelled'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitActionError(t('loginRequired'));
+      return;
+    }
+
+    const result = await cancelCustomerProSiteVisitInvite(proRequestId, invite.id, {}, authToken);
+    setIsUpdatingSiteVisit(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setSiteVisitNotice(t('siteVisitCancelled'));
+      return;
+    }
+
+    setSiteVisitActionError(result.error.message || t('couldNotUpdateSiteVisit'));
+  }, [data?.proRequest, getValidAccessToken, proRequestId, status]);
 
   const startProAccessCheckout = useCallback(async () => {
     setProAccessPaymentError(null);
@@ -219,9 +357,35 @@ export default function CustomerProRequestDetailScreen() {
 
           <Images images={request.images} />
 
-          <UnlockedComparisonSection request={request} />
+          <UnlockedComparisonSection onInviteForSiteVisit={openSiteVisitInvite} request={request} />
 
-          <SiteVisitStateCard request={request} />
+          {siteVisitFormResponse ? (
+            <CustomerSiteVisitInviteForm
+              errors={siteVisitFormErrors}
+              isSubmitting={isUpdatingSiteVisit}
+              onCancel={closeSiteVisitInvite}
+              onChange={updateSiteVisitFormValue}
+              onSubmit={submitSiteVisitInvite}
+              response={siteVisitFormResponse}
+              values={siteVisitFormValues}
+            />
+          ) : null}
+
+          {siteVisitNotice ? (
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+              <StatusBadge label={siteVisitNotice} tone="success" />
+              <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+            </AppCard>
+          ) : null}
+
+          {siteVisitActionError ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('couldNotUpdateSiteVisit')} tone="warning" />
+              <AppText color={colors.slate700}>{siteVisitActionError}</AppText>
+            </AppCard>
+          ) : null}
+
+          <SiteVisitStateCard isUpdating={isUpdatingSiteVisit} onCancelInvite={cancelSiteVisitInvite} request={request} />
 
           {!request.unlockedComparison?.canViewFullComparison ? (
             <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -244,9 +408,16 @@ export default function CustomerProRequestDetailScreen() {
   );
 }
 
-function UnlockedComparisonSection({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+function UnlockedComparisonSection({
+  onInviteForSiteVisit,
+  request,
+}: {
+  onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
   const comparison = request.unlockedComparison;
   if (!comparison?.canViewFullComparison) return null;
+  const canInvite = Boolean(request.siteVisitNextActions?.canInviteForSiteVisit);
 
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -259,7 +430,12 @@ function UnlockedComparisonSection({ request }: { request: CustomerProRequestDet
       {comparison.responses.length ? (
         <View style={styles.stack}>
           {comparison.responses.map((response) => (
-            <ComparisonResponseCard key={response.responseId} response={response} />
+            <ComparisonResponseCard
+              canInviteForSiteVisit={canInvite}
+              key={response.responseId}
+              onInviteForSiteVisit={onInviteForSiteVisit}
+              response={response}
+            />
           ))}
         </View>
       ) : (
@@ -270,7 +446,15 @@ function UnlockedComparisonSection({ request }: { request: CustomerProRequestDet
   );
 }
 
-function ComparisonResponseCard({ response }: { response: CustomerUnlockedProComparisonResponse }) {
+function ComparisonResponseCard({
+  canInviteForSiteVisit,
+  onInviteForSiteVisit,
+  response,
+}: {
+  canInviteForSiteVisit: boolean;
+  onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  response: CustomerUnlockedProComparisonResponse;
+}) {
   const profileImageUrl = response.profileImageUrl ? resolveApiMediaUrl(response.profileImageUrl) : null;
   const notes = [
     { label: t('whatIsIncluded'), value: response.includedNotes },
@@ -327,11 +511,84 @@ function ComparisonResponseCard({ response }: { response: CustomerUnlockedProCom
       <AppText color={colors.slate500} variant="caption">
         {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
       </AppText>
+      {canInviteForSiteVisit ? (
+        <AppButton onPress={() => onInviteForSiteVisit(response)} tone="pro" variant="outline">
+          {t('inviteForSiteVisit')}
+        </AppButton>
+      ) : null}
     </View>
   );
 }
 
-function SiteVisitStateCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+function CustomerSiteVisitInviteForm({
+  errors,
+  isSubmitting,
+  onCancel,
+  onChange,
+  onSubmit,
+  response,
+  values,
+}: {
+  errors: CustomerSiteVisitFormErrors;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onChange: <Key extends keyof CustomerSiteVisitFormValues>(key: Key, value: CustomerSiteVisitFormValues[Key]) => void;
+  onSubmit: () => void;
+  response: CustomerUnlockedProComparisonResponse;
+  values: CustomerSiteVisitFormValues;
+}) {
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <StatusBadge label={t('inviteForSiteVisit')} tone="pro" />
+      <AppText variant="sectionTitle">{response.displayName}</AppText>
+      <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+      <AppText color={colors.slate700}>{t('contactDetailsSharedWhenAllowed')}</AppText>
+      {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
+      <FormField
+        errorText={errors.preferredDate}
+        label={t('preferredDate')}
+        onChangeText={(value) => onChange('preferredDate', value)}
+        placeholder="2026-06-15"
+        value={values.preferredDate}
+      />
+      <FormField
+        errorText={errors.preferredTimeWindow}
+        label={t('timeWindow')}
+        onChangeText={(value) => onChange('preferredTimeWindow', value)}
+        placeholder={t('preferredTime')}
+        value={values.preferredTimeWindow}
+      />
+      <FormField
+        errorText={errors.message}
+        label={t('messageToPro')}
+        multiline
+        onChangeText={(value) => onChange('message', value)}
+        value={values.message}
+      />
+      <FormField
+        errorText={errors.accessNotes}
+        label={t('accessNotes')}
+        multiline
+        onChangeText={(value) => onChange('accessNotes', value)}
+        value={values.accessNotes}
+      />
+      <View style={styles.stack}>
+        <AppButton loading={isSubmitting} onPress={onSubmit} tone="pro">{t('sendSiteVisitInvite')}</AppButton>
+        <AppButton disabled={isSubmitting} onPress={onCancel} tone="neutral" variant="ghost">{t('cancel')}</AppButton>
+      </View>
+    </AppCard>
+  );
+}
+
+function SiteVisitStateCard({
+  isUpdating,
+  onCancelInvite,
+  request,
+}: {
+  isUpdating: boolean;
+  onCancelInvite: () => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
   const state = request.siteVisitState;
   if (!state || (!request.isUnlocked && !request.siteVisitInvites?.length)) return null;
 
@@ -359,7 +616,8 @@ function SiteVisitStateCard({ request }: { request: CustomerProRequestDetailResp
             <View key={invite.id} style={styles.siteVisitInvite}>
               <StatusBadge label={invite.statusLabel} tone={getSiteVisitTone(invite.status)} />
               <Info label={t('approvedPros')} value={invite.proDisplayName} />
-              {invite.preferredDate ? <Info label={t('preferredTime')} value={invite.preferredDate} /> : null}
+              {invite.preferredDate ? <Info label={t('preferredDate')} value={invite.preferredDate} /> : null}
+              {invite.preferredTimeWindow ? <Info label={t('timeWindow')} value={invite.preferredTimeWindow} /> : null}
               {invite.messagePreview ? <Info label={t('shortMessage')} value={invite.messagePreview} /> : null}
               {invite.accessNotesPreview ? <Info label={t('accessNotes')} value={invite.accessNotesPreview} /> : null}
             </View>
@@ -389,6 +647,11 @@ function SiteVisitStateCard({ request }: { request: CustomerProRequestDetailResp
       ) : null}
       {allowedFields.length ? (
         <Info label={t('allowedContactFields')} value={allowedFields.join(', ')} />
+      ) : null}
+      {request.siteVisitNextActions?.canCancelSiteVisitInvite ? (
+        <AppButton loading={isUpdating} onPress={onCancelInvite} tone="neutral" variant="outline">
+          {t('cancelSiteVisitInvite')}
+        </AppButton>
       ) : null}
       <AppText color={colors.slate500} variant="caption">{t('contactDetailsSharedWhenAllowed')}</AppText>
       <AppText color={colors.slate500} variant="caption">{t('independentProsResponsible')}</AppText>
@@ -525,6 +788,40 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
       ))}
     </AppCard>
   );
+}
+
+function hasObviousContactDetails(values: CustomerSiteVisitFormValues) {
+  const merged = Object.values(values).join('\n');
+  return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(merged) ||
+    /(?:\+?\d[\d\s().-]{6,}\d)/.test(merged) ||
+    /(https?:\/\/|www\.|telegram|viber|whatsapp|facebook|instagram|@\w{2,})/i.test(merged);
+}
+
+function validateCustomerSiteVisitForm(values: CustomerSiteVisitFormValues): CustomerSiteVisitFormErrors {
+  const errors: CustomerSiteVisitFormErrors = {};
+  if (values.preferredDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(values.preferredDate.trim())) {
+    errors.preferredDate = t('preferredDateRequired');
+  }
+  if (!values.preferredTimeWindow.trim()) {
+    errors.preferredTimeWindow = t('proposedTimeRequired');
+  }
+  if (hasObviousContactDetails(values)) {
+    errors.form = t('pleaseRemoveContactDetails');
+  }
+  return errors;
+}
+
+function getCustomerSiteVisitErrorMessages(details: unknown, fallbackMessage: string): CustomerSiteVisitFormErrors {
+  if (details && typeof details === 'object' && 'fieldErrors' in details) {
+    const fieldErrors = (details as { fieldErrors?: Record<string, unknown> }).fieldErrors;
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      return Object.entries(fieldErrors).reduce<CustomerSiteVisitFormErrors>((acc, [key, value]) => {
+        acc[key as keyof CustomerSiteVisitFormValues] = String(value);
+        return acc;
+      }, {});
+    }
+  }
+  return { form: fallbackMessage || t('couldNotSendInvite') };
 }
 
 const styles = StyleSheet.create({

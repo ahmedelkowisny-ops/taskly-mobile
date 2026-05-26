@@ -474,3 +474,64 @@ Deferred after Phase 29B:
 - Site visit notifications.
 - Pro chat.
 - Admin workflow enhancements.
+
+## Phase 29C Implementation Note
+
+Phase 29C added mobile-safe site visit mutations and read-refresh behavior.
+
+Backend routes added:
+
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/site-visits`
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/site-visits/[siteVisitId]/cancel`
+- `POST /api/mobile/provider/pro-requests/[proRequestId]/site-visits/[siteVisitId]/accept`
+- `POST /api/mobile/provider/pro-requests/[proRequestId]/site-visits/[siteVisitId]/decline`
+- `POST /api/mobile/provider/pro-requests/[proRequestId]/site-visits/[siteVisitId]/propose-time`
+
+Backend helper/action approach:
+
+- Added a mobile-safe helper layer around `ProSiteVisitInvite`.
+- Customer invite creation is anchored on `proResponseId`; backend derives `proProfileId`.
+- Backend verifies customer ownership, Pro Access unlock, submitted response status, approved Pro profile status, request availability, and duplicate active invite rules.
+- Backend updates invite status instead of deleting invite history.
+- Provider actions verify mobile auth, Provider Workspace access, approved Pro profile ownership, invite relationship, submitted Pro response relationship, request availability, and backend-allowed invite status.
+- Propose-time keeps the current schema by using `proposedAt` plus the existing `INVITED` status; mobile read state maps that to `alternate_time_proposed`.
+
+Mobile wrappers added:
+
+- `createCustomerProSiteVisitInvite`
+- `cancelCustomerProSiteVisitInvite`
+- `acceptProviderProSiteVisit`
+- `declineProviderProSiteVisit`
+- `proposeProviderProSiteVisitTime`
+
+Customer UI actions added:
+
+- Comparison cards can show `Invite for site visit` when backend `siteVisitNextActions.canInviteForSiteVisit` allows it.
+- Customer invite form collects preferred date, time window, message, and access notes.
+- Customer sees copy that the site visit is not a final work agreement and contact details are shared only when allowed by Taskly.
+- Customer can cancel an active invite when backend `canCancelSiteVisitInvite` allows it.
+
+Provider UI actions added:
+
+- Provider detail can show `Accept site visit`, `Decline`, and `Propose another time` when backend next actions allow them.
+- Provider action forms support optional message, decline reason, proposed date, and proposed time window.
+- Pro response actions remain separate from site visit actions.
+
+Contact/address behavior:
+
+- Phone/email sharing is still not implemented.
+- Free-text site visit mutation payloads pass contact-leakage checks.
+- Exact address/access notes remain backend-controlled and are only returned by the read model when the accepted/completed site visit state allows it.
+
+Demo behavior:
+
+- Demo mode simulates invite, cancel, accept, decline, and propose-time locally.
+- Demo mode does not call mutation routes and does not expose real contact/address details.
+
+Deferred after Phase 29C:
+
+- QA pass.
+- Site visit notifications.
+- Pro chat.
+- Advanced contact sharing such as phone/email reveal.
+- Admin workflow enhancements.

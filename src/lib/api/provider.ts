@@ -14,6 +14,10 @@ import {
   ProviderProResponsePayload,
   ProviderProRequestDetailResponse,
   ProviderProRequestsResponse,
+  ProviderProSiteVisitAcceptPayload,
+  ProviderProSiteVisitActionResponse,
+  ProviderProSiteVisitDeclinePayload,
+  ProviderProSiteVisitProposeTimePayload,
   RequestProviderCoreTaskCompletionPayload,
   RequestProviderCoreTaskCompletionResponse,
   StartProviderCoreTaskResponse,
@@ -159,6 +163,52 @@ export function submitOrUpdateProviderProResponse(
   return apiRequest<ProviderProResponseMutationResponse>(endpoints.provider.proRequestResponse(proRequestId), {
     authToken,
     body: toProviderProResponseBody(payload),
+    method: 'POST',
+  });
+}
+
+export function acceptProviderProSiteVisit(
+  proRequestId: string,
+  siteVisitId: string,
+  payload: ProviderProSiteVisitAcceptPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProSiteVisitActionResponse>> {
+  return apiRequest<ProviderProSiteVisitActionResponse>(endpoints.provider.proRequestSiteVisitAccept(proRequestId, siteVisitId), {
+    authToken,
+    body: payload.message ? { message: payload.message } : {},
+    method: 'POST',
+  });
+}
+
+export function declineProviderProSiteVisit(
+  proRequestId: string,
+  siteVisitId: string,
+  payload: ProviderProSiteVisitDeclinePayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProSiteVisitActionResponse>> {
+  return apiRequest<ProviderProSiteVisitActionResponse>(endpoints.provider.proRequestSiteVisitDecline(proRequestId, siteVisitId), {
+    authToken,
+    body: {
+      ...(payload.message ? { message: payload.message } : null),
+      ...(payload.reason ? { reason: payload.reason } : null),
+    },
+    method: 'POST',
+  });
+}
+
+export function proposeProviderProSiteVisitTime(
+  proRequestId: string,
+  siteVisitId: string,
+  payload: ProviderProSiteVisitProposeTimePayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProSiteVisitActionResponse>> {
+  return apiRequest<ProviderProSiteVisitActionResponse>(endpoints.provider.proRequestSiteVisitProposeTime(proRequestId, siteVisitId), {
+    authToken,
+    body: {
+      ...(payload.message ? { message: payload.message } : null),
+      ...(payload.proposedDate ? { proposedDate: payload.proposedDate } : null),
+      proposedTimeWindow: payload.proposedTimeWindow,
+    },
     method: 'POST',
   });
 }

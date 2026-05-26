@@ -1096,7 +1096,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
   };
 }
 
-function getMockCustomerSiteVisitModel(proRequestId: string, isUnlocked: boolean, now: string) {
+function getMockCustomerSiteVisitModel(proRequestId: string, isUnlocked: boolean, now: string, forcedStatus?: string) {
   if (!isUnlocked) {
     return {
       addressVisibilityState: {
@@ -1140,7 +1140,47 @@ function getMockCustomerSiteVisitModel(proRequestId: string, isUnlocked: boolean
   const isAccepted = proRequestId.includes('accepted');
   const isDeclined = proRequestId.includes('declined');
   const isProposed = proRequestId.includes('proposed');
-  const status = isAccepted ? 'accepted' : isDeclined ? 'declined' : isProposed ? 'alternate_time_proposed' : 'invited';
+  const isInvited = proRequestId.includes('invited');
+  if (!forcedStatus && !isAccepted && !isDeclined && !isProposed && !isInvited) {
+    return {
+      addressVisibilityState: {
+        accessNotesLabel: null,
+        addressLabel: null,
+        helperText: 'Exact address is hidden until a site visit flow allows sharing.',
+        state: 'area_only',
+        stateLabel: 'City/area only',
+      },
+      allowedContactFields: [],
+      contactVisibilityState: {
+        allowedContactFields: [],
+        helperText: 'Contact details are hidden until Taskly allows sharing for a site visit.',
+        state: 'allowed_after_site_visit_invite',
+        stateLabel: 'Contact details hidden',
+      },
+      siteVisitBlockedReason: null,
+      siteVisitBlockedReasonCode: null,
+      siteVisitInvites: [],
+      siteVisitNextActions: {
+        blockedReason: null,
+        blockedReasonCode: null,
+        canAcceptSiteVisit: false,
+        canCancelSiteVisitInvite: false,
+        canDeclineSiteVisit: false,
+        canInviteForSiteVisit: true,
+        canProposeSiteVisitTime: false,
+      },
+      siteVisitState: {
+        activeInviteCount: 0,
+        blockedReason: null,
+        blockedReasonCode: null,
+        helperText: 'You can review approved Pros first. Invite actions are available in demo mode.',
+        status: 'invite_available',
+        statusLabel: 'Invite available',
+      },
+      siteVisitSummary: 'You can invite an approved Pro for a site visit.',
+    };
+  }
+  const status = forcedStatus || (isAccepted ? 'accepted' : isDeclined ? 'declined' : isProposed ? 'alternate_time_proposed' : 'invited');
   const statusLabel =
     status === 'accepted'
       ? 'Site visit accepted'
@@ -1336,6 +1376,44 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       unlockedResponseSummary: summary.unlockedResponseSummary,
       unlockStatusLabel: summary.unlockStatusLabel,
       visiblePreviewResponseCount: summary.visiblePreviewResponseCount,
+    },
+  };
+}
+
+export function createMockCustomerProSiteVisitInvite(
+  proRequestId: string,
+  proResponseId: string,
+): CustomerProRequestDetailResponse {
+  const detail = getMockCustomerProRequestDetailResponse('demo-pro-unlocked');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      ...getMockCustomerSiteVisitModel(proRequestId, true, now, 'invited'),
+      id: proRequestId,
+      siteVisitSummary: 'Invite sent with Approved Pro Studio.',
+      unlockedComparison: detail.proRequest.unlockedComparison
+        ? {
+            ...detail.proRequest.unlockedComparison,
+            responses: detail.proRequest.unlockedComparison.responses.map((response) => ({
+              ...response,
+              responseId: response.responseId || proResponseId,
+            })),
+          }
+        : detail.proRequest.unlockedComparison,
+    },
+  };
+}
+
+export function cancelMockCustomerProSiteVisitInvite(proRequestId: string): CustomerProRequestDetailResponse {
+  const detail = getMockCustomerProRequestDetailResponse('demo-pro-unlocked');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      ...getMockCustomerSiteVisitModel(proRequestId, true, now, 'cancelled'),
+      id: proRequestId,
+      siteVisitSummary: 'Site visit cancelled with Approved Pro Studio.',
     },
   };
 }
@@ -2060,7 +2138,7 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
   };
 }
 
-function getMockProviderSiteVisitModel(proRequestId: string, hasSubmittedResponse: boolean, now: string) {
+function getMockProviderSiteVisitModel(proRequestId: string, hasSubmittedResponse: boolean, now: string, forcedStatus?: string) {
   if (!hasSubmittedResponse) {
     return {
       addressVisibilityState: {
@@ -2104,7 +2182,7 @@ function getMockProviderSiteVisitModel(proRequestId: string, hasSubmittedRespons
   const accepted = proRequestId.includes('accepted');
   const proposed = proRequestId.includes('proposed');
   const declined = proRequestId.includes('declined');
-  const status = accepted ? 'accepted' : proposed ? 'alternate_time_proposed' : declined ? 'declined' : 'invited';
+  const status = forcedStatus || (accepted ? 'accepted' : proposed ? 'alternate_time_proposed' : declined ? 'declined' : 'invited');
   const statusLabel =
     status === 'accepted'
       ? 'Site visit accepted'
@@ -2266,6 +2344,45 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
       statusLabel: 'Open',
       timelineLabel: 'Flexible',
       title: 'Demo provider Pro request',
+    },
+  };
+}
+
+export function acceptMockProviderProSiteVisit(proRequestId: string): ProviderProRequestDetailResponse {
+  const detail = getMockProviderProRequestDetailResponse('demo-provider-pro-submitted');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      ...getMockProviderSiteVisitModel(proRequestId, true, now, 'accepted'),
+      id: proRequestId,
+      siteVisitSummary: 'Site visit accepted',
+    },
+  };
+}
+
+export function declineMockProviderProSiteVisit(proRequestId: string): ProviderProRequestDetailResponse {
+  const detail = getMockProviderProRequestDetailResponse('demo-provider-pro-submitted');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      ...getMockProviderSiteVisitModel(proRequestId, true, now, 'declined'),
+      id: proRequestId,
+      siteVisitSummary: 'Site visit declined',
+    },
+  };
+}
+
+export function proposeMockProviderProSiteVisitTime(proRequestId: string): ProviderProRequestDetailResponse {
+  const detail = getMockProviderProRequestDetailResponse('demo-provider-pro-submitted');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      ...getMockProviderSiteVisitModel(proRequestId, true, now, 'alternate_time_proposed'),
+      id: proRequestId,
+      siteVisitSummary: 'Another time proposed',
     },
   };
 }

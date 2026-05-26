@@ -7,10 +7,19 @@ import { FormField, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderProRequestDetailResponse, ProviderProResponsePayload } from '@/src/lib/api/domain';
 import {
+  acceptMockProviderProSiteVisit,
+  declineMockProviderProSiteVisit,
   getMockProviderProRequestDetailResponse,
+  proposeMockProviderProSiteVisitTime,
   submitOrUpdateMockProviderProResponse,
 } from '@/src/lib/api/mockApi';
-import { getProviderProRequestDetail, submitOrUpdateProviderProResponse } from '@/src/lib/api/provider';
+import {
+  acceptProviderProSiteVisit,
+  declineProviderProSiteVisit,
+  getProviderProRequestDetail,
+  proposeProviderProSiteVisitTime,
+  submitOrUpdateProviderProResponse,
+} from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -32,6 +41,17 @@ type ResponseFormValues = {
 
 type ResponseFormErrors = Partial<Record<keyof ResponseFormValues | 'form', string>>;
 
+type ProviderSiteVisitActionMode = 'accept' | 'decline' | 'propose' | null;
+
+type ProviderSiteVisitFormValues = {
+  message: string;
+  proposedDate: string;
+  proposedTimeWindow: string;
+  reason: string;
+};
+
+type ProviderSiteVisitFormErrors = Partial<Record<keyof ProviderSiteVisitFormValues | 'form', string>>;
+
 const emptyFormValues: ResponseFormValues = {
   assumptions: '',
   availability: '',
@@ -44,6 +64,13 @@ const emptyFormValues: ResponseFormValues = {
   roughQuoteMin: '',
   shortMessage: '',
   siteVisitPolicy: '',
+};
+
+const emptySiteVisitFormValues: ProviderSiteVisitFormValues = {
+  message: '',
+  proposedDate: '',
+  proposedTimeWindow: '',
+  reason: '',
 };
 
 export default function ProviderProRequestDetailScreen() {
@@ -60,6 +87,11 @@ export default function ProviderProRequestDetailScreen() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [responseNotice, setResponseNotice] = useState<string | null>(null);
+  const [isUpdatingSiteVisit, setIsUpdatingSiteVisit] = useState(false);
+  const [siteVisitActionMode, setSiteVisitActionMode] = useState<ProviderSiteVisitActionMode>(null);
+  const [siteVisitErrors, setSiteVisitErrors] = useState<ProviderSiteVisitFormErrors>({});
+  const [siteVisitValues, setSiteVisitValues] = useState<ProviderSiteVisitFormValues>(emptySiteVisitFormValues);
+  const [siteVisitNotice, setSiteVisitNotice] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
@@ -123,6 +155,26 @@ export default function ProviderProRequestDetailScreen() {
     setIsFormOpen(false);
   }, []);
 
+  const openSiteVisitAction = useCallback((mode: Exclude<ProviderSiteVisitActionMode, null>) => {
+    setSiteVisitActionMode(mode);
+    setSiteVisitErrors({});
+    setSiteVisitNotice(null);
+    setSiteVisitValues(emptySiteVisitFormValues);
+  }, []);
+
+  const closeSiteVisitAction = useCallback(() => {
+    setSiteVisitActionMode(null);
+    setSiteVisitErrors({});
+  }, []);
+
+  const updateSiteVisitValue = useCallback(<Key extends keyof ProviderSiteVisitFormValues>(
+    key: Key,
+    value: ProviderSiteVisitFormValues[Key],
+  ) => {
+    setSiteVisitValues((current) => ({ ...current, [key]: value }));
+    setSiteVisitErrors((current) => ({ ...current, [key]: undefined, form: undefined }));
+  }, []);
+
   const updateFormValue = useCallback(<Key extends keyof ResponseFormValues,>(key: Key, value: ResponseFormValues[Key]) => {
     setFormValues((current) => ({ ...current, [key]: value }));
     setFormErrors((current) => ({ ...current, [key]: undefined, form: undefined }));
@@ -167,6 +219,86 @@ export default function ProviderProRequestDetailScreen() {
 
     setFormErrors(getResponseErrorMessages(result.error.details, result.error.message));
   }, [formValues, getValidAccessToken, proRequestId, request?.myResponse, status]);
+
+  const submitSiteVisitAction = useCallback(async () => {
+    if (!siteVisitActionMode || !request) return;
+    const invite = request.siteVisitInvites?.find((item) => item.status === 'invited' || item.status === 'alternate_time_proposed');
+    if (!invite) return;
+
+    const validation = validateProviderSiteVisitForm(siteVisitActionMode, siteVisitValues);
+    if (Object.keys(validation).length > 0) {
+      setSiteVisitErrors(validation);
+      return;
+    }
+
+    setSiteVisitErrors({});
+    setSiteVisitNotice(null);
+    setIsUpdatingSiteVisit(true);
+
+    if (status === 'demo') {
+      setData(
+        siteVisitActionMode === 'accept'
+          ? acceptMockProviderProSiteVisit(proRequestId)
+          : siteVisitActionMode === 'decline'
+            ? declineMockProviderProSiteVisit(proRequestId)
+            : proposeMockProviderProSiteVisitTime(proRequestId),
+      );
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitActionMode(null);
+      setSiteVisitNotice(
+        siteVisitActionMode === 'accept'
+          ? t('siteVisitAccepted')
+          : siteVisitActionMode === 'decline'
+            ? t('siteVisitDeclined')
+            : t('anotherTimeProposed'),
+      );
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsUpdatingSiteVisit(false);
+      setSiteVisitErrors({ form: t('loginRequired') });
+      return;
+    }
+
+    const result =
+      siteVisitActionMode === 'accept'
+        ? await acceptProviderProSiteVisit(proRequestId, invite.id, { message: siteVisitValues.message.trim() }, authToken)
+        : siteVisitActionMode === 'decline'
+          ? await declineProviderProSiteVisit(
+              proRequestId,
+              invite.id,
+              { message: siteVisitValues.message.trim(), reason: siteVisitValues.reason.trim() },
+              authToken,
+            )
+          : await proposeProviderProSiteVisitTime(
+              proRequestId,
+              invite.id,
+              {
+                message: siteVisitValues.message.trim(),
+                proposedDate: siteVisitValues.proposedDate.trim() || null,
+                proposedTimeWindow: siteVisitValues.proposedTimeWindow.trim(),
+              },
+              authToken,
+            );
+    setIsUpdatingSiteVisit(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setSiteVisitActionMode(null);
+      setSiteVisitNotice(
+        siteVisitActionMode === 'accept'
+          ? t('siteVisitAccepted')
+          : siteVisitActionMode === 'decline'
+            ? t('siteVisitDeclined')
+            : t('anotherTimeProposed'),
+      );
+      return;
+    }
+
+    setSiteVisitErrors(getProviderSiteVisitErrorMessages(result.error.details, result.error.message));
+  }, [getValidAccessToken, proRequestId, request, siteVisitActionMode, siteVisitValues, status]);
 
   return (
     <Screen>
@@ -252,7 +384,26 @@ export default function ProviderProRequestDetailScreen() {
             )}
           </AppCard>
 
-          <SiteVisitStateCard request={request} />
+          {siteVisitNotice ? (
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+              <StatusBadge label={siteVisitNotice} tone="success" />
+              <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+            </AppCard>
+          ) : null}
+
+          <SiteVisitStateCard onOpenAction={openSiteVisitAction} request={request} />
+
+          {siteVisitActionMode ? (
+            <ProviderSiteVisitActionForm
+              errors={siteVisitErrors}
+              isSubmitting={isUpdatingSiteVisit}
+              mode={siteVisitActionMode}
+              onCancel={closeSiteVisitAction}
+              onChange={updateSiteVisitValue}
+              onSubmit={submitSiteVisitAction}
+              values={siteVisitValues}
+            />
+          ) : null}
 
           <NextActions actions={request.nextActions} />
         </>
@@ -303,7 +454,13 @@ function ProResponseCapabilityCard({
   );
 }
 
-function SiteVisitStateCard({ request }: { request: NonNullable<ProviderProRequestDetailResponse['proRequest']> }) {
+function SiteVisitStateCard({
+  onOpenAction,
+  request,
+}: {
+  onOpenAction: (mode: Exclude<ProviderSiteVisitActionMode, null>) => void;
+  request: NonNullable<ProviderProRequestDetailResponse['proRequest']>;
+}) {
   const state = request.siteVisitState;
   const invites = request.siteVisitInvites || [];
   if (!state || (!invites.length && state.status === 'none')) return null;
@@ -328,7 +485,8 @@ function SiteVisitStateCard({ request }: { request: NonNullable<ProviderProReque
       {invites.map((invite) => (
         <View key={invite.id} style={styles.siteVisitInvite}>
           <StatusBadge label={invite.statusLabel} tone={getSiteVisitTone(invite.status)} />
-          {invite.preferredDate ? <Info label={t('preferredTime')} value={invite.preferredDate} /> : null}
+          {invite.preferredDate ? <Info label={t('preferredDate')} value={invite.preferredDate} /> : null}
+          {invite.preferredTimeWindow ? <Info label={t('timeWindow')} value={invite.preferredTimeWindow} /> : null}
           {invite.messagePreview ? <Info label={t('shortMessage')} value={invite.messagePreview} /> : null}
           {invite.accessNotesPreview ? <Info label={t('accessNotes')} value={invite.accessNotesPreview} /> : null}
         </View>
@@ -353,8 +511,89 @@ function SiteVisitStateCard({ request }: { request: NonNullable<ProviderProReque
         />
       ) : null}
       {allowedFields.length ? <Info label={t('allowedContactFields')} value={allowedFields.join(', ')} /> : null}
+      {request.siteVisitNextActions?.canAcceptSiteVisit ? (
+        <AppButton onPress={() => onOpenAction('accept')} tone="pro" variant="outline">{t('acceptSiteVisit')}</AppButton>
+      ) : null}
+      {request.siteVisitNextActions?.canDeclineSiteVisit ? (
+        <AppButton onPress={() => onOpenAction('decline')} tone="neutral" variant="outline">{t('declineSiteVisit')}</AppButton>
+      ) : null}
+      {request.siteVisitNextActions?.canProposeSiteVisitTime ? (
+        <AppButton onPress={() => onOpenAction('propose')} tone="pro" variant="outline">{t('proposeAnotherTime')}</AppButton>
+      ) : null}
       <AppText color={colors.slate500} variant="caption">{t('contactDetailsSharedWhenAllowed')}</AppText>
       <AppText color={colors.slate500} variant="caption">{t('independentProsResponsible')}</AppText>
+    </AppCard>
+  );
+}
+
+function ProviderSiteVisitActionForm({
+  errors,
+  isSubmitting,
+  mode,
+  onCancel,
+  onChange,
+  onSubmit,
+  values,
+}: {
+  errors: ProviderSiteVisitFormErrors;
+  isSubmitting: boolean;
+  mode: Exclude<ProviderSiteVisitActionMode, null>;
+  onCancel: () => void;
+  onChange: <Key extends keyof ProviderSiteVisitFormValues>(key: Key, value: ProviderSiteVisitFormValues[Key]) => void;
+  onSubmit: () => void;
+  values: ProviderSiteVisitFormValues;
+}) {
+  const title =
+    mode === 'accept'
+      ? t('acceptSiteVisit')
+      : mode === 'decline'
+        ? t('declineSiteVisit')
+        : t('proposeAnotherTime');
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <StatusBadge label={t('siteVisitRequest')} tone="pro" />
+      <AppText variant="sectionTitle">{title}</AppText>
+      <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
+      {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
+      {mode === 'decline' ? (
+        <FormField
+          errorText={errors.reason}
+          label={t('reason')}
+          multiline
+          onChangeText={(value) => onChange('reason', value)}
+          value={values.reason}
+        />
+      ) : null}
+      {mode === 'propose' ? (
+        <>
+          <FormField
+            errorText={errors.proposedDate}
+            label={t('preferredDate')}
+            onChangeText={(value) => onChange('proposedDate', value)}
+            placeholder="2026-06-15"
+            value={values.proposedDate}
+          />
+          <FormField
+            errorText={errors.proposedTimeWindow}
+            label={t('timeWindow')}
+            onChangeText={(value) => onChange('proposedTimeWindow', value)}
+            placeholder={t('preferredTime')}
+            value={values.proposedTimeWindow}
+          />
+        </>
+      ) : null}
+      <FormField
+        errorText={errors.message}
+        label={t('messageToCustomer')}
+        multiline
+        onChangeText={(value) => onChange('message', value)}
+        value={values.message}
+      />
+      <View style={styles.stack}>
+        <AppButton loading={isSubmitting} onPress={onSubmit} tone="pro">{title}</AppButton>
+        <AppButton disabled={isSubmitting} onPress={onCancel} tone="neutral" variant="ghost">{t('cancel')}</AppButton>
+      </View>
     </AppCard>
   );
 }
@@ -603,6 +842,43 @@ function getResponseErrorMessages(details: unknown, fallbackMessage: string): Re
   }
 
   return { form: fallbackMessage };
+}
+
+function validateProviderSiteVisitForm(
+  mode: Exclude<ProviderSiteVisitActionMode, null>,
+  values: ProviderSiteVisitFormValues,
+): ProviderSiteVisitFormErrors {
+  const errors: ProviderSiteVisitFormErrors = {};
+  if (mode === 'propose' && !values.proposedTimeWindow.trim()) {
+    errors.proposedTimeWindow = t('proposedTimeRequired');
+  }
+  if (mode === 'propose' && values.proposedDate.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(values.proposedDate.trim())) {
+    errors.proposedDate = t('preferredDateRequired');
+  }
+  if (hasObviousProviderSiteVisitContactDetails(values)) {
+    errors.form = t('pleaseRemoveContactDetails');
+  }
+  return errors;
+}
+
+function hasObviousProviderSiteVisitContactDetails(values: ProviderSiteVisitFormValues) {
+  const merged = Object.values(values).join('\n');
+  return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(merged) ||
+    /(?:\+?\d[\d\s().-]{6,}\d)/.test(merged) ||
+    /(https?:\/\/|www\.|telegram|viber|whatsapp|facebook|instagram|@\w{2,})/i.test(merged);
+}
+
+function getProviderSiteVisitErrorMessages(details: unknown, fallbackMessage: string): ProviderSiteVisitFormErrors {
+  if (details && typeof details === 'object' && 'fieldErrors' in details) {
+    const fieldErrors = (details as { fieldErrors?: Record<string, unknown> }).fieldErrors;
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      return Object.entries(fieldErrors).reduce<ProviderSiteVisitFormErrors>((acc, [key, value]) => {
+        acc[key as keyof ProviderSiteVisitFormValues] = String(value);
+        return acc;
+      }, {});
+    }
+  }
+  return { form: fallbackMessage || t('couldNotUpdateSiteVisit') };
 }
 
 function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {

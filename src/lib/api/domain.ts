@@ -757,6 +757,21 @@ export type CustomerProAccessCheckoutResponse = CustomerProRequestDetailResponse
   sessionId?: string | null;
 };
 
+export type CustomerProSiteVisitInvitePayload = {
+  accessNotes?: string;
+  addressConfirmation?: boolean;
+  message?: string;
+  preferredDate?: string | null;
+  preferredTimeWindow?: string;
+  proResponseId: string;
+};
+
+export type CustomerProSiteVisitCancelPayload = {
+  reason?: string;
+};
+
+export type CustomerProSiteVisitActionResponse = CustomerProRequestDetailResponse;
+
 export type CreateCustomerProRequestResponse = CustomerProRequestDetailResponse & {
   nextActions: DetailNextAction[];
   uploadState?: {
@@ -1040,6 +1055,23 @@ export type ProviderProResponsePayload = {
 };
 
 export type ProviderProResponseMutationResponse = ProviderProRequestDetailResponse;
+
+export type ProviderProSiteVisitAcceptPayload = {
+  message?: string;
+};
+
+export type ProviderProSiteVisitDeclinePayload = {
+  message?: string;
+  reason?: string;
+};
+
+export type ProviderProSiteVisitProposeTimePayload = {
+  message?: string;
+  proposedDate?: string | null;
+  proposedTimeWindow: string;
+};
+
+export type ProviderProSiteVisitActionResponse = ProviderProRequestDetailResponse;
 
 export type EligibilitySummary = {
   isEligibleToRespond: boolean;
