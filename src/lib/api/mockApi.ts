@@ -903,196 +903,343 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
 
 export function getMockCustomerProRequestsResponse(): CustomerProRequestsResponse {
   const now = new Date().toISOString();
+  const proRequests: CustomerProRequestsResponse['proRequests'] = [
+    {
+      categoryLabel: 'Renovation',
+      cityLabel: 'Sofia',
+      comparisonState: {
+        helperText: 'Limited previews remain visible until Pro Access is unlocked.',
+        status: 'preview_only',
+        statusLabel: 'Limited previews',
+      },
+      createdAt: now,
+      id: 'demo-pro-empty',
+      isUnlocked: false,
+      meaningfulResponseCount: 0,
+      nextAction: { accent: 'neutral', href: '/customer/pro-requests', label: 'Waiting for Pro responses', type: 'wait_for_pro_responses' },
+      proAccessBlockedReason: 'Unlock will be available after approved Pros respond.',
+      proAccessBlockedReasonCode: 'NO_RESPONSES',
+      proAccessFeeAmount: 490,
+      proAccessFeeCurrency: 'EUR',
+      proAccessFeeLabel: 'EUR 4.90',
+      proAccessNextActions: {
+        blockedReason: 'Unlock will be available after approved Pros respond.',
+        blockedReasonCode: 'NO_RESPONSES',
+        canConfirmProAccessPayment: false,
+        canOpenProAccessSupport: false,
+        canPrepareProAccessPayment: false,
+        canRequestProAccessRefund: false,
+        canRetryProAccessPayment: false,
+        canUnlockProResponses: false,
+        canViewProAccessSupportStatus: false,
+        canViewUnlockedResponses: false,
+      },
+      proAccessPaymentState: {
+        amountCents: 490,
+        amountLabel: 'EUR 4.90',
+        currency: 'EUR',
+        paidAt: null,
+        refundedAt: null,
+        retryAvailable: false,
+        status: 'not_started',
+        statusLabel: 'Not started',
+      },
+      proAccessState: {
+        hiddenResponsesExcluded: true,
+        helperText: 'Unlock will be available after approved Pros respond.',
+        isUnlocked: false,
+        meaningfulResponsesCount: 0,
+        status: 'waiting_for_responses',
+        statusLabel: 'No responses yet',
+        submittedResponsesCount: 0,
+        totalResponsesCount: 0,
+      },
+      proAccessSummary: 'Unlock will be available after approved Pros respond.',
+      responsePreviewSummary: 'No response previews yet',
+      responsesCount: 0,
+      status: 'OPEN',
+      statusLabel: 'Open',
+      submittedResponseCount: 0,
+      timelineLabel: 'Flexible',
+      title: 'Demo Pro request without responses',
+      unlockedResponseCount: 0,
+      unlockedResponseSummary: 'Unlock to compare full response details',
+      unlockStatusLabel: 'Waiting for meaningful Pro responses',
+      visiblePreviewResponseCount: 0,
+    },
+    {
+      categoryLabel: 'Renovation',
+      cityLabel: 'Sofia',
+      comparisonState: {
+        helperText: 'Limited previews remain visible until Pro Access is unlocked.',
+        status: 'preview_only',
+        statusLabel: 'Limited previews',
+      },
+      createdAt: now,
+      id: 'demo-pro-request',
+      isUnlocked: false,
+      meaningfulResponseCount: 1,
+      nextAction: { accent: 'pro', href: '/customer/pro-requests', label: 'Unlock and compare Pros', type: 'unlock_pro_comparison' },
+      proAccessBlockedReason: null,
+      proAccessBlockedReasonCode: null,
+      proAccessFeeAmount: 490,
+      proAccessFeeCurrency: 'EUR',
+      proAccessFeeLabel: 'EUR 4.90',
+      proAccessNextActions: {
+        blockedReason: null,
+        blockedReasonCode: null,
+        canConfirmProAccessPayment: false,
+        canOpenProAccessSupport: false,
+        canPrepareProAccessPayment: true,
+        canRequestProAccessRefund: false,
+        canRetryProAccessPayment: false,
+        canUnlockProResponses: true,
+        canViewProAccessSupportStatus: false,
+        canViewUnlockedResponses: false,
+      },
+      proAccessPaymentState: {
+        amountCents: 490,
+        amountLabel: 'EUR 4.90',
+        currency: 'EUR',
+        paidAt: null,
+        refundedAt: null,
+        retryAvailable: false,
+        status: 'not_started',
+        statusLabel: 'Not started',
+      },
+      proAccessState: {
+        hiddenResponsesExcluded: true,
+        helperText: 'Approved Pros have responded. Pro Access can unlock comparison details.',
+        isUnlocked: false,
+        meaningfulResponsesCount: 1,
+        status: 'available',
+        statusLabel: 'Unlock available',
+        submittedResponsesCount: 1,
+        totalResponsesCount: 1,
+      },
+      proAccessSummary: 'Approved Pros have responded. Pro Access can unlock comparison details.',
+      responsePreviewSummary: '1 response preview available',
+      responsesCount: 1,
+      status: 'RESPONSES_RECEIVED',
+      statusLabel: 'Responses received',
+      submittedResponseCount: 1,
+      timelineLabel: 'Flexible',
+      title: 'Demo Pro request ready to unlock',
+      unlockedResponseCount: 0,
+      unlockedResponseSummary: 'Unlock to compare full response details',
+      unlockStatusLabel: 'Pro responses available to unlock',
+      visiblePreviewResponseCount: 1,
+    },
+    {
+      categoryLabel: 'Interior repair',
+      cityLabel: 'Sofia',
+      comparisonState: {
+        helperText: 'Full comparison is available from backend-returned fields.',
+        status: 'available',
+        statusLabel: 'Full comparison available',
+      },
+      createdAt: now,
+      id: 'demo-pro-unlocked',
+      isUnlocked: true,
+      meaningfulResponseCount: 2,
+      nextAction: { accent: 'pro', href: '/customer/pro-requests', label: 'Compare Pro responses', type: 'compare_pro_responses' },
+      proAccessBlockedReason: null,
+      proAccessBlockedReasonCode: null,
+      proAccessFeeAmount: 490,
+      proAccessFeeCurrency: 'EUR',
+      proAccessFeeLabel: 'EUR 4.90',
+      proAccessNextActions: {
+        blockedReason: null,
+        blockedReasonCode: null,
+        canConfirmProAccessPayment: false,
+        canOpenProAccessSupport: false,
+        canPrepareProAccessPayment: false,
+        canRequestProAccessRefund: false,
+        canRetryProAccessPayment: false,
+        canUnlockProResponses: false,
+        canViewProAccessSupportStatus: false,
+        canViewUnlockedResponses: true,
+      },
+      proAccessPaymentState: {
+        amountCents: 490,
+        amountLabel: 'EUR 4.90',
+        currency: 'EUR',
+        paidAt: now,
+        refundedAt: null,
+        retryAvailable: false,
+        status: 'paid',
+        statusLabel: 'Paid',
+      },
+      proAccessState: {
+        hiddenResponsesExcluded: true,
+        helperText: 'Full comparison details returned by the backend are available.',
+        isUnlocked: true,
+        meaningfulResponsesCount: 2,
+        status: 'unlocked',
+        statusLabel: 'Access unlocked',
+        submittedResponsesCount: 2,
+        totalResponsesCount: 2,
+      },
+      proAccessSummary: 'Full comparison details returned by the backend are available.',
+      responsePreviewSummary: '2 response previews available',
+      responsesCount: 2,
+      status: 'ACCESS_UNLOCKED',
+      statusLabel: 'Comparison unlocked',
+      submittedResponseCount: 2,
+      timelineLabel: 'This month',
+      title: 'Demo unlocked Pro request',
+      unlockedResponseCount: 2,
+      unlockedResponseSummary: '2 responses available for comparison',
+      unlockStatusLabel: 'Comparison details unlocked',
+      visiblePreviewResponseCount: 2,
+    },
+  ];
+
   return {
     emptyState: {
       description: 'Demo mode is active. Real Pro requests will load after login and backend data are available.',
       title: 'No demo Pro requests',
     },
     proRequests: [
-      {
-        categoryLabel: 'Renovation',
-        cityLabel: 'Sofia',
-        comparisonState: {
-          helperText: 'Limited previews remain visible until Pro Access is unlocked.',
-          status: 'preview_only',
-          statusLabel: 'Limited previews',
-        },
-        createdAt: now,
-        id: 'demo-pro-empty',
-        isUnlocked: false,
-        meaningfulResponseCount: 0,
-        nextAction: { accent: 'neutral', href: '/customer/pro-requests', label: 'Waiting for Pro responses', type: 'wait_for_pro_responses' },
-        proAccessBlockedReason: 'Unlock will be available after approved Pros respond.',
-        proAccessBlockedReasonCode: 'NO_RESPONSES',
-        proAccessFeeAmount: 490,
-        proAccessFeeCurrency: 'EUR',
-        proAccessFeeLabel: 'EUR 4.90',
-        proAccessNextActions: {
-          blockedReason: 'Unlock will be available after approved Pros respond.',
-          blockedReasonCode: 'NO_RESPONSES',
-          canConfirmProAccessPayment: false,
-          canPrepareProAccessPayment: false,
-          canRequestProAccessRefund: false,
-          canRetryProAccessPayment: false,
-          canUnlockProResponses: false,
-          canViewUnlockedResponses: false,
-        },
-        proAccessPaymentState: {
-          amountCents: 490,
-          amountLabel: 'EUR 4.90',
-          currency: 'EUR',
-          paidAt: null,
-          refundedAt: null,
-          retryAvailable: false,
-          status: 'not_started',
-          statusLabel: 'Not started',
-        },
-        proAccessState: {
-          hiddenResponsesExcluded: true,
-          helperText: 'Unlock will be available after approved Pros respond.',
-          isUnlocked: false,
-          meaningfulResponsesCount: 0,
-          status: 'waiting_for_responses',
-          statusLabel: 'No responses yet',
-          submittedResponsesCount: 0,
-          totalResponsesCount: 0,
-        },
-        proAccessSummary: 'Unlock will be available after approved Pros respond.',
-        responsePreviewSummary: 'No response previews yet',
-        responsesCount: 0,
-        status: 'OPEN',
-        statusLabel: 'Open',
-        submittedResponseCount: 0,
-        timelineLabel: 'Flexible',
-        title: 'Demo Pro request without responses',
-        unlockedResponseCount: 0,
-        unlockedResponseSummary: 'Unlock to compare full response details',
-        unlockStatusLabel: 'Waiting for meaningful Pro responses',
-        visiblePreviewResponseCount: 0,
-      },
-      {
-        categoryLabel: 'Renovation',
-        cityLabel: 'Sofia',
-        comparisonState: {
-          helperText: 'Limited previews remain visible until Pro Access is unlocked.',
-          status: 'preview_only',
-          statusLabel: 'Limited previews',
-        },
-        createdAt: now,
-        id: 'demo-pro-request',
-        isUnlocked: false,
-        meaningfulResponseCount: 1,
-        nextAction: { accent: 'pro', href: '/customer/pro-requests', label: 'Unlock and compare Pros', type: 'unlock_pro_comparison' },
-        proAccessBlockedReason: null,
-        proAccessBlockedReasonCode: null,
-        proAccessFeeAmount: 490,
-        proAccessFeeCurrency: 'EUR',
-        proAccessFeeLabel: 'EUR 4.90',
-        proAccessNextActions: {
-          blockedReason: null,
-          blockedReasonCode: null,
-          canConfirmProAccessPayment: false,
-          canPrepareProAccessPayment: true,
-          canRequestProAccessRefund: false,
-          canRetryProAccessPayment: false,
-          canUnlockProResponses: true,
-          canViewUnlockedResponses: false,
-        },
-        proAccessPaymentState: {
-          amountCents: 490,
-          amountLabel: 'EUR 4.90',
-          currency: 'EUR',
-          paidAt: null,
-          refundedAt: null,
-          retryAvailable: false,
-          status: 'not_started',
-          statusLabel: 'Not started',
-        },
-        proAccessState: {
-          hiddenResponsesExcluded: true,
-          helperText: 'Approved Pros have responded. Pro Access can unlock comparison details.',
-          isUnlocked: false,
-          meaningfulResponsesCount: 1,
-          status: 'available',
-          statusLabel: 'Unlock available',
-          submittedResponsesCount: 1,
-          totalResponsesCount: 1,
-        },
-        proAccessSummary: 'Approved Pros have responded. Pro Access can unlock comparison details.',
-        responsePreviewSummary: '1 response preview available',
-        responsesCount: 1,
-        status: 'RESPONSES_RECEIVED',
-        statusLabel: 'Responses received',
-        submittedResponseCount: 1,
-        timelineLabel: 'Flexible',
-        title: 'Demo Pro request ready to unlock',
-        unlockedResponseCount: 0,
-        unlockedResponseSummary: 'Unlock to compare full response details',
-        unlockStatusLabel: 'Pro responses available to unlock',
-        visiblePreviewResponseCount: 1,
-      },
-      {
-        categoryLabel: 'Interior repair',
-        cityLabel: 'Sofia',
-        comparisonState: {
-          helperText: 'Full comparison is available from backend-returned fields.',
-          status: 'available',
-          statusLabel: 'Full comparison available',
-        },
-        createdAt: now,
-        id: 'demo-pro-unlocked',
-        isUnlocked: true,
-        meaningfulResponseCount: 2,
-        nextAction: { accent: 'pro', href: '/customer/pro-requests', label: 'Compare Pro responses', type: 'compare_pro_responses' },
-        proAccessBlockedReason: null,
-        proAccessBlockedReasonCode: null,
-        proAccessFeeAmount: 490,
-        proAccessFeeCurrency: 'EUR',
-        proAccessFeeLabel: 'EUR 4.90',
-        proAccessNextActions: {
-          blockedReason: null,
-          blockedReasonCode: null,
-          canConfirmProAccessPayment: false,
-          canPrepareProAccessPayment: false,
-          canRequestProAccessRefund: false,
-          canRetryProAccessPayment: false,
-          canUnlockProResponses: false,
-          canViewUnlockedResponses: true,
-        },
-        proAccessPaymentState: {
-          amountCents: 490,
-          amountLabel: 'EUR 4.90',
-          currency: 'EUR',
-          paidAt: now,
-          refundedAt: null,
-          retryAvailable: false,
-          status: 'paid',
-          statusLabel: 'Paid',
-        },
-        proAccessState: {
-          hiddenResponsesExcluded: true,
-          helperText: 'Full comparison details returned by the backend are available.',
-          isUnlocked: true,
-          meaningfulResponsesCount: 2,
-          status: 'unlocked',
-          statusLabel: 'Access unlocked',
-          submittedResponsesCount: 2,
-          totalResponsesCount: 2,
-        },
-        proAccessSummary: 'Full comparison details returned by the backend are available.',
-        responsePreviewSummary: '2 response previews available',
-        responsesCount: 2,
-        status: 'ACCESS_UNLOCKED',
-        statusLabel: 'Comparison unlocked',
-        submittedResponseCount: 2,
-        timelineLabel: 'This month',
-        title: 'Demo unlocked Pro request',
-        unlockedResponseCount: 2,
-        unlockedResponseSummary: '2 responses available for comparison',
-        unlockStatusLabel: 'Comparison details unlocked',
-        visiblePreviewResponseCount: 2,
-      },
-    ],
+      ...proRequests,
+      createMockProAccessStateScenario(proRequests[2], now, 'review'),
+      createMockProAccessStateScenario(proRequests[2], now, 'refunded'),
+      createMockProAccessStateScenario(proRequests[2], now, 'credited'),
+      createMockProAccessStateScenario(proRequests[1], now, 'failed'),
+    ].map((request) => ({
+      ...request,
+      ...getMockProAccessSupportFields(request, now),
+    })),
+  };
+}
+
+function createMockProAccessStateScenario(
+  base: CustomerProRequestsResponse['proRequests'][number],
+  now: string,
+  scenario: 'credited' | 'failed' | 'refunded' | 'review',
+): CustomerProRequestsResponse['proRequests'][number] {
+  const isFailed = scenario === 'failed';
+  const isRefunded = scenario === 'refunded';
+  const isCredited = scenario === 'credited';
+  const paymentState = base.proAccessPaymentState || {
+    amountCents: 490,
+    amountLabel: 'EUR 4.90',
+    currency: 'EUR',
+    paidAt: null,
+    refundedAt: null,
+    retryAvailable: false,
+    status: 'not_started',
+    statusLabel: 'Not started',
+  };
+  const accessState = base.proAccessState || {
+    hiddenResponsesExcluded: true,
+    helperText: 'No Pro Access state is available in demo mode.',
+    isUnlocked: false,
+    meaningfulResponsesCount: 0,
+    status: 'not_available',
+    statusLabel: 'Not available',
+    submittedResponsesCount: 0,
+    totalResponsesCount: 0,
+  };
+
+  return {
+    ...base,
+    id: `demo-pro-${scenario}`,
+    isUnlocked: isFailed ? false : base.isUnlocked,
+    proAccessPaymentState: {
+      ...paymentState,
+      paidAt: isFailed ? null : now,
+      refundedAt: isRefunded ? now : null,
+      retryAvailable: isFailed,
+      status: isFailed ? 'failed' : isRefunded ? 'refunded' : isCredited ? 'credited' : 'paid',
+      statusLabel: isFailed ? 'Payment failed' : isRefunded ? 'Refunded' : isCredited ? 'Credited' : 'Paid',
+    },
+    proAccessState: {
+      ...accessState,
+      helperText: isFailed ? 'Payment failed. Retry when backend allows it.' : accessState.helperText,
+      isUnlocked: isFailed ? false : accessState.isUnlocked,
+      status: isFailed ? 'payment_failed' : isRefunded ? 'refunded' : isCredited ? 'credited' : accessState.status,
+      statusLabel: isFailed ? 'Payment failed' : isRefunded ? 'Pro Access refunded' : isCredited ? 'Access credited' : accessState.statusLabel,
+    },
+    proAccessSummary: isFailed
+      ? 'Payment failed. Retry when backend allows it.'
+      : isRefunded
+        ? 'Pro Access payment is marked refunded by the backend.'
+        : isCredited
+          ? 'Pro Access is credited for this request.'
+          : 'Taskly support is reviewing this Pro Access request.',
+    title: scenario === 'review'
+      ? 'Demo Pro Access review'
+      : scenario === 'refunded'
+        ? 'Demo Pro Access refunded'
+        : scenario === 'credited'
+          ? 'Demo Pro Access credited'
+          : 'Demo Pro Access payment failed',
+  };
+}
+
+function getMockProAccessSupportFields(
+  request: CustomerProRequestsResponse['proRequests'][number],
+  now: string,
+): Partial<CustomerProRequestsResponse['proRequests'][number]> {
+  const paymentStatus = request.proAccessPaymentState?.status;
+  const isReview = request.id.includes('review');
+  const isRefunded = paymentStatus === 'refunded';
+  const isCredited = paymentStatus === 'credited';
+  const isFailed = paymentStatus === 'failed';
+  const blockedReason = isFailed
+    ? 'A failed Pro Access payment has no completed charge to refund.'
+    : request.isUnlocked
+      ? 'Pro Access support/refund requests are not available in mobile yet.'
+      : 'No eligible Pro Access payment is available for support review.';
+  const blockedReasonCode = isFailed ? 'PAYMENT_FAILED' : request.isUnlocked ? 'SUPPORT_ROUTE_NOT_AVAILABLE' : 'NO_ELIGIBLE_PRO_ACCESS_PAYMENT';
+  const supportStatus = isReview ? 'under_review' : isRefunded || isCredited ? 'resolved' : isFailed || !request.isUnlocked ? 'not_available' : 'none';
+  const refundStatus = isReview ? 'under_review' : isRefunded ? 'refunded' : isCredited ? 'credited' : isFailed || !request.isUnlocked ? 'not_available' : 'not_requested';
+  const outcomeLabel = isRefunded ? 'Refunded' : isCredited ? 'Credited' : null;
+  const summary = isReview
+    ? 'Taskly support is reviewing this Pro Access request.'
+    : isRefunded
+      ? 'Pro Access payment is marked refunded by the backend.'
+      : isCredited
+        ? 'Pro Access is credited for this request.'
+        : isFailed
+          ? 'Pro Access payment failed. No refund review is open.'
+          : request.isUnlocked
+            ? 'No Pro Access support review is open.'
+            : 'Pro Access support is available only after an eligible Pro Access payment exists.';
+
+  return {
+    proAccessRefundBlockedReason: isReview || isRefunded || isCredited ? null : blockedReason,
+    proAccessRefundBlockedReasonCode: isReview || isRefunded || isCredited ? null : blockedReasonCode,
+    proAccessRefundOutcomeLabel: outcomeLabel,
+    proAccessRefundResolvedAt: isRefunded || isCredited ? now : null,
+    proAccessRefundState: {
+      helperText: summary,
+      outcomeLabel,
+      status: refundStatus,
+      statusLabel: isReview ? 'Review in progress' : isRefunded ? 'Refunded' : isCredited ? 'Credited' : isFailed ? 'Refund unavailable' : 'No refund review',
+    },
+    proAccessRefundSubmittedAt: isReview ? now : null,
+    proAccessRefundSummary: summary,
+    proAccessSupportNextActions: {
+      blockedReason: isReview || isRefunded || isCredited ? null : blockedReason,
+      blockedReasonCode: isReview || isRefunded || isCredited ? null : blockedReasonCode,
+      canOpenProAccessSupport: false,
+      canRequestProAccessRefund: false,
+      canViewProAccessSupportStatus: isReview || isRefunded || isCredited,
+    },
+    proAccessSupportReviewLabel: isReview ? 'Support review in progress' : isRefunded ? 'Refund resolved' : isCredited ? 'Credit resolved' : null,
+    proAccessSupportState: {
+      blockedReason: isReview || isRefunded || isCredited ? null : blockedReason,
+      blockedReasonCode: isReview || isRefunded || isCredited ? null : blockedReasonCode,
+      helperText: summary,
+      latestRequestCreatedAt: isReview ? now : null,
+      latestRequestId: isReview ? 'demo-pro-access-support-1' : null,
+      latestRequestType: isReview ? 'PRO_ACCESS_SUPPORT_REVIEW' : null,
+      status: supportStatus,
+      statusLabel: isReview ? 'Review in progress' : isRefunded || isCredited ? 'Support review resolved' : isFailed ? 'Payment failed' : request.isUnlocked ? 'No support review' : 'Support unavailable',
+      supportReviewLabel: isReview ? 'Support review in progress' : isRefunded ? 'Refund resolved' : isCredited ? 'Credit resolved' : null,
+    },
   };
 }
 
@@ -1349,8 +1496,18 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       proAccessFeeLabel: summary.proAccessFeeLabel,
       proAccessNextActions: summary.proAccessNextActions,
       proAccessPaymentState: summary.proAccessPaymentState,
+      proAccessRefundBlockedReason: summary.proAccessRefundBlockedReason,
+      proAccessRefundBlockedReasonCode: summary.proAccessRefundBlockedReasonCode,
+      proAccessRefundOutcomeLabel: summary.proAccessRefundOutcomeLabel,
+      proAccessRefundResolvedAt: summary.proAccessRefundResolvedAt,
+      proAccessRefundState: summary.proAccessRefundState,
+      proAccessRefundSubmittedAt: summary.proAccessRefundSubmittedAt,
+      proAccessRefundSummary: summary.proAccessRefundSummary,
       proAccessState: summary.proAccessState,
       proAccessSummary: summary.proAccessSummary,
+      proAccessSupportNextActions: summary.proAccessSupportNextActions,
+      proAccessSupportReviewLabel: summary.proAccessSupportReviewLabel,
+      proAccessSupportState: summary.proAccessSupportState,
       proUnlockState: summary.proUnlockState,
       unlockedComparison,
       responsePreviews: summary.responsesCount

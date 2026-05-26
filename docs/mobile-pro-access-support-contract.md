@@ -412,3 +412,54 @@ Reason: the backend already exposes payment/access statuses including refunded/c
 Recommended follow-up after read-only state: Phase 30C: Pro Access support/refund request implementation.
 
 Phase 30C should add the mobile-safe request route, wrappers, form UI, demo behavior, admin review linkage, and QA checklist without changing Stripe refund behavior unless explicitly scoped.
+
+## Phase 30B Implementation Note
+
+Phase 30B added backend-authored read-only Pro Access support/refund state to customer Pro request list and detail responses.
+
+Fields added:
+
+- `proAccessSupportState`
+- `proAccessRefundState`
+- `proAccessRefundSummary`
+- `proAccessSupportReviewLabel`
+- `proAccessRefundBlockedReason`
+- `proAccessRefundBlockedReasonCode`
+- `proAccessRefundSubmittedAt`
+- `proAccessRefundResolvedAt`
+- `proAccessRefundOutcomeLabel`
+- `proAccessSupportNextActions`
+- `proAccessNextActions.canOpenProAccessSupport`
+- `proAccessNextActions.canViewProAccessSupportStatus`
+
+Current state source:
+
+- Uses existing `ProRequest.accessStatus`.
+- Uses existing `ProAccessPayment.status`.
+- Uses existing `ProAccessPayment.refundedAt`.
+- Does not create a dedicated support/refund request model.
+- Does not infer admin review state when it is not stored.
+- Keeps `canRequestProAccessRefund` false because no customer mutation route exists yet.
+
+Mobile UI added:
+
+- Customer Pro request list shows compact badges only for relevant support/refund states: payment failed, refund review, refunded, or credited.
+- Customer Pro request detail shows a passive Pro Access support/refund card when a relevant backend state exists.
+- The card does not include an active request button.
+- The card explains that Pro Access unlocks comparison access, not renovation work.
+- The card avoids promising automatic refunds and does not show Stripe/internal payment details.
+
+Demo mode:
+
+- Includes no-support/refund, review in progress, refunded, credited, and payment-failed states.
+- Does not call refund/support routes.
+- Does not simulate a real Stripe refund.
+
+Still deferred:
+
+- Customer support/refund request mutation.
+- Dedicated Pro Access support/refund request persistence.
+- Admin support/refund resolution improvements.
+- Stripe refund execution.
+- Notification hooks for support/refund outcomes.
+- Real-world refund policy/accounting review.

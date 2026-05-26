@@ -122,6 +122,12 @@ export default function CustomerProRequestsScreen() {
                   label={request.proAccessState?.statusLabel || request.unlockStatusLabel}
                   tone={getProAccessBadgeTone(request.proAccessState?.status, request.isUnlocked)}
                 />
+                {getProAccessSupportBadgeLabel(request) ? (
+                  <StatusBadge
+                    label={getProAccessSupportBadgeLabel(request) || t('supportReview')}
+                    tone={getProAccessSupportBadgeTone(request)}
+                  />
+                ) : null}
               </View>
               <AppText variant="sectionTitle">{request.title}</AppText>
               <AppText color={colors.slate700}>
@@ -165,5 +171,30 @@ function getProAccessBadgeTone(status?: string, isUnlocked?: boolean) {
   if (isUnlocked || status === 'unlocked' || status === 'credited') return 'success';
   if (status === 'available' || status === 'payment_failed') return 'pro';
   if (status === 'payment_pending' || status === 'not_available' || status === 'request_closed') return 'warning';
+  return 'neutral';
+}
+
+function getProAccessSupportBadgeLabel(request: CustomerProRequestsResponse['proRequests'][number]) {
+  const refundStatus = request.proAccessRefundState?.status;
+  const supportStatus = request.proAccessSupportState?.status;
+  const paymentStatus = request.proAccessPaymentState?.status;
+
+  if (refundStatus === 'refunded') return t('refunded');
+  if (refundStatus === 'credited') return t('credited');
+  if (supportStatus === 'under_review' || supportStatus === 'submitted' || refundStatus === 'under_review' || refundStatus === 'requested') {
+    return t('refundReview');
+  }
+  if (paymentStatus === 'failed') return t('paymentFailed');
+  return null;
+}
+
+function getProAccessSupportBadgeTone(request: CustomerProRequestsResponse['proRequests'][number]) {
+  const refundStatus = request.proAccessRefundState?.status;
+  const supportStatus = request.proAccessSupportState?.status;
+  const paymentStatus = request.proAccessPaymentState?.status;
+
+  if (refundStatus === 'refunded' || refundStatus === 'credited' || supportStatus === 'resolved') return 'success';
+  if (supportStatus === 'under_review' || supportStatus === 'submitted' || refundStatus === 'under_review' || refundStatus === 'requested') return 'pro';
+  if (paymentStatus === 'failed') return 'warning';
   return 'neutral';
 }

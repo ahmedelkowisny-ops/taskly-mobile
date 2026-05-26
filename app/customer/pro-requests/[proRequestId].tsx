@@ -330,6 +330,8 @@ export default function CustomerProRequestDetailScreen() {
             request={request}
           />
 
+          <ProAccessSupportCard request={request} />
+
           {showProAccessConfirm ? (
             <ProAccessPaymentConfirmCard
               isStartingPayment={isStartingProAccessPayment}
@@ -742,6 +744,54 @@ function ProAccessPaymentConfirmCard({
   );
 }
 
+function ProAccessSupportCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  const supportState = request.proAccessSupportState;
+  const refundState = request.proAccessRefundState;
+  const paymentStatus = request.proAccessPaymentState?.status;
+  const shouldShow = Boolean(
+    supportState &&
+      refundState &&
+      (request.isUnlocked ||
+        paymentStatus === 'paid' ||
+        paymentStatus === 'failed' ||
+        refundState.status === 'refunded' ||
+        refundState.status === 'credited' ||
+        refundState.status === 'requested' ||
+        refundState.status === 'under_review' ||
+        supportState.status === 'submitted' ||
+        supportState.status === 'under_review' ||
+        supportState.status === 'resolved'),
+  );
+
+  if (!shouldShow || !supportState || !refundState) return null;
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('proAccessSupport')} tone="pro" />
+        <StatusBadge label={getProAccessSupportStatusLabel(supportState.statusLabel, refundState.status)} tone={getProAccessSupportTone(supportState.status, refundState.status, paymentStatus)} />
+      </View>
+      <AppText variant="sectionTitle">{t('proAccessRefundSupportReview')}</AppText>
+      <Info label={t('supportStatus')} value={supportState.statusLabel || t('noProAccessSupportReview')} />
+      <Info label={t('refundStatus')} value={refundState.statusLabel || t('refundReview')} />
+      {request.proAccessRefundSummary ? (
+        <AppText color={colors.slate700}>{request.proAccessRefundSummary}</AppText>
+      ) : (
+        <AppText color={colors.slate700}>{supportState.helperText}</AppText>
+      )}
+      {refundState.outcomeLabel ? <Info label={t('refundStatus')} value={refundState.outcomeLabel} /> : null}
+      {request.proAccessRefundResolvedAt ? <Info label={t('created')} value={request.proAccessRefundResolvedAt} /> : null}
+      {request.proAccessRefundSubmittedAt ? <Info label={t('submitted')} value={request.proAccessRefundSubmittedAt} /> : null}
+      {request.proAccessRefundBlockedReason ? (
+        <AppText color={colors.warning600}>{request.proAccessRefundBlockedReason}</AppText>
+      ) : null}
+      <AppText color={colors.slate700}>{t('proAccessUnlocksComparisonNotWork')}</AppText>
+      <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
+      <AppText color={colors.slate500} variant="caption">{t('proAccessSupportActionsLater')}</AppText>
+    </AppCard>
+  );
+}
+
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -859,5 +909,18 @@ function getSiteVisitTone(status?: string) {
   if (status === 'accepted' || status === 'completed' || status === 'invite_available') return 'success';
   if (status === 'invited' || status === 'alternate_time_proposed') return 'pro';
   if (status === 'declined' || status === 'cancelled' || status === 'blocked') return 'warning';
+  return 'neutral';
+}
+
+function getProAccessSupportStatusLabel(statusLabel: string, refundStatus?: string) {
+  if (refundStatus === 'refunded') return t('refunded');
+  if (refundStatus === 'credited') return t('credited');
+  return statusLabel;
+}
+
+function getProAccessSupportTone(supportStatus?: string, refundStatus?: string, paymentStatus?: string) {
+  if (refundStatus === 'refunded' || refundStatus === 'credited' || supportStatus === 'resolved') return 'success';
+  if (supportStatus === 'under_review' || supportStatus === 'submitted' || refundStatus === 'under_review' || refundStatus === 'requested') return 'pro';
+  if (paymentStatus === 'failed' || supportStatus === 'not_available' || refundStatus === 'not_available') return 'warning';
   return 'neutral';
 }

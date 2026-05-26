@@ -587,8 +587,18 @@ export type CustomerProRequestSummary = {
   proAccessFeeLabel?: string;
   proAccessNextActions?: CustomerProAccessNextActions;
   proAccessPaymentState?: CustomerProAccessPaymentState;
+  proAccessRefundBlockedReason?: string | null;
+  proAccessRefundBlockedReasonCode?: string | null;
+  proAccessRefundOutcomeLabel?: string | null;
+  proAccessRefundResolvedAt?: string | null;
+  proAccessRefundState?: CustomerProAccessRefundState;
+  proAccessRefundSubmittedAt?: string | null;
+  proAccessRefundSummary?: string | null;
   proAccessState?: CustomerProAccessState;
   proAccessSummary?: string;
+  proAccessSupportNextActions?: CustomerProAccessSupportNextActions;
+  proAccessSupportReviewLabel?: string | null;
+  proAccessSupportState?: CustomerProAccessSupportState;
   proUnlockState?: CustomerProAccessState;
   responsePreviewSummary?: string;
   responsesCount: number;
@@ -630,14 +640,60 @@ export type CustomerProAccessPaymentState = {
   statusLabel: string;
 };
 
+export type CustomerProAccessSupportState = {
+  blockedReason: string | null;
+  blockedReasonCode: string | null;
+  helperText: string;
+  latestRequestCreatedAt: string | null;
+  latestRequestId: string | null;
+  latestRequestType: string | null;
+  status:
+    | 'none'
+    | 'support_available'
+    | 'refund_review_available'
+    | 'submitted'
+    | 'under_review'
+    | 'resolved'
+    | 'not_available'
+    | 'unknown';
+  statusLabel: string;
+  supportReviewLabel: string | null;
+};
+
+export type CustomerProAccessRefundState = {
+  helperText: string;
+  outcomeLabel: string | null;
+  status:
+    | 'not_requested'
+    | 'request_available'
+    | 'requested'
+    | 'under_review'
+    | 'refunded'
+    | 'credited'
+    | 'declined'
+    | 'not_available'
+    | 'unknown';
+  statusLabel: string;
+};
+
+export type CustomerProAccessSupportNextActions = {
+  blockedReason?: string | null;
+  blockedReasonCode?: string | null;
+  canOpenProAccessSupport: boolean;
+  canRequestProAccessRefund: boolean;
+  canViewProAccessSupportStatus: boolean;
+};
+
 export type CustomerProAccessNextActions = {
   blockedReason?: string | null;
   blockedReasonCode?: string | null;
   canConfirmProAccessPayment: boolean;
+  canOpenProAccessSupport?: boolean;
   canPrepareProAccessPayment: boolean;
   canRequestProAccessRefund: boolean;
   canRetryProAccessPayment: boolean;
   canUnlockProResponses: boolean;
+  canViewProAccessSupportStatus?: boolean;
   canViewUnlockedResponses: boolean;
 };
 
@@ -772,8 +828,18 @@ export type CustomerProRequestDetail = {
   proAccessFeeLabel?: string;
   proAccessNextActions?: CustomerProAccessNextActions;
   proAccessPaymentState?: CustomerProAccessPaymentState;
+  proAccessRefundBlockedReason?: string | null;
+  proAccessRefundBlockedReasonCode?: string | null;
+  proAccessRefundOutcomeLabel?: string | null;
+  proAccessRefundResolvedAt?: string | null;
+  proAccessRefundState?: CustomerProAccessRefundState;
+  proAccessRefundSubmittedAt?: string | null;
+  proAccessRefundSummary?: string | null;
   proAccessState?: CustomerProAccessState;
   proAccessSummary?: string;
+  proAccessSupportNextActions?: CustomerProAccessSupportNextActions;
+  proAccessSupportReviewLabel?: string | null;
+  proAccessSupportState?: CustomerProAccessSupportState;
   proUnlockState?: CustomerProAccessState;
   responsePreviews: CustomerProResponsePreview[];
   responsePreviewSummary?: string;
