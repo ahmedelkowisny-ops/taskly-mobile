@@ -95,7 +95,7 @@ export default function ProviderCoreTaskDetailScreen() {
     }
 
     setData(null);
-    setStateLabel(result.status === 404 ? 'Not found' : result.status === 401 || result.status === 403 ? 'Login required' : 'Backend unavailable');
+    setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
     setMessage(result.status === 404 ? 'This task was not found or is not available to this provider account.' : 'Could not load this task detail.');
   }, [getValidAccessToken, status, taskId]);
 
@@ -670,7 +670,7 @@ export default function ProviderCoreTaskDetailScreen() {
         <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message="Loading provider Taskly task detail." /> : null}
+      {isLoading ? <StateCard label={t('loading')} message="Loading provider Taskly task detail." /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
@@ -678,7 +678,7 @@ export default function ProviderCoreTaskDetailScreen() {
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} variant="outline">Retry</AppButton>
-            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">Continue in demo mode</AppButton>
+            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
           </View>
         </AppCard>
       ) : null}

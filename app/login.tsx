@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'rea
 import { TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import {
   canOpenDeepLinkTarget,
   consumePendingDeepLinkTarget,
@@ -12,8 +13,6 @@ import {
 } from '@/src/lib/navigation/deepLinks';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
-
-const FRIENDLY_LOGIN_ERROR = 'Invalid email or password, or the server could not be reached.';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -27,7 +26,7 @@ export default function LoginScreen() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail || !password) {
-      setError('Enter your email and password to continue.');
+      setError(t('enterEmailPassword'));
       return;
     }
 
@@ -45,7 +44,7 @@ export default function LoginScreen() {
       return;
     }
 
-    setError(FRIENDLY_LOGIN_ERROR);
+    setError(t('invalidLogin'));
   }
 
   function continueDemo() {
@@ -58,16 +57,14 @@ export default function LoginScreen() {
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
         <View style={styles.hero}>
           <TasklyLogoText />
-          <StatusBadge label="Taskly account" tone="neutral" />
-          <AppText variant="screenTitle">Login</AppText>
-          <AppText color={colors.slate700}>
-            Use your Taskly account. Registration will be connected later.
-          </AppText>
+          <StatusBadge label={t('tasklyAccount')} tone="neutral" />
+          <AppText variant="screenTitle">{t('loginTitle')}</AppText>
+          <AppText color={colors.slate700}>{t('loginIntro')}</AppText>
         </View>
 
         <AppCard>
           <View style={styles.field}>
-            <AppText variant="bodyStrong">Email</AppText>
+            <AppText variant="bodyStrong">{t('emailLabel')}</AppText>
             <TextInput
               autoCapitalize="none"
               autoComplete="email"
@@ -84,7 +81,7 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.field}>
-            <AppText variant="bodyStrong">Password</AppText>
+            <AppText variant="bodyStrong">{t('passwordLabel')}</AppText>
             <TextInput
               autoCapitalize="none"
               autoComplete="password"
@@ -93,7 +90,7 @@ export default function LoginScreen() {
               onSubmitEditing={() => {
                 void onSubmit();
               }}
-              placeholder="Password"
+            placeholder={t('passwordLabel')}
               placeholderTextColor={colors.slate500}
               secureTextEntry
               style={styles.input}
@@ -113,15 +110,15 @@ export default function LoginScreen() {
             onPress={() => {
               void onSubmit();
             }}>
-            Login
+            {t('loginTitle')}
           </AppButton>
 
           <AppButton onPress={continueDemo} tone="pro" variant="outline">
-            Continue in demo mode
+            {t('continueDemoMode')}
           </AppButton>
 
           <AppButton onPress={() => router.push('/')} tone="neutral" variant="ghost">
-            Back to Taskly
+            {t('backToTaskly')}
           </AppButton>
         </AppCard>
       </KeyboardAvoidingView>

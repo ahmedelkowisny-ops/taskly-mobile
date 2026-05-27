@@ -64,7 +64,7 @@ export default function ProviderStartScreen() {
       </View>
 
       <AppCard>
-        <StatusBadge label={status === 'authenticated' ? 'Backend role status' : status === 'demo' ? 'Demo role status' : 'Demo fallback'} tone="neutral" />
+        <StatusBadge label={status === 'authenticated' ? 'Account status' : status === 'demo' ? 'Demo role status' : 'Demo fallback'} tone="neutral" />
         <AppText variant="sectionTitle">{summary}</AppText>
         <AppText color={colors.slate700}>{nextAction}</AppText>
       </AppCard>

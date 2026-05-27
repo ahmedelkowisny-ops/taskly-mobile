@@ -256,8 +256,8 @@ function createMockCancellationState(
     estimatedPolicyOutcomeLabel: null,
     feeLabel: null,
     freeCancellationUntil: null,
-    helperText: 'Cancellation status is provided by the backend.',
-    policySummary: 'Free cancellation is available until 24 hours before the scheduled start. Backend policy decides late-cancellation outcomes.',
+    helperText: 'Cancellation status is provided by Taskly.',
+    policySummary: 'Free cancellation is available until 24 hours before the scheduled start. Taskly decides late-cancellation outcomes.',
     refundLabel: null,
     requiresReason: false,
     status: 'not_available',
@@ -273,7 +273,7 @@ function createMockSupportState(
   return {
     blockedReason: 'Support is not needed for this task state.',
     blockedReasonCode: 'SUPPORT_NOT_AVAILABLE',
-    helperText: 'Support status appears here only when backend review is needed.',
+    helperText: 'Support status appears here when Taskly review is needed.',
     latestRequestCreatedAt: null,
     latestRequestId: null,
     latestRequestType: null,
@@ -288,7 +288,7 @@ function createMockRefundState(
   overrides: Partial<CoreRefundState> = {},
 ): CoreRefundState {
   return {
-    helperText: 'Refund status is provided by backend payment handling.',
+    helperText: 'Refund status is provided by Taskly payment handling.',
     outcomeLabel: null,
     status: 'not_requested',
     statusLabel: 'No refund request',
@@ -312,7 +312,7 @@ function createMockDisputeState(
 export function getMockCustomerTasksResponse(): CustomerTasksResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Taskly tasks will load after login and backend data are available.',
+      description: 'Demo mode is active. Real Taskly tasks load after sign-in.',
       title: 'No demo Taskly tasks',
     },
     tasks: [
@@ -359,7 +359,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'RESERVED',
-        statusLabel: 'Reserved/upcoming',
+        statusLabel: 'Scheduled/upcoming',
         title: 'Demo payment method required',
         unreadMessagesCount: 0,
       },
@@ -390,7 +390,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'RESERVED',
-        statusLabel: 'Reserved/upcoming',
+        statusLabel: 'Scheduled/upcoming',
         title: 'Demo upcoming Taskly task',
         unreadMessagesCount: 0,
       },
@@ -416,7 +416,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
           blockedReasonCode: null,
           estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
           freeCancellationUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          helperText: 'Backend policy allows free cancellation before the deadline.',
+          helperText: 'Taskly allows free cancellation before the deadline.',
           status: 'free_cancellation_available',
           statusLabel: 'Free cancellation available',
         }),
@@ -587,7 +587,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'RESERVED',
-        statusLabel: 'Reserved/upcoming',
+        statusLabel: 'Scheduled/upcoming',
         title: 'Demo payment needs attention',
         unreadMessagesCount: 0,
       },
@@ -694,13 +694,13 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
     : isSupportReview
       ? 'Support review'
     : isPaymentFailed || isPaymentMethodRequired
-      ? 'Reserved/upcoming'
+      ? 'Scheduled/upcoming'
     : isInProgress
       ? 'In progress'
       : isStarted
         ? 'In progress'
       : isUpcoming
-        ? 'Reserved/upcoming'
+        ? 'Scheduled/upcoming'
         : isSelecting
           ? 'Customer choosing Tasker'
           : 'Waiting for customer approval';
@@ -780,7 +780,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
           blockedReasonCode: null,
           estimatedPolicyOutcomeLabel: 'Free cancellation is available before the displayed deadline.',
           freeCancellationUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          helperText: 'Backend policy allows free cancellation before the deadline.',
+          helperText: 'Taskly allows free cancellation before the deadline.',
           status: 'free_cancellation_available',
           statusLabel: 'Free cancellation available',
         })
@@ -828,7 +828,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       cancellationState,
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
-      description: 'Demo Taskly task detail with backend-style next action wording.',
+      description: 'Demo Taskly task detail with Taskly-style next action wording.',
       displayActions: [{ accent: 'core', href: '/customer/tasks', label: 'Review completion', type: 'review_completion' }],
       disputeState,
       id: taskId,
@@ -881,14 +881,14 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
           },
       timeline: [
         { description: 'Demo task posted.', id: 'posted', label: 'Posted', status: 'done' },
-        { description: 'Payment state is shown by backend data.', id: 'payment', label: 'Payment protected', status: 'done' },
+        { description: 'Payment state is shown by Taskly data.', id: 'payment', label: 'Payment protected', status: 'done' },
         {
           description: isCompleted
             ? 'Completion was approved through the protected payment flow.'
             : isInProgress
               ? 'Work is in progress. The Tasker can request completion when ready.'
               : isUpcoming
-                ? 'The task is reserved for the selected Tasker.'
+                ? 'The task is scheduled with the selected Tasker.'
                 : isSelecting
                   ? 'The customer chooses a Tasker after interest is sent.'
                   : 'Tasker requested completion. The customer can approve or ask for changes.',
@@ -1035,7 +1035,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       categoryLabel: 'Interior repair',
       cityLabel: 'Sofia',
       comparisonState: {
-        helperText: 'Full comparison is available from backend-returned fields.',
+        helperText: 'Full comparison is available from Taskly details.',
         status: 'available',
         statusLabel: 'Full comparison available',
       },
@@ -1073,7 +1073,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       },
       proAccessState: {
         hiddenResponsesExcluded: true,
-        helperText: 'Full comparison details returned by the backend are available.',
+        helperText: 'Full comparison details from Taskly are available.',
         isUnlocked: true,
         meaningfulResponsesCount: 2,
         status: 'unlocked',
@@ -1081,7 +1081,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
         submittedResponsesCount: 2,
         totalResponsesCount: 2,
       },
-      proAccessSummary: 'Full comparison details returned by the backend are available.',
+      proAccessSummary: 'Full comparison details from Taskly are available.',
       responsePreviewSummary: '2 response previews available',
       responsesCount: 2,
       status: 'ACCESS_UNLOCKED',
@@ -1098,7 +1098,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
 
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Taskly Pro projects will load after login and backend data are available.',
+      description: 'Demo mode is active. Real Taskly Pro projects load after sign-in.',
       title: 'No demo Taskly Pro projects',
     },
     proRequests: [
@@ -1157,15 +1157,15 @@ function createMockProAccessStateScenario(
     },
     proAccessState: {
       ...accessState,
-      helperText: isFailed ? 'Payment failed. Retry when backend allows it.' : accessState.helperText,
+      helperText: isFailed ? 'Payment failed. Retry when Taskly allows it.' : accessState.helperText,
       isUnlocked: isFailed ? false : accessState.isUnlocked,
       status: isFailed ? 'payment_failed' : isRefunded ? 'refunded' : isCredited ? 'credited' : accessState.status,
       statusLabel: isFailed ? 'Payment failed' : isRefunded ? 'Pro Access refunded' : isCredited ? 'Access credited' : accessState.statusLabel,
     },
     proAccessSummary: isFailed
-      ? 'Payment failed. Retry when backend allows it.'
+      ? 'Payment failed. Retry when Taskly allows it.'
       : isRefunded
-        ? 'Pro Access payment is marked refunded by the backend.'
+        ? 'Pro Access payment is marked refunded by Taskly.'
         : isCredited
           ? 'Pro Access is credited for this request.'
           : 'Taskly support is reviewing this Pro Access request.',
@@ -1200,7 +1200,7 @@ function getMockProAccessSupportFields(
   const summary = isReview
     ? 'Taskly support is reviewing this Pro Access request.'
     : isRefunded
-      ? 'Pro Access payment is marked refunded by the backend.'
+      ? 'Pro Access payment is marked refunded by Taskly.'
       : isCredited
         ? 'Pro Access is credited for this request.'
         : isFailed
@@ -1388,7 +1388,7 @@ function getMockCustomerSiteVisitModel(proRequestId: string, isUnlocked: boolean
       activeInviteCount: status === 'invited' || status === 'accepted' ? 1 : 0,
       blockedReason: null,
       blockedReasonCode: null,
-      helperText: 'Site visit state is demo read-only data. This is only a site visit, not a final work agreement.',
+      helperText: 'Site visit state is demo data. This is only a site visit, not a final work agreement.',
       status,
       statusLabel,
     },
@@ -1406,7 +1406,7 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
         canViewFullComparison: true,
         comparisonLabel: 'Full comparison',
         emptyStateLabel: null,
-        helperText: 'Compare backend-returned details from approved independent Pros. Final agreement is between you and the Pro.',
+        helperText: 'Compare details from approved independent Pros. Final agreement is between you and the Pro.',
         responseCount: 2,
         responses: [
           {
@@ -1484,7 +1484,7 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       cityLabel: summary.cityLabel,
       comparisonState: summary.comparisonState,
       createdAt: summary.createdAt,
-      description: 'Demo read-only Taskly Pro project detail. Unlock and contact actions stay backend-owned.',
+      description: 'Demo Taskly Pro project detail. Unlock and contact actions stay Taskly-owned.',
       id: proRequestId,
       images: [],
       isUnlocked,
@@ -1698,7 +1698,7 @@ function createMockProviderIssueState(
   return {
     blockedReason: null,
     blockedReasonCode: null,
-    helperText: 'Provider issue and support state is provided by backend rules.',
+    helperText: 'Provider issue and support state follows Taskly rules.',
     latestRequestCreatedAt: null,
     latestRequestId: null,
     latestRequestType: null,
@@ -1713,7 +1713,7 @@ function createMockProviderIssueState(
 export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Taskly task previews load after login and backend data are available.',
+      description: 'Demo mode is active. Real Taskly task previews load after sign-in.',
       title: 'No demo Taskly tasks',
     },
     tasks: [
@@ -1795,8 +1795,8 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         scheduledEndAt: null,
         scheduledStartAt: null,
         status: 'RESERVED',
-        statusLabel: 'Reserved/upcoming',
-        title: 'Demo reserved Taskly task',
+        statusLabel: 'Scheduled/upcoming',
+        title: 'Demo scheduled Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -1856,7 +1856,7 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         unreadMessagesCount: 0,
       },
       {
-        cancellationPolicySummary: 'Cancellation and support outcomes are decided by backend policy.',
+        cancellationPolicySummary: 'Cancellation and support outcomes are decided by Taskly policy.',
         cancellationState: createMockCancellationState({
           blockedReason: 'This task is under support review.',
           blockedReasonCode: 'TASK_DISPUTED',
@@ -2178,7 +2178,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       customerPreviewLabel: 'Customer preview',
-      description: 'Demo provider Taskly task detail. Actions follow backend-authored nextActions.',
+      description: 'Demo provider Taskly task detail. Actions follow Taskly next actions.',
       disputeState,
       id: taskId,
       images: [],
@@ -2211,7 +2211,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
           : isInProgress
             ? 'In progress'
             : isUpcoming
-              ? 'Reserved/upcoming'
+              ? 'Scheduled/upcoming'
               : isInterested
                 ? 'Interest sent'
                 : 'Available',
@@ -2244,7 +2244,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
 export function getMockProviderProRequestsResponse(): ProviderProRequestsResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Taskly Pro previews load after login and backend data are available.',
+      description: 'Demo mode is active. Real Taskly Pro previews load after sign-in.',
       title: 'No demo Taskly Pro projects',
     },
     proRequests: [
@@ -2273,7 +2273,7 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
             canSubmitResponse: true,
             canViewSubmittedResponse: false,
           },
-          helperText: 'Backend validation will run before a response can be submitted.',
+          helperText: 'Taskly validation will run before a response can be submitted.',
           status: 'can_submit',
           statusLabel: 'Can respond',
         },
@@ -2406,7 +2406,7 @@ function getMockProviderSiteVisitModel(proRequestId: string, hasSubmittedRespons
     allowedContactFields: accepted ? ['address', 'accessNotes'] : [],
     contactVisibilityState: {
       allowedContactFields: accepted ? ['address', 'accessNotes'] : [],
-      helperText: accepted ? 'Only backend-allowed site visit contact details are shown.' : 'Customer contact details are hidden until Taskly allows sharing.',
+      helperText: accepted ? 'Only Taskly-allowed site visit contact details are shown.' : 'Customer contact details are hidden until Taskly allows sharing.',
       state: accepted ? 'shared_for_site_visit' : 'allowed_after_site_visit_invite',
       stateLabel: accepted ? 'Contact details shared for site visit' : 'Contact details hidden',
     },
@@ -2484,7 +2484,7 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
         blockedReason: null,
         blockedReasonCode: null,
         capabilities: proResponseCapabilities,
-        helperText: 'Backend validation will run before a response can be submitted.',
+        helperText: 'Taskly validation will run before a response can be submitted.',
         status: 'can_submit',
         statusLabel: 'Can respond',
       };
@@ -2529,7 +2529,7 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
       proResponseSummary,
       responseEditDefaults: hasSubmittedResponse
         ? {
-            assumptions: 'Demo assumptions stay backend-authored.',
+            assumptions: 'Demo assumptions stay Taskly-authored.',
             availability: 'NEXT_WEEK',
             currency: 'EUR',
             customerPreparationNotes: 'Customer should confirm measurements.',
@@ -2614,7 +2614,7 @@ export function submitOrUpdateMockProviderProResponse(
       categoryLabel: 'Renovation',
       cityLabel: 'Sofia',
       createdAt: now,
-      description: 'Demo provider Taskly Pro project detail. Demo responses stay local and do not call the backend.',
+      description: 'Demo provider Taskly Pro project detail. Demo responses stay local and do not contact Taskly.',
       eligibility: { isEligibleToRespond: false, reasonLabel: 'Update response' },
       id: proRequestId,
       images: [],
@@ -2660,7 +2660,7 @@ export function submitOrUpdateMockProviderProResponse(
           canSubmitResponse: false,
           canViewSubmittedResponse: true,
         },
-        helperText: 'Demo response saved locally. Backend validation will run in real mode.',
+        helperText: 'Demo response saved locally. Taskly validation will run in real mode.',
         status: 'can_edit',
         statusLabel: 'Update response',
       },
@@ -2757,7 +2757,7 @@ export function getMockMessageThreadsResponse(): MessageThreadsResponse {
         contextType: 'CORE_TASK',
         id: 'booking:demo-core-thread',
         lastMessageAt: now,
-        lastMessagePreview: 'Demo read-only Taskly task conversation.',
+        lastMessagePreview: 'Demo Taskly task conversation.',
         otherParticipantName: 'Taskly demo user',
         roleLabel: 'Participant',
         statusLabel: 'Taskly task',

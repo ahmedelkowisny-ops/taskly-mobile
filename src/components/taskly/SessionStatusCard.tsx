@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -24,7 +25,7 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
   if (status === 'authenticated') {
     return {
       badge: 'Signed in',
-      body: 'Workspace access is coming from the Taskly backend.',
+      body: 'Taskly uses your account permissions to show available workspaces.',
       title: `Signed in as ${name ?? 'Taskly user'}`,
       tone: 'success' as const,
     };
@@ -41,8 +42,8 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
 
   if (status === 'error') {
     return {
-      badge: 'Backend unavailable',
-      body: 'Could not reach the Taskly backend.',
+      badge: t('backendUnavailable'),
+      body: 'Taskly cannot be reached right now.',
       title: 'Session check paused',
       tone: 'danger' as const,
     };
@@ -50,8 +51,8 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
 
   return {
     badge: 'Not signed in',
-    body: 'You are not signed in yet. Use login or continue in demo mode.',
-    title: 'Taskly account',
+    body: 'Sign in or explore demo mode.',
+    title: t('tasklyAccount'),
     tone: 'neutral' as const,
   };
 }
@@ -93,7 +94,7 @@ export function SessionStatusCard({ compact = false, onLoginPress }: SessionStat
 
       <View style={styles.actions}>
         {status !== 'authenticated' && onLoginPress ? (
-          <AppButton onPress={onLoginPress}>Login</AppButton>
+          <AppButton onPress={onLoginPress}>{t('loginTitle')}</AppButton>
         ) : null}
 
         <AppButton
@@ -118,7 +119,7 @@ export function SessionStatusCard({ compact = false, onLoginPress }: SessionStat
 
         {canUseDemo ? (
           <AppButton onPress={useDemoSession} tone="pro">
-            Continue in demo mode
+            {t('continueDemoMode')}
           </AppButton>
         ) : null}
 

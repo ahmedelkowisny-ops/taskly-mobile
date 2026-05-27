@@ -94,25 +94,25 @@ export default function ProviderCoreTasksScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
           <AppText variant="sectionTitle">Loading Taskly task previews</AppText>
-          <AppText color={colors.slate700}>Fetching read-only Taskly tasks from the backend.</AppText>
+          <AppText color={colors.slate700}>Loading matching Taskly tasks.</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
             {isUnauthorized ? 'Taskly tasks need Provider access' : 'Could not refresh Taskly tasks'}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadTasks} variant="outline">
               Retry
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>

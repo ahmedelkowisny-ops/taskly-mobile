@@ -428,8 +428,8 @@ export default function CustomerPostProRequestScreen() {
 
   const descriptionLength = description.trim().length;
   const descriptionHelper = catalog
-    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength} characters. Backend rules remain final.`
-    : 'Backend posting rules will appear here.';
+    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength} characters. Taskly rules apply at submit.`
+    : 'Taskly Pro posting rules will appear here.';
   const getFieldError = (key: ValidationFieldKey) => (showStrongValidation ? visibleFieldErrors[key] : undefined);
   const getFieldHelper = (key: ValidationFieldKey, fallback?: string) =>
     showStrongValidation ? fallback : formValidation.errors[key] ?? fallback;
@@ -454,7 +454,7 @@ export default function CustomerPostProRequestScreen() {
         <AppCard accentColor={colors.proOrange600}>
           <StatusBadge label="Loading" tone="pro" />
           <AppText variant="sectionTitle">Loading Taskly Pro setup</AppText>
-          <AppText color={colors.slate700}>Fetching cities, Pro categories, and posting rules.</AppText>
+          <AppText color={colors.slate700}>Loading cities, Pro categories, and posting rules.</AppText>
         </AppCard>
       ) : null}
 
@@ -485,7 +485,7 @@ export default function CustomerPostProRequestScreen() {
 
       <FormSection
         accent="pro"
-        description="Choose a larger quote-based Pro category from the backend catalog."
+        description="Choose the Pro category that best fits the project."
         title={t('category')}>
         {catalog?.categories.map((category) => (
           <SelectOptionCard
@@ -508,7 +508,7 @@ export default function CustomerPostProRequestScreen() {
         ) : null}
       </FormSection>
 
-      <FormSection accent="pro" description="City options come from the backend catalog." title={t('city')}>
+      <FormSection accent="pro" description="Choose the city for the project." title={t('city')}>
         {catalog?.cities.map((city) => (
           <SelectOptionCard
             key={city.id}

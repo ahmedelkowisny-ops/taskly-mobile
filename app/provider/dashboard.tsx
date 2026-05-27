@@ -73,8 +73,8 @@ export default function ProviderDashboardScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Login or Provider Workspace access is required.'
-        : 'Could not load Provider Workspace data.',
+        ? 'Sign in with Provider Workspace access.'
+        : 'Could not load Provider Workspace.',
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -90,7 +90,7 @@ export default function ProviderDashboardScreen() {
       <View style={styles.header}>
         <View style={styles.badges}>
           <StatusBadge label="Provider" tone="neutral" />
-          <StatusBadge label={status === 'authenticated' ? 'Backend session' : status === 'demo' ? 'Demo session' : 'Demo fallback'} tone="neutral" />
+          <StatusBadge label={status === 'authenticated' ? 'Signed in' : status === 'demo' ? 'Demo session' : 'Demo fallback'} tone="neutral" />
         </View>
         <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
         <AppText color={colors.slate700}>
@@ -102,25 +102,25 @@ export default function ProviderDashboardScreen() {
         <AppCard accentColor={colors.navy900}>
           <StatusBadge label="Loading" tone="neutral" />
           <AppText variant="sectionTitle">Loading Provider Workspace</AppText>
-          <AppText color={colors.slate700}>Fetching read-only provider status from Taskly.</AppText>
+          <AppText color={colors.slate700}>Loading your latest provider status.</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Provider data needs access' : 'Could not refresh provider data'}
+            {isUnauthorized ? 'Sign in to view provider activity' : 'Could not refresh provider activity'}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDashboard} variant="outline">
               Retry
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -128,7 +128,7 @@ export default function ProviderDashboardScreen() {
 
       {summary ? (
         <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live read-only data'} tone={status === 'demo' ? 'neutral' : 'success'} />
+          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live data'} tone={status === 'demo' ? 'neutral' : 'success'} />
           <AppText variant="sectionTitle">Provider summary</AppText>
           <View style={styles.metricsGrid}>
             <Metric label="Available Taskly" value={summary.availableCoreTasksCount} />
@@ -153,7 +153,7 @@ export default function ProviderDashboardScreen() {
         <AppText variant="sectionTitle">{data?.nextActions[0]?.label ?? getRecommendedProviderNextAction(session)}</AppText>
         <AppText color={colors.slate700}>
           {status === 'authenticated'
-            ? 'This recommendation comes from the backend session.'
+            ? 'This recommendation comes from your Taskly account.'
             : 'Demo mode keeps provider guidance available while real data is not connected.'}
         </AppText>
       </AppCard>
@@ -210,7 +210,7 @@ export default function ProviderDashboardScreen() {
       </View>
 
       <AssistantGuideCard
-        body="Taskly tasks and Taskly Pro projects stay separate so each mode can follow backend-approved rules inside one Taskly app."
+        body="Taskly tasks and Taskly Pro projects stay separate so each mode stays clear inside one Taskly app."
         title="Mode guidance"
         tone="pro"
       />

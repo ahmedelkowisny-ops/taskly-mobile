@@ -91,25 +91,25 @@ export default function CustomerTasksScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
           <AppText variant="sectionTitle">Loading Taskly tasks</AppText>
-          <AppText color={colors.slate700}>Fetching your read-only task list from Taskly.</AppText>
+          <AppText color={colors.slate700}>Loading your latest Taskly tasks.</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Taskly tasks need a real session' : 'Could not refresh Taskly tasks'}
+            {isUnauthorized ? 'Sign in to view your Taskly tasks' : 'Could not refresh Taskly tasks'}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry the request or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadTasks} variant="outline">
               Retry
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -170,7 +170,7 @@ export default function CustomerTasksScreen() {
         </View>
         <AppText variant="sectionTitle">{t('paymentProtected')}</AppText>
         <AppText color={colors.slate700}>
-          Taskly shows payment protection status from the backend. The app does not calculate payment readiness or release rules.
+          Taskly shows the latest protected payment status. Payment readiness and release rules are decided by Taskly.
         </AppText>
       </AppCard>
     </Screen>

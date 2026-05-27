@@ -477,8 +477,8 @@ export default function CustomerPostTaskScreen() {
 
   const descriptionLength = description.trim().length;
   const descriptionHelper = catalog
-    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength} characters. Backend rules remain final.`
-    : 'Backend posting rules will appear here.';
+    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength} characters. Taskly rules apply at submit.`
+    : 'Taskly posting rules will appear here.';
   const getFieldError = (key: ValidationFieldKey) => (showStrongValidation ? visibleFieldErrors[key] : undefined);
   const getFieldHelper = (key: ValidationFieldKey, fallback?: string) =>
     showStrongValidation ? fallback : formValidation.errors[key] ?? fallback;
@@ -500,7 +500,7 @@ export default function CustomerPostTaskScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
           <AppText variant="sectionTitle">Loading posting setup</AppText>
-          <AppText color={colors.slate700}>Fetching cities, Taskly categories, and posting rules.</AppText>
+          <AppText color={colors.slate700}>Loading cities, Taskly categories, and posting rules.</AppText>
         </AppCard>
       ) : null}
 
@@ -526,7 +526,7 @@ export default function CustomerPostTaskScreen() {
       />
 
       <FormSection
-        description="Choose a small fixed-scope Taskly category from the backend catalog."
+        description="Choose a small fixed-scope Taskly category."
         title={t('category')}>
         {catalog?.categories.map((category) => (
           <SelectOptionCard
@@ -548,7 +548,7 @@ export default function CustomerPostTaskScreen() {
         ) : null}
       </FormSection>
 
-      <FormSection description="City options come from the backend catalog." title={t('city')}>
+      <FormSection description="Choose the city where you need help." title={t('city')}>
         {catalog?.cities.map((city) => (
           <SelectOptionCard
             key={city.id}

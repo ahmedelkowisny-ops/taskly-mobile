@@ -130,7 +130,7 @@ export default function ProviderProRequestDetailScreen() {
     }
 
     setData(null);
-    setStateLabel(result.status === 404 ? 'Not found' : result.status === 401 || result.status === 403 ? 'Login required' : 'Backend unavailable');
+    setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
     setMessage(result.status === 404 ? 'This Taskly Pro project was not found or is not available to this provider account.' : 'Could not load this Taskly Pro project.');
   }, [getValidAccessToken, proRequestId, status]);
 
@@ -315,7 +315,7 @@ export default function ProviderProRequestDetailScreen() {
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} tone="pro" variant="outline">Retry</AppButton>
-            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">Continue in demo mode</AppButton>
+            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
           </View>
         </AppCard>
       ) : null}

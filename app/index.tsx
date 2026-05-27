@@ -63,7 +63,7 @@ export default function WelcomeScreen() {
           />
         </View>
         <AppText color={colors.slate700}>
-          Workspace navigation remains open during rollout. Backend session data is used when available.
+          Taskly uses your account permissions to show the right workspace.
         </AppText>
       </AppCard>
 
@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
           accessState={customerEntry.state}
           accent="customer"
           actionLabel={customerEntry.actionLabel}
-          description="For Taskly tasks, Taskly Pro projects, payments, messages, approvals, and support."
+          description="For Taskly tasks, Taskly Pro projects, protected payments, messages, approvals, and support."
           note={customerEntry.description}
           onPress={() => router.push(customerEntry.state === 'loginRequired' ? LOGIN_ROUTE : CUSTOMER_HOME_ROUTE)}
           onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}
@@ -84,7 +84,7 @@ export default function WelcomeScreen() {
           accessState={providerEntry.state}
           accent="provider"
           actionLabel={providerEntry.actionLabel}
-          description="For managing Taskly tasks, Taskly Pro projects, profile status, responses, and messages."
+          description="For Taskly tasks, Taskly Pro projects, profile status, responses, and messages."
           note={providerEntry.description}
           onPress={() => router.push(providerEntry.state === 'loginRequired' ? LOGIN_ROUTE : providerTarget)}
           onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}

@@ -89,25 +89,25 @@ export default function ProviderProfileScreen() {
         <AppCard accentColor={colors.navy900}>
           <StatusBadge label="Loading" tone="neutral" />
           <AppText variant="sectionTitle">Loading provider profile</AppText>
-          <AppText color={colors.slate700}>Fetching read-only profile status from Taskly.</AppText>
+          <AppText color={colors.slate700}>Loading your latest profile status.</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
             {isUnauthorized ? 'Profile status needs Provider access' : 'Could not refresh profile status'}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadProfile} variant="outline">
               Retry
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -115,7 +115,7 @@ export default function ProviderProfileScreen() {
 
       {profile ? (
         <AppCard>
-          <StatusBadge label={status === 'demo' ? 'Demo profile' : 'Live read-only profile'} tone={status === 'demo' ? 'neutral' : 'success'} />
+          <StatusBadge label={status === 'demo' ? 'Demo profile' : 'Live profile'} tone={status === 'demo' ? 'neutral' : 'success'} />
           <AppText variant="sectionTitle">{profile.displayName}</AppText>
           <AppText color={colors.slate700}>{profile.profileStrengthLabel}</AppText>
           <AppText color={colors.slate700}>{profile.stripeStatusLabel}</AppText>
@@ -126,7 +126,7 @@ export default function ProviderProfileScreen() {
         <ModeBadge mode="providerCore" />
         <AppText variant="sectionTitle">Taskly Tasker profile</AppText>
         <AppText color={colors.slate700}>
-          {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : 'Skills, coverage area, and trust signals will be backend-backed.'}
+          {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : 'Skills, coverage area, and trust signals will appear here.'}
         </AppText>
         {profile?.coreCities.length ? <AppText color={colors.slate500}>Cities: {profile.coreCities.join(', ')}</AppText> : null}
         {profile?.coreCategories.length ? <AppText color={colors.slate500}>Categories: {profile.coreCategories.join(', ')}</AppText> : null}

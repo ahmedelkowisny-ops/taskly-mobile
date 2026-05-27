@@ -63,8 +63,8 @@ export default function CustomerHomeScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Login is required to load your Customer Workspace.'
-        : 'Could not load Customer Workspace data.',
+        ? 'Sign in to load your Customer Workspace.'
+        : 'Could not load your Customer Workspace.',
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -92,25 +92,25 @@ export default function CustomerHomeScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
           <AppText variant="sectionTitle">Loading Customer Workspace</AppText>
-          <AppText color={colors.slate700}>Fetching your read-only Taskly summary from the backend.</AppText>
+          <AppText color={colors.slate700}>Loading your latest Taskly updates.</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Customer data needs a real session' : 'Could not refresh customer data'}
+            {isUnauthorized ? 'Sign in to view your customer activity' : 'Could not refresh customer activity'}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Login again, retry, or continue with demo data while the backend is unavailable.'}
+            {errorMessage || 'Try again, or use demo mode while Taskly reconnects.'}
           </AppText>
           <View style={styles.buttonRow}>
             <AppButton onPress={loadHome} variant="outline">
               Retry
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              Continue in demo mode
+              {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
@@ -118,7 +118,7 @@ export default function CustomerHomeScreen() {
 
       {summary ? (
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live read-only data'} tone={status === 'demo' ? 'neutral' : 'success'} />
+          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live data'} tone={status === 'demo' ? 'neutral' : 'success'} />
           <AppText variant="sectionTitle">Customer summary</AppText>
           <View style={styles.metricsGrid}>
             <Metric label="Open" value={summary.openTasksCount} />
@@ -133,9 +133,9 @@ export default function CustomerHomeScreen() {
       ) : null}
 
       <AppCard accentColor={colors.tasklyBlue600}>
-        <StatusBadge label={status === 'authenticated' ? 'Backend session' : status === 'demo' ? 'Demo session' : 'Workspace guidance'} tone="core" />
+        <StatusBadge label={status === 'authenticated' ? 'Signed in' : status === 'demo' ? 'Demo session' : 'Workspace guidance'} tone="core" />
         <AppText variant="sectionTitle">{getCustomerWorkspaceSummary(session)}</AppText>
-          <AppText color={colors.slate700}>Taskly helps you choose the right next step from backend-approved actions.</AppText>
+          <AppText color={colors.slate700}>Taskly helps you choose the right next step from available actions.</AppText>
       </AppCard>
 
       <View style={styles.actions}>

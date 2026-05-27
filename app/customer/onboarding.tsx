@@ -24,7 +24,7 @@ export default function CustomerOnboardingScreen() {
         <StatusBadge label="Customer" tone="core" />
         <AppText variant="sectionTitle">Small fixed-scope tasks</AppText>
         <AppText color={colors.slate700}>
-          Post clear Taskly tasks, chat with providers, track progress, and see backend-provided payment protection states.
+          Post clear Taskly tasks, chat with providers, track progress, and follow protected payment states.
         </AppText>
         <AppButton>{t('postTask')}</AppButton>
       </AppCard>
@@ -33,7 +33,7 @@ export default function CustomerOnboardingScreen() {
         <StatusBadge label="Pro" tone="pro" />
         <AppText variant="sectionTitle">Larger Taskly Pro projects</AppText>
         <AppText color={colors.slate700}>
-          Post larger quote-based requests for Taskly Pro professionals and compare responses when the backend allows it.
+          Post larger quote-based requests for Taskly Pro professionals and compare responses when Taskly makes them available.
         </AppText>
         <AppButton tone="pro">{t('postProRequest')}</AppButton>
       </AppCard>
@@ -41,7 +41,7 @@ export default function CustomerOnboardingScreen() {
       <AppCard accentColor={colors.success600}>
         <StatusBadge label={t('paymentProtectedCoreTasks')} tone="success" />
         <AppText color={colors.slate700}>
-          Your payment is protected until the task is completed and approved. Backend-provided statuses decide each step.
+          Your payment is protected until the task is completed and approved. Taskly guides each step.
         </AppText>
       </AppCard>
 
