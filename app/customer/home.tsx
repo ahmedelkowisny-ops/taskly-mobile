@@ -1,9 +1,11 @@
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
 import { EmptyStateCard, LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerHomeSummary } from '@/src/lib/api/customer';
@@ -17,12 +19,13 @@ import { spacing } from '@/src/theme/spacing';
 export default function CustomerHomeScreen() {
   useI18n();
   const router = useRouter();
-  const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
+  const { getValidAccessToken, session: authSession, status } = useAuth();
   const session = authSession ?? getMockUserSession();
   const [homeData, setHomeData] = useState<CustomerHomeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const loadHome = useCallback(async () => {
     setErrorMessage(null);
@@ -79,17 +82,28 @@ export default function CustomerHomeScreen() {
   const displayName = session.user.displayName;
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content} style={styles.screen}>
       <View style={styles.topBar}>
-        <TasklyLogoText />
-        <LanguageToggle />
+        <TasklyLogoText wordmarkOnly />
+        <View style={styles.headerActions}>
+          <LanguageToggle />
+          <Pressable
+            accessibilityLabel={t('menu')}
+            accessibilityRole="button"
+            onPress={() => setDrawerOpen(true)}
+            style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
+            <Ionicons color={colors.navy900} name="menu" size={21} />
+          </Pressable>
+        </View>
       </View>
 
-      <View style={styles.header}>
-        <AppText style={styles.screenTitle} variant="screenTitle">
+      <View style={styles.greeting}>
+        <AppText style={styles.greetingTitle} variant="screenTitle">
           {t('welcomeName').replace('{name}', displayName)}
         </AppText>
-        <AppText color={colors.slate700}>{t('customerHomePromise')}</AppText>
+        <AppText color={colors.slate700} style={styles.greetingBody}>
+          {t('customerHomePromise')}
+        </AppText>
       </View>
 
       {isLoading ? (
@@ -112,58 +126,63 @@ export default function CustomerHomeScreen() {
             <AppButton onPress={loadHome} variant="outline">
               {t('retry')}
             </AppButton>
-            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
-              {t('continueDemoMode')}
-            </AppButton>
           </View>
         </AppCard>
       ) : null}
 
+      <View style={styles.actionCards}>
+        <HomeActionCard
+          accent="core"
+          chips={[t('mountTv'), t('furniture'), t('fixSink'), t('smallRepairs')]}
+          cta={t('postTaskShort')}
+          icon="add-circle-outline"
+          onPress={() => router.push('/customer/post-task' as Href)}
+          subtitle={t('forQuickSmallJobs')}
+          title="Taskly"
+        />
+        <HomeActionCard
+          accent="pro"
+          chips={[t('bathroom'), t('electrical'), t('kitchen'), t('renovation')]}
+          cta={t('postProRequestShort')}
+          icon="sparkles-outline"
+          onPress={() => router.push('/customer/post-pro-request' as Href)}
+          subtitle={t('forBiggerQuoteProjects')}
+          title="Taskly Pro"
+        />
+      </View>
+
       {summary ? (
-        <AppCard accentColor={colors.tasklyBlue600}>
-          <AppText variant="sectionTitle">{t('customerSummaryTitle')}</AppText>
+        <View style={styles.summaryCard}>
+          <View style={styles.sectionHeader}>
+            <AppText variant="sectionTitle">{t('customerSummaryTitle')}</AppText>
+          </View>
           <View style={styles.metricsGrid}>
             <Metric label={t('openShort')} value={summary.openTasksCount} />
             <Metric label={t('activeShort')} value={summary.activeTasksCount} />
             <Metric label={t('waitingApproval')} value={summary.pendingCompletionCount} />
-            <Metric label={t('proResponsesShort')} value={summary.proResponsesAvailableCount} />
+            <Metric label={t('proResponsesShort')} value={summary.proResponsesAvailableCount} accent="pro" />
           </View>
-        </AppCard>
+        </View>
       ) : null}
 
-      <View style={styles.actions}>
-        <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label="Taskly" tone="core" />
-          <AppText variant="sectionTitle">{t('tasklyTaskActionTitle')}</AppText>
-          <AppText color={colors.slate700}>{t('tasklyTaskActionBody')}</AppText>
-          <AppButton onPress={() => router.push('/customer/post-task' as Href)}>{t('postTaskShort')}</AppButton>
-        </AppCard>
-
-        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-          <StatusBadge label="Taskly Pro" tone="pro" />
-          <AppText variant="sectionTitle">{t('tasklyProActionTitle')}</AppText>
-          <AppText color={colors.slate700}>{t('tasklyProActionBody')}</AppText>
-          <AppButton onPress={() => router.push('/customer/post-pro-request' as Href)} tone="pro">
-            {t('startProRequestShort')}
-          </AppButton>
-        </AppCard>
-      </View>
-
       {homeData?.highlights.length ? (
-        <View style={styles.actions}>
+        <View style={styles.activitySection}>
           <AppText variant="sectionTitle">{t('upcomingActivity')}</AppText>
           {homeData.highlights.map((highlight) => (
-            <AppCard
+            <View
               key={highlight.id}
-              accentColor={highlight.accent === 'pro' ? colors.proOrange600 : highlight.accent === 'warning' ? colors.warning600 : colors.tasklyBlue600}
-              backgroundColor={highlight.accent === 'pro' ? colors.proOrange50 : colors.white}>
+              style={[
+                styles.activityCard,
+                highlight.accent === 'pro' ? styles.activityCardPro : null,
+                highlight.accent === 'warning' ? styles.activityCardWarning : null,
+              ]}>
               <StatusBadge
                 label={highlight.statusLabel}
                 tone={highlight.accent === 'pro' ? 'pro' : highlight.accent === 'warning' ? 'warning' : 'core'}
               />
               <AppText variant="sectionTitle">{highlight.title}</AppText>
               <AppText color={colors.slate700}>{highlight.description}</AppText>
-            </AppCard>
+            </View>
           ))}
         </View>
       ) : (
@@ -173,50 +192,301 @@ export default function CustomerHomeScreen() {
         />
       )}
 
-      <AppButton onPress={() => router.push('/customer/onboarding')} variant="outline">
-        {t('setupCustomerWorkspace')}
-      </AppButton>
+      <View style={styles.trustCard}>
+        <AppText variant="sectionTitle">{t('customerHomeTrustTitle')}</AppText>
+        <View style={styles.trustChips}>
+          <TrustChip icon="shield-checkmark-outline" label={t('paymentProtectedChip')} tone="core" />
+          <TrustChip icon="ribbon-outline" label={t('approvedProsChip')} tone="pro" />
+          <TrustChip icon="help-circle-outline" label={t('supportWhenNeededChip')} tone="neutral" />
+        </View>
+      </View>
+
+      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: {
-    gap: spacing.lg,
+  actionCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    elevation: 2,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+  },
+  actionCards: {
+    gap: spacing.md,
+  },
+  actionCardCore: {
+    backgroundColor: '#F8FBFF',
+    borderColor: '#D7E7FF',
+  },
+  actionCardPro: {
+    backgroundColor: colors.proOrange50,
+    borderColor: '#F3D6AF',
+  },
+  actionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  actionIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 42,
+    justifyContent: 'center',
+    width: 42,
+  },
+  actionTitleWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  activityCard: {
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 1,
+  },
+  activityCardPro: {
+    backgroundColor: colors.proOrange50,
+    borderColor: '#F3D6AF',
+  },
+  activityCardWarning: {
+    borderColor: '#F8D8A7',
+  },
+  activitySection: {
+    gap: spacing.md,
   },
   buttonRow: {
     gap: spacing.sm,
   },
-  header: {
+  chip: {
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  chipCore: {
+    backgroundColor: colors.white,
+    borderColor: '#BFDBFE',
+  },
+  chipPro: {
+    backgroundColor: colors.white,
+    borderColor: '#FCD9A8',
+  },
+  chipNeutral: {
+    backgroundColor: colors.slate50,
+    borderColor: '#E6EBF0',
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  greeting: {
     gap: spacing.sm,
   },
+  greetingBody: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  greetingTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  headerActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  menuButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    width: 40,
+    elevation: 1,
+  },
   metric: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
-    borderRadius: 8,
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 14,
     borderWidth: 1,
     flexBasis: '47%',
     flexGrow: 1,
-    padding: spacing.sm,
+    gap: 2,
+    padding: spacing.md,
+  },
+  metricPro: {
+    backgroundColor: colors.proOrange50,
+    borderColor: '#F3D6AF',
   },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  screenTitle: {
-    fontSize: 26,
+  pressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.98 }],
   },
-  topBar: {
+  screen: {
+    backgroundColor: '#F7F9FB',
+  },
+  sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  summaryCard: {
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 22,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 22,
+    elevation: 2,
+  },
+  topBar: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 62,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    elevation: 2,
+  },
+  trustCard: {
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  trustChip: {
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  trustChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
 });
 
-function Metric({ label, value }: { label: string; value: number }) {
+function HomeActionCard({
+  accent,
+  chips,
+  cta,
+  icon,
+  onPress,
+  subtitle,
+  title,
+}: {
+  accent: 'core' | 'pro';
+  chips: string[];
+  cta: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  subtitle: string;
+  title: string;
+}) {
+  const isPro = accent === 'pro';
+  const accentColor = isPro ? colors.proOrange600 : colors.tasklyBlue600;
+
   return (
-    <View style={styles.metric}>
+    <View style={[styles.actionCard, isPro ? styles.actionCardPro : styles.actionCardCore]}>
+      <View style={styles.actionHeader}>
+        <View style={[styles.actionIcon, { backgroundColor: isPro ? colors.white : colors.tasklyBlue50 }]}>
+          <Ionicons color={accentColor} name={icon} size={22} />
+        </View>
+        <View style={styles.actionTitleWrap}>
+          <AppText color={accentColor} variant="small">
+            {title}
+          </AppText>
+          <AppText variant="sectionTitle">{subtitle}</AppText>
+        </View>
+      </View>
+      <View style={styles.chipRow}>
+        {chips.map((chip) => (
+          <View key={`${title}-${chip}`} style={[styles.chip, isPro ? styles.chipPro : styles.chipCore]}>
+            <AppText color={isPro ? '#92400E' : colors.tasklyBlue700} variant="caption">
+              {chip}
+            </AppText>
+          </View>
+        ))}
+      </View>
+      <AppButton onPress={onPress} tone={isPro ? 'pro' : 'core'}>
+        {cta}
+      </AppButton>
+    </View>
+  );
+}
+
+function TrustChip({
+  icon,
+  label,
+  tone,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  tone: 'core' | 'neutral' | 'pro';
+}) {
+  const color = tone === 'pro' ? colors.proOrange600 : tone === 'core' ? colors.tasklyBlue600 : colors.slate700;
+  return (
+    <View style={[styles.trustChip, tone === 'pro' ? styles.chipPro : tone === 'core' ? styles.chipCore : styles.chipNeutral]}>
+      <Ionicons color={color} name={icon} size={14} />
+      <AppText color={color} variant="small">
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
+function Metric({ accent = 'core', label, value }: { accent?: 'core' | 'pro'; label: string; value: number }) {
+  return (
+    <View style={[styles.metric, accent === 'pro' ? styles.metricPro : null]}>
       <AppText color={colors.slate500} variant="small">
         {label}
       </AppText>

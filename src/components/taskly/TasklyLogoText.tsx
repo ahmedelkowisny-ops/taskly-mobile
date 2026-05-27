@@ -38,12 +38,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   logo: {
-    height: 34,
-    width: 132,
+    height: 42,
+    width: 162,
   },
   logoCompact: {
-    height: 28,
-    width: 108,
+    height: 34,
+    width: 132,
   },
   mark: {
     borderRadius: radius.sm,
