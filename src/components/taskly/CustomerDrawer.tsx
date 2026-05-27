@@ -21,6 +21,7 @@ type DrawerItem = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   route?: Href;
+  tone?: 'taskly' | 'pro';
 };
 
 export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
@@ -30,9 +31,19 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
   const drawerItems: DrawerItem[] = [
     { icon: 'home-outline', label: t('drawerHome'), route: '/customer/home' as Href },
     { icon: 'list-outline', label: t('drawerMyTasklyTasks'), route: '/customer/tasks' as Href },
-    { icon: 'sparkles-outline', label: t('drawerMyTasklyProProjects'), route: '/customer/pro-requests' as Href },
+    {
+      icon: 'sparkles-outline',
+      label: t('drawerMyTasklyProProjects'),
+      route: '/customer/pro-requests' as Href,
+      tone: 'pro',
+    },
     { icon: 'add-circle-outline', label: t('drawerPostTasklyTask'), route: '/customer/post-task' as Href },
-    { icon: 'color-wand-outline', label: t('drawerStartTasklyProProject'), route: '/customer/post-pro-request' as Href },
+    {
+      icon: 'color-wand-outline',
+      label: t('drawerStartTasklyProProject'),
+      route: '/customer/post-pro-request' as Href,
+      tone: 'pro',
+    },
     { icon: 'chatbubbles-outline', label: t('drawerChat'), route: '/customer/messages' as Href },
     { icon: 'mail-outline', label: t('drawerSupportMessages'), route: '/customer/messages' as Href },
     { icon: 'person-outline', label: t('drawerProfile'), route: '/customer/account' as Href },
@@ -69,7 +80,13 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
                 key={`${item.label}-${item.icon}`}
                 onPress={() => item.route && handleNavigate(item.route)}
                 style={({ pressed }) => [styles.item, pressed ? styles.pressed : null]}>
-                <Ionicons color={colors.tasklyBlue600} name={item.icon} size={18} />
+                <View style={styles.itemIcon}>
+                  <Ionicons
+                    color={item.tone === 'pro' ? colors.proOrangeText : colors.sidebarMuted}
+                    name={item.icon}
+                    size={18}
+                  />
+                </View>
                 <AppText style={styles.itemText}>{item.label}</AppText>
               </Pressable>
             ))}
@@ -98,7 +115,7 @@ const styles = StyleSheet.create({
   closeButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: colors.slate100,
+    borderColor: colors.sidebarBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     height: 38,
@@ -106,18 +123,20 @@ const styles = StyleSheet.create({
     width: 38,
   },
   drawer: {
-    backgroundColor: colors.white,
-    borderBottomLeftRadius: radius.lg,
-    borderTopLeftRadius: radius.lg,
+    backgroundColor: colors.sidebarBackground,
+    borderBottomRightRadius: radius.card,
+    borderColor: colors.sidebarBorder,
+    borderRightWidth: 1,
+    borderTopRightRadius: radius.card,
     elevation: 12,
     gap: spacing.lg,
     height: '100%',
     padding: spacing.lg,
     shadowColor: colors.navy900,
-    shadowOffset: { height: 0, width: -8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 28,
-    width: '84%',
+    shadowOffset: { height: 0, width: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    width: '86%',
   },
   header: {
     alignItems: 'center',
@@ -129,8 +148,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     flexDirection: 'row',
     gap: spacing.md,
-    minHeight: 42,
+    minHeight: 44,
     paddingHorizontal: spacing.md,
+  },
+  itemIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.sidebarBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
   },
   itemText: {
     color: colors.navy900,
@@ -144,7 +173,7 @@ const styles = StyleSheet.create({
   languageRow: {
     alignItems: 'center',
     backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
+    borderColor: colors.sidebarBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
@@ -153,7 +182,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     alignItems: 'center',
-    borderColor: colors.slate100,
+    backgroundColor: colors.white,
+    borderColor: colors.sidebarBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
@@ -163,14 +193,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   overlay: {
-    alignItems: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.32)',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(8, 12, 20, 0.18)',
     flex: 1,
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
   pressed: {
-    backgroundColor: colors.tasklyBlue50,
+    backgroundColor: colors.white,
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,

@@ -1,24 +1,42 @@
+import { designTokens } from './designTokens';
+
+const tokenColors = designTokens.colors;
+
 export const colors = {
-  tasklyBlue600: '#2563EB',
-  tasklyBlue700: '#1D4ED8',
-  tasklyBlue50: '#EFF6FF',
+  tasklyBlue600: tokenColors.tasklyBlue,
+  tasklyBlue700: tokenColors.tasklyBluePressed,
+  tasklyBlue50: tokenColors.tasklyBlueSurface,
+  tasklyBlueBorder: tokenColors.tasklyBlueBorder,
+  tasklyBlueDisabled: tokenColors.tasklyBlueDisabled,
+  landingBlue600: tokenColors.landingBlue,
+  landingBlue700: tokenColors.landingBluePressed,
 
-  navy900: '#0F172A',
-  slate700: '#334155',
-  slate500: '#64748B',
-  slate100: '#F1F5F9',
-  slate50: '#F8FAFC',
-  white: '#FFFFFF',
+  navy900: tokenColors.foreground,
+  navy800: tokenColors.foregroundHover,
+  slate700: '#4E5F71',
+  slate500: tokenColors.mutedText,
+  slate100: tokenColors.border,
+  slate50: tokenColors.background,
+  white: tokenColors.card,
 
-  proOrange600: '#EA580C',
-  proOrange500: '#F97316',
-  proAmber500: '#F59E0B',
-  proOrange50: '#FFF7ED',
+  proOrange600: tokenColors.proGold,
+  proOrange500: tokenColors.proGoldPressed,
+  proAmber500: tokenColors.proGold,
+  proOrange50: tokenColors.proSurface,
+  proOrangeBorder: tokenColors.proBorder,
+  proOrangeText: tokenColors.proText,
+  proOrangeTextDark: tokenColors.proTextDark,
 
   success600: '#059669',
   success50: '#ECFDF5',
   warning600: '#D97706',
   danger600: '#DC2626',
+
+  border: tokenColors.border,
+  mutedText: tokenColors.mutedText,
+  sidebarBackground: tokenColors.sidebarBackground,
+  sidebarBorder: tokenColors.sidebarBorder,
+  sidebarMuted: tokenColors.sidebarMuted,
 } as const;
 
 export type AppColor = keyof typeof colors;

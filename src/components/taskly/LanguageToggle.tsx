@@ -16,25 +16,31 @@ export function LanguageToggle() {
 
   return (
     <View accessibilityLabel="Language" style={styles.container}>
-      {localeOptions.map((option) => {
+      {localeOptions.map((option, index) => {
         const active = option.value === locale;
 
         return (
-          <Pressable
-            accessibilityRole="button"
-            key={option.value}
-            onPress={() => {
-              void setLocale(option.value);
-            }}
-            style={({ pressed }) => [
-              styles.option,
-              active ? styles.activeOption : null,
-              pressed ? styles.pressedOption : null,
-            ]}>
-            <AppText color={active ? colors.navy900 : colors.slate500} variant="small">
-              {option.label}
-            </AppText>
-          </Pressable>
+          <View key={option.value} style={styles.optionWrap}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void setLocale(option.value);
+              }}
+              style={({ pressed }) => [
+                styles.option,
+                active ? styles.activeOption : null,
+                pressed ? styles.pressedOption : null,
+              ]}>
+              <AppText color={active ? '#374151' : colors.slate500} variant="small">
+                {option.label}
+              </AppText>
+            </Pressable>
+            {index < localeOptions.length - 1 ? (
+              <AppText color="#D1D5DB" style={styles.separator} variant="small">
+                /
+              </AppText>
+            ) : null}
+          </View>
         );
       })}
     </View>
@@ -53,13 +59,13 @@ const styles = StyleSheet.create({
   },
   container: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
+    backgroundColor: '#F9FAFB',
+    borderColor: '#F3F4F6',
     borderRadius: radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: spacing.xs,
-    padding: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
   },
   option: {
     alignItems: 'center',
@@ -67,11 +73,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 30,
-    minWidth: 38,
+    minHeight: 28,
+    minWidth: 36,
     paddingHorizontal: spacing.xs,
+  },
+  optionWrap: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   pressedOption: {
     opacity: 0.82,
+  },
+  separator: {
+    paddingHorizontal: 2,
   },
 });

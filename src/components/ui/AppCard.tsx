@@ -2,6 +2,7 @@ import { PropsWithChildren } from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type AppCardProps = PropsWithChildren<{
@@ -26,15 +27,11 @@ export function AppCard({ accentColor, backgroundColor = colors.white, children,
 
 const styles = StyleSheet.create({
   card: {
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
+    borderColor: colors.border,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 3, width: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 2,
+    ...designTokens.shadows.card,
   },
 });

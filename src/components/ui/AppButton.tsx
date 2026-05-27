@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { AppText } from './AppText';
@@ -32,6 +33,12 @@ const toneColor: Record<ButtonTone, string> = {
   neutral: colors.navy900,
 };
 
+const toneBorderColor: Record<ButtonTone, string> = {
+  core: colors.tasklyBlueBorder,
+  pro: colors.proOrange500,
+  neutral: colors.navy900,
+};
+
 export function AppButton({
   children,
   disabled = false,
@@ -42,8 +49,10 @@ export function AppButton({
   variant = 'filled',
 }: AppButtonProps) {
   const accent = toneColor[tone];
+  const borderAccent = toneBorderColor[tone];
   const isDisabled = disabled || loading;
   const filled = variant === 'filled';
+  const disabledFilledColor = tone === 'pro' ? '#F6C56D' : colors.tasklyBlueDisabled;
 
   return (
     <Pressable
@@ -53,17 +62,18 @@ export function AppButton({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: filled ? accent : 'transparent',
-          borderColor: variant === 'ghost' ? 'transparent' : accent,
+          backgroundColor: filled ? (isDisabled ? disabledFilledColor : accent) : colors.white,
+          borderColor: variant === 'ghost' ? 'transparent' : borderAccent,
           opacity: isDisabled ? 0.55 : pressed ? 0.86 : 1,
-          transform: [{ scale: isDisabled ? 1 : pressed ? 0.98 : 1 }],
+          transform: [{ scale: isDisabled ? 1 : pressed ? 0.985 : 1 }],
         },
+        filled && !isDisabled ? (tone === 'pro' ? designTokens.shadows.buttonPro : designTokens.shadows.buttonBlue) : null,
         style,
       ]}>
       {loading ? (
         <ActivityIndicator color={filled ? colors.white : accent} />
       ) : (
-        <AppText color={filled ? colors.white : accent} style={styles.label} variant="bodyStrong">
+        <AppText color={filled ? colors.white : accent} style={styles.label} variant="button">
           {children}
         </AppText>
       )}
@@ -74,10 +84,10 @@ export function AppButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.lg,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: designTokens.size.button,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },

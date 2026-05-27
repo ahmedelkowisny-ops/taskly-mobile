@@ -1,40 +1,36 @@
 import { TextStyle } from 'react-native';
 
+import { designTokens } from './designTokens';
+
 export const typography = {
   title: {
     fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '700',
+    lineHeight: 34,
+    fontWeight: '800',
   },
   screenTitle: {
-    fontSize: 23,
-    lineHeight: 30,
-    fontWeight: '700',
+    ...designTokens.typography.screenTitle,
   },
   sectionTitle: {
-    fontSize: 18,
-    lineHeight: 25,
-    fontWeight: '700',
+    ...designTokens.typography.sectionTitle,
+  },
+  cardTitle: {
+    ...designTokens.typography.cardTitle,
   },
   body: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '400',
+    ...designTokens.typography.body,
   },
   bodyStrong: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: '700',
+    ...designTokens.typography.bodyStrong,
   },
   caption: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '500',
+    ...designTokens.typography.caption,
   },
   small: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '600',
+    ...designTokens.typography.small,
+  },
+  button: {
+    ...designTokens.typography.button,
   },
 } satisfies Record<string, TextStyle>;
 
