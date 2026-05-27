@@ -2,10 +2,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
 
-import { TasklyLogoText } from '@/src/components/taskly';
+import { LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import {
   canOpenDeepLinkTarget,
   consumePendingDeepLinkTarget,
@@ -15,6 +15,7 @@ import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
 export default function LoginScreen() {
+  useI18n();
   const router = useRouter();
   const { login, status, useDemoSession: activateDemoSession } = useAuth();
   const [email, setEmail] = useState('');
@@ -55,6 +56,10 @@ export default function LoginScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
+        <View style={styles.topBar}>
+          <LanguageToggle />
+        </View>
+
         <View style={styles.hero}>
           <TasklyLogoText />
           <StatusBadge label={t('tasklyAccount')} tone="neutral" />
@@ -149,5 +154,8 @@ const styles = StyleSheet.create({
   },
   keyboard: {
     gap: spacing.lg,
+  },
+  topBar: {
+    alignItems: 'flex-end',
   },
 });

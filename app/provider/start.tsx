@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
+import { LanguageToggle, ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { mockAuth, type CoreTaskerStatus, type ProStatus } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -11,7 +11,7 @@ import {
   getProviderModeSummary,
   getRecommendedProviderNextAction,
 } from '@/src/lib/auth/workspaceAccess';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -44,6 +44,7 @@ function getProActionLabel(proStatus: ProStatus) {
 }
 
 export default function ProviderStartScreen() {
+  useI18n();
   const router = useRouter();
   const { session: authSession, status } = useAuth();
   const session = authSession ?? mockAuth.currentSession;
@@ -55,6 +56,10 @@ export default function ProviderStartScreen() {
 
   return (
     <Screen>
+      <View style={styles.topBar}>
+        <LanguageToggle />
+      </View>
+
       <View style={styles.header}>
         <StatusBadge label={t('providerWorkspace')} tone="neutral" />
         <AppText variant="screenTitle">{t('startProviderWorkspace')}</AppText>
@@ -110,5 +115,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  topBar: {
+    alignItems: 'flex-end',
   },
 });

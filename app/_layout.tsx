@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { NotificationDeepLinkHandler } from '@/src/components/taskly/NotificationDeepLinkHandler';
 import { AuthProvider } from '@/src/lib/auth/AuthProvider';
+import { I18nProvider } from '@/src/lib/i18n';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -24,17 +25,19 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StripeProvider publishableKey={stripePublishableKey}>
-        <AuthProvider>
-          <NotificationDeepLinkHandler />
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="customer" options={{ headerShown: false }} />
-            <Stack.Screen name="provider" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-          <StatusBar style="auto" />
-        </AuthProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <NotificationDeepLinkHandler />
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="login" options={{ headerShown: false }} />
+              <Stack.Screen name="customer" options={{ headerShown: false }} />
+              <Stack.Screen name="provider" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+            <StatusBar style="auto" />
+          </AuthProvider>
+        </I18nProvider>
       </StripeProvider>
     </ThemeProvider>
   );

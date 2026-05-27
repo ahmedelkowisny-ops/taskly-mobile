@@ -38,7 +38,7 @@ export default function CustomerAccountScreen() {
         <AppText variant="sectionTitle">Customer Workspace access</AppText>
         <AppText color={colors.slate700}>{getCustomerWorkspaceSummary(session)}</AppText>
         <AppText color={colors.slate500} variant="caption">
-          {status === 'authenticated' ? `${session.user.displayName} · ${session.user.email}` : 'Login or demo mode controls the account state shown here.'}
+          {status === 'authenticated' ? `${session.user.displayName} - ${session.user.email}` : 'Login or demo mode controls the account state shown here.'}
         </AppText>
       </AppCard>
 
@@ -58,7 +58,7 @@ export default function CustomerAccountScreen() {
       </AppButton>
 
       <AppButton onPress={() => router.push('/')} variant="ghost">
-        Back to Taskly
+        {t('backToTaskly')}
       </AppButton>
     </Screen>
   );

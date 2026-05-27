@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   label: {
+    flexShrink: 1,
     textAlign: 'center',
   },
 });

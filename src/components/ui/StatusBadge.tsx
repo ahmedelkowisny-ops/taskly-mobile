@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
+    maxWidth: '100%',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
