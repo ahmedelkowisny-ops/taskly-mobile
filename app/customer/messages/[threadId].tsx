@@ -275,9 +275,12 @@ export default function CustomerMessageThreadScreen() {
       ) : null}
 
       {data ? (
+        (() => {
+          const thread = getSafeThread(data.thread);
+          return (
         <>
-          <ThreadHeader thread={data.thread} />
-          <Messages messages={data.messages} />
+          <ThreadHeader thread={thread} />
+          <Messages accent={thread.accent} messages={data.messages ?? []} />
           <MessageComposer
             draftMessage={draftMessage}
             isSendingImage={isSendingImage}
@@ -286,9 +289,11 @@ export default function CustomerMessageThreadScreen() {
             onSend={handleSend}
             onSendPhoto={handleSendPhoto}
             sendError={sendError}
-            thread={data.thread}
+            thread={thread}
           />
         </>
+          );
+        })()
       ) : null}
     </Screen>
   );
@@ -304,19 +309,20 @@ function StateCard({ label, message }: { label: string; message: string }) {
 }
 
 function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
-  const tone = thread.accent === 'pro' ? 'pro' : thread.accent === 'core' ? 'core' : 'neutral';
-  const accentColor = thread.accent === 'pro' ? colors.proOrange600 : thread.accent === 'core' ? colors.tasklyBlue600 : colors.navy900;
+  const visual = getThreadVisual(thread);
 
   return (
-    <AppCard accentColor={accentColor}>
-      <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
+    <AppCard accentColor={visual.accentColor}>
+      <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
       <AppText variant="screenTitle">{thread.title}</AppText>
       {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
     </AppCard>
   );
 }
 
-function Messages({ messages }: { messages: MessageItem[] }) {
+function Messages({ accent, messages }: { accent: MessageThreadMeta['accent']; messages: MessageItem[] }) {
+  const mineColor = getThreadAccentColor(accent);
+
   if (!messages.length) {
     return (
       <AppCard>
@@ -328,7 +334,9 @@ function Messages({ messages }: { messages: MessageItem[] }) {
   return (
     <View style={styles.messageList}>
       {messages.map((message) => (
-        <View key={message.id} style={[styles.messageBubble, message.isMine ? styles.myMessage : styles.otherMessage]}>
+        <View
+          key={message.id}
+          style={[styles.messageBubble, message.isMine ? { ...styles.myMessage, backgroundColor: mineColor } : styles.otherMessage]}>
           <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
             {message.isMine ? t('you') : message.senderName}
           </AppText>
@@ -450,6 +458,58 @@ function getContextLabel(contextType: MessageThreadMeta['contextType']) {
   if (contextType === 'PRO_REQUEST') return t('proRequest');
   if (contextType === 'SUPPORT') return t('support');
   return t('conversation');
+}
+
+function getSafeThread(thread?: MessageThreadMeta | null): MessageThreadMeta {
+  const contextType = isMessageContextType(thread?.contextType) ? thread.contextType : 'OTHER';
+  const accent = isMessageAccent(thread?.accent) ? thread.accent : getFallbackAccent(contextType);
+
+  return {
+    accent,
+    capabilities: {
+      canRead: Boolean(thread?.capabilities?.canRead),
+      canSendAttachments: Boolean(thread?.capabilities?.canSendAttachments),
+      canSendText: Boolean(thread?.capabilities?.canSendText),
+      readOnlyReason: thread?.capabilities?.readOnlyReason,
+    },
+    contextId: thread?.contextId,
+    contextType,
+    id: thread?.id || 'unknown-thread',
+    subtitle: thread?.subtitle,
+    title: thread?.title || t('conversation'),
+  };
+}
+
+function getThreadVisual(thread: MessageThreadMeta) {
+  if (thread.accent === 'pro') {
+    return { accentColor: getThreadAccentColor(thread.accent), tone: 'pro' as const };
+  }
+
+  if (thread.accent === 'core') {
+    return { accentColor: getThreadAccentColor(thread.accent), tone: 'core' as const };
+  }
+
+  return { accentColor: getThreadAccentColor(thread.accent), tone: 'neutral' as const };
+}
+
+function getThreadAccentColor(accent: MessageThreadMeta['accent']) {
+  if (accent === 'pro') return colors.proOrange600;
+  if (accent === 'core') return colors.tasklyBlue600;
+  return colors.navy900;
+}
+
+function getFallbackAccent(contextType: MessageThreadMeta['contextType']): MessageThreadMeta['accent'] {
+  if (contextType === 'PRO_REQUEST') return 'pro';
+  if (contextType === 'CORE_TASK') return 'core';
+  return 'neutral';
+}
+
+function isMessageAccent(value: unknown): value is MessageThreadMeta['accent'] {
+  return value === 'core' || value === 'neutral' || value === 'pro';
+}
+
+function isMessageContextType(value: unknown): value is MessageThreadMeta['contextType'] {
+  return value === 'CORE_TASK' || value === 'OTHER' || value === 'PRO_REQUEST' || value === 'SUPPORT';
 }
 
 function formatDate(value: string) {
