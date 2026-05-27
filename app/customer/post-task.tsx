@@ -1,25 +1,25 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-
 import {
-  AssistantGuideCard,
-  FormField,
-  FormSection,
-  ImagePickerPlaceholder,
-  ModeBadge,
-  SelectOptionCard,
-} from '@/src/components/taskly';
+  Image,
+  KeyboardTypeOptions,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  TextInput,
+  View,
+  ViewStyle,
+} from 'react-native';
+
+import { TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { createCustomerTask } from '@/src/lib/api/customer';
 import { getCities, getCoreCategories, getPostingRules } from '@/src/lib/api/catalog';
-import {
-  CatalogCategory,
-  CityOption,
-  CoreTaskPostingRules,
-} from '@/src/lib/api/domain';
+import { CatalogCategory, CityOption, CoreTaskPostingRules } from '@/src/lib/api/domain';
 import {
   getMockCitiesCatalogResponse,
   getMockCoreCategoriesResponse,
@@ -34,9 +34,9 @@ import {
 } from '@/src/lib/images/imagePicker';
 import { LocalSelectedImage } from '@/src/lib/images/types';
 import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 type CatalogState = {
   categories: CatalogCategory[];
@@ -44,7 +44,7 @@ type CatalogState = {
   rules: CoreTaskPostingRules;
 };
 
-const CORE_TASK_UPLOAD_MAX_IMAGES = 5;
+type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 type ValidationFieldKey =
   | 'address'
@@ -53,9 +53,10 @@ type ValidationFieldKey =
   | 'cityId'
   | 'description'
   | 'estimatedTime'
-  | 'location'
-  | 'scheduledEndAt'
-  | 'scheduledStartAt'
+  | 'reviewConfirm'
+  | 'scheduleDate'
+  | 'startTime'
+  | 'endTime'
   | 'title';
 
 type ValidationIssue = {
@@ -64,6 +65,19 @@ type ValidationIssue = {
   message: string;
 };
 
+type StepMeta = {
+  id: WizardStep;
+  label: string;
+  support: string;
+  title: string;
+  body: string;
+};
+
+const CORE_TASK_UPLOAD_MAX_IMAGES = 5;
+const STEP_TOTAL = 6;
+const DEFAULT_TASK_LOCATION = { lat: 42.6977, lng: 23.3219 };
+const QUICK_BUDGETS = ['40', '70', '120'];
+
 function parseNumberInput(value: string) {
   if (!value.trim()) return null;
 
@@ -71,19 +85,42 @@ function parseNumberInput(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function parseDateInput(value: string) {
-  if (!value.trim()) return null;
+function parseDateParts(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!match) return null;
 
-  const parsed = new Date(value.trim());
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return { day, month, year };
 }
 
-function isValidLatitude(value: number | null) {
-  return value !== null && value >= -90 && value <= 90;
+function parseTimeParts(value: string) {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
+  if (!match) return null;
+
+  return {
+    hour: Number(match[1]),
+    minute: Number(match[2]),
+  };
 }
 
-function isValidLongitude(value: number | null) {
-  return value !== null && value >= -180 && value <= 180;
+function buildLocalIso(dateValue: string, timeValue: string) {
+  const date = parseDateParts(dateValue);
+  const time = parseTimeParts(timeValue);
+  if (!date || !time) return null;
+
+  return new Date(date.year, date.month - 1, date.day, time.hour, time.minute).toISOString();
 }
 
 function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
@@ -96,10 +133,9 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     description: 'description',
     detailsText: 'description',
     estimatedTime: 'estimatedTime',
-    location: 'location',
-    preferredTimeWindow: 'scheduledEndAt',
-    scheduledEndAt: 'scheduledEndAt',
-    scheduledStartAt: 'scheduledStartAt',
+    preferredTimeWindow: 'endTime',
+    scheduledEndAt: 'endTime',
+    scheduledStartAt: 'startTime',
     title: 'title',
   };
 
@@ -123,23 +159,70 @@ function formatUploadProgress(current: number, total: number) {
     .replace('{total}', String(total));
 }
 
+function formatStepIndicator(step: StepMeta) {
+  return t('postTaskStepIndicator')
+    .replace('{current}', String(step.id))
+    .replace('{total}', String(STEP_TOTAL))
+    .replace('{support}', step.support);
+}
+
+function getCategoryIcon(category: CatalogCategory): keyof typeof Ionicons.glyphMap {
+  const value = `${category.slug} ${category.nameEn}`.toLowerCase();
+
+  if (value.includes('furniture') || value.includes('assembly')) return 'hammer-outline';
+  if (value.includes('mount') || value.includes('tv')) return 'easel-outline';
+  if (value.includes('electric')) return 'bulb-outline';
+  if (value.includes('plumb') || value.includes('sink')) return 'water-outline';
+  if (value.includes('clean')) return 'sparkles-outline';
+  return 'construct-outline';
+}
+
+function getLocalizedCategoryName(category: CatalogCategory, locale: 'bg' | 'en') {
+  return locale === 'bg' ? category.nameBg || category.nameEn : category.nameEn || category.nameBg;
+}
+
+function getLocalizedCategoryDescription(category: CatalogCategory, locale: 'bg' | 'en') {
+  return locale === 'bg'
+    ? category.descriptionBg || category.descriptionEn
+    : category.descriptionEn || category.descriptionBg;
+}
+
+function getLocalizedCityName(city: CityOption, locale: 'bg' | 'en') {
+  return locale === 'bg' ? city.nameBg || city.nameEn : city.nameEn || city.nameBg;
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryRow}>
+      <AppText color={colors.slate500} variant="small">
+        {label}
+      </AppText>
+      <AppText color={colors.navy900} style={styles.summaryValue} variant="bodyStrong">
+        {value || '-'}
+      </AppText>
+    </View>
+  );
+}
+
 export default function CustomerPostTaskScreen() {
   const router = useRouter();
+  const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [address, setAddress] = useState('');
-  const [scheduledStartAt, setScheduledStartAt] = useState('');
-  const [scheduledEndAt, setScheduledEndAt] = useState('');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [estimatedTime, setEstimatedTime] = useState('');
   const [budget, setBudget] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
@@ -151,7 +234,62 @@ export default function CustomerPostTaskScreen() {
   const [uploadProgressCurrent, setUploadProgressCurrent] = useState(0);
   const [uploadProgressTotal, setUploadProgressTotal] = useState(0);
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
-  const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
+
+  const steps: StepMeta[] = [
+    {
+      id: 1,
+      label: t('postTaskStepService'),
+      support: t('postTaskServiceSupport'),
+      title: t('postTaskServiceTitle'),
+      body: t('postTaskServiceBody'),
+    },
+    {
+      id: 2,
+      label: t('postTaskStepBudget'),
+      support: t('postTaskBudgetSupport'),
+      title: t('postTaskBudgetTitle'),
+      body: t('postTaskBudgetBody'),
+    },
+    {
+      id: 3,
+      label: t('postTaskStepDetails'),
+      support: t('postTaskDetailsSupport'),
+      title: t('postTaskDetailsTitle'),
+      body: t('postTaskDetailsBody'),
+    },
+    {
+      id: 4,
+      label: t('postTaskStepPhotos'),
+      support: t('postTaskPhotosSupport'),
+      title: t('postTaskPhotosTitle'),
+      body: t('postTaskPhotosBody'),
+    },
+    {
+      id: 5,
+      label: t('postTaskStepSchedule'),
+      support: t('postTaskScheduleSupport'),
+      title: t('postTaskScheduleTitle'),
+      body: t('postTaskScheduleBody'),
+    },
+    {
+      id: 6,
+      label: t('postTaskStepReview'),
+      support: t('postTaskReviewSupport'),
+      title: t('postTaskReviewTitle'),
+      body: t('postTaskReviewBody'),
+    },
+  ];
+
+  const activeStep = steps[currentStep - 1];
+  const progressPercent = (currentStep / STEP_TOTAL) * 100;
+  const selectedCategory = useMemo(
+    () => catalog?.categories.find((category) => category.id === selectedCategoryId) ?? null,
+    [catalog?.categories, selectedCategoryId],
+  );
+  const selectedCity = useMemo(
+    () => catalog?.cities.find((city) => city.id === selectedCityId) ?? null,
+    [catalog?.cities, selectedCityId],
+  );
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -185,7 +323,7 @@ export default function CustomerPostTaskScreen() {
     }
 
     setCatalog(null);
-    setErrorMessage('Could not load posting catalogs. Retry or continue in demo mode.');
+    setErrorMessage(t('couldNotCreateTask'));
     setIsLoading(false);
   }, [getValidAccessToken, status]);
 
@@ -260,16 +398,19 @@ export default function CustomerPostTaskScreen() {
     const issues: ValidationIssue[] = [];
     const minDescriptionLength = catalog?.rules.minDescriptionLength ?? 20;
     const parsedBudget = parseNumberInput(budget);
-    const parsedLatitude = parseNumberInput(latitude);
-    const parsedLongitude = parseNumberInput(longitude);
-    const parsedStartAt = parseDateInput(scheduledStartAt);
-    const parsedEndAt = parseDateInput(scheduledEndAt);
+    const startIso = buildLocalIso(scheduleDate, startTime);
+    const endIso = buildLocalIso(scheduleDate, endTime);
     const addIssue = (key: ValidationFieldKey, label: string, message: string) => {
       issues.push({ key, label, message });
     };
 
     if (!selectedCategoryId) addIssue('categorySlug', t('category'), t('missingCategory'));
-    if (!selectedCityId) addIssue('cityId', t('city'), t('missingCity'));
+    if (!budget.trim()) {
+      addIssue('budgetEur', t('budget'), t('missingBudget'));
+    } else if (parsedBudget === null || parsedBudget <= 0) {
+      addIssue('budgetEur', t('budget'), t('invalidBudget'));
+    }
+
     if (!title.trim()) addIssue('title', t('title'), t('missingTitle'));
 
     if (!description.trim()) {
@@ -278,72 +419,113 @@ export default function CustomerPostTaskScreen() {
       addIssue('description', t('description'), `${t('descriptionTooShort')} ${minDescriptionLength}.`);
     }
 
+    if (!selectedCityId) addIssue('cityId', t('city'), t('missingCity'));
     if (!address.trim()) addIssue('address', t('address'), t('missingAddress'));
-    if (!scheduledStartAt.trim()) addIssue('scheduledStartAt', t('scheduleStart'), t('missingScheduleStart'));
-    if (!scheduledEndAt.trim()) addIssue('scheduledEndAt', t('scheduleEnd'), t('missingScheduleEnd'));
-
-    if (scheduledStartAt.trim() && !parsedStartAt) {
-      addIssue('scheduledStartAt', t('scheduleStart'), t('invalidSchedule'));
+    if (!scheduleDate.trim()) {
+      addIssue('scheduleDate', t('scheduleDate'), t('scheduleDateRequired'));
+    } else if (!parseDateParts(scheduleDate)) {
+      addIssue('scheduleDate', t('scheduleDate'), t('invalidDate'));
     }
 
-    if (scheduledEndAt.trim() && !parsedEndAt) {
-      addIssue('scheduledEndAt', t('scheduleEnd'), t('invalidSchedule'));
+    if (!startTime.trim()) {
+      addIssue('startTime', t('startTime'), t('startTimeRequired'));
+    } else if (!parseTimeParts(startTime)) {
+      addIssue('startTime', t('startTime'), t('invalidTime'));
     }
 
-    if (parsedStartAt && parsedEndAt && parsedEndAt <= parsedStartAt) {
-      addIssue('scheduledEndAt', t('scheduleEnd'), t('endTimeAfterStart'));
+    if (!endTime.trim()) {
+      addIssue('endTime', t('endTime'), t('endTimeRequired'));
+    } else if (!parseTimeParts(endTime)) {
+      addIssue('endTime', t('endTime'), t('invalidTime'));
+    }
+
+    if (startIso && endIso && new Date(endIso) <= new Date(startIso)) {
+      addIssue('endTime', t('endTime'), t('endTimeAfterStart'));
     }
 
     if (!estimatedTime.trim()) addIssue('estimatedTime', t('estimatedTime'), t('missingEstimatedTime'));
+    if (!reviewConfirmed) addIssue('reviewConfirm', t('readyToPost'), t('reviewConfirmRequired'));
 
-    if (!budget.trim()) {
-      addIssue('budgetEur', t('budget'), t('missingBudget'));
-    } else if (parsedBudget === null || parsedBudget <= 0) {
-      addIssue('budgetEur', t('budget'), t('invalidBudget'));
-    }
-
-    if (!latitude.trim() || !longitude.trim()) {
-      addIssue('location', t('location'), t('missingLocation'));
-    } else if (!isValidLatitude(parsedLatitude) || !isValidLongitude(parsedLongitude)) {
-      addIssue('location', t('location'), t('invalidLocation'));
-    }
-
-    const errors = issues.reduce<Record<ValidationFieldKey, string>>((nextErrors, issue) => {
+    const errors = issues.reduce<Record<string, string>>((nextErrors, issue) => {
       if (!nextErrors[issue.key]) {
         nextErrors[issue.key] = issue.message;
       }
 
       return nextErrors;
-    }, {} as Record<ValidationFieldKey, string>);
+    }, {});
 
     return {
       errors,
       issues,
       parsedBudget,
-      parsedLatitude,
-      parsedLongitude,
+      startIso,
+      endIso,
     };
   }, [
     address,
     budget,
     catalog?.rules.minDescriptionLength,
     description,
+    endTime,
     estimatedTime,
-    latitude,
-    longitude,
-    scheduledEndAt,
-    scheduledStartAt,
+    reviewConfirmed,
+    scheduleDate,
     selectedCategoryId,
     selectedCityId,
+    startTime,
     title,
   ]);
 
-  const isSubmitEnabled = formValidation.issues.length === 0;
-  const showStrongValidation = hasSubmittedOnce || Object.keys(fieldErrors).length > 0;
-  const visibleFieldErrors = showStrongValidation ? { ...formValidation.errors, ...fieldErrors } : fieldErrors;
+  const errorsForStep = useCallback(
+    (step: WizardStep) => {
+      const stepKeys: Record<WizardStep, ValidationFieldKey[]> = {
+        1: ['categorySlug'],
+        2: ['budgetEur'],
+        3: ['title', 'description'],
+        4: [],
+        5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
+        6: ['reviewConfirm'],
+      };
+
+      return stepKeys[step].reduce<Record<string, string>>((nextErrors, key) => {
+        if (formValidation.errors[key]) {
+          nextErrors[key] = formValidation.errors[key];
+        }
+
+        return nextErrors;
+      }, {});
+    },
+    [formValidation.errors],
+  );
+
+  const getFieldError = (key: ValidationFieldKey) => fieldErrors[key];
+
+  const handleContinue = useCallback(() => {
+    const stepErrors = errorsForStep(currentStep);
+
+    if (Object.keys(stepErrors).length > 0) {
+      setFieldErrors((current) => ({ ...current, ...stepErrors }));
+      setSubmitError(t('pleaseCheckHighlightedFields'));
+      return;
+    }
+
+    setSubmitError(null);
+    if (currentStep < STEP_TOTAL) {
+      setCurrentStep((step) => (step + 1) as WizardStep);
+    }
+  }, [currentStep, errorsForStep]);
+
+  const handleBack = useCallback(() => {
+    setSubmitError(null);
+    if (currentStep === 1) {
+      router.back();
+      return;
+    }
+
+    setCurrentStep((step) => (step - 1) as WizardStep);
+  }, [currentStep, router]);
 
   const handleSubmit = useCallback(async () => {
-    setHasSubmittedOnce(true);
     setSubmitMessage(null);
     setSubmitError(null);
     setUploadWarning(null);
@@ -351,7 +533,13 @@ export default function CustomerPostTaskScreen() {
     setUploadProgressTotal(0);
     setFieldErrors({});
 
-    if (formValidation.issues.length > 0 || !selectedCategoryId || !selectedCityId) {
+    if (
+      formValidation.issues.length > 0 ||
+      !selectedCategoryId ||
+      !selectedCityId ||
+      !formValidation.startIso ||
+      !formValidation.endIso
+    ) {
       setFieldErrors(formValidation.errors);
       setSubmitError(t('pleaseCheckHighlightedFields'));
       return;
@@ -383,12 +571,9 @@ export default function CustomerPostTaskScreen() {
         description: description.trim(),
         estimatedTime: estimatedTime.trim(),
         localImageCount: images.length,
-        location: {
-          lat: formValidation.parsedLatitude!,
-          lng: formValidation.parsedLongitude!,
-        },
-        scheduledEndAt: scheduledEndAt.trim(),
-        scheduledStartAt: scheduledStartAt.trim(),
+        location: DEFAULT_TASK_LOCATION,
+        scheduledEndAt: formValidation.endIso,
+        scheduledStartAt: formValidation.startIso,
         title: title.trim(),
       },
       authToken,
@@ -433,12 +618,7 @@ export default function CustomerPostTaskScreen() {
           return;
         }
 
-        if (uploadSummary.uploaded > 0) {
-          setSubmitMessage(t('photosUploaded'));
-        } else {
-          setSubmitMessage(t('taskCreated'));
-        }
-
+        setSubmitMessage(uploadSummary.uploaded > 0 ? t('photosUploaded') : t('taskCreated'));
         router.push(`/customer/tasks/${taskId}` as Href);
         return;
       }
@@ -467,331 +647,961 @@ export default function CustomerPostTaskScreen() {
     getValidAccessToken,
     images,
     router,
-    scheduledEndAt,
-    scheduledStartAt,
     selectedCategoryId,
     selectedCityId,
     status,
     title,
   ]);
 
+  const isBusy = isSubmitting || isUploadingImages;
+  const maxImages = catalog?.rules.maxImages
+    ? Math.min(catalog.rules.maxImages, CORE_TASK_UPLOAD_MAX_IMAGES)
+    : CORE_TASK_UPLOAD_MAX_IMAGES;
   const descriptionLength = description.trim().length;
   const descriptionHelper = catalog
-    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength} characters. Taskly rules apply at submit.`
-    : 'Taskly posting rules will appear here.';
-  const getFieldError = (key: ValidationFieldKey) => (showStrongValidation ? visibleFieldErrors[key] : undefined);
-  const getFieldHelper = (key: ValidationFieldKey, fallback?: string) =>
-    showStrongValidation ? fallback : formValidation.errors[key] ?? fallback;
-  const categoryValidationMessage = getFieldHelper('categorySlug') ?? getFieldError('categorySlug');
-  const cityValidationMessage = getFieldHelper('cityId') ?? getFieldError('cityId');
-  const missingFieldLabels = formValidation.issues.map((issue) => issue.label);
+    ? `${descriptionLength}/${catalog.rules.maxDescriptionLength}`
+    : t('postTaskDetailsBody');
+  const missingFieldLabels = formValidation.issues
+    .filter((issue) => issue.key !== 'reviewConfirm')
+    .map((issue) => issue.label);
 
-  return (
-    <Screen>
-      <View style={styles.header}>
-        <ModeBadge mode="customer" />
-        <AppText variant="screenTitle">{t('postTask')}</AppText>
-        <AppText color={colors.slate700}>
-          Taskly task creation is connected. Payments and image upload stay separate.
-        </AppText>
-      </View>
-
-      {isLoading ? (
+  const renderStepContent = () => {
+    if (isLoading) {
+      return (
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label="Loading" tone="core" />
-          <AppText variant="sectionTitle">Loading posting setup</AppText>
-          <AppText color={colors.slate700}>Loading cities, Taskly categories, and posting rules.</AppText>
+          <StatusBadge label={t('loading')} tone="core" />
+          <AppText color={colors.slate700}>{t('postTaskServiceSupport')}</AppText>
         </AppCard>
-      ) : null}
+      );
+    }
 
-      {errorMessage ? (
+    if (errorMessage) {
+      return (
         <AppCard accentColor={colors.danger600}>
-          <StatusBadge label="Catalog unavailable" tone="danger" />
-          <AppText variant="sectionTitle">Posting setup could not load</AppText>
+          <StatusBadge label={t('couldNotCreateTask')} tone="danger" />
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.buttonStack}>
             <AppButton onPress={loadCatalog} variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
               {t('continueDemoMode')}
             </AppButton>
           </View>
         </AppCard>
-      ) : null}
+      );
+    }
 
-      <AssistantGuideCard
-        body={catalog?.rules.paymentProtectionCopy || 'Taskly will explain payment protection before payment-sensitive actions.'}
-        title={t('paymentProtected')}
-      />
+    if (currentStep === 1) {
+      return (
+        <View style={styles.cardStack}>
+          {catalog?.categories.map((category) => {
+            const selected = selectedCategoryId === category.id;
 
-      <FormSection
-        description="Choose a small fixed-scope Taskly category."
-        title={t('category')}>
-        {catalog?.categories.map((category) => (
-          <SelectOptionCard
-            key={category.id}
-            description={category.descriptionEn}
-            label={category.nameEn}
-            onPress={() => {
-              setSelectedCategoryId(category.id);
-              clearFieldError('categorySlug');
-            }}
-            selected={selectedCategoryId === category.id}
-          />
-        ))}
-        {!catalog?.categories.length ? <AppText color={colors.slate500}>Taskly categories will load here.</AppText> : null}
-        {categoryValidationMessage ? (
-          <AppText color={showStrongValidation ? colors.danger600 : colors.slate500} variant="small">
-            {categoryValidationMessage}
-          </AppText>
-        ) : null}
-      </FormSection>
-
-      <FormSection description="Choose the city where you need help." title={t('city')}>
-        {catalog?.cities.map((city) => (
-          <SelectOptionCard
-            key={city.id}
-            label={city.nameEn}
-            onPress={() => {
-              setSelectedCityId(city.id);
-              clearFieldError('cityId');
-            }}
-            selected={selectedCityId === city.id}
-          />
-        ))}
-        {!catalog?.cities.length ? <AppText color={colors.slate500}>Cities will load here.</AppText> : null}
-        {cityValidationMessage ? (
-          <AppText color={showStrongValidation ? colors.danger600 : colors.slate500} variant="small">
-            {cityValidationMessage}
-          </AppText>
-        ) : null}
-      </FormSection>
-
-      <FormSection description={t('formPreviewOnly')} title="Task details">
-        <FormField
-          errorText={getFieldError('address')}
-          helperText={getFieldHelper('address')}
-          label={t('address')}
-          onChangeText={(value) => {
-            setAddress(value);
-            clearFieldError('address');
-          }}
-          placeholder="Street, building, access notes"
-          value={address}
-        />
-        <FormField
-          errorText={getFieldError('title')}
-          helperText={getFieldHelper('title')}
-          label={t('title')}
-          onChangeText={(value) => {
-            setTitle(value);
-            clearFieldError('title');
-          }}
-          placeholder="Example: Assemble wardrobe"
-          value={title}
-        />
-        <FormField
-          errorText={getFieldError('description')}
-          helperText={getFieldHelper('description', descriptionHelper)}
-          label={t('description')}
-          maxLength={catalog?.rules.maxDescriptionLength}
-          multiline
-          onChangeText={(value) => {
-            setDescription(value);
-            clearFieldError('description');
-          }}
-          placeholder="Describe the task, item count, access, and anything the Tasker should know."
-          value={description}
-        />
-        <View style={styles.twoColumn}>
-          <FormField
-            errorText={getFieldError('scheduledStartAt')}
-            helperText={getFieldHelper('scheduledStartAt', t('scheduleFormatHelper'))}
-            label={t('scheduleStart')}
-            onChangeText={(value) => {
-              setScheduledStartAt(value);
-              clearFieldError('scheduledStartAt');
-              clearFieldError('scheduledEndAt');
-            }}
-            placeholder="2026-06-01T10:00:00.000Z"
-            value={scheduledStartAt}
-          />
-          <FormField
-            errorText={getFieldError('scheduledEndAt')}
-            helperText={getFieldHelper('scheduledEndAt', t('scheduleFormatHelper'))}
-            label={t('scheduleEnd')}
-            onChangeText={(value) => {
-              setScheduledEndAt(value);
-              clearFieldError('scheduledStartAt');
-              clearFieldError('scheduledEndAt');
-            }}
-            placeholder="2026-06-01T12:00:00.000Z"
-            value={scheduledEndAt}
-          />
-        </View>
-        <FormField
-          errorText={getFieldError('estimatedTime')}
-          helperText={getFieldHelper('estimatedTime')}
-          label={t('estimatedTime')}
-          onChangeText={(value) => {
-            setEstimatedTime(value);
-            clearFieldError('estimatedTime');
-          }}
-          placeholder="Example: 2 hours"
-          value={estimatedTime}
-        />
-        <FormField
-          errorText={getFieldError('budgetEur')}
-          helperText={getFieldHelper('budgetEur')}
-          keyboardType="decimal-pad"
-          label={t('budget')}
-          onChangeText={(value) => {
-            setBudget(value);
-            clearFieldError('budgetEur');
-          }}
-          placeholder="Example: 40"
-          value={budget}
-        />
-        <View style={styles.twoColumn}>
-          <FormField
-            errorText={getFieldError('location')}
-            helperText={getFieldHelper('location', t('locationCoordinateHelper'))}
-            keyboardType="decimal-pad"
-            label={t('latitude')}
-            onChangeText={(value) => {
-              setLatitude(value);
-              clearFieldError('location');
-            }}
-            placeholder="42.6977"
-            value={latitude}
-          />
-          <FormField
-            keyboardType="decimal-pad"
-            label={t('longitude')}
-            onChangeText={(value) => {
-              setLongitude(value);
-              clearFieldError('location');
-            }}
-            placeholder="23.3219"
-            value={longitude}
-          />
-        </View>
-      </FormSection>
-
-      <FormSection description={t('photosUploadAfterCreation')} title={t('photos')}>
-        <ImagePickerPlaceholder
-          acceptedImageTypes={catalog?.rules.acceptedImageTypes}
-          errorMessage={imageErrorMessage}
-          helperText={t('photosUploadAfterCreation')}
-          images={images}
-          isProcessing={isProcessingImages}
-          maxImages={catalog?.rules.maxImages ? Math.min(catalog.rules.maxImages, CORE_TASK_UPLOAD_MAX_IMAGES) : undefined}
-          onPickImages={handlePickImages}
-          onRemoveImage={handleRemoveImage}
-        />
-      </FormSection>
-
-      {images.length ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('photos')} tone="warning" />
-          <AppText color={colors.slate700}>{t('photosUploadAfterCreation')}</AppText>
-        </AppCard>
-      ) : null}
-
-      {isUploadingImages ? (
-        <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label={t('uploadingPhotos')} tone="core" />
-          <AppText color={colors.slate700}>
-            {uploadProgressTotal > 0
-              ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
-              : t('taskCreatedUploadingPhotos')}
-          </AppText>
-        </AppCard>
-      ) : null}
-
-      {uploadWarning ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
-          <AppText color={colors.slate700}>{uploadWarning}</AppText>
-        </AppCard>
-      ) : null}
-
-      {submitMessage ? (
-        <AppCard accentColor={colors.success600}>
-          <StatusBadge label={t('taskCreated')} tone="success" />
-          <AppText color={colors.slate700}>{submitMessage}</AppText>
-        </AppCard>
-      ) : null}
-
-      {submitError ? (
-        <AppCard accentColor={colors.danger600}>
-          <StatusBadge label={t('couldNotCreateTask')} tone="danger" />
-          <AppText color={colors.slate700}>{submitError}</AppText>
-        </AppCard>
-      ) : null}
-
-      {!isSubmitEnabled ? (
-        <AppCard accentColor={showStrongValidation ? colors.warning600 : colors.tasklyBlue600}>
-          <StatusBadge label={t('completeRequiredFields')} tone={showStrongValidation ? 'warning' : 'core'} />
-          <AppText color={colors.slate700}>{t('completeTheseFieldsToSubmit')}</AppText>
-          <View style={styles.validationList}>
-            {missingFieldLabels.map((label) => (
-              <View key={label} style={styles.validationPill}>
-                <AppText color={colors.slate700} variant="small">
-                  {label}
-                </AppText>
-              </View>
-            ))}
-          </View>
-          {showStrongValidation ? (
-            <AppText color={colors.slate700} variant="small">
-              {t('pleaseCheckHighlightedFields')}
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={category.id}
+                onPress={() => {
+                  setSelectedCategoryId(category.id);
+                  clearFieldError('categorySlug');
+                }}
+                style={({ pressed }) => [
+                  styles.serviceCard,
+                  selected ? styles.selectedServiceCard : null,
+                  { opacity: pressed ? 0.9 : 1 },
+                ]}>
+                <View style={[styles.iconTile, selected ? styles.iconTileSelected : null]}>
+                  <Ionicons
+                    color={selected ? colors.white : colors.slate700}
+                    name={getCategoryIcon(category)}
+                    size={17}
+                  />
+                </View>
+                <View style={styles.cardCopy}>
+                  <AppText style={styles.cardTitle}>
+                    {getLocalizedCategoryName(category, locale)}
+                  </AppText>
+                  <AppText color={colors.slate700} style={styles.cardBody}>
+                    {getLocalizedCategoryDescription(category, locale)}
+                  </AppText>
+                </View>
+                {selected ? <Ionicons color={colors.tasklyBlue600} name="checkmark-circle" size={20} /> : null}
+              </Pressable>
+            );
+          })}
+          {getFieldError('categorySlug') ? (
+            <AppText color={colors.danger600} variant="small">
+              {getFieldError('categorySlug')}
             </AppText>
           ) : null}
-        </AppCard>
-      ) : null}
+        </View>
+      );
+    }
 
-      <AppButton
-        disabled={!isSubmitEnabled || isSubmitting || isUploadingImages}
-        loading={isSubmitting || isUploadingImages}
-        onPress={handleSubmit}>
-        {isUploadingImages
-          ? t('uploadingPhotos')
-          : isSubmitting
-            ? t('creatingTask')
-            : isSubmitEnabled
-              ? t('submitTask')
-              : t('completeRequiredFields')}
-      </AppButton>
-      <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">
-        {t('backToTaskly')}
-      </AppButton>
+    if (currentStep === 2) {
+      return (
+        <View style={styles.cardStack}>
+          <View style={styles.moneyCard}>
+            <Field
+              errorText={getFieldError('budgetEur')}
+              keyboardType="decimal-pad"
+              label={t('budget')}
+              onChangeText={(value) => {
+                setBudget(value);
+                clearFieldError('budgetEur');
+              }}
+              placeholder={t('budgetPlaceholder')}
+              prefix="€"
+              value={budget}
+            />
+            <View style={styles.quickBudgetRow}>
+              {QUICK_BUDGETS.map((amount) => (
+                <Pressable
+                  accessibilityRole="button"
+                  key={amount}
+                  onPress={() => {
+                    setBudget(amount);
+                    clearFieldError('budgetEur');
+                  }}
+                  style={[styles.quickBudgetChip, budget === amount ? styles.quickBudgetChipSelected : null]}>
+                  <AppText
+                    color={budget === amount ? colors.tasklyBlue600 : colors.slate700}
+                    variant="small">
+                    €{amount}
+                  </AppText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+          <View style={styles.guidanceCard}>
+            <Ionicons color={colors.tasklyBlue600} name="shield-checkmark-outline" size={18} />
+            <View style={styles.cardCopy}>
+              <AppText variant="bodyStrong">{t('budgetGuidanceTitle')}</AppText>
+              <AppText color={colors.slate700} style={styles.cardBody}>
+                {t('budgetGuidanceBody')}
+              </AppText>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    if (currentStep === 3) {
+      return (
+        <View style={styles.cardStack}>
+          <Field
+            errorText={getFieldError('title')}
+            label={t('title')}
+            onChangeText={(value) => {
+              setTitle(value);
+              clearFieldError('title');
+            }}
+            placeholder={t('titlePlaceholder')}
+            value={title}
+          />
+          <Field
+            errorText={getFieldError('description')}
+            helperText={descriptionHelper}
+            label={t('description')}
+            maxLength={catalog?.rules.maxDescriptionLength}
+            multiline
+            onChangeText={(value) => {
+              setDescription(value);
+              clearFieldError('description');
+            }}
+            placeholder={t('detailsPlaceholder')}
+            value={description}
+          />
+        </View>
+      );
+    }
+
+    if (currentStep === 4) {
+      return (
+        <View style={styles.cardStack}>
+          <View style={styles.photoBox}>
+            <View style={styles.photoHeader}>
+              <View>
+                <AppText style={styles.cardTitle}>{t('addPhotos')}</AppText>
+                <AppText color={colors.slate700} style={styles.cardBody}>
+                  {t('photosAttachedOnSubmit')}
+                </AppText>
+              </View>
+              <StatusBadge label={`${images.length}/${maxImages}`} tone="core" />
+            </View>
+            {images.length ? (
+              <View style={styles.photoGrid}>
+                {images.map((image) => (
+                  <View key={image.id} style={styles.photoPreviewCard}>
+                    <Image source={{ uri: image.compressedUri || image.uri }} style={styles.photoPreview} />
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => handleRemoveImage(image.id)}
+                      style={styles.photoRemove}>
+                      <Ionicons color={colors.white} name="close" size={14} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.photoEmpty}>
+                <Ionicons color={colors.tasklyBlue600} name="images-outline" size={22} />
+                <AppText color={colors.slate700} style={styles.cardBody}>
+                  {t('postTaskPhotosBody')}
+                </AppText>
+              </View>
+            )}
+            {imageErrorMessage ? (
+              <AppText color={colors.danger600} variant="small">
+                {imageErrorMessage}
+              </AppText>
+            ) : null}
+            <AppButton
+              disabled={isProcessingImages || images.length >= maxImages}
+              loading={isProcessingImages}
+              onPress={handlePickImages}
+              variant="outline">
+              {images.length >= maxImages ? t('photoLimitReached') : t('addPhotos')}
+            </AppButton>
+          </View>
+        </View>
+      );
+    }
+
+    if (currentStep === 5) {
+      return (
+        <View style={styles.cardStack}>
+          <View style={styles.citySection}>
+            <AppText variant="small">{t('chooseCity')}</AppText>
+            <View style={styles.optionGrid}>
+              {catalog?.cities.map((city) => {
+                const selected = selectedCityId === city.id;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={city.id}
+                    onPress={() => {
+                      setSelectedCityId(city.id);
+                      clearFieldError('cityId');
+                    }}
+                    style={({ pressed }) => [
+                      styles.cityChip,
+                      selected ? styles.cityChipSelected : null,
+                      { opacity: pressed ? 0.86 : 1 },
+                    ]}>
+                    <AppText
+                      color={selected ? colors.tasklyBlue600 : colors.slate700}
+                      variant="small">
+                      {getLocalizedCityName(city, locale)}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {getFieldError('cityId') ? (
+              <AppText color={colors.danger600} variant="small">
+                {getFieldError('cityId')}
+              </AppText>
+            ) : null}
+          </View>
+          <Field
+            errorText={getFieldError('address')}
+            label={t('address')}
+            onChangeText={(value) => {
+              setAddress(value);
+              clearFieldError('address');
+            }}
+            placeholder={t('addressPlaceholder')}
+            value={address}
+          />
+          <View style={styles.fieldRow}>
+            <Field
+              containerStyle={styles.fieldHalf}
+              errorText={getFieldError('scheduleDate')}
+              label={t('scheduleDate')}
+              onChangeText={(value) => {
+                setScheduleDate(value);
+                clearFieldError('scheduleDate');
+                clearFieldError('startTime');
+                clearFieldError('endTime');
+              }}
+              placeholder={t('scheduleDatePlaceholder')}
+              value={scheduleDate}
+            />
+            <Field
+              containerStyle={styles.fieldHalf}
+              errorText={getFieldError('estimatedTime')}
+              label={t('estimatedTime')}
+              onChangeText={(value) => {
+                setEstimatedTime(value);
+                clearFieldError('estimatedTime');
+              }}
+              placeholder={t('estimatedTimePlaceholder')}
+              value={estimatedTime}
+            />
+          </View>
+          <View style={styles.fieldRow}>
+            <Field
+              containerStyle={styles.fieldHalf}
+              errorText={getFieldError('startTime')}
+              label={t('startTime')}
+              onChangeText={(value) => {
+                setStartTime(value);
+                clearFieldError('startTime');
+                clearFieldError('endTime');
+              }}
+              placeholder={t('timePlaceholder')}
+              value={startTime}
+            />
+            <Field
+              containerStyle={styles.fieldHalf}
+              errorText={getFieldError('endTime')}
+              label={t('endTime')}
+              onChangeText={(value) => {
+                setEndTime(value);
+                clearFieldError('startTime');
+                clearFieldError('endTime');
+              }}
+              placeholder={t('timePlaceholder')}
+              value={endTime}
+            />
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.cardStack}>
+        {missingFieldLabels.length ? (
+          <View style={styles.reviewNotice}>
+            <Ionicons color={colors.warning600} name="information-circle-outline" size={18} />
+            <View style={styles.cardCopy}>
+              <AppText variant="bodyStrong">{t('calmMissingFields')}</AppText>
+              <View style={styles.validationList}>
+                {missingFieldLabels.map((label) => (
+                  <View key={label} style={styles.validationPill}>
+                    <AppText color={colors.slate700} variant="small">
+                      {label}
+                    </AppText>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        ) : null}
+        <View style={styles.summaryCard}>
+          <SummaryRow
+            label={t('selectedService')}
+            value={selectedCategory ? getLocalizedCategoryName(selectedCategory, locale) : ''}
+          />
+          <SummaryRow label={t('budget')} value={budget ? `€${budget}` : ''} />
+          <SummaryRow label={t('title')} value={title} />
+          <SummaryRow label={t('description')} value={description} />
+          <SummaryRow label={t('photos')} value={images.length ? String(images.length) : t('noPhotosAdded')} />
+          <SummaryRow label={t('city')} value={selectedCity ? getLocalizedCityName(selectedCity, locale) : ''} />
+          <SummaryRow label={t('address')} value={address} />
+          <SummaryRow label={t('scheduleDate')} value={scheduleDate} />
+          <SummaryRow label={t('timeWindow')} value={startTime && endTime ? `${startTime} - ${endTime}` : ''} />
+        </View>
+
+        <Pressable
+          accessibilityRole="checkbox"
+          onPress={() => {
+            setReviewConfirmed((value) => !value);
+            clearFieldError('reviewConfirm');
+          }}
+          style={({ pressed }) => [styles.confirmRow, { opacity: pressed ? 0.82 : 1 }]}>
+          <View style={[styles.checkbox, reviewConfirmed ? styles.checkboxSelected : null]}>
+            {reviewConfirmed ? <Ionicons color={colors.white} name="checkmark" size={15} /> : null}
+          </View>
+          <AppText color={colors.slate700} style={styles.confirmText}>
+            {t('reviewConfirmTask')}
+          </AppText>
+        </Pressable>
+        {getFieldError('reviewConfirm') ? (
+          <AppText color={colors.danger600} variant="small">
+            {getFieldError('reviewConfirm')}
+          </AppText>
+        ) : null}
+      </View>
+    );
+  };
+
+  return (
+    <Screen scroll={false} style={styles.screen}>
+      <View style={styles.shell}>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <TasklyLogoText wordmarkOnly />
+            <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
+              <Ionicons color={colors.slate700} name="close" size={22} />
+            </Pressable>
+          </View>
+          <View style={styles.titleBlock}>
+            <AppText style={styles.bookingTitle}>{t('structuredBooking')}</AppText>
+            <AppText color={colors.slate700} style={styles.stepSubtitle}>
+              {formatStepIndicator(activeStep)}
+            </AppText>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.stepTabs}
+            horizontal
+            showsHorizontalScrollIndicator={false}>
+            {steps.map((step) => {
+              const selected = step.id === currentStep;
+
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  key={step.id}
+                  onPress={() => setCurrentStep(step.id)}
+                  style={[styles.stepPill, selected ? styles.stepPillSelected : null]}>
+                  <AppText
+                    color={selected ? colors.white : colors.slate700}
+                    style={styles.stepPillLabel}>
+                    {step.label}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.stepCard}>
+            <View style={styles.stepIntro}>
+              <AppText color={colors.tasklyBlue600} style={styles.stepTitle}>
+                {activeStep.title}
+              </AppText>
+              <AppText color={colors.slate700} style={styles.stepBody}>
+                {activeStep.body}
+              </AppText>
+            </View>
+            {renderStepContent()}
+          </View>
+
+          {isUploadingImages ? (
+            <AppCard accentColor={colors.tasklyBlue600}>
+              <StatusBadge label={t('uploadingPhotos')} tone="core" />
+              <AppText color={colors.slate700}>
+                {uploadProgressTotal > 0
+                  ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
+                  : t('taskCreatedUploadingPhotos')}
+              </AppText>
+            </AppCard>
+          ) : null}
+
+          {uploadWarning ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
+              <AppText color={colors.slate700}>{uploadWarning}</AppText>
+            </AppCard>
+          ) : null}
+
+          {submitMessage ? (
+            <AppCard accentColor={colors.success600}>
+              <StatusBadge label={t('taskCreated')} tone="success" />
+              <AppText color={colors.slate700}>{submitMessage}</AppText>
+            </AppCard>
+          ) : null}
+
+          {submitError ? (
+            <AppCard accentColor={colors.danger600}>
+              <StatusBadge label={t('couldNotCreateTask')} tone="danger" />
+              <AppText color={colors.slate700}>{submitError}</AppText>
+            </AppCard>
+          ) : null}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View style={styles.footerButtons}>
+            <AppButton disabled={isBusy} onPress={handleBack} style={styles.footerButton} tone="neutral" variant="outline">
+              {currentStep === 1 ? t('cancel') : t('back')}
+            </AppButton>
+            <AppButton
+              disabled={isBusy || isLoading || Boolean(errorMessage)}
+              loading={isBusy}
+              onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinue}
+              style={styles.footerButton}>
+              {currentStep === STEP_TOTAL ? t('submitTask') : t('continueAction')}
+            </AppButton>
+          </View>
+          <AppText color={colors.slate700} style={styles.footerNote} variant="small">
+            {t('postTaskFooterNote')}
+          </AppText>
+        </View>
+      </View>
     </Screen>
   );
 }
 
+type FieldProps = {
+  containerStyle?: StyleProp<ViewStyle>;
+  errorText?: string;
+  helperText?: string;
+  keyboardType?: KeyboardTypeOptions;
+  label: string;
+  maxLength?: number;
+  multiline?: boolean;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  prefix?: string;
+  value: string;
+};
+
+function Field({
+  containerStyle,
+  errorText,
+  helperText,
+  keyboardType = 'default',
+  label,
+  maxLength,
+  multiline = false,
+  onChangeText,
+  placeholder,
+  prefix,
+  value,
+}: FieldProps) {
+  return (
+    <View style={[styles.field, containerStyle]}>
+      <AppText style={styles.fieldLabel}>{label}</AppText>
+      <View style={[styles.inputWrap, errorText ? styles.inputError : null]}>
+        {prefix ? (
+          <AppText color={colors.slate500} variant="bodyStrong">
+            {prefix}
+          </AppText>
+        ) : null}
+        <TextInput
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          multiline={multiline}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.slate500}
+          style={[styles.input, multiline ? styles.textArea : null]}
+          value={value}
+        />
+      </View>
+      {errorText ? (
+        <AppText color={colors.danger600} variant="small">
+          {errorText}
+        </AppText>
+      ) : helperText ? (
+        <AppText color={colors.slate500} variant="small">
+          {helperText}
+        </AppText>
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  bookingTitle: {
+    color: colors.navy900,
+    fontSize: 25,
+    fontWeight: '800',
+    lineHeight: 31,
+  },
   buttonStack: {
     gap: spacing.sm,
   },
-  header: {
+  cardBody: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  cardCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  cardStack: {
     gap: spacing.sm,
   },
-  twoColumn: {
-    gap: spacing.md,
+  cardTitle: {
+    color: colors.navy900,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
   },
-  validationList: {
+  checkbox: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  checkboxSelected: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
+  },
+  cityChip: {
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+  },
+  cityChipSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  citySection: {
+    gap: spacing.sm,
+  },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  confirmRow: {
+    alignItems: 'center',
+    backgroundColor: colors.slate50,
+    borderColor: colors.slate100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  confirmText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  content: {
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  field: {
+    gap: 6,
+  },
+  fieldHalf: {
+    flex: 1,
+    minWidth: 136,
+  },
+  fieldLabel: {
+    color: colors.navy900,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  fieldRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  validationPill: {
-    backgroundColor: colors.slate50,
+  footer: {
+    backgroundColor: '#F7FAFD',
+    borderColor: '#DFE8F2',
+    borderTopWidth: 1,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
+  },
+  footerButton: {
+    flex: 1,
+    minHeight: 42,
+  },
+  footerButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  footerNote: {
+    textAlign: 'center',
+  },
+  guidanceCard: {
+    alignItems: 'flex-start',
+    backgroundColor: '#F7FAFF',
+    borderColor: '#DCE9F7',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  header: {
+    backgroundColor: '#FBFDFF',
+    borderBottomColor: '#E4EBF3',
+    borderBottomWidth: 1,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  headerTop: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+  },
+  iconTile: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
     borderColor: colors.slate100,
-    borderRadius: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  iconTileSelected: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
+  },
+  input: {
+    color: colors.navy900,
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    minHeight: 22,
+    padding: 0,
+  },
+  inputError: {
+    borderColor: colors.danger600,
+  },
+  inputWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  moneyCard: {
+    backgroundColor: '#FBFDFF',
+    borderColor: '#DDE6F0',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  photoBox: {
+    backgroundColor: '#FBFDFF',
+    borderColor: '#DDE6F0',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  photoEmpty: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.md,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  photoHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  photoPreview: {
+    aspectRatio: 1,
+    backgroundColor: colors.slate100,
+    borderRadius: radius.md,
+    width: '100%',
+  },
+  photoPreviewCard: {
+    flexBasis: '31%',
+    minWidth: 90,
+    position: 'relative',
+  },
+  photoRemove: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderRadius: radius.pill,
+    height: 24,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 4,
+    top: 4,
+    width: 24,
+  },
+  progressFill: {
+    backgroundColor: colors.tasklyBlue600,
+    borderRadius: radius.pill,
+    height: '100%',
+  },
+  progressTrack: {
+    backgroundColor: '#D8E5F3',
+    borderRadius: radius.pill,
+    height: 5,
+    overflow: 'hidden',
+  },
+  quickBudgetChip: {
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.pill,
     borderWidth: 1,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: 7,
+  },
+  quickBudgetChipSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  quickBudgetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  reviewNotice: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  screen: {
+    backgroundColor: '#EEF3F8',
+  },
+  selectedServiceCard: {
+    backgroundColor: '#F1F7FE',
+    borderColor: 'rgba(90, 142, 199, 0.62)',
+  },
+  serviceCard: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FBFDFF',
+    borderColor: '#DDE6F0',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    minHeight: 86,
+    padding: spacing.md,
+  },
+  shell: {
+    backgroundColor: '#F5F8FC',
+    borderColor: '#DFE7F0',
+    borderRadius: 22,
+    borderWidth: 1,
+    flex: 1,
+    margin: spacing.sm,
+    overflow: 'hidden',
+  },
+  stepBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  stepCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    borderColor: '#E2EAF3',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  stepIntro: {
+    gap: 4,
+  },
+  stepPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.86)',
+    borderColor: '#D9E3EE',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    minHeight: 34,
+    minWidth: 84,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  stepPillLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+  stepPillSelected: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
+  },
+  stepSubtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 19,
+  },
+  stepTabs: {
+    gap: spacing.sm,
+    paddingHorizontal: 1,
+    paddingRight: spacing.md,
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+  },
+  summaryCard: {
+    backgroundColor: '#FBFDFF',
+    borderColor: '#E2EAF3',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  summaryRow: {
+    borderBottomColor: colors.slate100,
+    borderBottomWidth: 1,
+    gap: 3,
+    paddingBottom: spacing.sm,
+  },
+  summaryValue: {
+    flexShrink: 1,
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  textArea: {
+    minHeight: 92,
+    textAlignVertical: 'top',
+  },
+  titleBlock: {
+    gap: 2,
+  },
+  validationList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  validationPill: {
+    backgroundColor: colors.white,
+    borderColor: '#FDE68A',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
   },
 });

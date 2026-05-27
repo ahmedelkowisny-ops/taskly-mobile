@@ -41,10 +41,19 @@ export default function CustomerLayout() {
           }}
         />
         <Tabs.Screen
+          name="post-task"
+          options={{
+            title: t('tabPost'),
+            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="add-circle-outline" size={size} />,
+            tabBarStyle: {
+              display: 'none',
+            },
+          }}
+        />
+        <Tabs.Screen
           name="pro-requests"
           options={{
-            title: t('tabPro'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="ribbon-outline" size={size} />,
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -68,12 +77,6 @@ export default function CustomerLayout() {
         />
         <Tabs.Screen
           name="onboarding"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="post-task"
           options={{
             href: null,
           }}
