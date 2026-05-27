@@ -4,18 +4,18 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard, ModeBadge, TasklyLogoText } from '@/src/components/taskly';
+import { EmptyStateCard, LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerHomeSummary } from '@/src/lib/api/customer';
 import { CustomerHomeResponse } from '@/src/lib/api/domain';
 import { getMockCustomerHomeResponse, getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { getCustomerWorkspaceSummary } from '@/src/lib/auth/workspaceAccess';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerHomeScreen() {
+  useI18n();
   const router = useRouter();
   const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
   const session = authSession ?? getMockUserSession();
@@ -63,8 +63,8 @@ export default function CustomerHomeScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Sign in to load your Customer Workspace.'
-        : 'Could not load your Customer Workspace.',
+        ? t('signInToLoadCustomerArea')
+        : t('couldNotLoadCustomerArea'),
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -76,23 +76,26 @@ export default function CustomerHomeScreen() {
   );
 
   const summary = homeData?.summary;
+  const displayName = session.user.displayName;
 
   return (
     <Screen>
-      <View style={styles.header}>
+      <View style={styles.topBar}>
         <TasklyLogoText />
-        <ModeBadge mode="customer" />
-        <AppText variant="screenTitle">Welcome to Taskly</AppText>
-        <AppText color={colors.slate700}>
-          Welcome, {session.user.displayName}. Tell us what you need - Taskly will guide you step by step.
+        <LanguageToggle />
+      </View>
+
+      <View style={styles.header}>
+        <AppText style={styles.screenTitle} variant="screenTitle">
+          {t('welcomeName').replace('{name}', displayName)}
         </AppText>
+        <AppText color={colors.slate700}>{t('customerHomePromise')}</AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label="Loading" tone="core" />
-          <AppText variant="sectionTitle">Loading Customer Workspace</AppText>
-          <AppText color={colors.slate700}>Loading your latest Taskly updates.</AppText>
+          <StatusBadge label={t('loading')} tone="core" />
+          <AppText variant="sectionTitle">{t('loadingCustomerArea')}</AppText>
         </AppCard>
       ) : null}
 
@@ -100,14 +103,14 @@ export default function CustomerHomeScreen() {
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Sign in to view your customer activity' : 'Could not refresh customer activity'}
+            {isUnauthorized ? t('signInToViewCustomerActivity') : t('couldNotRefreshCustomerActivity')}
           </AppText>
           <AppText color={colors.slate700}>
-            {errorMessage || 'Try again, or use demo mode while Taskly reconnects.'}
+            {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={styles.buttonRow}>
             <AppButton onPress={loadHome} variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
               {t('continueDemoMode')}
@@ -118,57 +121,37 @@ export default function CustomerHomeScreen() {
 
       {summary ? (
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live data'} tone={status === 'demo' ? 'neutral' : 'success'} />
-          <AppText variant="sectionTitle">Customer summary</AppText>
+          <AppText variant="sectionTitle">{t('customerSummaryTitle')}</AppText>
           <View style={styles.metricsGrid}>
-            <Metric label="Open" value={summary.openTasksCount} />
-            <Metric label="Active" value={summary.activeTasksCount} />
-            <Metric label="Completion" value={summary.pendingCompletionCount} />
-            <Metric label="Pro" value={summary.proRequestsCount} />
+            <Metric label={t('openShort')} value={summary.openTasksCount} />
+            <Metric label={t('activeShort')} value={summary.activeTasksCount} />
+            <Metric label={t('waitingApproval')} value={summary.pendingCompletionCount} />
+            <Metric label={t('proResponsesShort')} value={summary.proResponsesAvailableCount} />
           </View>
-          <AppText color={colors.slate700}>
-            {summary.proResponsesAvailableCount} Pro responses available and {summary.unreadMessagesCount} unread updates.
-          </AppText>
         </AppCard>
       ) : null}
-
-      <AppCard accentColor={colors.tasklyBlue600}>
-        <StatusBadge label={status === 'authenticated' ? 'Signed in' : status === 'demo' ? 'Demo session' : 'Workspace guidance'} tone="core" />
-        <AppText variant="sectionTitle">{getCustomerWorkspaceSummary(session)}</AppText>
-          <AppText color={colors.slate700}>Taskly helps you choose the right next step from available actions.</AppText>
-      </AppCard>
 
       <View style={styles.actions}>
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Taskly" tone="core" />
-          <AppText variant="sectionTitle">{t('postTask')}</AppText>
-          <AppText color={colors.slate700}>
-            For small, fixed-scope tasks where a Taskly Tasker can help nearby.
-          </AppText>
-          <AppButton onPress={() => router.push('/customer/post-task' as Href)}>{t('postTask')}</AppButton>
+          <AppText variant="sectionTitle">{t('tasklyTaskActionTitle')}</AppText>
+          <AppText color={colors.slate700}>{t('tasklyTaskActionBody')}</AppText>
+          <AppButton onPress={() => router.push('/customer/post-task' as Href)}>{t('postTaskShort')}</AppButton>
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
           <StatusBadge label="Taskly Pro" tone="pro" />
-          <AppText variant="sectionTitle">{t('postProRequest')}</AppText>
-          <AppText color={colors.slate700}>
-            Compare approved Pros before you decide on a larger project.
-          </AppText>
+          <AppText variant="sectionTitle">{t('tasklyProActionTitle')}</AppText>
+          <AppText color={colors.slate700}>{t('tasklyProActionBody')}</AppText>
           <AppButton onPress={() => router.push('/customer/post-pro-request' as Href)} tone="pro">
-            {t('postProRequest')}
+            {t('startProRequestShort')}
           </AppButton>
         </AppCard>
       </View>
 
-      <AssistantGuideCard
-        body="Taskly helps you choose the right path: small fixed-scope tasks or larger Taskly Pro projects."
-        title="Choose the right path"
-        tone="pro"
-      />
-
       {homeData?.highlights.length ? (
         <View style={styles.actions}>
-          <AppText variant="sectionTitle">Upcoming activity</AppText>
+          <AppText variant="sectionTitle">{t('upcomingActivity')}</AppText>
           {homeData.highlights.map((highlight) => (
             <AppCard
               key={highlight.id}
@@ -185,8 +168,8 @@ export default function CustomerHomeScreen() {
         </View>
       ) : (
         <EmptyStateCard
-          body="Upcoming tasks, Taskly Pro projects, and messages will appear here after your first customer activity."
-          title="No upcoming activity"
+          body={t('noUpcomingActivityBody')}
+          title={t('noUpcomingActivity')}
         />
       )}
 
@@ -214,12 +197,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexBasis: '47%',
     flexGrow: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  screenTitle: {
+    fontSize: 26,
+  },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 });
 
