@@ -684,6 +684,20 @@ export type CustomerProAccessSupportNextActions = {
   canViewProAccessSupportStatus: boolean;
 };
 
+export type ProAccessSupportIssueType =
+  | 'no_useful_responses'
+  | 'response_quality_issue'
+  | 'pro_cancelled_or_no_show'
+  | 'payment_problem'
+  | 'accidental_payment'
+  | 'other';
+
+export type CustomerProAccessSupportRequestPayload = {
+  details?: string;
+  issueType?: ProAccessSupportIssueType;
+  reason: string;
+};
+
 export type CustomerProAccessNextActions = {
   blockedReason?: string | null;
   blockedReasonCode?: string | null;
@@ -870,6 +884,16 @@ export type CustomerProAccessCheckoutResponse = CustomerProRequestDetailResponse
   alreadyUnlocked?: boolean;
   checkoutUrl?: string | null;
   sessionId?: string | null;
+};
+
+export type CustomerProAccessSupportRequestResponse = CustomerProRequestDetailResponse & {
+  alreadyUnderReview?: boolean;
+  message?: string;
+  proAccessRefundState?: CustomerProAccessRefundState | null;
+  proAccessSupportNextActions?: CustomerProAccessSupportNextActions | null;
+  proAccessSupportReviewLabel?: string | null;
+  proAccessSupportState?: CustomerProAccessSupportState | null;
+  requestId?: string | null;
 };
 
 export type CustomerProSiteVisitInvitePayload = {

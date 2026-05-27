@@ -413,6 +413,48 @@ Recommended follow-up after read-only state: Phase 30C: Pro Access support/refun
 
 Phase 30C should add the mobile-safe request route, wrappers, form UI, demo behavior, admin review linkage, and QA checklist without changing Stripe refund behavior unless explicitly scoped.
 
+## Phase 30C Implementation Note
+
+Phase 30C added a customer-facing Pro Access support/refund review request flow.
+
+Backend route added:
+
+- `POST /api/mobile/customer/pro-requests/[proRequestId]/access/support-request`
+
+Backend helper/model approach:
+
+- Added a narrow `submitCustomerProAccessSupportRequest(...)` helper.
+- The helper requires mobile-authenticated customer ownership and an eligible Pro Access state.
+- Paid/unlocked Pro Access can request support/refund review.
+- Failed Pro Access payment attempts can request payment-problem support only.
+- Duplicate active Pro Access support reviews are blocked by returning the existing request state.
+- Requests are stored in `CustomerSupportRequest` with a new optional `proRequestId` relation.
+- Existing Core task support behavior remains separate.
+- Existing admin support request inspection can read the related Pro request.
+
+Mobile API and UI:
+
+- Added typed wrapper `requestCustomerProAccessSupport(proRequestId, payload, authToken)`.
+- Payload is limited to `issueType`, `reason`, and optional `details`.
+- Customer Pro request detail shows a secondary review request action only when backend next actions allow it.
+- The form captures issue type, required reason, and optional details.
+- After submission, the screen refreshes from the backend response and shows the read-only support/refund review card.
+- Demo mode simulates an under-review Pro Access support request locally and does not call the backend.
+
+Guardrails preserved:
+
+- No Stripe refund behavior was added.
+- No refund outcome, amount, payment state, access state, comparison state, site visit state, notification/deep-link behavior, Core logic, or admin resolution workflow is changed.
+- Mobile does not send customer id, payment status, amount, currency, Stripe ids, access status, admin decision, or support status.
+- Mobile does not show refund amounts or Stripe/internal payment details.
+
+Deferred:
+
+- Admin support/refund resolution improvements.
+- Stripe refund execution.
+- Notification hooks for support/refund outcomes.
+- Refund policy/accounting review.
+
 ## Phase 30B Implementation Note
 
 Phase 30B added backend-authored read-only Pro Access support/refund state to customer Pro request list and detail responses.

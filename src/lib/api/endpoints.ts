@@ -18,6 +18,7 @@ export const endpoints = {
     homeSummary: '/api/mobile/customer/home',
     messages: '/api/mobile/customer/messages',
     proRequestAccessCheckout: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/checkout`,
+    proRequestAccessSupportRequest: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/support-request`,
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,
     proRequestImageUpload: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/images`,
     proRequestSiteVisitCancel: (proRequestId: string, siteVisitId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/site-visits/${siteVisitId}/cancel`,

@@ -5,6 +5,7 @@ import {
   CitiesCatalogResponse,
   CustomerHomeResponse,
   CustomerProRequestDetailResponse,
+  CustomerProAccessSupportRequestPayload,
   CustomerHomeSummary,
   CustomerProRequestsResponse,
   CustomerCoreTaskNextActions,
@@ -1190,11 +1191,11 @@ function getMockProAccessSupportFields(
   const blockedReason = isFailed
     ? 'A failed Pro Access payment has no completed charge to refund.'
     : request.isUnlocked
-      ? 'Pro Access support/refund requests are not available in mobile yet.'
+      ? null
       : 'No eligible Pro Access payment is available for support review.';
-  const blockedReasonCode = isFailed ? 'PAYMENT_FAILED' : request.isUnlocked ? 'SUPPORT_ROUTE_NOT_AVAILABLE' : 'NO_ELIGIBLE_PRO_ACCESS_PAYMENT';
-  const supportStatus = isReview ? 'under_review' : isRefunded || isCredited ? 'resolved' : isFailed || !request.isUnlocked ? 'not_available' : 'none';
-  const refundStatus = isReview ? 'under_review' : isRefunded ? 'refunded' : isCredited ? 'credited' : isFailed || !request.isUnlocked ? 'not_available' : 'not_requested';
+  const blockedReasonCode = isFailed ? 'PAYMENT_FAILED' : request.isUnlocked ? null : 'NO_ELIGIBLE_PRO_ACCESS_PAYMENT';
+  const supportStatus = isReview ? 'under_review' : isRefunded || isCredited ? 'resolved' : isFailed ? 'support_available' : !request.isUnlocked ? 'not_available' : 'refund_review_available';
+  const refundStatus = isReview ? 'under_review' : isRefunded ? 'refunded' : isCredited ? 'credited' : isFailed || !request.isUnlocked ? 'not_available' : 'request_available';
   const outcomeLabel = isRefunded ? 'Refunded' : isCredited ? 'Credited' : null;
   const summary = isReview
     ? 'Taskly support is reviewing this Pro Access request.'
@@ -1203,7 +1204,7 @@ function getMockProAccessSupportFields(
       : isCredited
         ? 'Pro Access is credited for this request.'
         : isFailed
-          ? 'Pro Access payment failed. No refund review is open.'
+          ? 'Pro Access payment failed. You can request support for a payment problem.'
           : request.isUnlocked
             ? 'No Pro Access support review is open.'
             : 'Pro Access support is available only after an eligible Pro Access payment exists.';
@@ -1224,8 +1225,8 @@ function getMockProAccessSupportFields(
     proAccessSupportNextActions: {
       blockedReason: isReview || isRefunded || isCredited ? null : blockedReason,
       blockedReasonCode: isReview || isRefunded || isCredited ? null : blockedReasonCode,
-      canOpenProAccessSupport: false,
-      canRequestProAccessRefund: false,
+      canOpenProAccessSupport: supportStatus === 'support_available' || supportStatus === 'refund_review_available',
+      canRequestProAccessRefund: refundStatus === 'request_available',
       canViewProAccessSupportStatus: isReview || isRefunded || isCredited,
     },
     proAccessSupportReviewLabel: isReview ? 'Support review in progress' : isRefunded ? 'Refund resolved' : isCredited ? 'Credit resolved' : null,
@@ -1237,7 +1238,7 @@ function getMockProAccessSupportFields(
       latestRequestId: isReview ? 'demo-pro-access-support-1' : null,
       latestRequestType: isReview ? 'PRO_ACCESS_SUPPORT_REVIEW' : null,
       status: supportStatus,
-      statusLabel: isReview ? 'Review in progress' : isRefunded || isCredited ? 'Support review resolved' : isFailed ? 'Payment failed' : request.isUnlocked ? 'No support review' : 'Support unavailable',
+      statusLabel: isReview ? 'Review in progress' : isRefunded || isCredited ? 'Support review resolved' : isFailed ? 'Payment failed' : request.isUnlocked ? 'Support review available' : 'Support unavailable',
       supportReviewLabel: isReview ? 'Support review in progress' : isRefunded ? 'Refund resolved' : isCredited ? 'Credit resolved' : null,
     },
   };
@@ -1533,6 +1534,51 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       unlockedResponseSummary: summary.unlockedResponseSummary,
       unlockStatusLabel: summary.unlockStatusLabel,
       visiblePreviewResponseCount: summary.visiblePreviewResponseCount,
+    },
+  };
+}
+
+export function requestMockCustomerProAccessSupport(
+  proRequestId: string,
+  _payload: CustomerProAccessSupportRequestPayload,
+): CustomerProRequestDetailResponse {
+  const detail = getMockCustomerProRequestDetailResponse(proRequestId || 'demo-pro-unlocked');
+  const now = new Date().toISOString();
+  return {
+    proRequest: {
+      ...detail.proRequest,
+      id: proRequestId,
+      proAccessRefundBlockedReason: null,
+      proAccessRefundBlockedReasonCode: null,
+      proAccessRefundOutcomeLabel: null,
+      proAccessRefundResolvedAt: null,
+      proAccessRefundState: {
+        helperText: 'Taskly will review the request. This does not automatically guarantee a refund.',
+        outcomeLabel: null,
+        status: 'under_review',
+        statusLabel: 'Review in progress',
+      },
+      proAccessRefundSubmittedAt: now,
+      proAccessRefundSummary: 'Taskly support is reviewing this Pro Access request.',
+      proAccessSupportNextActions: {
+        blockedReason: null,
+        blockedReasonCode: null,
+        canOpenProAccessSupport: false,
+        canRequestProAccessRefund: false,
+        canViewProAccessSupportStatus: true,
+      },
+      proAccessSupportReviewLabel: 'Support review in progress',
+      proAccessSupportState: {
+        blockedReason: null,
+        blockedReasonCode: null,
+        helperText: 'Taskly support is reviewing this Pro Access request.',
+        latestRequestCreatedAt: now,
+        latestRequestId: 'demo-pro-access-support-submitted',
+        latestRequestType: 'PRO_ACCESS_SUPPORT_REVIEW',
+        status: 'under_review',
+        statusLabel: 'Review in progress',
+        supportReviewLabel: 'Support review in progress',
+      },
     },
   };
 }

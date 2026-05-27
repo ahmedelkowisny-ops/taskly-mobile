@@ -11,13 +11,15 @@ import {
   createCustomerProAccessCheckout,
   createCustomerProSiteVisitInvite,
   getCustomerProRequestDetail,
+  requestCustomerProAccessSupport,
 } from '@/src/lib/api/customer';
-import { CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse } from '@/src/lib/api/domain';
+import { CustomerProAccessSupportRequestPayload, CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse, ProAccessSupportIssueType } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import {
   cancelMockCustomerProSiteVisitInvite,
   createMockCustomerProSiteVisitInvite,
   getMockCustomerProRequestDetailResponse,
+  requestMockCustomerProAccessSupport,
 } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
@@ -32,12 +34,34 @@ type CustomerSiteVisitFormValues = {
 };
 
 type CustomerSiteVisitFormErrors = Partial<Record<keyof CustomerSiteVisitFormValues | 'form', string>>;
+type CustomerProAccessSupportFormValues = {
+  details: string;
+  issueType: ProAccessSupportIssueType;
+  reason: string;
+};
+
+type CustomerProAccessSupportFormErrors = Partial<Record<keyof CustomerProAccessSupportFormValues | 'form', string>>;
 
 const emptyCustomerSiteVisitForm: CustomerSiteVisitFormValues = {
   accessNotes: '',
   message: '',
   preferredDate: '',
   preferredTimeWindow: '',
+};
+
+const proAccessSupportIssueOptions: { labelKey: Parameters<typeof t>[0]; value: ProAccessSupportIssueType }[] = [
+  { labelKey: 'noUsefulResponses', value: 'no_useful_responses' },
+  { labelKey: 'responseQualityIssue', value: 'response_quality_issue' },
+  { labelKey: 'proCancelledOrNoShow', value: 'pro_cancelled_or_no_show' },
+  { labelKey: 'paymentProblem', value: 'payment_problem' },
+  { labelKey: 'accidentalPayment', value: 'accidental_payment' },
+  { labelKey: 'other', value: 'other' },
+];
+
+const emptyProAccessSupportForm: CustomerProAccessSupportFormValues = {
+  details: '',
+  issueType: 'other',
+  reason: '',
 };
 
 export default function CustomerProRequestDetailScreen() {
@@ -52,6 +76,12 @@ export default function CustomerProRequestDetailScreen() {
   const [proAccessPaymentError, setProAccessPaymentError] = useState<string | null>(null);
   const [proAccessPaymentMessage, setProAccessPaymentMessage] = useState<string | null>(null);
   const [showProAccessConfirm, setShowProAccessConfirm] = useState(false);
+  const [showProAccessSupportForm, setShowProAccessSupportForm] = useState(false);
+  const [proAccessSupportError, setProAccessSupportError] = useState<string | null>(null);
+  const [proAccessSupportFormErrors, setProAccessSupportFormErrors] = useState<CustomerProAccessSupportFormErrors>({});
+  const [proAccessSupportFormValues, setProAccessSupportFormValues] = useState<CustomerProAccessSupportFormValues>(emptyProAccessSupportForm);
+  const [proAccessSupportNotice, setProAccessSupportNotice] = useState<string | null>(null);
+  const [isSubmittingProAccessSupport, setIsSubmittingProAccessSupport] = useState(false);
   const [siteVisitActionError, setSiteVisitActionError] = useState<string | null>(null);
   const [siteVisitFormErrors, setSiteVisitFormErrors] = useState<CustomerSiteVisitFormErrors>({});
   const [siteVisitFormResponse, setSiteVisitFormResponse] = useState<CustomerUnlockedProComparisonResponse | null>(null);
@@ -116,6 +146,76 @@ export default function CustomerProRequestDetailScreen() {
     setProAccessPaymentMessage(null);
     setShowProAccessConfirm(true);
   }, []);
+
+  const openProAccessSupportForm = useCallback(() => {
+    setProAccessSupportError(null);
+    setProAccessSupportNotice(null);
+    setProAccessSupportFormErrors({});
+    setProAccessSupportFormValues({
+      ...emptyProAccessSupportForm,
+      issueType: data?.proRequest.proAccessPaymentState?.status === 'failed' ? 'payment_problem' : 'other',
+    });
+    setShowProAccessSupportForm(true);
+  }, [data?.proRequest.proAccessPaymentState?.status]);
+
+  const closeProAccessSupportForm = useCallback(() => {
+    setShowProAccessSupportForm(false);
+    setProAccessSupportFormErrors({});
+  }, []);
+
+  const updateProAccessSupportFormValue = useCallback(<Key extends keyof CustomerProAccessSupportFormValues>(
+    key: Key,
+    value: CustomerProAccessSupportFormValues[Key],
+  ) => {
+    setProAccessSupportFormValues((current) => ({ ...current, [key]: value }));
+    setProAccessSupportFormErrors((current) => ({ ...current, [key]: undefined, form: undefined }));
+  }, []);
+
+  const submitProAccessSupportRequest = useCallback(async () => {
+    const errors = validateProAccessSupportForm(proAccessSupportFormValues);
+    if (Object.keys(errors).length > 0) {
+      setProAccessSupportFormErrors(errors);
+      return;
+    }
+
+    const payload: CustomerProAccessSupportRequestPayload = {
+      details: proAccessSupportFormValues.details.trim(),
+      issueType: proAccessSupportFormValues.issueType,
+      reason: proAccessSupportFormValues.reason.trim(),
+    };
+
+    setIsSubmittingProAccessSupport(true);
+    setProAccessSupportError(null);
+    setProAccessSupportNotice(null);
+
+    if (status === 'demo') {
+      setData(requestMockCustomerProAccessSupport(proRequestId, payload));
+      setIsSubmittingProAccessSupport(false);
+      setShowProAccessSupportForm(false);
+      setProAccessSupportNotice(t('requestSubmitted'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsSubmittingProAccessSupport(false);
+      setProAccessSupportFormErrors({ form: t('loginRequired') });
+      return;
+    }
+
+    const result = await requestCustomerProAccessSupport(proRequestId, payload, authToken);
+    setIsSubmittingProAccessSupport(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setShowProAccessSupportForm(false);
+      setProAccessSupportNotice(result.data.message || t('requestSubmitted'));
+      return;
+    }
+
+    setProAccessSupportFormErrors(getProAccessSupportErrorMessages(result.error.details, result.error.message));
+    setProAccessSupportError(result.error.message || t('couldNotSubmitRequest'));
+  }, [getValidAccessToken, proAccessSupportFormValues, proRequestId, status]);
 
   const openSiteVisitInvite = useCallback((response: CustomerUnlockedProComparisonResponse) => {
     setSiteVisitActionError(null);
@@ -330,7 +430,36 @@ export default function CustomerProRequestDetailScreen() {
             request={request}
           />
 
-          <ProAccessSupportCard request={request} />
+          <ProAccessSupportCard
+            onOpenSupport={openProAccessSupportForm}
+            request={request}
+          />
+
+          {showProAccessSupportForm ? (
+            <ProAccessSupportRequestForm
+              errors={proAccessSupportFormErrors}
+              isSubmitting={isSubmittingProAccessSupport}
+              onCancel={closeProAccessSupportForm}
+              onChange={updateProAccessSupportFormValue}
+              onSubmit={submitProAccessSupportRequest}
+              values={proAccessSupportFormValues}
+            />
+          ) : null}
+
+          {proAccessSupportNotice ? (
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+              <StatusBadge label={t('requestSubmitted')} tone="success" />
+              <AppText color={colors.slate700}>{t('tasklyWillReviewProAccessRequest')}</AppText>
+              <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
+            </AppCard>
+          ) : null}
+
+          {proAccessSupportError && !showProAccessSupportForm ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('couldNotSubmitRequest')} tone="warning" />
+              <AppText color={colors.slate700}>{proAccessSupportError}</AppText>
+            </AppCard>
+          ) : null}
 
           {showProAccessConfirm ? (
             <ProAccessPaymentConfirmCard
@@ -744,10 +873,18 @@ function ProAccessPaymentConfirmCard({
   );
 }
 
-function ProAccessSupportCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+function ProAccessSupportCard({
+  onOpenSupport,
+  request,
+}: {
+  onOpenSupport: () => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
   const supportState = request.proAccessSupportState;
   const refundState = request.proAccessRefundState;
   const paymentStatus = request.proAccessPaymentState?.status;
+  const supportActions = request.proAccessSupportNextActions || request.proAccessNextActions;
+  const canOpenSupport = Boolean(supportActions?.canOpenProAccessSupport || supportActions?.canRequestProAccessRefund);
   const shouldShow = Boolean(
     supportState &&
       refundState &&
@@ -758,6 +895,9 @@ function ProAccessSupportCard({ request }: { request: CustomerProRequestDetailRe
         refundState.status === 'credited' ||
         refundState.status === 'requested' ||
         refundState.status === 'under_review' ||
+        refundState.status === 'request_available' ||
+        supportState.status === 'support_available' ||
+        supportState.status === 'refund_review_available' ||
         supportState.status === 'submitted' ||
         supportState.status === 'under_review' ||
         supportState.status === 'resolved'),
@@ -787,7 +927,76 @@ function ProAccessSupportCard({ request }: { request: CustomerProRequestDetailRe
       ) : null}
       <AppText color={colors.slate700}>{t('proAccessUnlocksComparisonNotWork')}</AppText>
       <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
-      <AppText color={colors.slate500} variant="caption">{t('proAccessSupportActionsLater')}</AppText>
+      {canOpenSupport ? (
+        <AppButton onPress={onOpenSupport} tone="pro" variant="outline">
+          {supportActions?.canRequestProAccessRefund ? t('requestRefundReview') : t('requestProAccessSupport')}
+        </AppButton>
+      ) : null}
+    </AppCard>
+  );
+}
+
+function ProAccessSupportRequestForm({
+  errors,
+  isSubmitting,
+  onCancel,
+  onChange,
+  onSubmit,
+  values,
+}: {
+  errors: CustomerProAccessSupportFormErrors;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  onChange: <Key extends keyof CustomerProAccessSupportFormValues>(key: Key, value: CustomerProAccessSupportFormValues[Key]) => void;
+  onSubmit: () => void;
+  values: CustomerProAccessSupportFormValues;
+}) {
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <StatusBadge label={t('requestReview')} tone="pro" />
+      <AppText variant="sectionTitle">{t('tellUsWhatHappened')}</AppText>
+      <AppText color={colors.slate700}>{t('tasklyWillReviewProAccessRequest')}</AppText>
+      <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
+      <AppText color={colors.slate700}>{t('proAccessUnlocksComparisonNotWork')}</AppText>
+      {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
+      <View style={styles.stack}>
+        <AppText variant="bodyStrong">{t('whatIsTheIssue')}</AppText>
+        <View style={styles.issueOptions}>
+          {proAccessSupportIssueOptions.map((option) => {
+            const selected = values.issueType === option.value;
+            return (
+              <AppButton
+                key={option.value}
+                onPress={() => onChange('issueType', option.value)}
+                tone="pro"
+                variant={selected ? 'filled' : 'outline'}>
+                {t(option.labelKey)}
+              </AppButton>
+            );
+          })}
+        </View>
+        {errors.issueType ? <AppText color={colors.danger600}>{errors.issueType}</AppText> : null}
+      </View>
+      <FormField
+        errorText={errors.reason}
+        helperText={t('supportReasonHelper')}
+        label={t('reason')}
+        multiline
+        onChangeText={(value) => onChange('reason', value)}
+        value={values.reason}
+      />
+      <FormField
+        errorText={errors.details}
+        helperText={t('detailsOptional')}
+        label={t('supportDetails')}
+        multiline
+        onChangeText={(value) => onChange('details', value)}
+        value={values.details}
+      />
+      <View style={styles.stack}>
+        <AppButton loading={isSubmitting} onPress={onSubmit} tone="pro">{t('submitRequest')}</AppButton>
+        <AppButton disabled={isSubmitting} onPress={onCancel} tone="neutral" variant="ghost">{t('cancel')}</AppButton>
+      </View>
     </AppCard>
   );
 }
@@ -861,6 +1070,32 @@ function validateCustomerSiteVisitForm(values: CustomerSiteVisitFormValues): Cus
   return errors;
 }
 
+function hasObviousSupportContactDetails(values: CustomerProAccessSupportFormValues) {
+  return hasObviousContactDetails({
+    accessNotes: '',
+    message: values.reason,
+    preferredDate: '',
+    preferredTimeWindow: values.details,
+  });
+}
+
+function validateProAccessSupportForm(values: CustomerProAccessSupportFormValues): CustomerProAccessSupportFormErrors {
+  const errors: CustomerProAccessSupportFormErrors = {};
+  if (!values.reason.trim()) {
+    errors.reason = t('reasonRequired');
+  }
+  if (values.reason.trim().length > 2000) {
+    errors.reason = t('reasonTooLong');
+  }
+  if (values.details.trim().length > 6000) {
+    errors.details = t('detailsTooLong');
+  }
+  if (hasObviousSupportContactDetails(values)) {
+    errors.form = t('pleaseRemoveContactDetails');
+  }
+  return errors;
+}
+
 function getCustomerSiteVisitErrorMessages(details: unknown, fallbackMessage: string): CustomerSiteVisitFormErrors {
   if (details && typeof details === 'object' && 'fieldErrors' in details) {
     const fieldErrors = (details as { fieldErrors?: Record<string, unknown> }).fieldErrors;
@@ -872,6 +1107,19 @@ function getCustomerSiteVisitErrorMessages(details: unknown, fallbackMessage: st
     }
   }
   return { form: fallbackMessage || t('couldNotSendInvite') };
+}
+
+function getProAccessSupportErrorMessages(details: unknown, fallbackMessage: string): CustomerProAccessSupportFormErrors {
+  if (details && typeof details === 'object' && 'fieldErrors' in details) {
+    const fieldErrors = (details as { fieldErrors?: Record<string, unknown> }).fieldErrors;
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      return Object.entries(fieldErrors).reduce<CustomerProAccessSupportFormErrors>((acc, [key, value]) => {
+        acc[key as keyof CustomerProAccessSupportFormValues] = String(value);
+        return acc;
+      }, {});
+    }
+  }
+  return { form: fallbackMessage || t('couldNotSubmitRequest') };
 }
 
 const styles = StyleSheet.create({
@@ -889,6 +1137,7 @@ const styles = StyleSheet.create({
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoGrid: { gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  issueOptions: { gap: spacing.sm },
   noteBlock: { gap: spacing.xs },
   profileImage: { backgroundColor: colors.proOrange50, borderRadius: 8, height: 56, width: 56 },
   profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
