@@ -3,24 +3,19 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
+import { LanguageToggle, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getProviderDashboard } from '@/src/lib/api/provider';
 import { ProviderDashboardResponse } from '@/src/lib/api/domain';
 import { getMockProviderDashboardResponse } from '@/src/lib/api/mockApi';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import {
-  getCoreTaskerStatusLabel,
-  getProStatusLabel,
-  getProviderModeSummary,
-  getRecommendedProviderNextAction,
-} from '@/src/lib/auth/workspaceAccess';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderDashboardScreen() {
+  useI18n();
   const router = useRouter();
   const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
   const session = authSession ?? mockAuth.currentSession;
@@ -31,8 +26,8 @@ export default function ProviderDashboardScreen() {
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
   const summary = data?.summary;
   const displayName = summary?.displayName ?? authSession?.user.displayName ?? mockAuth.currentSession.displayName;
-  const coreStatusLabel = getCoreTaskerStatusLabel(summary?.coreTaskerStatus ?? coreTaskerStatus);
-  const proStatusLabel = getProStatusLabel(summary?.proStatus ?? proStatus);
+  const coreStatusLabel = (summary?.coreTaskerStatus ?? coreTaskerStatus) === 'approved' ? t('available') : t('providerProfileReviewing');
+  const proStatusLabel = (summary?.proStatus ?? proStatus) === 'approved' ? t('available') : t('proProfileReview');
 
   const loadDashboard = useCallback(async () => {
     setErrorMessage(null);
@@ -73,8 +68,8 @@ export default function ProviderDashboardScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Sign in with Provider Workspace access.'
-        : 'Could not load Provider Workspace.',
+        ? t('loginOrProviderAccessRequired')
+        : t('couldNotRefreshProRequests'),
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -87,22 +82,24 @@ export default function ProviderDashboardScreen() {
 
   return (
     <Screen>
+      <View style={styles.topBar}>
+        <StatusBadge label={t('providerArea')} tone="neutral" />
+        <LanguageToggle />
+      </View>
+
       <View style={styles.header}>
-        <View style={styles.badges}>
-          <StatusBadge label="Provider" tone="neutral" />
-          <StatusBadge label={status === 'authenticated' ? 'Signed in' : status === 'demo' ? 'Demo session' : 'Demo fallback'} tone="neutral" />
-        </View>
-        <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
+        <AppText style={styles.screenTitle} variant="screenTitle">
+          {t('providerArea')}
+        </AppText>
         <AppText color={colors.slate700}>
-          Welcome, {displayName}. Taskly tasks and Taskly Pro projects are separate modes inside the Provider Workspace.
+          {t('welcomeName').replace('{name}', displayName)}. {t('providerStartBody')}
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.navy900}>
-          <StatusBadge label="Loading" tone="neutral" />
-          <AppText variant="sectionTitle">Loading Provider Workspace</AppText>
-          <AppText color={colors.slate700}>Loading your latest provider status.</AppText>
+          <StatusBadge label={t('loading')} tone="neutral" />
+          <AppText variant="sectionTitle">{t('loadingProviderProDetail')}</AppText>
         </AppCard>
       ) : null}
 
@@ -110,14 +107,14 @@ export default function ProviderDashboardScreen() {
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Sign in to view provider activity' : 'Could not refresh provider activity'}
+            {isUnauthorized ? t('loginOrProviderAccessRequired') : t('couldNotRefreshProRequests')}
           </AppText>
           <AppText color={colors.slate700}>
             {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDashboard} variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
               {t('continueDemoMode')}
@@ -128,52 +125,28 @@ export default function ProviderDashboardScreen() {
 
       {summary ? (
         <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live data'} tone={status === 'demo' ? 'neutral' : 'success'} />
-          <AppText variant="sectionTitle">Provider summary</AppText>
+          <AppText variant="sectionTitle">{t('providerReadyTitle')}</AppText>
           <View style={styles.metricsGrid}>
-            <Metric label="Available Taskly" value={summary.availableCoreTasksCount} />
-            <Metric label="Active Taskly" value={summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
-            <Metric label="Pro matches" value={summary.matchingProRequestsCount} />
-            <Metric label="Responses" value={summary.submittedProResponsesCount} />
+            <Metric label={t('available')} value={summary.availableCoreTasksCount} />
+            <Metric label={t('activeShort')} value={summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
+            <Metric label={t('tabPro')} value={summary.matchingProRequestsCount} />
+            <Metric label={t('proResponsesShort')} value={summary.submittedProResponsesCount} />
           </View>
         </AppCard>
       ) : null}
-
-      <ProviderStatusCard
-        accent="neutral"
-        actionLabel="Review provider setup"
-        description="Taskly tasks and Taskly Pro projects stay separate so payments, responses, and customer expectations remain clear."
-        onPress={() => router.push('/provider/start')}
-        statusLabel={getProviderModeSummary(session)}
-        title="Provider status"
-      />
-
-      <AppCard>
-        <StatusBadge label="Recommended next action" tone="neutral" />
-        <AppText variant="sectionTitle">{data?.nextActions[0]?.label ?? getRecommendedProviderNextAction(session)}</AppText>
-        <AppText color={colors.slate700}>
-          {status === 'authenticated'
-            ? 'This recommendation comes from your Taskly account.'
-            : 'Demo mode keeps provider guidance available while real data is not connected.'}
-        </AppText>
-      </AppCard>
 
       <View style={styles.grid}>
         <AppCard accentColor={colors.tasklyBlue600} style={styles.panel}>
           <ModeBadge mode="providerCore" />
           <AppText variant="sectionTitle">{t('coreTasks')}</AppText>
-          <AppText color={colors.slate700}>
-            Taskly Tasker work can live inside the Provider Workspace alongside Taskly Pro work.
-          </AppText>
+          <AppText color={colors.slate700}>{t('tasklyTaskerBody')}</AppText>
           <StatusBadge label={coreStatusLabel} tone="core" />
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.panel}>
           <ModeBadge mode="providerPro" />
           <AppText variant="sectionTitle">{t('proRequests')}</AppText>
-          <AppText color={colors.slate700}>
-            Taskly Pro projects stay visually and functionally separate from Taskly tasks.
-          </AppText>
+          <AppText color={colors.slate700}>{t('tasklyProProviderBody')}</AppText>
           <StatusBadge label={proStatusLabel} tone="pro" />
         </AppCard>
       </View>
@@ -192,28 +165,6 @@ export default function ProviderDashboardScreen() {
           ))}
         </View>
       ) : null}
-
-      <View style={styles.grid}>
-        <AppCard accentColor={colors.tasklyBlue600}>
-          <ModeBadge mode="providerCore" />
-          <AppText variant="sectionTitle">Taskly payout status</AppText>
-          <AppText color={colors.slate700}>{t('stripeVerificationCorePayouts')}.</AppText>
-          <StatusBadge label={coreStatusLabel} tone={coreTaskerStatus === 'approved' ? 'success' : 'warning'} />
-        </AppCard>
-
-        <AppCard accentColor={colors.proAmber500} backgroundColor={colors.proOrange50}>
-          <ModeBadge mode="providerPro" />
-          <AppText variant="sectionTitle">Profile strength</AppText>
-          <AppText color={colors.slate700}>{t('proProfileReview')} and category approval are required for Pro work.</AppText>
-          <StatusBadge label={proStatusLabel} tone={proStatus === 'approved' ? 'success' : 'pro'} />
-        </AppCard>
-      </View>
-
-      <AssistantGuideCard
-        body="Taskly tasks and Taskly Pro projects stay separate so each mode stays clear inside one Taskly app."
-        title="Mode guidance"
-        tone="pro"
-      />
 
       <AppButton onPress={() => router.push('/provider/start')} tone="pro" variant="outline">
         {t('startProviderWorkspace')}
@@ -239,6 +190,14 @@ const styles = StyleSheet.create({
   },
   panel: {
     minHeight: 142,
+  },
+  screenTitle: {
+    fontSize: 26,
+  },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   metric: {
     backgroundColor: colors.slate50,

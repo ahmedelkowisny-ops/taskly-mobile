@@ -15,27 +15,27 @@ type SessionStatusCardProps = {
 function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: string) {
   if (status === 'loading') {
     return {
-      badge: 'Checking session',
-      body: 'Checking your Taskly session...',
-      title: 'Taskly session',
+      badge: t('loading'),
+      body: t('loadingCustomerArea'),
+      title: t('tasklyAccount'),
       tone: 'neutral' as const,
     };
   }
 
   if (status === 'authenticated') {
     return {
-      badge: 'Signed in',
-      body: 'Taskly uses your account permissions to show available workspaces.',
-      title: `Signed in as ${name ?? 'Taskly user'}`,
+      badge: t('signedInReady'),
+      body: t('workspacePermissionsHelper'),
+      title: name ? t('welcomeName').replace('{name}', name) : t('tasklyAccount'),
       tone: 'success' as const,
     };
   }
 
   if (status === 'demo') {
     return {
-      badge: 'Demo mode',
-      body: 'Demo workspace mode is active.',
-      title: `Demo user: ${name ?? 'Ahmed'}`,
+      badge: t('demoPreview'),
+      body: t('demoModeNoRealPayments'),
+      title: name ? t('welcomeName').replace('{name}', name) : t('demoPreview'),
       tone: 'warning' as const,
     };
   }
@@ -43,26 +43,25 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
   if (status === 'error') {
     return {
       badge: t('backendUnavailable'),
-      body: 'Taskly cannot be reached right now.',
-      title: 'Session check paused',
+      body: t('retryOrContinueDemoBackendUnavailable'),
+      title: t('tasklyAccount'),
       tone: 'danger' as const,
     };
   }
 
   return {
-    badge: 'Not signed in',
-    body: 'Sign in or explore demo mode.',
+    badge: t('loginRequired'),
+    body: t('enterEmailPassword'),
     title: t('tasklyAccount'),
     tone: 'neutral' as const,
   };
 }
 
 export function SessionStatusCard({ compact = false, onLoginPress }: SessionStatusCardProps) {
-  const { clearSession, error, isDemoMode, logout, refreshSession, session, status, useDemoSession } = useAuth();
+  const { error, logout, refreshSession, session, status, useDemoSession } = useAuth();
   const name = session?.user.displayName;
   const copy = getStatusCopy(status, name);
   const canUseDemo = status === 'error' || status === 'unauthenticated';
-  const canClear = Boolean(session) || isDemoMode;
 
   return (
     <AppCard accentColor={status === 'demo' ? colors.proAmber500 : undefined}>
@@ -85,13 +84,6 @@ export function SessionStatusCard({ compact = false, onLoginPress }: SessionStat
         </AppText>
       ) : null}
 
-      {session ? (
-        <View style={styles.badges}>
-          <StatusBadge label={session.workspaceAccess.customer ? 'Customer access' : 'Customer pending'} tone="core" />
-          <StatusBadge label={session.workspaceAccess.provider ? 'Provider access' : 'Provider pending'} tone="pro" />
-        </View>
-      ) : null}
-
       <View style={styles.actions}>
         {status !== 'authenticated' && onLoginPress ? (
           <AppButton onPress={onLoginPress}>{t('loginTitle')}</AppButton>
@@ -103,17 +95,17 @@ export function SessionStatusCard({ compact = false, onLoginPress }: SessionStat
             void refreshSession();
           }}
           variant="outline">
-          Retry session check
+          {t('refresh')}
         </AppButton>
 
         {status === 'authenticated' ? (
           <AppButton
             onPress={() => {
-              void logout();
-            }}
+            void logout();
+          }}
             tone="neutral"
             variant="outline">
-            Logout
+            {t('signOut')}
           </AppButton>
         ) : null}
 
@@ -123,11 +115,6 @@ export function SessionStatusCard({ compact = false, onLoginPress }: SessionStat
           </AppButton>
         ) : null}
 
-        {canClear ? (
-          <AppButton onPress={clearSession} tone="neutral" variant="ghost">
-            Clear local session/demo
-          </AppButton>
-        ) : null}
       </View>
     </AppCard>
   );

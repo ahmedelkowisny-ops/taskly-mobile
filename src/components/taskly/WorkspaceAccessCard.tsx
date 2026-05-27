@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -32,13 +33,6 @@ const badgeTone = {
   unavailable: 'warning',
 } as const;
 
-const badgeLabel = {
-  available: 'Available',
-  demo: 'Demo',
-  loginRequired: 'Login required',
-  unavailable: 'Not available yet',
-} as const;
-
 export function WorkspaceAccessCard({
   accessState,
   accent,
@@ -56,7 +50,7 @@ export function WorkspaceAccessCard({
       backgroundColor={accent === 'pro' || accent === 'provider' ? colors.proOrange50 : colors.white}
       style={accessState === 'unavailable' ? styles.disabled : undefined}>
       <View style={styles.badges}>
-        <StatusBadge label={badgeLabel[accessState]} tone={badgeTone[accessState]} />
+        <StatusBadge label={getBadgeLabel(accessState)} tone={badgeTone[accessState]} />
         {accent === 'provider' ? <StatusBadge label="Taskly + Pro" tone="pro" /> : null}
       </View>
 
@@ -81,6 +75,13 @@ export function WorkspaceAccessCard({
       </View>
     </AppCard>
   );
+}
+
+function getBadgeLabel(accessState: WorkspaceAccessCardProps['accessState']) {
+  if (accessState === 'available') return t('tasklyReady');
+  if (accessState === 'demo') return t('demoPreview');
+  if (accessState === 'loginRequired') return t('loginRequired');
+  return t('notAvailable');
 }
 
 const styles = StyleSheet.create({

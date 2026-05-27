@@ -2,9 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 
 import { WorkspaceGuard } from '@/src/components/taskly';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 
 export default function ProviderLayout() {
+  useI18n();
+
   return (
     <WorkspaceGuard workspace="provider">
       <Tabs
@@ -21,14 +24,14 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="dashboard"
           options={{
-            title: 'Dashboard',
+            title: t('tabHome'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="grid-outline" size={size} />,
           }}
         />
         <Tabs.Screen
           name="core-tasks"
           options={{
-            title: 'Taskly',
+            title: t('tabTasks'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="briefcase-outline" size={size} />,
           }}
         />
@@ -41,7 +44,7 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="pro-requests"
           options={{
-            title: 'Pro',
+            title: t('tabPro'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="star-outline" size={size} />,
           }}
         />
@@ -54,14 +57,20 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="messages"
           options={{
-            title: 'Messages',
+            title: t('tabMessages'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="chatbubbles-outline" size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="messages/[threadId]"
+          options={{
+            href: null,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: 'Profile',
+            title: t('tabAccount'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="id-card-outline" size={size} />,
           }}
         />

@@ -1,17 +1,19 @@
 import { StatusBadge } from '@/src/components/ui/StatusBadge';
+import { t } from '@/src/lib/i18n';
 
 type ModeBadgeProps = {
   mode: 'customer' | 'providerCore' | 'providerPro';
 };
 
-const modeCopy: Record<ModeBadgeProps['mode'], { label: string; tone: 'core' | 'pro' }> = {
-  customer: { label: 'Customer Workspace', tone: 'core' },
-  providerCore: { label: 'Taskly Tasks', tone: 'core' },
-  providerPro: { label: 'Taskly Pro', tone: 'pro' },
+const modeTone: Record<ModeBadgeProps['mode'], 'core' | 'pro'> = {
+  customer: 'core',
+  providerCore: 'core',
+  providerPro: 'pro',
 };
 
 export function ModeBadge({ mode }: ModeBadgeProps) {
-  const copy = modeCopy[mode];
+  const label =
+    mode === 'customer' ? t('customerArea') : mode === 'providerCore' ? t('tabTasks') : t('tasklyPro');
 
-  return <StatusBadge label={copy.label} tone={copy.tone} />;
+  return <StatusBadge label={label} tone={modeTone[mode]} />;
 }
