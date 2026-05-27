@@ -34,7 +34,7 @@ export default function WelcomeScreen() {
       <View style={styles.hero}>
         <TasklyLogoText />
         <AppText color={colors.slate700} style={styles.subtitle}>
-          One app for posting jobs, managing provider work, and staying connected.
+          Tell us what you need - Taskly will guide you step by step.
         </AppText>
       </View>
 
@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
           accessState={customerEntry.state}
           accent="customer"
           actionLabel={customerEntry.actionLabel}
-          description="For posting tasks, Pro requests, payments, messages, approvals, and support."
+          description="For Taskly tasks, Taskly Pro projects, payments, messages, approvals, and support."
           note={customerEntry.description}
           onPress={() => router.push(customerEntry.state === 'loginRequired' ? LOGIN_ROUTE : CUSTOMER_HOME_ROUTE)}
           onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}
@@ -84,7 +84,7 @@ export default function WelcomeScreen() {
           accessState={providerEntry.state}
           accent="provider"
           actionLabel={providerEntry.actionLabel}
-          description="For managing Core tasks, Pro requests, profile status, responses, and messages."
+          description="For managing Taskly tasks, Taskly Pro projects, profile status, responses, and messages."
           note={providerEntry.description}
           onPress={() => router.push(providerEntry.state === 'loginRequired' ? LOGIN_ROUTE : providerTarget)}
           onSecondaryPress={status === 'unauthenticated' || status === 'error' ? useDemoSession : undefined}
@@ -102,11 +102,11 @@ export default function WelcomeScreen() {
         <View style={styles.howItWorks}>
           <View style={styles.howItem}>
             <StatusBadge label={t('customerWorkspace')} tone="core" />
-            <AppText color={colors.slate700}>Post tasks or Pro requests.</AppText>
+            <AppText color={colors.slate700}>Post Taskly tasks or Taskly Pro projects.</AppText>
           </View>
           <View style={styles.howItem}>
             <StatusBadge label={t('providerWorkspace')} tone="pro" />
-            <AppText color={colors.slate700}>Manage Core tasks and Pro requests.</AppText>
+            <AppText color={colors.slate700}>Manage Taskly tasks and Taskly Pro projects.</AppText>
           </View>
           <View style={styles.howItem}>
             <StatusBadge label="Admin" tone="neutral" />

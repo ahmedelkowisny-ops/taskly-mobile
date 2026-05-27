@@ -69,7 +69,7 @@ export default function ProviderCoreTasksScreen() {
     setErrorMessage(
       result.status === 401 || result.status === 403
         ? 'Login or Provider Workspace access is required.'
-        : 'Could not load Core task previews.',
+        : 'Could not load Taskly task previews.',
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -86,15 +86,15 @@ export default function ProviderCoreTasksScreen() {
         <ModeBadge mode="providerCore" />
         <AppText variant="screenTitle">{t('coreTasks')}</AppText>
         <AppText color={colors.slate700}>
-          Approved Core Taskers see matching tasks by city and category inside the Provider Workspace.
+          Approved Taskly Taskers see matching tasks by city and category inside the Provider Workspace.
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
-          <AppText variant="sectionTitle">Loading Core task previews</AppText>
-          <AppText color={colors.slate700}>Fetching read-only Core tasks from the backend.</AppText>
+          <AppText variant="sectionTitle">Loading Taskly task previews</AppText>
+          <AppText color={colors.slate700}>Fetching read-only Taskly tasks from the backend.</AppText>
         </AppCard>
       ) : null}
 
@@ -102,7 +102,7 @@ export default function ProviderCoreTasksScreen() {
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Core tasks need Provider access' : 'Could not refresh Core tasks'}
+            {isUnauthorized ? 'Taskly tasks need Provider access' : 'Could not refresh Taskly tasks'}
           </AppText>
           <AppText color={colors.slate700}>
             {errorMessage || 'Retry or continue in demo mode while the backend is unavailable.'}
@@ -168,11 +168,11 @@ export default function ProviderCoreTasksScreen() {
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <StatusBadge label="Core Tasker" tone="core" />
+          <StatusBadge label="Taskly Tasker" tone="core" />
           <StatusBadge label="Stripe verification" tone="warning" />
         </View>
         <AppText color={colors.slate700}>
-          Stripe verification is shown here only as a Core payout readiness placeholder, not as Pro logic.
+          Stripe verification is shown here only as Taskly task payout readiness, not as Taskly Pro logic.
         </AppText>
       </AppCard>
     </Screen>

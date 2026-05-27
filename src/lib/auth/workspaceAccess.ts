@@ -25,7 +25,7 @@ export function canAccessProviderWorkspace(session: WorkspaceSession | null | un
 
 export function getCustomerWorkspaceSummary(session: WorkspaceSession | null | undefined) {
   if (!session) {
-    return 'Login to post tasks, Pro requests, and manage messages.';
+    return 'Login to post Taskly tasks, Taskly Pro projects, and manage messages.';
   }
 
   if (session.workspaceAccess.customer) {
@@ -45,11 +45,11 @@ export function getProviderModeSummary(session: WorkspaceSession | null | undefi
   const hasPro = proStatus === 'approved';
 
   if (hasCore && hasPro) {
-    return 'Core Tasker and Taskly Pro';
+    return 'Taskly Tasker and Taskly Pro';
   }
 
   if (hasCore) {
-    return 'Core Tasker';
+    return 'Taskly Tasker';
   }
 
   if (hasPro) {
@@ -57,7 +57,7 @@ export function getProviderModeSummary(session: WorkspaceSession | null | undefi
   }
 
   if (coreTaskerStatus === 'applicant') {
-    return 'Core Tasker applicant';
+    return 'Taskly Tasker applicant';
   }
 
   if (proStatus === 'draft' || proStatus === 'pending') {
@@ -83,7 +83,7 @@ export function getRecommendedProviderNextAction(session: WorkspaceSession | nul
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
 
   if ((coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe') && proStatus === 'approved') {
-    return 'Manage Core tasks and Pro requests';
+    return 'Manage Taskly tasks and Taskly Pro projects';
   }
 
   if (proStatus === 'draft') {
@@ -95,19 +95,19 @@ export function getRecommendedProviderNextAction(session: WorkspaceSession | nul
   }
 
   if (coreTaskerStatus === 'applicant') {
-    return 'Continue Core Tasker onboarding';
+    return 'Continue Taskly Tasker onboarding';
   }
 
   if (coreTaskerStatus === 'needsStripe') {
-    return 'Check Core payout status';
+    return 'Check Taskly task payout status';
   }
 
   if (coreTaskerStatus === 'approved') {
-    return 'View matching Core tasks';
+    return 'View matching Taskly tasks';
   }
 
   if (proStatus === 'approved') {
-    return 'View matching Pro requests';
+    return 'View matching Taskly Pro projects';
   }
 
   return 'Start as a Tasker or apply as Taskly Pro';
@@ -170,14 +170,14 @@ export function getWorkspaceEntryState(
 export function getCoreTaskerStatusLabel(status: WorkspaceSession['providerCapabilities']['coreTaskerStatus']) {
   switch (status) {
     case 'applicant':
-      return 'Core Tasker onboarding in progress';
+    return 'Taskly Tasker onboarding in progress';
     case 'approved':
-      return 'Core Tasker approved';
+    return 'Taskly Tasker approved';
     case 'needsStripe':
-      return 'Stripe verification required for Core payouts';
+    return 'Stripe verification required for Taskly task payouts';
     case 'none':
     default:
-      return 'Core Tasker not started';
+    return 'Taskly Tasker not started';
   }
 }
 

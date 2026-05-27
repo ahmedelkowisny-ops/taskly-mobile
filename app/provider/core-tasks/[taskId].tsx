@@ -71,7 +71,7 @@ export default function ProviderCoreTaskDetailScreen() {
     if (status !== 'authenticated') {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this provider Core task detail.');
+      setMessage('Login is required to load this provider Taskly task detail.');
       return;
     }
 
@@ -81,7 +81,7 @@ export default function ProviderCoreTaskDetailScreen() {
     if (!authToken) {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this provider Core task detail.');
+      setMessage('Login is required to load this provider Taskly task detail.');
       setIsLoading(false);
       return;
     }
@@ -670,7 +670,7 @@ export default function ProviderCoreTaskDetailScreen() {
         <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message="Loading provider Core task detail." /> : null}
+      {isLoading ? <StateCard label="Loading" message="Loading provider Taskly task detail." /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>

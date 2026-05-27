@@ -81,7 +81,7 @@ export default function CustomerTaskDetailScreen() {
     if (status !== 'authenticated') {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this Core task detail.');
+      setMessage('Login is required to load this Taskly task detail.');
       return;
     }
 
@@ -91,7 +91,7 @@ export default function CustomerTaskDetailScreen() {
     if (!authToken) {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this Core task detail.');
+      setMessage('Login is required to load this Taskly task detail.');
       setIsLoading(false);
       return;
     }
@@ -922,7 +922,7 @@ export default function CustomerTaskDetailScreen() {
         </AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message="Loading Core task detail." tone="core" /> : null}
+      {isLoading ? <StateCard label="Loading" message="Loading Taskly task detail." tone="core" /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>

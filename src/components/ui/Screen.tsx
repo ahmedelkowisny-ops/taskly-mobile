@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     gap: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
 });

@@ -106,7 +106,7 @@ export default function ProviderProRequestDetailScreen() {
     if (status !== 'authenticated') {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this provider Pro request detail.');
+      setMessage('Login is required to load this provider Taskly Pro project.');
       return;
     }
 
@@ -116,7 +116,7 @@ export default function ProviderProRequestDetailScreen() {
     if (!authToken) {
       setData(null);
       setStateLabel('Login required');
-      setMessage('Login is required to load this provider Pro request detail.');
+      setMessage('Login is required to load this provider Taskly Pro project.');
       setIsLoading(false);
       return;
     }
@@ -131,7 +131,7 @@ export default function ProviderProRequestDetailScreen() {
 
     setData(null);
     setStateLabel(result.status === 404 ? 'Not found' : result.status === 401 || result.status === 403 ? 'Login required' : 'Backend unavailable');
-    setMessage(result.status === 404 ? 'This Pro request was not found or is not available to this provider account.' : 'Could not load this Pro request detail.');
+    setMessage(result.status === 404 ? 'This Taskly Pro project was not found or is not available to this provider account.' : 'Could not load this Taskly Pro project.');
   }, [getValidAccessToken, proRequestId, status]);
 
   useFocusEffect(

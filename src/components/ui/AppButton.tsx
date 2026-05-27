@@ -56,6 +56,7 @@ export function AppButton({
           backgroundColor: filled ? accent : 'transparent',
           borderColor: variant === 'ghost' ? 'transparent' : accent,
           opacity: isDisabled ? 0.55 : pressed ? 0.86 : 1,
+          transform: [{ scale: isDisabled ? 1 : pressed ? 0.98 : 1 }],
         },
         style,
       ]}>
@@ -76,9 +77,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 44,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
   },
   label: {
     textAlign: 'center',

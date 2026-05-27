@@ -38,7 +38,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Taskly uses selected photos to help describe tasks and Pro requests before submit."
+          "photosPermission": "Taskly uses selected photos to help describe Taskly tasks and Taskly Pro projects before submit."
         }
       ],
       [

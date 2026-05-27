@@ -492,7 +492,7 @@ export default function CustomerPostTaskScreen() {
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('postTask')}</AppText>
         <AppText color={colors.slate700}>
-          Core task creation is connected. Payments and image upload stay separate.
+          Taskly task creation is connected. Payments and image upload stay separate.
         </AppText>
       </View>
 
@@ -500,7 +500,7 @@ export default function CustomerPostTaskScreen() {
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
           <AppText variant="sectionTitle">Loading posting setup</AppText>
-          <AppText color={colors.slate700}>Fetching cities, Core categories, and posting rules.</AppText>
+          <AppText color={colors.slate700}>Fetching cities, Taskly categories, and posting rules.</AppText>
         </AppCard>
       ) : null}
 
@@ -526,7 +526,7 @@ export default function CustomerPostTaskScreen() {
       />
 
       <FormSection
-        description="Choose a small fixed-scope Core category from the backend catalog."
+        description="Choose a small fixed-scope Taskly category from the backend catalog."
         title={t('category')}>
         {catalog?.categories.map((category) => (
           <SelectOptionCard
@@ -540,7 +540,7 @@ export default function CustomerPostTaskScreen() {
             selected={selectedCategoryId === category.id}
           />
         ))}
-        {!catalog?.categories.length ? <AppText color={colors.slate500}>Core categories will load here.</AppText> : null}
+        {!catalog?.categories.length ? <AppText color={colors.slate500}>Taskly categories will load here.</AppText> : null}
         {categoryValidationMessage ? (
           <AppText color={showStrongValidation ? colors.danger600 : colors.slate500} variant="small">
             {categoryValidationMessage}

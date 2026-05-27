@@ -160,7 +160,7 @@ export function getMockPostingRulesResponse(): PostingRulesResponse {
       maxImages: 10,
       minDescriptionLength: 30,
       postingIsFreeCopy:
-        'Posting a Pro request is free. You only unlock comparison details after meaningful Pro responses exist.',
+        'Posting a Taskly Pro project is free. You only unlock comparison details after meaningful Pro responses exist.',
       requiresCity: true,
       requiresDistrictOrArea: true,
     },
@@ -172,21 +172,21 @@ export function getMockCustomerHomeResponse(): CustomerHomeResponse {
     highlights: [
       {
         accent: 'core',
-        description: 'Demo Core task placeholder',
+        description: 'Demo Taskly task placeholder',
         href: '/customer/tasks',
         id: 'demo-core-empty',
         kind: 'task',
         statusLabel: 'Demo',
-        title: 'Core tasks will appear here',
+        title: 'Taskly tasks will appear here',
       },
       {
         accent: 'pro',
-        description: 'Demo Pro request placeholder',
+        description: 'Demo Taskly Pro project placeholder',
         href: '/customer/pro-requests',
         id: 'demo-pro-empty',
         kind: 'proRequest',
         statusLabel: 'Demo',
-        title: 'Pro requests will appear here',
+        title: 'Taskly Pro projects will appear here',
       },
     ],
     nextActions: [
@@ -199,7 +199,7 @@ export function getMockCustomerHomeResponse(): CustomerHomeResponse {
       {
         accent: 'pro',
         href: '/customer/onboarding',
-        label: 'Post a Pro request',
+        label: 'Post a Taskly Pro project',
         type: 'post_pro_request_placeholder',
       },
     ],
@@ -312,8 +312,8 @@ function createMockDisputeState(
 export function getMockCustomerTasksResponse(): CustomerTasksResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Core tasks will load after login and backend data are available.',
-      title: 'No demo Core tasks',
+      description: 'Demo mode is active. Real Taskly tasks will load after login and backend data are available.',
+      title: 'No demo Taskly tasks',
     },
     tasks: [
       {
@@ -391,7 +391,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         scheduledStartAt: null,
         status: 'RESERVED',
         statusLabel: 'Reserved/upcoming',
-        title: 'Demo upcoming Core task',
+        title: 'Demo upcoming Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -440,7 +440,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         status: 'IN_PROGRESS',
         statusLabel: 'In progress',
         supportState: createMockSupportState(),
-        title: 'Demo in-progress Core task',
+        title: 'Demo in-progress Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -559,7 +559,7 @@ export function getMockCustomerTasksResponse(): CustomerTasksResponse {
         scheduledStartAt: null,
         status: 'COMPLETED',
         statusLabel: 'Completed',
-        title: 'Demo completed Core task',
+        title: 'Demo completed Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -828,7 +828,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       cancellationState,
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
-      description: 'Demo Core task detail with backend-style next action wording.',
+      description: 'Demo Taskly task detail with backend-style next action wording.',
       displayActions: [{ accent: 'core', href: '/customer/tasks', label: 'Review completion', type: 'review_completion' }],
       disputeState,
       id: taskId,
@@ -836,7 +836,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
       interestedTaskers: isSelecting
         ? [
             {
-              bioPreview: 'Careful Core Tasker with demo availability for fixed-scope work.',
+              bioPreview: 'Careful Taskly Tasker with demo availability for fixed-scope work.',
               completedTasksLabel: '12 completed tasks',
               displayName: 'Demo Tasker',
               id: 'demo-interest-1',
@@ -897,7 +897,7 @@ export function getMockCustomerTaskDetailResponse(taskId = 'demo-task'): Custome
           status: isCompleted ? 'done' : 'current',
         },
       ],
-      title: 'Demo Core task',
+      title: 'Demo Taskly task',
     },
   };
 }
@@ -962,7 +962,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       statusLabel: 'Open',
       submittedResponseCount: 0,
       timelineLabel: 'Flexible',
-      title: 'Demo Pro request without responses',
+      title: 'Demo Taskly Pro project without responses',
       unlockedResponseCount: 0,
       unlockedResponseSummary: 'Unlock to compare full response details',
       unlockStatusLabel: 'Waiting for meaningful Pro responses',
@@ -1025,7 +1025,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       statusLabel: 'Responses received',
       submittedResponseCount: 1,
       timelineLabel: 'Flexible',
-      title: 'Demo Pro request ready to unlock',
+      title: 'Demo Taskly Pro project ready to unlock',
       unlockedResponseCount: 0,
       unlockedResponseSummary: 'Unlock to compare full response details',
       unlockStatusLabel: 'Pro responses available to unlock',
@@ -1088,7 +1088,7 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
       statusLabel: 'Comparison unlocked',
       submittedResponseCount: 2,
       timelineLabel: 'This month',
-      title: 'Demo unlocked Pro request',
+      title: 'Demo unlocked Taskly Pro project',
       unlockedResponseCount: 2,
       unlockedResponseSummary: '2 responses available for comparison',
       unlockStatusLabel: 'Comparison details unlocked',
@@ -1098,8 +1098,8 @@ export function getMockCustomerProRequestsResponse(): CustomerProRequestsRespons
 
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Pro requests will load after login and backend data are available.',
-      title: 'No demo Pro requests',
+      description: 'Demo mode is active. Real Taskly Pro projects will load after login and backend data are available.',
+      title: 'No demo Taskly Pro projects',
     },
     proRequests: [
       ...proRequests,
@@ -1484,7 +1484,7 @@ export function getMockCustomerProRequestDetailResponse(proRequestId = 'demo-pro
       cityLabel: summary.cityLabel,
       comparisonState: summary.comparisonState,
       createdAt: summary.createdAt,
-      description: 'Demo read-only Pro request detail. Unlock and contact actions stay backend-owned.',
+      description: 'Demo read-only Taskly Pro project detail. Unlock and contact actions stay backend-owned.',
       id: proRequestId,
       images: [],
       isUnlocked,
@@ -1645,21 +1645,21 @@ export function getMockProviderDashboardResponse(): ProviderDashboardResponse {
     cards: [
       {
         accent: 'core',
-        description: 'Demo Core task status card.',
+        description: 'Demo Taskly task status card.',
         href: '/provider/core-tasks',
         id: 'demo-core',
         kind: 'core',
-        statusLabel: 'Demo Core',
-        title: 'Core Tasks',
+        statusLabel: 'Demo Taskly',
+        title: 'Taskly Tasks',
       },
       {
         accent: 'pro',
-        description: 'Demo Pro request status card.',
+        description: 'Demo Taskly Pro project status card.',
         href: '/provider/pro-requests',
         id: 'demo-pro',
         kind: 'pro',
         statusLabel: 'Demo Pro',
-        title: 'Pro Requests',
+        title: 'Taskly Pro',
       },
     ],
     nextActions: [
@@ -1713,8 +1713,8 @@ function createMockProviderIssueState(
 export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Core task previews load after login and backend data are available.',
-      title: 'No demo Core tasks',
+      description: 'Demo mode is active. Real Taskly task previews load after login and backend data are available.',
+      title: 'No demo Taskly tasks',
     },
     tasks: [
       {
@@ -1733,7 +1733,7 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         scheduledStartAt: null,
         status: 'OPEN',
         statusLabel: 'Available',
-        title: 'Demo available Core task',
+        title: 'Demo available Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -1796,7 +1796,7 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         scheduledStartAt: null,
         status: 'RESERVED',
         statusLabel: 'Reserved/upcoming',
-        title: 'Demo reserved Core task',
+        title: 'Demo reserved Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -1831,7 +1831,7 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         scheduledStartAt: null,
         status: 'IN_PROGRESS',
         statusLabel: 'In progress',
-        title: 'Demo in-progress Core task',
+        title: 'Demo in-progress Taskly task',
         unreadMessagesCount: 0,
       },
       {
@@ -1961,7 +1961,7 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         scheduledStartAt: null,
         status: 'COMPLETED',
         statusLabel: 'Completed',
-        title: 'Demo completed Core task',
+        title: 'Demo completed Taskly task',
         unreadMessagesCount: 0,
       },
     ],
@@ -2178,7 +2178,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       categoryLabel: 'Furniture Assembly',
       cityLabel: 'Sofia',
       customerPreviewLabel: 'Customer preview',
-      description: 'Demo provider Core task detail. Actions follow backend-authored nextActions.',
+      description: 'Demo provider Taskly task detail. Actions follow backend-authored nextActions.',
       disputeState,
       id: taskId,
       images: [],
@@ -2236,7 +2236,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
           status: isCompleted ? 'done' : 'current',
         },
       ],
-      title: 'Demo provider Core task',
+      title: 'Demo provider Taskly task',
     },
   };
 }
@@ -2244,8 +2244,8 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
 export function getMockProviderProRequestsResponse(): ProviderProRequestsResponse {
   return {
     emptyState: {
-      description: 'Demo mode is active. Real Pro request previews load after login and backend data are available.',
-      title: 'No demo Pro requests',
+      description: 'Demo mode is active. Real Taskly Pro previews load after login and backend data are available.',
+      title: 'No demo Taskly Pro projects',
     },
     proRequests: [
       {
@@ -2254,7 +2254,7 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
         createdAt: new Date().toISOString(),
         id: 'demo-provider-pro',
         isEligibleToRespond: true,
-        nextAction: { accent: 'pro', href: '/provider/pro-requests', label: 'Review Pro request', type: 'demo_review_pro' },
+        nextAction: { accent: 'pro', href: '/provider/pro-requests', label: 'Review Taskly Pro project', type: 'demo_review_pro' },
         proResponseBlockedReason: null,
         proResponseBlockedReasonCode: null,
         proResponseCapabilities: {
@@ -2282,7 +2282,7 @@ export function getMockProviderProRequestsResponse(): ProviderProRequestsRespons
         status: 'OPEN',
         statusLabel: 'Open',
         timelineLabel: 'Flexible',
-        title: 'Demo provider Pro request',
+        title: 'Demo provider Taskly Pro project',
       },
       {
         categoryLabel: 'Kitchen',
@@ -2516,12 +2516,12 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
       categoryLabel: 'Renovation',
       cityLabel: 'Sofia',
       createdAt: new Date().toISOString(),
-      description: 'Demo provider Pro request detail. Respond/edit actions are not connected yet.',
+      description: 'Demo provider Taskly Pro project detail. Respond/edit actions are not connected yet.',
       eligibility: { isEligibleToRespond: proResponseCapabilities.canSubmitResponse, reasonLabel: proResponseState.statusLabel },
       id: proRequestId,
       images: [],
       myResponse: proResponseSummary,
-      nextActions: [{ accent: 'pro', href: '/provider/pro-requests', label: 'Review Pro request', type: 'demo_review_pro' }],
+      nextActions: [{ accent: 'pro', href: '/provider/pro-requests', label: 'Review Taskly Pro project', type: 'demo_review_pro' }],
       proResponseBlockedReason: proResponseState.blockedReason,
       proResponseBlockedReasonCode: proResponseState.blockedReasonCode,
       proResponseCapabilities,
@@ -2546,7 +2546,7 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
       status: 'OPEN',
       statusLabel: 'Open',
       timelineLabel: 'Flexible',
-      title: 'Demo provider Pro request',
+      title: 'Demo provider Taskly Pro project',
     },
   };
 }
@@ -2614,7 +2614,7 @@ export function submitOrUpdateMockProviderProResponse(
       categoryLabel: 'Renovation',
       cityLabel: 'Sofia',
       createdAt: now,
-      description: 'Demo provider Pro request detail. Demo responses stay local and do not call the backend.',
+      description: 'Demo provider Taskly Pro project detail. Demo responses stay local and do not call the backend.',
       eligibility: { isEligibleToRespond: false, reasonLabel: 'Update response' },
       id: proRequestId,
       images: [],
@@ -2709,7 +2709,7 @@ export function submitOrUpdateMockProviderProResponse(
       status: 'RESPONSES_RECEIVED',
       statusLabel: 'Responses received',
       timelineLabel: 'Flexible',
-      title: 'Demo provider Pro request',
+      title: 'Demo provider Taskly Pro project',
     },
   };
 }
@@ -2736,7 +2736,7 @@ export function getMockProviderProfileResponse(): ProviderProfileResponse {
       proCities: [],
       proStatus: session.providerCapabilities.proStatus,
       profileStrengthLabel: 'Demo provider profile',
-      stripeStatusLabel: 'Demo Core payout status',
+      stripeStatusLabel: 'Demo Taskly payout status',
     },
   };
 }
@@ -2757,12 +2757,12 @@ export function getMockMessageThreadsResponse(): MessageThreadsResponse {
         contextType: 'CORE_TASK',
         id: 'booking:demo-core-thread',
         lastMessageAt: now,
-        lastMessagePreview: 'Demo read-only Core task conversation.',
+        lastMessagePreview: 'Demo read-only Taskly task conversation.',
         otherParticipantName: 'Taskly demo user',
         roleLabel: 'Participant',
-        statusLabel: 'Core task',
+        statusLabel: 'Taskly task',
         subtitle: 'Taskly demo user',
-        title: 'Demo Core task conversation',
+        title: 'Demo Taskly task conversation',
         unreadCount: 0,
       },
       {
@@ -2797,7 +2797,7 @@ export function getMockMessageThreadResponse(threadId = 'booking:demo-core-threa
         attachments: [],
         body: isSupport
           ? 'This is a demo official Taskly message.'
-          : 'This is a demo Core task conversation.',
+          : 'This is a demo Taskly task conversation.',
         createdAt: new Date().toISOString(),
         id: `${threadId}:message-1`,
         isMine: false,
@@ -2818,7 +2818,7 @@ export function getMockMessageThreadResponse(threadId = 'booking:demo-core-threa
       contextType: isSupport ? 'SUPPORT' : 'CORE_TASK',
       id: threadId,
       subtitle: isSupport ? 'Taskly' : 'Taskly demo user',
-      title: isSupport ? 'Message from Taskly' : 'Demo Core task conversation',
+      title: isSupport ? 'Message from Taskly' : 'Demo Taskly task conversation',
     },
   };
 }

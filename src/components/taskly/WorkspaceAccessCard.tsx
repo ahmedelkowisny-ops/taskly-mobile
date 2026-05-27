@@ -57,7 +57,7 @@ export function WorkspaceAccessCard({
       style={accessState === 'unavailable' ? styles.disabled : undefined}>
       <View style={styles.badges}>
         <StatusBadge label={badgeLabel[accessState]} tone={badgeTone[accessState]} />
-        {accent === 'provider' ? <StatusBadge label="Core + Pro" tone="pro" /> : null}
+        {accent === 'provider' ? <StatusBadge label="Taskly + Pro" tone="pro" /> : null}
       </View>
 
       <AppText variant="sectionTitle">{title}</AppText>

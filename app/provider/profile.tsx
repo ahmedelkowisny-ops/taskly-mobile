@@ -81,7 +81,7 @@ export default function ProviderProfileScreen() {
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('profile')}</AppText>
         <AppText color={colors.slate700}>
-          Provider Workspace profile areas for Core Taskers and Taskly Pro professionals.
+          Provider Workspace profile areas for Taskly Taskers and Taskly Pro professionals.
         </AppText>
       </View>
 
@@ -124,7 +124,7 @@ export default function ProviderProfileScreen() {
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />
-        <AppText variant="sectionTitle">Core Tasker profile</AppText>
+        <AppText variant="sectionTitle">Taskly Tasker profile</AppText>
         <AppText color={colors.slate700}>
           {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : 'Skills, coverage area, and trust signals will be backend-backed.'}
         </AppText>
@@ -168,7 +168,7 @@ export default function ProviderProfileScreen() {
       </AppCard>
 
       <AssistantGuideCard
-        body="Core Tasker profile and Pro profile are separate sections. Pro-only setup should not depend on Stripe verification in this mobile foundation."
+        body="Taskly Tasker profile and Taskly Pro profile are separate sections. Pro-only setup should not depend on Stripe verification in this mobile foundation."
         title="Profile readiness"
         tone="pro"
       />

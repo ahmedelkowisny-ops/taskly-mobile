@@ -94,7 +94,7 @@ export default function ProviderDashboardScreen() {
         </View>
         <AppText variant="screenTitle">{t('providerWorkspace')}</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {displayName}. Core and Pro are separate modes inside the Provider Workspace.
+          Welcome, {displayName}. Taskly tasks and Taskly Pro projects are separate modes inside the Provider Workspace.
         </AppText>
       </View>
 
@@ -131,8 +131,8 @@ export default function ProviderDashboardScreen() {
           <StatusBadge label={status === 'demo' ? 'Demo data' : 'Live read-only data'} tone={status === 'demo' ? 'neutral' : 'success'} />
           <AppText variant="sectionTitle">Provider summary</AppText>
           <View style={styles.metricsGrid}>
-            <Metric label="Available Core" value={summary.availableCoreTasksCount} />
-            <Metric label="Active Core" value={summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
+            <Metric label="Available Taskly" value={summary.availableCoreTasksCount} />
+            <Metric label="Active Taskly" value={summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
             <Metric label="Pro matches" value={summary.matchingProRequestsCount} />
             <Metric label="Responses" value={summary.submittedProResponsesCount} />
           </View>
@@ -142,7 +142,7 @@ export default function ProviderDashboardScreen() {
       <ProviderStatusCard
         accent="neutral"
         actionLabel="Review provider setup"
-        description="Core tasks and Pro requests stay separate so payments, responses, and customer expectations remain clear."
+        description="Taskly tasks and Taskly Pro projects stay separate so payments, responses, and customer expectations remain clear."
         onPress={() => router.push('/provider/start')}
         statusLabel={getProviderModeSummary(session)}
         title="Provider status"
@@ -163,7 +163,7 @@ export default function ProviderDashboardScreen() {
           <ModeBadge mode="providerCore" />
           <AppText variant="sectionTitle">{t('coreTasks')}</AppText>
           <AppText color={colors.slate700}>
-            Core Tasker work can live inside the Provider Workspace alongside Pro work.
+            Taskly Tasker work can live inside the Provider Workspace alongside Taskly Pro work.
           </AppText>
           <StatusBadge label={coreStatusLabel} tone="core" />
         </AppCard>
@@ -172,7 +172,7 @@ export default function ProviderDashboardScreen() {
           <ModeBadge mode="providerPro" />
           <AppText variant="sectionTitle">{t('proRequests')}</AppText>
           <AppText color={colors.slate700}>
-            Taskly Pro requests stay visually and functionally separate from Core Tasks.
+            Taskly Pro projects stay visually and functionally separate from Taskly tasks.
           </AppText>
           <StatusBadge label={proStatusLabel} tone="pro" />
         </AppCard>
@@ -196,7 +196,7 @@ export default function ProviderDashboardScreen() {
       <View style={styles.grid}>
         <AppCard accentColor={colors.tasklyBlue600}>
           <ModeBadge mode="providerCore" />
-          <AppText variant="sectionTitle">Core payout status</AppText>
+          <AppText variant="sectionTitle">Taskly payout status</AppText>
           <AppText color={colors.slate700}>{t('stripeVerificationCorePayouts')}.</AppText>
           <StatusBadge label={coreStatusLabel} tone={coreTaskerStatus === 'approved' ? 'success' : 'warning'} />
         </AppCard>
@@ -210,7 +210,7 @@ export default function ProviderDashboardScreen() {
       </View>
 
       <AssistantGuideCard
-        body="Core Tasks and Pro Requests stay separate so each mode can follow backend-approved rules inside one Taskly app."
+        body="Taskly tasks and Taskly Pro projects stay separate so each mode can follow backend-approved rules inside one Taskly app."
         title="Mode guidance"
         tone="pro"
       />

@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
+import { AssistantGuideCard, EmptyStateCard, ModeBadge, TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerHomeSummary } from '@/src/lib/api/customer';
 import { CustomerHomeResponse } from '@/src/lib/api/domain';
@@ -80,10 +80,11 @@ export default function CustomerHomeScreen() {
   return (
     <Screen>
       <View style={styles.header}>
+        <TasklyLogoText />
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">Welcome to Taskly</AppText>
         <AppText color={colors.slate700}>
-          Welcome, {session.user.displayName}. Choose the right service path inside your Customer Workspace.
+          Welcome, {session.user.displayName}. Tell us what you need - Taskly will guide you step by step.
         </AppText>
       </View>
 
@@ -134,26 +135,24 @@ export default function CustomerHomeScreen() {
       <AppCard accentColor={colors.tasklyBlue600}>
         <StatusBadge label={status === 'authenticated' ? 'Backend session' : status === 'demo' ? 'Demo session' : 'Workspace guidance'} tone="core" />
         <AppText variant="sectionTitle">{getCustomerWorkspaceSummary(session)}</AppText>
-        <AppText color={colors.slate700}>
-          Post task and Pro request actions remain placeholders until posting flows are connected.
-        </AppText>
+          <AppText color={colors.slate700}>Taskly helps you choose the right next step from backend-approved actions.</AppText>
       </AppCard>
 
       <View style={styles.actions}>
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label="Customer Core" tone="core" />
+          <StatusBadge label="Taskly" tone="core" />
           <AppText variant="sectionTitle">{t('postTask')}</AppText>
           <AppText color={colors.slate700}>
-            For small, fixed-scope jobs where a Core Tasker can help nearby.
+            For small, fixed-scope tasks where a Taskly Tasker can help nearby.
           </AppText>
           <AppButton onPress={() => router.push('/customer/post-task' as Href)}>{t('postTask')}</AppButton>
         </AppCard>
 
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-          <StatusBadge label="Customer Pro" tone="pro" />
+          <StatusBadge label="Taskly Pro" tone="pro" />
           <AppText variant="sectionTitle">{t('postProRequest')}</AppText>
           <AppText color={colors.slate700}>
-            For larger projects where comparing professional Pro responses matters.
+            Compare approved Pros before you decide on a larger project.
           </AppText>
           <AppButton onPress={() => router.push('/customer/post-pro-request' as Href)} tone="pro">
             {t('postProRequest')}
@@ -162,7 +161,7 @@ export default function CustomerHomeScreen() {
       </View>
 
       <AssistantGuideCard
-        body="Taskly helps you choose the right path: small fixed-scope tasks or larger Pro projects."
+        body="Taskly helps you choose the right path: small fixed-scope tasks or larger Taskly Pro projects."
         title="Choose the right path"
         tone="pro"
       />
@@ -186,7 +185,7 @@ export default function CustomerHomeScreen() {
         </View>
       ) : (
         <EmptyStateCard
-          body="Upcoming tasks, Pro requests, and messages will appear here after your first customer activity."
+          body="Upcoming tasks, Taskly Pro projects, and messages will appear here after your first customer activity."
           title="No upcoming activity"
         />
       )}

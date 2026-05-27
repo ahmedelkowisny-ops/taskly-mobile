@@ -162,7 +162,7 @@ export default function CustomerPostProRequestScreen() {
     }
 
     setCatalog(null);
-    setErrorMessage('Could not load Pro request catalogs. Retry or continue in demo mode.');
+    setErrorMessage('Could not load Taskly Pro catalogs. Retry or continue in demo mode.');
     setIsLoading(false);
   }, [getValidAccessToken, status]);
 
@@ -446,14 +446,14 @@ export default function CustomerPostProRequestScreen() {
         <StatusBadge label="Customer Pro" tone="pro" />
         <AppText variant="screenTitle">{t('postProRequest')}</AppText>
         <AppText color={colors.slate700}>
-          Pro request creation is connected. Unlocks, payments, messages, and image upload stay separate.
+          Taskly Pro project creation is connected. Unlocks, payments, messages, and image upload stay separate.
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.proOrange600}>
           <StatusBadge label="Loading" tone="pro" />
-          <AppText variant="sectionTitle">Loading Pro request setup</AppText>
+          <AppText variant="sectionTitle">Loading Taskly Pro setup</AppText>
           <AppText color={colors.slate700}>Fetching cities, Pro categories, and posting rules.</AppText>
         </AppCard>
       ) : null}
@@ -477,7 +477,7 @@ export default function CustomerPostProRequestScreen() {
       <AssistantGuideCard
         body={
           catalog?.rules.postingIsFreeCopy ||
-          'Posting a Pro request is free. After meaningful Pro responses arrive, you can unlock comparison details, portfolios, rough quotes, and messages.'
+          'Posting a Taskly Pro project is free. After meaningful Pro responses arrive, you can unlock comparison details, portfolios, rough quotes, and messages.'
         }
         title={t('postingProFree')}
         tone="pro"

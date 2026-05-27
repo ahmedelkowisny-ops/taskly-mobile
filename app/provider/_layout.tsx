@@ -28,7 +28,7 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="core-tasks"
           options={{
-            title: 'Core',
+            title: 'Taskly',
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="briefcase-outline" size={size} />,
           }}
         />

@@ -1,7 +1,5 @@
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
-import { AppText } from '@/src/components/ui/AppText';
-import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type TasklyLogoTextProps = {
@@ -11,12 +9,19 @@ type TasklyLogoTextProps = {
 export function TasklyLogoText({ style }: TasklyLogoTextProps) {
   return (
     <View style={[styles.row, style]}>
-      <View style={styles.mark}>
-        <AppText color={colors.white} variant="bodyStrong">
-          T
-        </AppText>
-      </View>
-      <AppText variant="title">Taskly</AppText>
+      <Image
+        accessibilityIgnoresInvertColors
+        accessibilityLabel="Taskly"
+        resizeMode="contain"
+        source={require('@/assets/branding/taskly-logo-icon.png')}
+        style={styles.mark}
+      />
+      <Image
+        accessibilityIgnoresInvertColors
+        resizeMode="contain"
+        source={require('@/assets/branding/taskly-logo.png')}
+        style={styles.logo}
+      />
     </View>
   );
 }
@@ -27,12 +32,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
+  logo: {
+    height: 34,
+    width: 132,
+  },
   mark: {
-    alignItems: 'center',
-    backgroundColor: colors.tasklyBlue600,
     borderRadius: radius.sm,
     height: 44,
-    justifyContent: 'center',
     width: 44,
   },
 });

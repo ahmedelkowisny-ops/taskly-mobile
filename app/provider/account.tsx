@@ -45,7 +45,7 @@ export default function ProviderAccountScreen() {
         </View>
         <AppText variant="sectionTitle">Dual Provider Workspace</AppText>
         <AppText color={colors.slate700}>
-          Core Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them. Future workspace switching and notifications will follow account permissions.
+          Taskly Tasker and Taskly Pro access can both live in the Provider Workspace when the backend authorizes them. Future workspace switching and notifications will follow account permissions.
         </AppText>
         <AppText color={colors.slate500} variant="caption">
           {status === 'authenticated' ? `${session.user.displayName} - ${session.user.email}` : getProviderModeSummary(session)}
@@ -62,7 +62,7 @@ export default function ProviderAccountScreen() {
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />
-        <AppText variant="sectionTitle">Core account readiness</AppText>
+        <AppText variant="sectionTitle">Taskly account readiness</AppText>
         <AppText color={colors.slate700}>{getCoreTaskerStatusLabel(coreTaskerStatus)}</AppText>
       </AppCard>
 

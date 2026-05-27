@@ -67,8 +67,8 @@ export default function CustomerTasksScreen() {
     setIsUnauthorized(result.status === 401 || result.status === 403);
     setErrorMessage(
       result.status === 401 || result.status === 403
-        ? 'Login is required to load your Core tasks.'
-        : 'Could not load your Core tasks.',
+        ? 'Login is required to load your Taskly tasks.'
+        : 'Could not load your Taskly tasks.',
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -84,15 +84,13 @@ export default function CustomerTasksScreen() {
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('myTasks')}</AppText>
-        <AppText color={colors.slate700}>
-          Track small fixed-scope tasks from the Customer Workspace.
-        </AppText>
+        <AppText color={colors.slate700}>Track small fixed-scope Taskly tasks from your Customer Workspace.</AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label="Loading" tone="core" />
-          <AppText variant="sectionTitle">Loading Core tasks</AppText>
+          <AppText variant="sectionTitle">Loading Taskly tasks</AppText>
           <AppText color={colors.slate700}>Fetching your read-only task list from Taskly.</AppText>
         </AppCard>
       ) : null}
@@ -101,7 +99,7 @@ export default function CustomerTasksScreen() {
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? 'Login required' : 'Backend unavailable'} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Core tasks need a real session' : 'Could not refresh Core tasks'}
+            {isUnauthorized ? 'Taskly tasks need a real session' : 'Could not refresh Taskly tasks'}
           </AppText>
           <AppText color={colors.slate700}>
             {errorMessage || 'Retry the request or continue in demo mode while the backend is unavailable.'}

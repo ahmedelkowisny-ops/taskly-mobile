@@ -28,7 +28,7 @@ function getCoreActionLabel(coreTaskerStatus: CoreTaskerStatus) {
     return 'View dashboard';
   }
 
-  return 'Start Core Tasker onboarding';
+  return 'Start Taskly Tasker onboarding';
 }
 
 function getProActionLabel(proStatus: ProStatus) {
@@ -37,7 +37,7 @@ function getProActionLabel(proStatus: ProStatus) {
   }
 
   if (proStatus === 'approved') {
-    return 'View matching Pro requests placeholder';
+    return 'View matching Taskly Pro projects';
   }
 
   return 'Start or continue Pro application';
@@ -59,7 +59,7 @@ export default function ProviderStartScreen() {
         <StatusBadge label={t('providerWorkspace')} tone="neutral" />
         <AppText variant="screenTitle">{t('startProviderWorkspace')}</AppText>
         <AppText color={colors.slate700}>
-          You can work with small Core tasks, larger Pro requests, or both if your account is approved.
+          You can work with small Taskly tasks, larger Taskly Pro projects, or both if your account is approved.
         </AppText>
       </View>
 
@@ -72,7 +72,7 @@ export default function ProviderStartScreen() {
       <ProviderStatusCard
         accent="core"
         actionLabel={getCoreActionLabel(coreTaskerStatus)}
-        description="For small fixed-scope tasks. Requires approval and Stripe verification for Core payouts."
+        description="For small fixed-scope tasks. Requires approval and Stripe verification for Taskly task payouts."
         statusLabel={coreStatusLabel}
         title={t('coreTasker')}
       />
@@ -91,7 +91,7 @@ export default function ProviderStartScreen() {
           <ModeBadge mode="providerPro" />
         </View>
         <AppText color={colors.slate700}>
-          Core Tasker and Taskly Pro modes can both live inside the Provider Workspace, but their statuses and customer expectations stay separate.
+          Taskly Tasker and Taskly Pro modes can both live inside the Provider Workspace, but their statuses and customer expectations stay separate.
         </AppText>
       </AppCard>
 
