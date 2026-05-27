@@ -31,7 +31,7 @@ export function LanguageToggle() {
               active ? styles.activeOption : null,
               pressed ? styles.pressedOption : null,
             ]}>
-            <AppText color={active ? colors.white : colors.slate700} variant="small">
+            <AppText color={active ? colors.navy900 : colors.slate500} variant="small">
               {option.label}
             </AppText>
           </Pressable>
@@ -43,14 +43,19 @@ export function LanguageToggle() {
 
 const styles = StyleSheet.create({
   activeOption: {
-    backgroundColor: colors.navy900,
-    borderColor: colors.navy900,
+    backgroundColor: colors.white,
+    borderColor: colors.white,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 1, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   container: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.white,
+    backgroundColor: colors.slate50,
     borderColor: colors.slate100,
-    borderRadius: radius.pill,
+    borderRadius: radius.sm,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs,
@@ -59,12 +64,12 @@ const styles = StyleSheet.create({
   option: {
     alignItems: 'center',
     borderColor: 'transparent',
-    borderRadius: radius.pill,
+    borderRadius: radius.sm,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 32,
-    minWidth: 40,
-    paddingHorizontal: spacing.sm,
+    minHeight: 30,
+    minWidth: 38,
+    paddingHorizontal: spacing.xs,
   },
   pressedOption: {
     opacity: 0.82,
