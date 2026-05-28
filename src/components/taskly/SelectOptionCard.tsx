@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText, StatusBadge } from '@/src/components/ui';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -37,7 +38,7 @@ export function SelectOptionCard({
         <AppText style={styles.label} variant="bodyStrong">
           {label}
         </AppText>
-        {selected ? <StatusBadge label="Selected" tone={tone} /> : null}
+        {selected ? <StatusBadge label={t('selected')} tone={tone} /> : null}
       </View>
       {description ? (
         <AppText color={colors.slate700} variant="small">
@@ -50,7 +51,7 @@ export function SelectOptionCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.sm,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,

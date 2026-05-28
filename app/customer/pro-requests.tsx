@@ -2,9 +2,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
+import { AssistantGuideCard, EmptyStateCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerProRequests } from '@/src/lib/api/customer';
 import { CustomerProRequestsResponse } from '@/src/lib/api/domain';
@@ -12,7 +12,7 @@ import { getMockCustomerProRequestsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerProRequestsScreen() {
   const router = useRouter();
@@ -75,14 +75,16 @@ export default function CustomerProRequestsScreen() {
 
   return (
     <Screen>
-      <View style={{ gap: spacing.sm }}>
-        <ModeBadge mode="customer" />
-        <StatusBadge label={t('customerPro')} tone="pro" />
-        <AppText variant="screenTitle">{t('myProRequests')}</AppText>
-        <AppText color={colors.slate700}>
-          {t('customerProIntro')}
-        </AppText>
+      <View style={styles.proHero}>
+        <View style={styles.badgeRow}>
+          <StatusBadge label={t('tasklyPro')} tone="pro" />
+          <StatusBadge label={t('approvedProsChip')} tone="neutral" />
+        </View>
+        <AppText style={styles.heroTitle}>{t('myProRequests')}</AppText>
+        <AppText color={colors.slate700}>{t('customerProIntro')}</AppText>
       </View>
+
+      {data?.proRequests.length ? <ProRequestMetrics requests={data.proRequests} /> : null}
 
       {isLoading ? (
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -113,10 +115,10 @@ export default function CustomerProRequestsScreen() {
       ) : null}
 
       {data?.proRequests.length ? (
-        <View style={{ gap: spacing.md }}>
+        <View style={styles.cardList}>
           {data.proRequests.map((request) => (
-            <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            <View key={request.id} style={styles.requestCard}>
+              <View style={styles.badgeRow}>
                 <StatusBadge label={request.statusLabel} tone="pro" />
                 <StatusBadge
                   label={request.proAccessState?.statusLabel || request.unlockStatusLabel}
@@ -129,23 +131,28 @@ export default function CustomerProRequestsScreen() {
                   />
                 ) : null}
               </View>
-              <AppText variant="sectionTitle">{request.title}</AppText>
-              <AppText color={colors.slate700}>
-                {request.categoryLabel} - {request.cityLabel}
-              </AppText>
-              <AppText color={colors.slate700}>
-                {request.timelineLabel} - {request.responsePreviewSummary || `${request.responsesCount} ${t('responsesReceived')}`}
-              </AppText>
-              <AppText color={colors.slate700}>
-                {request.proAccessSummary || request.unlockStatusLabel}
-              </AppText>
+              <AppText style={styles.cardTitle}>{request.title}</AppText>
+              <View style={styles.metaGrid}>
+                <ProMeta label={t('category')} value={request.categoryLabel} />
+                <ProMeta label={t('city')} value={request.cityLabel} />
+                <ProMeta label={t('timeline')} value={request.timelineLabel} />
+                <ProMeta
+                  label={t('responsesReceived')}
+                  value={request.responsePreviewSummary || `${request.responsesCount} ${t('responsesReceived')}`}
+                />
+              </View>
+              <View style={styles.accessLine}>
+                <AppText color={colors.proOrangeTextDark} variant="small">
+                  {request.proAccessSummary || request.unlockStatusLabel}
+                </AppText>
+              </View>
               <AppButton
                 onPress={() => router.push(`/customer/pro-requests/${request.id}` as Href)}
                 tone="pro"
                 variant="outline">
                 {t('viewDetails')}
               </AppButton>
-            </AppCard>
+            </View>
           ))}
         </View>
       ) : data && !isLoading ? (
@@ -164,6 +171,39 @@ export default function CustomerProRequestsScreen() {
         tone="pro"
       />
     </Screen>
+  );
+}
+
+function ProRequestMetrics({ requests }: { requests: CustomerProRequestsResponse['proRequests'] }) {
+  const activeCount = requests.filter((request) => !['closed', 'cancelled', 'archived'].includes(request.status)).length;
+  const responseCount = requests.reduce((total, request) => total + request.responsesCount, 0);
+  const unlockedCount = requests.filter((request) => request.isUnlocked).length;
+
+  return (
+    <View style={styles.metricsGrid}>
+      <MetricCard label={t('openShort')} value={String(requests.length)} />
+      <MetricCard label={t('activeShort')} value={String(activeCount)} />
+      <MetricCard label={t('proResponsesShort')} value={String(responseCount)} />
+      <MetricCard label={t('accessUnlocked')} value={String(unlockedCount)} />
+    </View>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metricCard}>
+      <AppText color={colors.proOrangeText} variant="small">{label}</AppText>
+      <AppText style={styles.metricValue}>{value}</AppText>
+    </View>
+  );
+}
+
+function ProMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metaItem}>
+      <AppText color={colors.slate500} variant="small">{label}</AppText>
+      <AppText color={colors.slate700}>{value}</AppText>
+    </View>
   );
 }
 
@@ -198,3 +238,87 @@ function getProAccessSupportBadgeTone(request: CustomerProRequestsResponse['proR
   if (paymentStatus === 'failed') return 'warning';
   return 'neutral';
 }
+
+const styles = StyleSheet.create({
+  accessLine: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  cardList: {
+    gap: spacing.md,
+  },
+  cardTitle: {
+    color: colors.navy900,
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 26,
+  },
+  heroTitle: {
+    color: colors.navy900,
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 34,
+  },
+  metaGrid: {
+    gap: spacing.sm,
+  },
+  metaItem: {
+    gap: spacing.xs,
+  },
+  metricCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: '45%',
+    padding: spacing.md,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+  },
+  metricValue: {
+    color: colors.navy900,
+    fontSize: 24,
+    fontWeight: '800',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  proHero: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: colors.proOrange600,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+  },
+  requestCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+  },
+});

@@ -85,6 +85,9 @@ export default function CustomerLayout() {
           name="post-pro-request"
           options={{
             href: null,
+            tabBarStyle: {
+              display: 'none',
+            },
           }}
         />
         <Tabs.Screen

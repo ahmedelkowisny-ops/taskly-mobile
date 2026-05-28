@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
-import { FormField, ModeBadge } from '@/src/components/taskly';
+import { FormField } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   cancelCustomerProSiteVisitInvite,
@@ -24,7 +24,7 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 type CustomerSiteVisitFormValues = {
   accessNotes: string;
@@ -390,7 +390,6 @@ export default function CustomerProRequestDetailScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <ModeBadge mode="customer" />
         <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
       </View>
 
@@ -398,7 +397,7 @@ export default function CustomerProRequestDetailScreen() {
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={stateLabel || 'Notice'} tone="warning" />
+          <StatusBadge label={stateLabel || t('currentStatus')} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} tone="pro" variant="outline">{t('retry')}</AppButton>
@@ -409,19 +408,9 @@ export default function CustomerProRequestDetailScreen() {
 
       {request ? (
         <>
-          <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <StatusBadge label={request.statusLabel} tone="pro" />
-            <AppText variant="screenTitle">{request.title}</AppText>
-            <AppText color={colors.slate700}>{request.description}</AppText>
-            <AppText color={colors.slate700}>{request.categoryLabel} - {request.cityLabel}</AppText>
-          </AppCard>
+          <ProDetailHero request={request} />
 
-          <AppCard>
-            <StatusBadge label={request.unlockStatusLabel} tone={request.isUnlocked ? 'success' : 'warning'} />
-            <Info label={t('budget')} value={request.budgetLabel} />
-            <Info label={t('timeline')} value={request.timelineLabel} />
-            <Info label={t('responsesReceived')} value={String(request.responsesCount)} />
-          </AppCard>
+          <ProjectSummaryCard request={request} />
 
           <ProAccessCard
             isStartingPayment={isStartingProAccessPayment}
@@ -536,6 +525,53 @@ export default function CustomerProRequestDetailScreen() {
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function ProDetailHero({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  return (
+    <View style={styles.proHero}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('tasklyPro')} tone="pro" />
+        <StatusBadge label={request.statusLabel} tone="pro" />
+        <StatusBadge label={request.unlockStatusLabel} tone={request.isUnlocked ? 'success' : 'warning'} />
+      </View>
+      <AppText style={styles.heroTitle}>{request.title}</AppText>
+      <AppText color={colors.slate700}>{request.description}</AppText>
+      <View style={styles.heroChipRow}>
+        <View style={styles.heroChip}>
+          <AppText color={colors.proOrangeTextDark} variant="small">{request.categoryLabel}</AppText>
+        </View>
+        <View style={styles.heroChip}>
+          <AppText color={colors.proOrangeTextDark} variant="small">{request.cityLabel}</AppText>
+        </View>
+        <View style={styles.heroChip}>
+          <AppText color={colors.proOrangeTextDark} variant="small">{request.budgetLabel}</AppText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function ProjectSummaryCard({ request }: { request: CustomerProRequestDetailResponse['proRequest'] }) {
+  const locationValue = request.addressVisibilityState?.stateLabel || request.cityLabel;
+  const photoValue = request.images.length ? String(request.images.length) : t('noPhotosAdded');
+
+  return (
+    <AppCard>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('projectSummary')} tone="pro" />
+        <StatusBadge label={request.proAccessState?.statusLabel || request.unlockStatusLabel} tone={request.isUnlocked ? 'success' : 'pro'} />
+      </View>
+      <View style={styles.infoGrid}>
+        <Info label={t('category')} value={request.categoryLabel} />
+        <Info label={t('locationPrivacy')} value={locationValue} />
+        <Info label={t('budget')} value={request.budgetLabel} />
+        <Info label={t('timeline')} value={request.timelineLabel} />
+        <Info label={t('responsesReceived')} value={String(request.responsesCount)} />
+        <Info label={t('photos')} value={photoValue} />
+      </View>
+    </AppCard>
   );
 }
 
@@ -1123,33 +1159,84 @@ function getProAccessSupportErrorMessages(details: unknown, fallbackMessage: str
 }
 
 const styles = StyleSheet.create({
-  header: { gap: spacing.sm },
+  header: {
+    alignItems: 'flex-start',
+  },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   comparisonCard: {
     backgroundColor: colors.white,
-    borderColor: colors.proAmber500,
-    borderRadius: 8,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.sm,
-    padding: spacing.md,
+    padding: spacing.lg,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
   },
-  image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
+  heroChip: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  heroChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  heroTitle: {
+    color: colors.navy900,
+    fontSize: 28,
+    fontWeight: '800',
+    lineHeight: 34,
+  },
+  image: { aspectRatio: 1, borderRadius: radius.lg, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoGrid: { gap: spacing.sm },
-  infoRow: { gap: spacing.xs },
-  issueOptions: { gap: spacing.sm },
-  noteBlock: { gap: spacing.xs },
-  profileImage: { backgroundColor: colors.proOrange50, borderRadius: 8, height: 56, width: 56 },
-  profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
-  profileText: { flex: 1, gap: spacing.xs },
-  response: { gap: spacing.xs },
-  siteVisitInvite: {
+  infoRow: {
     backgroundColor: colors.white,
-    borderColor: colors.proAmber500,
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
-    padding: spacing.sm,
+    padding: spacing.md,
+  },
+  issueOptions: { gap: spacing.sm },
+  noteBlock: { gap: spacing.xs },
+  proHero: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: colors.proOrange600,
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+  },
+  profileImage: { backgroundColor: colors.proOrange50, borderRadius: radius.lg, height: 56, width: 56 },
+  profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
+  profileText: { flex: 1, gap: spacing.xs },
+  response: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  siteVisitInvite: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
   },
   stack: { gap: spacing.sm },
 });
