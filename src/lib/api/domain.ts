@@ -351,6 +351,7 @@ export type CustomerTaskSummary = {
   cityLabel: string;
   disputeState?: CoreDisputeState;
   id: string;
+  messageThreadId?: string | null;
   nextAction: CustomerNextAction;
   nextActions: CustomerCoreTaskNextActions;
   paymentState: CustomerCorePaymentState;
@@ -410,6 +411,7 @@ export type CustomerTaskDetail = {
   id: string;
   images: DetailImage[];
   interestedTaskers: CustomerInterestedTaskerPreview[];
+  messageThreadId?: string | null;
   nextActions: CustomerCoreTaskNextActions;
   paymentState: CustomerCorePaymentState;
   paymentStatusLabel: string;
@@ -1053,6 +1055,7 @@ export type ProviderCoreTaskSummary = {
   disputeState?: CoreDisputeState;
   hasScheduleConflict?: boolean;
   id: string;
+  messageThreadId?: string | null;
   nextAction: ProviderNextAction;
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
@@ -1115,6 +1118,7 @@ export type ProviderCoreTaskDetail = {
   hasScheduleConflict?: boolean;
   id: string;
   images: DetailImage[];
+  messageThreadId?: string | null;
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;

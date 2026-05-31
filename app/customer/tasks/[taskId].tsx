@@ -1,6 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { CardField, useConfirmSetupIntent } from '@stripe/stripe-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
@@ -116,6 +117,15 @@ export default function CustomerTaskDetailScreen() {
   );
 
   const task = data?.task;
+
+  const handleOpenChat = useCallback(() => {
+    if (task?.messageThreadId) {
+      router.push(`/customer/messages/${encodeURIComponent(task.messageThreadId)}` as Href);
+      return;
+    }
+
+    router.push('/customer/messages' as Href);
+  }, [router, task?.messageThreadId]);
 
   const markDemoCompletionRejected = useCallback(() => {
     setData((current) => {
@@ -961,7 +971,12 @@ export default function CustomerTaskDetailScreen() {
           />
           <Images images={task.images} />
           <Timeline items={task.timeline} accent="core" />
-          <NextActions actions={task.nextActions} tone="core" />
+          <NextActions
+            actions={task.nextActions}
+            messageThreadId={task.messageThreadId}
+            onOpenChat={handleOpenChat}
+            tone="core"
+          />
           <CoreCancellationSupportCard task={task} />
           <CustomerCancellationSupportActions
             actionError={actionError}
@@ -1152,14 +1167,27 @@ function Timeline({ items, accent }: { accent: 'core'; items: { description: str
   );
 }
 
-function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; tone: 'core' }) {
+function NextActions({
+  actions,
+  messageThreadId,
+  onOpenChat,
+  tone,
+}: {
+  actions: CustomerCoreTaskNextActions;
+  messageThreadId?: string | null;
+  onOpenChat: () => void;
+  tone: 'core';
+}) {
   if (isPaymentReadOnlyAction(actions)) return null;
 
   const isCompletionReview = actions.canApproveCompletion || actions.canRejectCompletion;
+  const canOpenChat = actions.canChat && Boolean(messageThreadId);
   const label = isCompletionReview
     ? t('waitingForCustomerApproval')
     : actions.primaryAction === 'select_tasker'
         ? t('customerSelectingTasker')
+        : canOpenChat
+          ? t('openConversation')
         : actions.primaryAction === 'review'
           ? t('completed')
           : t('notAvailable');
@@ -1172,7 +1200,11 @@ function NextActions({ actions, tone }: { actions: CustomerCoreTaskNextActions; 
       ) : actions.blockedReason || actions.blockedReasonCode ? (
         <AppText color={colors.slate700}>{getCustomerBlockedReasonText(actions)}</AppText>
       ) : null}
-      <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
+      {canOpenChat ? (
+        <AppButton onPress={onOpenChat} tone={tone} variant="outline">{t('openConversation')}</AppButton>
+      ) : (
+        <AppButton disabled tone={tone} variant="outline">{label}</AppButton>
+      )}
     </AppCard>
   );
 }

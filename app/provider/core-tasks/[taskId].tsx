@@ -660,8 +660,13 @@ export default function ProviderCoreTaskDetailScreen() {
   }, [submitProviderIssueAction]);
 
   const handleOpenChat = useCallback(() => {
+    if (task?.messageThreadId) {
+      router.push(`/provider/messages/${encodeURIComponent(task.messageThreadId)}` as Href);
+      return;
+    }
+
     router.push('/provider/messages' as Href);
-  }, [router]);
+  }, [router, task?.messageThreadId]);
 
   return (
     <Screen>
@@ -1124,6 +1129,7 @@ function getPrimaryProviderAction(task: ProviderCoreTaskDetail): ProviderPrimary
   if (task.nextActions.canMarkOnTheWay) return 'mark_on_the_way';
   if (task.nextActions.canStart) return 'start_task';
   if (task.nextActions.canRequestCompletion) return 'request_completion';
+  if (task.nextActions.canChat && task.messageThreadId) return 'open_chat';
 
   return 'none';
 }
