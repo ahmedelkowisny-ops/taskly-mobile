@@ -1051,6 +1051,7 @@ export type ProviderCoreTaskSummary = {
   cityLabel: string;
   customerPreviewLabel: string;
   disputeState?: CoreDisputeState;
+  hasScheduleConflict?: boolean;
   id: string;
   nextAction: ProviderNextAction;
   nextActions: ProviderCoreTaskNextActions;
@@ -1111,6 +1112,7 @@ export type ProviderCoreTaskDetail = {
   customerPreviewLabel: string;
   description: string;
   disputeState?: CoreDisputeState;
+  hasScheduleConflict?: boolean;
   id: string;
   images: DetailImage[];
   nextActions: ProviderCoreTaskNextActions;
