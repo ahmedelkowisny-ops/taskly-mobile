@@ -33,7 +33,7 @@ import {
 } from '@/src/lib/images/imagePicker';
 import { LocalSelectedImage } from '@/src/lib/images/types';
 import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
-import { t, useI18n } from '@/src/lib/i18n';
+import { t, TranslationKey, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -90,6 +90,12 @@ const SITE_VISIT_KEYS = [
   'proSiteVisitLikely',
   'proSiteVisitPhotosEnough',
 ] as const;
+
+const SITE_VISIT_EN_LABELS: Record<string, string> = {
+  proSiteVisitNotSure: 'Not sure yet',
+  proSiteVisitLikely: 'Yes, likely needed',
+  proSiteVisitPhotosEnough: 'No, photos/details are enough',
+};
 
 function parseNumberInput(value: string) {
   if (!value.trim()) return null;
@@ -340,13 +346,11 @@ export default function CustomerPostProRequestScreen() {
       propertyType ? `${t('propertyType')}: ${propertyType}` : null,
       projectSize ? `${t('projectSize')}: ${projectSize}` : null,
       specialtyNotes ? `${t('specialtyDetails')}: ${specialtyNotes}` : null,
-      siteVisitNeeded ? `${t('siteVisitNeeded')}: ${siteVisitNeeded}` : null,
-      addressNotes ? `${t('locationAddress')}: ${addressNotes}` : null,
-      locationNotes ? `${t('locationNotes')}: ${locationNotes}` : null,
+      siteVisitNeeded ? `Site visit needed: ${SITE_VISIT_EN_LABELS[siteVisitNeeded] ?? siteVisitNeeded}` : null,
     ].filter(Boolean);
 
     return [description.trim(), ...extras].filter(Boolean).join('\n\n');
-  }, [addressNotes, description, locationNotes, projectSize, propertyType, siteVisitNeeded, specialtyNotes]);
+  }, [description, projectSize, propertyType, siteVisitNeeded, specialtyNotes]);
 
   const clearFieldError = useCallback((key: ValidationFieldKey) => {
     setSubmitError(null);
@@ -554,6 +558,8 @@ export default function CustomerPostProRequestScreen() {
         localImageCount: images.length,
         timeline: timeline.trim(),
         title: title.trim(),
+        ...(addressNotes.trim() && { locationAddress: addressNotes.trim() }),
+        ...(locationNotes.trim() && { internalLocationDetails: locationNotes.trim() }),
       },
       authToken,
     );
@@ -624,11 +630,13 @@ export default function CustomerPostProRequestScreen() {
 
     setSubmitError(getSafeApiMessage(result.error.message));
   }, [
+    addressNotes,
     combinedDescription,
     district,
     formValidation,
     getValidAccessToken,
     images,
+    locationNotes,
     router,
     selectedCategoryId,
     selectedCityId,
@@ -884,8 +892,8 @@ export default function CustomerPostProRequestScreen() {
                 <ChoiceChip
                   key={key}
                   label={t(key)}
-                  onPress={() => setSiteVisitNeeded(t(key))}
-                  selected={siteVisitNeeded === t(key)}
+                  onPress={() => setSiteVisitNeeded(key)}
+                  selected={siteVisitNeeded === key}
                 />
               ))}
             </View>
@@ -937,7 +945,7 @@ export default function CustomerPostProRequestScreen() {
             <SummaryRow label={t('projectTitle')} value={title || t('notSelectedYet')} />
             <SummaryRow label={t('budgetRange')} value={budgetMin && budgetMax ? `€${budgetMin} - €${budgetMax}` : t('notSelectedYet')} />
             <SummaryRow label={t('timeline')} value={timeline || t('notSelectedYet')} />
-            <SummaryRow label={t('siteVisitNeeded')} value={siteVisitNeeded || t('notSelectedYet')} />
+            <SummaryRow label={t('siteVisitNeeded')} value={siteVisitNeeded ? t(siteVisitNeeded as TranslationKey) : t('notSelectedYet')} />
             <SummaryRow label={t('photos')} value={images.length ? String(images.length) : t('noPhotosAdded')} />
           </View>
         </View>
