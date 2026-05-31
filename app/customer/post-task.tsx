@@ -65,6 +65,14 @@ type ValidationFieldKey =
   | 'cityId'
   | 'description'
   | 'estimatedTime'
+  | 'mountingCableConcealmentRequested'
+  | 'mountingChecklistItemReady'
+  | 'mountingChecklistMeasurementsChecked'
+  | 'mountingChecklistWallSurfaceSelected'
+  | 'mountingItemCount'
+  | 'mountingTvBracketAvailable'
+  | 'mountingTvSizeBand'
+  | 'mountingWallType'
   | 'reviewConfirm'
   | 'scheduleDate'
   | 'startTime'
@@ -272,6 +280,14 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     'scopeData.assemblyInstructionsAvailable': 'assemblyInstructionsAvailable',
     'scopeData.assemblyItemUnassembled': 'assemblyItemUnassembled',
     'scopeData.assemblyPartsAvailable': 'assemblyPartsAvailable',
+    'scopeData.wallType': 'mountingWallType',
+    'scopeData.itemCount': 'mountingItemCount',
+    'scopeData.tvSizeBand': 'mountingTvSizeBand',
+    'scopeData.tvBracketAvailable': 'mountingTvBracketAvailable',
+    'scopeData.cableConcealmentRequested': 'mountingCableConcealmentRequested',
+    'scopeData.checklistItemReady': 'mountingChecklistItemReady',
+    'scopeData.checklistWallSurfaceSelected': 'mountingChecklistWallSurfaceSelected',
+    'scopeData.checklistMeasurementsChecked': 'mountingChecklistMeasurementsChecked',
     title: 'title',
   };
 
@@ -365,6 +381,15 @@ export default function CustomerPostTaskScreen() {
   const [assemblyInstructionsAvailable, setAssemblyInstructionsAvailable] = useState(false);
   const [assemblyItemUnassembled, setAssemblyItemUnassembled] = useState(false);
   const [assemblyAreaClear, setAssemblyAreaClear] = useState(false);
+  const [mountingType, setMountingType] = useState<'standard_mounting' | 'tv_mounting'>('standard_mounting');
+  const [mountingWallType, setMountingWallType] = useState<'drywall' | 'brick' | 'concrete' | 'unknown' | null>(null);
+  const [mountingItemCount, setMountingItemCount] = useState('');
+  const [mountingTvSizeBand, setMountingTvSizeBand] = useState<'up_to_43' | '44_to_65' | '65_plus' | null>(null);
+  const [mountingTvBracketAvailable, setMountingTvBracketAvailable] = useState<boolean | null>(null);
+  const [mountingCableConcealmentRequested, setMountingCableConcealmentRequested] = useState<boolean | null>(null);
+  const [mountingChecklistItemReady, setMountingChecklistItemReady] = useState(false);
+  const [mountingChecklistWallSurfaceSelected, setMountingChecklistWallSurfaceSelected] = useState(false);
+  const [mountingChecklistMeasurementsChecked, setMountingChecklistMeasurementsChecked] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -586,6 +611,15 @@ export default function CustomerPostTaskScreen() {
     setAssemblyInstructionsAvailable(false);
     setAssemblyItemUnassembled(false);
     setAssemblyAreaClear(false);
+    setMountingType('standard_mounting');
+    setMountingWallType(null);
+    setMountingItemCount('');
+    setMountingTvSizeBand(null);
+    setMountingTvBracketAvailable(null);
+    setMountingCableConcealmentRequested(null);
+    setMountingChecklistItemReady(false);
+    setMountingChecklistWallSurfaceSelected(false);
+    setMountingChecklistMeasurementsChecked(false);
   }, [selectedCategoryId]);
 
   const handlePickImages = useCallback(async () => {
@@ -797,6 +831,37 @@ export default function CustomerPostTaskScreen() {
         addIssue('assemblyAreaClear', 'Area clear', 'Please confirm the assembly area is clear and accessible.');
       }
     }
+
+    if (selectedCategory?.slug === 'general_mounting') {
+      if (!mountingWallType) {
+        addIssue('mountingWallType', 'Wall type', 'Please select a wall/material type.');
+      }
+      const parsedItemCount = Number.parseInt(mountingItemCount, 10);
+      if (!mountingItemCount.trim() || !Number.isFinite(parsedItemCount) || parsedItemCount <= 0) {
+        addIssue('mountingItemCount', 'Item count', 'Please enter the number of items (min 1).');
+      }
+      if (!mountingChecklistItemReady) {
+        addIssue('mountingChecklistItemReady', 'Hardware ready', 'Please confirm item and hardware are ready.');
+      }
+      if (!mountingChecklistWallSurfaceSelected) {
+        addIssue('mountingChecklistWallSurfaceSelected', 'Wall confirmed', 'Please confirm wall/material type is selected.');
+      }
+      if (!mountingChecklistMeasurementsChecked) {
+        addIssue('mountingChecklistMeasurementsChecked', 'Measurements checked', 'Please confirm measurements are checked.');
+      }
+      if (mountingType === 'tv_mounting') {
+        if (!mountingTvSizeBand) {
+          addIssue('mountingTvSizeBand', 'TV size', 'Please select the TV size.');
+        }
+        if (mountingTvBracketAvailable === null) {
+          addIssue('mountingTvBracketAvailable', 'TV bracket', 'Please confirm whether a TV bracket is available.');
+        }
+        if (mountingCableConcealmentRequested === null) {
+          addIssue('mountingCableConcealmentRequested', 'Cable concealment', 'Please confirm if cable concealment is requested.');
+        }
+      }
+    }
+
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -886,6 +951,15 @@ export default function CustomerPostTaskScreen() {
     description,
     endTime,
     estimatedTime,
+    mountingCableConcealmentRequested,
+    mountingChecklistItemReady,
+    mountingChecklistMeasurementsChecked,
+    mountingChecklistWallSurfaceSelected,
+    mountingItemCount,
+    mountingTvBracketAvailable,
+    mountingTvSizeBand,
+    mountingType,
+    mountingWallType,
     reviewConfirmed,
     scheduleDate,
     scheduleCopy,
@@ -901,7 +975,13 @@ export default function CustomerPostTaskScreen() {
       const stepKeys: Record<WizardStep, ValidationFieldKey[]> = {
         1: ['categorySlug'],
         2: ['budgetEur'],
-        3: ['title', 'description', 'assemblyPartsAvailable', 'assemblyInstructionsAvailable', 'assemblyItemUnassembled', 'assemblyAreaClear'],
+        3: [
+          'title', 'description',
+          'assemblyPartsAvailable', 'assemblyInstructionsAvailable', 'assemblyItemUnassembled', 'assemblyAreaClear',
+          'mountingWallType', 'mountingItemCount',
+          'mountingChecklistItemReady', 'mountingChecklistWallSurfaceSelected', 'mountingChecklistMeasurementsChecked',
+          'mountingTvSizeBand', 'mountingTvBracketAvailable', 'mountingCableConcealmentRequested',
+        ],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
         6: ['reviewConfirm'],
@@ -982,6 +1062,7 @@ export default function CustomerPostTaskScreen() {
     }
 
     const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
+    const isGeneralMounting = selectedCategory?.slug === 'general_mounting';
 
     setIsSubmitting(true);
     const result = await createCustomerTask(
@@ -1004,6 +1085,25 @@ export default function CustomerPostTaskScreen() {
                 assemblyInstructionsAvailable,
                 assemblyItemUnassembled,
                 assemblyPartsAvailable,
+              },
+            }
+          : {}),
+        ...(isGeneralMounting
+          ? {
+              scopeData: {
+                mountingType,
+                wallType: mountingWallType ?? undefined,
+                itemCount: Number.parseInt(mountingItemCount, 10) || undefined,
+                checklistItemReady: mountingChecklistItemReady,
+                checklistWallSurfaceSelected: mountingChecklistWallSurfaceSelected,
+                checklistMeasurementsChecked: mountingChecklistMeasurementsChecked,
+                ...(mountingType === 'tv_mounting'
+                  ? {
+                      tvSizeBand: mountingTvSizeBand ?? undefined,
+                      tvBracketAvailable: mountingTvBracketAvailable ?? undefined,
+                      cableConcealmentRequested: mountingCableConcealmentRequested ?? undefined,
+                    }
+                  : {}),
               },
             }
           : {}),
@@ -1082,6 +1182,15 @@ export default function CustomerPostTaskScreen() {
     formValidation,
     getValidAccessToken,
     images,
+    mountingCableConcealmentRequested,
+    mountingChecklistItemReady,
+    mountingChecklistMeasurementsChecked,
+    mountingChecklistWallSurfaceSelected,
+    mountingItemCount,
+    mountingTvBracketAvailable,
+    mountingTvSizeBand,
+    mountingType,
+    mountingWallType,
     router,
     selectedCategory,
     selectedCategoryId,
@@ -1346,6 +1455,152 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('assemblyAreaClear')) ? (
                 <AppText color={colors.danger600} variant="small">
                   Please confirm all scope items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+
+          {selectedCategory?.slug === 'general_mounting' ? (
+            <View style={styles.scopeSection}>
+              <AppText style={styles.fieldLabel}>Mounting type</AppText>
+              <ScopeOptionGroup
+                options={[
+                  { value: 'standard_mounting', label: 'Standard mounting' },
+                  { value: 'tv_mounting', label: 'TV mounting' },
+                ]}
+                value={mountingType}
+                onSelect={(v) => {
+                  setMountingType(v as 'standard_mounting' | 'tv_mounting');
+                  setMountingTvSizeBand(null);
+                  setMountingTvBracketAvailable(null);
+                  setMountingCableConcealmentRequested(null);
+                }}
+              />
+
+              <AppText style={styles.fieldLabel}>Wall / material type</AppText>
+              <ScopeOptionGroup
+                options={[
+                  { value: 'drywall', label: 'Drywall' },
+                  { value: 'brick', label: 'Brick' },
+                  { value: 'concrete', label: 'Concrete' },
+                  { value: 'unknown', label: 'Unknown' },
+                ]}
+                value={mountingWallType ?? ''}
+                onSelect={(v) => {
+                  setMountingWallType(v as 'drywall' | 'brick' | 'concrete' | 'unknown');
+                  clearFieldError('mountingWallType');
+                }}
+              />
+              {getFieldError('mountingWallType') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('mountingWallType')}
+                </AppText>
+              ) : null}
+
+              <Field
+                errorText={getFieldError('mountingItemCount')}
+                keyboardType="numeric"
+                label="Item count"
+                onChangeText={(v) => {
+                  setMountingItemCount(v);
+                  clearFieldError('mountingItemCount');
+                }}
+                placeholder="e.g. 2"
+                value={mountingItemCount}
+              />
+
+              {mountingType === 'tv_mounting' ? (
+                <View style={styles.scopeSubsection}>
+                  <AppText style={styles.fieldLabel}>TV size</AppText>
+                  <ScopeOptionGroup
+                    options={[
+                      { value: 'up_to_43', label: 'Up to 43"' },
+                      { value: '44_to_65', label: '44–65"' },
+                      { value: '65_plus', label: '65"+' },
+                    ]}
+                    value={mountingTvSizeBand ?? ''}
+                    onSelect={(v) => {
+                      setMountingTvSizeBand(v as 'up_to_43' | '44_to_65' | '65_plus');
+                      clearFieldError('mountingTvSizeBand');
+                    }}
+                  />
+                  {getFieldError('mountingTvSizeBand') ? (
+                    <AppText color={colors.danger600} variant="small">
+                      {getFieldError('mountingTvSizeBand')}
+                    </AppText>
+                  ) : null}
+
+                  <AppText style={styles.fieldLabel}>Bracket available</AppText>
+                  <ScopeOptionGroup
+                    options={[
+                      { value: 'true', label: 'Yes' },
+                      { value: 'false', label: 'No' },
+                    ]}
+                    value={mountingTvBracketAvailable === null ? '' : String(mountingTvBracketAvailable)}
+                    onSelect={(v) => {
+                      setMountingTvBracketAvailable(v === 'true');
+                      clearFieldError('mountingTvBracketAvailable');
+                    }}
+                  />
+                  {getFieldError('mountingTvBracketAvailable') ? (
+                    <AppText color={colors.danger600} variant="small">
+                      {getFieldError('mountingTvBracketAvailable')}
+                    </AppText>
+                  ) : null}
+
+                  <AppText style={styles.fieldLabel}>Cable concealment requested</AppText>
+                  <ScopeOptionGroup
+                    options={[
+                      { value: 'true', label: 'Yes' },
+                      { value: 'false', label: 'No' },
+                    ]}
+                    value={mountingCableConcealmentRequested === null ? '' : String(mountingCableConcealmentRequested)}
+                    onSelect={(v) => {
+                      setMountingCableConcealmentRequested(v === 'true');
+                      clearFieldError('mountingCableConcealmentRequested');
+                    }}
+                  />
+                  {getFieldError('mountingCableConcealmentRequested') ? (
+                    <AppText color={colors.danger600} variant="small">
+                      {getFieldError('mountingCableConcealmentRequested')}
+                    </AppText>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <AppText style={styles.fieldLabel}>Checklist confirmation</AppText>
+              <ScopeCheckboxRow
+                checked={mountingChecklistItemReady}
+                hasError={!!getFieldError('mountingChecklistItemReady')}
+                label="Item and mounting hardware are ready."
+                onPress={() => {
+                  setMountingChecklistItemReady((v) => !v);
+                  clearFieldError('mountingChecklistItemReady');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={mountingChecklistWallSurfaceSelected}
+                hasError={!!getFieldError('mountingChecklistWallSurfaceSelected')}
+                label="Wall/material type is selected."
+                onPress={() => {
+                  setMountingChecklistWallSurfaceSelected((v) => !v);
+                  clearFieldError('mountingChecklistWallSurfaceSelected');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={mountingChecklistMeasurementsChecked}
+                hasError={!!getFieldError('mountingChecklistMeasurementsChecked')}
+                label="Measurements and placement are checked."
+                onPress={() => {
+                  setMountingChecklistMeasurementsChecked((v) => !v);
+                  clearFieldError('mountingChecklistMeasurementsChecked');
+                }}
+              />
+              {(getFieldError('mountingChecklistItemReady') ||
+                getFieldError('mountingChecklistWallSurfaceSelected') ||
+                getFieldError('mountingChecklistMeasurementsChecked')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all checklist items before continuing.
                 </AppText>
               ) : null}
             </View>
@@ -1748,6 +2003,81 @@ export default function CustomerPostTaskScreen() {
             </AppText>
             <AppText style={styles.reviewSummaryDetailsText}>{description || '-'}</AppText>
           </View>
+          {selectedCategory?.slug === 'general_mounting' ? (
+            <View style={styles.scopeReviewSection}>
+              <AppText style={styles.fieldLabel}>Scope summary</AppText>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="layers-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  {mountingType === 'tv_mounting' ? 'TV mounting' : 'Standard mounting'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="construct-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Wall: {mountingWallType ?? '-'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="list-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Items: {mountingItemCount || '-'}
+                </AppText>
+              </View>
+              {mountingType === 'tv_mounting' ? (
+                <>
+                  <View style={styles.scopeReviewItem}>
+                    <Ionicons color={colors.tasklyBlue600} name="tv-outline" size={16} />
+                    <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                      TV size: {mountingTvSizeBand === 'up_to_43' ? 'Up to 43"' : mountingTvSizeBand === '44_to_65' ? '44–65"' : mountingTvSizeBand === '65_plus' ? '65"+' : '-'}
+                    </AppText>
+                  </View>
+                  <View style={styles.scopeReviewItem}>
+                    <Ionicons color={colors.tasklyBlue600} name="albums-outline" size={16} />
+                    <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                      Bracket available: {mountingTvBracketAvailable === null ? '-' : mountingTvBracketAvailable ? 'Yes' : 'No'}
+                    </AppText>
+                  </View>
+                  <View style={styles.scopeReviewItem}>
+                    <Ionicons color={colors.tasklyBlue600} name="git-branch-outline" size={16} />
+                    <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                      Cable concealment: {mountingCableConcealmentRequested === null ? '-' : mountingCableConcealmentRequested ? 'Yes' : 'No'}
+                    </AppText>
+                  </View>
+                </>
+              ) : null}
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={mountingChecklistItemReady ? colors.success600 : colors.warning600}
+                  name={mountingChecklistItemReady ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Item and mounting hardware are ready.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={mountingChecklistWallSurfaceSelected ? colors.success600 : colors.warning600}
+                  name={mountingChecklistWallSurfaceSelected ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Wall/material type is selected.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={mountingChecklistMeasurementsChecked ? colors.success600 : colors.warning600}
+                  name={mountingChecklistMeasurementsChecked ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Measurements and placement are checked.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
           {selectedCategory?.slug === 'furniture_assembly' ? (
             <View style={styles.scopeReviewSection}>
               <AppText style={styles.fieldLabel}>Scope confirmation</AppText>
@@ -1950,6 +2280,43 @@ type FieldProps = {
   prefix?: string;
   value: string;
 };
+
+type ScopeOptionGroupOption = { label: string; value: string };
+
+function ScopeOptionGroup({
+  onSelect,
+  options,
+  value,
+}: {
+  onSelect: (value: string) => void;
+  options: ScopeOptionGroupOption[];
+  value: string;
+}) {
+  return (
+    <View style={styles.scopeOptionGroup}>
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <Pressable
+            accessibilityRole="button"
+            key={option.value}
+            onPress={() => onSelect(option.value)}
+            style={({ pressed }) => [
+              styles.scopeOptionChip,
+              selected ? styles.scopeOptionChipSelected : null,
+              { opacity: pressed ? 0.82 : 1 },
+            ]}>
+            <AppText
+              color={selected ? colors.tasklyBlue600 : colors.slate700}
+              style={styles.scopeOptionChipText}>
+              {option.label}
+            </AppText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function ScopeCheckboxRow({
   checked,
@@ -2765,5 +3132,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  scopeOptionGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  scopeOptionChip: {
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  scopeOptionChipSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  scopeOptionChipText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    lineHeight: 18,
+  },
+  scopeSubsection: {
+    backgroundColor: '#F7FAFF',
+    borderColor: '#DCE9F7',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
   },
 });

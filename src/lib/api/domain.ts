@@ -431,11 +431,22 @@ export type CustomerTaskDetailResponse = {
   task: CustomerTaskDetail;
 };
 
-export type FurnitureAssemblyScopeData = {
+export type TaskScopeData = {
+  // furniture_assembly
   assemblyAreaClear?: boolean;
   assemblyInstructionsAvailable?: boolean;
   assemblyItemUnassembled?: boolean;
   assemblyPartsAvailable?: boolean;
+  // general_mounting
+  mountingType?: 'standard_mounting' | 'tv_mounting';
+  wallType?: 'drywall' | 'brick' | 'concrete' | 'unknown';
+  itemCount?: number;
+  tvSizeBand?: 'up_to_43' | '44_to_65' | '65_plus';
+  tvBracketAvailable?: boolean;
+  cableConcealmentRequested?: boolean;
+  checklistItemReady?: boolean;
+  checklistWallSurfaceSelected?: boolean;
+  checklistMeasurementsChecked?: boolean;
 };
 
 export type CreateCustomerTaskPayload = {
@@ -452,7 +463,7 @@ export type CreateCustomerTaskPayload = {
   };
   scheduledEndAt: string;
   scheduledStartAt: string;
-  scopeData?: FurnitureAssemblyScopeData;
+  scopeData?: TaskScopeData;
   title: string;
 };
 
