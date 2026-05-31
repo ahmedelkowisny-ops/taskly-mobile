@@ -21,6 +21,8 @@ export const endpoints = {
     proRequestAccessSupportRequest: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/support-request`,
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,
     proRequestImageUpload: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/images`,
+    proRequestDiscardResponse: (proRequestId: string, proResponseId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/responses/${proResponseId}/discard`,
+    proRequestSelectResponse: (proRequestId: string, proResponseId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/responses/${proResponseId}/select`,
     proRequestSiteVisitCancel: (proRequestId: string, siteVisitId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/site-visits/${siteVisitId}/cancel`,
     proRequestSiteVisits: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/site-visits`,
     proRequests: '/api/mobile/customer/pro-requests',

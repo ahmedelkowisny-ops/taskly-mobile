@@ -495,14 +495,14 @@ function SiteVisitStateCard({
       {contactState ? (
         <Info
           label={t('sharedDetails')}
-          value={contactState.state === 'shared_for_site_visit' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
+          value={contactState.state === 'shared_for_site_visit' || contactState.state === 'shared_for_selected_pro' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
         />
       ) : null}
       {addressState ? (
         <Info
           label={t('siteVisit')}
           value={
-            addressState.state === 'shared_for_site_visit'
+            addressState.state === 'shared_for_site_visit' || addressState.state === 'shared_for_selected_pro'
               ? addressState.addressLabel || t('addressSharedForSiteVisit')
               : addressState.state === 'city_only'
                 ? t('cityAreaOnly')

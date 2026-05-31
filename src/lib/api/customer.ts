@@ -7,6 +7,7 @@ import {
   CustomerProAccessCheckoutResponse,
   CustomerProAccessSupportRequestPayload,
   CustomerProAccessSupportRequestResponse,
+  CustomerProResponseSelectResponse,
   CustomerProSiteVisitActionResponse,
   CustomerProSiteVisitCancelPayload,
   CustomerProSiteVisitInvitePayload,
@@ -221,6 +222,36 @@ export function cancelCustomerProSiteVisitInvite(
     body: payload.reason ? { reason: payload.reason } : {},
     method: 'POST',
   });
+}
+
+export function discardCustomerProResponse(
+  proRequestId: string,
+  proResponseId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerProRequestDetailResponse>> {
+  return apiRequest<CustomerProRequestDetailResponse>(
+    endpoints.customer.proRequestDiscardResponse(proRequestId, proResponseId),
+    {
+      authToken,
+      body: {},
+      method: 'POST',
+    },
+  );
+}
+
+export function selectCustomerProResponse(
+  proRequestId: string,
+  proResponseId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerProResponseSelectResponse>> {
+  return apiRequest<CustomerProResponseSelectResponse>(
+    endpoints.customer.proRequestSelectResponse(proRequestId, proResponseId),
+    {
+      authToken,
+      body: {},
+      method: 'POST',
+    },
+  );
 }
 
 export function createCustomerProRequest(

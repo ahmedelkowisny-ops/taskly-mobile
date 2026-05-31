@@ -614,7 +614,9 @@ export type CreateCustomerProRequestPayload = {
   cityId: string;
   description: string;
   district: string;
+  internalLocationDetails?: string;
   localImageCount?: number;
+  locationAddress?: string;
   timeline: string;
   title: string;
 };
@@ -807,6 +809,7 @@ export type ProAddressVisibilityState = {
   accessNotesLabel: string | null;
   addressLabel: string | null;
   helperText: string;
+  selectedAt?: string | null;
   state: string;
   stateLabel: string;
 };
@@ -829,6 +832,7 @@ export type CustomerProResponsePreview = {
 export type CustomerUnlockedProComparisonResponse = {
   assumptions: string | null;
   availability: string | null;
+  canSelectPro?: boolean;
   categoryLabel: string;
   cityLabel: string;
   contactPolicyLabel: string;
@@ -850,6 +854,11 @@ export type CustomerUnlockedProComparisonResponse = {
   roughQuoteLabel: string;
   roughQuoteMax: number | null;
   roughQuoteMin: number | null;
+  isSelected?: boolean;
+  selectedAt?: string | null;
+  selectProBlockedReason?: string | null;
+  selectProBlockedReasonCode?: string | null;
+  selectionStatusLabel?: string;
   shortMessage: string | null;
   siteVisitPolicy: string | null;
   submittedAt: string;
@@ -866,6 +875,24 @@ export type CustomerUnlockedProComparison = {
   helperText: string;
   responseCount: number;
   responses: CustomerUnlockedProComparisonResponse[];
+};
+
+export type CustomerProSelectionNextActions = {
+  blockedReason?: string | null;
+  blockedReasonCode?: string | null;
+  canSelectPro: boolean;
+};
+
+export type CustomerProSelectionState = {
+  blockedReason?: string | null;
+  blockedReasonCode?: string | null;
+  helperText: string;
+  selectedProDisplayName?: string | null;
+  selectedProProfileId?: string | null;
+  selectedProResponseId?: string | null;
+  selectedProSelectedAt?: string | null;
+  status: string;
+  statusLabel: string;
 };
 
 export type CustomerProRequestDetail = {
@@ -902,6 +929,8 @@ export type CustomerProRequestDetail = {
   proAccessSupportNextActions?: CustomerProAccessSupportNextActions;
   proAccessSupportReviewLabel?: string | null;
   proAccessSupportState?: CustomerProAccessSupportState;
+  proSelectionNextActions?: CustomerProSelectionNextActions;
+  proSelectionState?: CustomerProSelectionState;
   proUnlockState?: CustomerProAccessState;
   responsePreviews: CustomerProResponsePreview[];
   responsePreviewSummary?: string;
@@ -942,6 +971,12 @@ export type CustomerProAccessSupportRequestResponse = CustomerProRequestDetailRe
   proAccessSupportReviewLabel?: string | null;
   proAccessSupportState?: CustomerProAccessSupportState | null;
   requestId?: string | null;
+};
+
+export type CustomerProResponseSelectResponse = CustomerProRequestDetailResponse & {
+  alreadySelected?: boolean;
+  selectedProProfileId?: string;
+  selectedProResponseId?: string;
 };
 
 export type CustomerProSiteVisitInvitePayload = {

@@ -2,7 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { FormField } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -10,8 +10,10 @@ import {
   cancelCustomerProSiteVisitInvite,
   createCustomerProAccessCheckout,
   createCustomerProSiteVisitInvite,
+  discardCustomerProResponse,
   getCustomerProRequestDetail,
   requestCustomerProAccessSupport,
+  selectCustomerProResponse,
 } from '@/src/lib/api/customer';
 import { CustomerProAccessSupportRequestPayload, CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse, ProAccessSupportIssueType } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
@@ -89,6 +91,10 @@ export default function CustomerProRequestDetailScreen() {
   const [siteVisitNotice, setSiteVisitNotice] = useState<string | null>(null);
   const [isUpdatingSiteVisit, setIsUpdatingSiteVisit] = useState(false);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
+  const [discardingResponseId, setDiscardingResponseId] = useState<string | null>(null);
+  const [discardError, setDiscardError] = useState<string | null>(null);
+  const [selectingResponseId, setSelectingResponseId] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
@@ -324,6 +330,80 @@ export default function CustomerProRequestDetailScreen() {
     setSiteVisitActionError(result.error.message || t('couldNotUpdateSiteVisit'));
   }, [data?.proRequest, getValidAccessToken, proRequestId, status]);
 
+  const handleDiscardProResponse = useCallback((response: CustomerUnlockedProComparisonResponse) => {
+    Alert.alert(
+      t('removeProConfirmTitle'),
+      t('removeProConfirmMessage'),
+      [
+        { style: 'cancel', text: t('cancel') },
+        {
+          style: 'destructive',
+          text: t('removeProFromComparison'),
+          onPress: async () => {
+            if (status === 'demo') {
+              setDiscardError(t('demoDoesNotCreateProRequests'));
+              return;
+            }
+
+            if (status !== 'authenticated') {
+              setDiscardError(t('loginRequired'));
+              return;
+            }
+
+            const authToken = await getValidAccessToken();
+            if (!authToken) {
+              setDiscardError(t('loginRequired'));
+              return;
+            }
+
+            setDiscardingResponseId(response.responseId);
+            setDiscardError(null);
+            const result = await discardCustomerProResponse(proRequestId, response.responseId, authToken);
+            setDiscardingResponseId(null);
+
+            if (result.ok) {
+              setData(result.data);
+              return;
+            }
+
+            setDiscardError(result.error.message || t('couldNotRemoveProResponse'));
+          },
+        },
+      ],
+    );
+  }, [getValidAccessToken, proRequestId, status]);
+
+  const handleSelectProResponse = useCallback(async (response: CustomerUnlockedProComparisonResponse) => {
+    setSelectionError(null);
+
+    if (status === 'demo') {
+      setSelectionError(t('demoDoesNotCreateProRequests'));
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setSelectionError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setSelectionError(t('loginRequired'));
+      return;
+    }
+
+    setSelectingResponseId(response.responseId);
+    const result = await selectCustomerProResponse(proRequestId, response.responseId, authToken);
+    setSelectingResponseId(null);
+
+    if (result.ok) {
+      setData(result.data);
+      return;
+    }
+
+    setSelectionError(result.error.message || t('couldNotSelectPro'));
+  }, [getValidAccessToken, proRequestId, status]);
+
   const startProAccessCheckout = useCallback(async () => {
     setProAccessPaymentError(null);
     setProAccessPaymentMessage(null);
@@ -477,7 +557,28 @@ export default function CustomerProRequestDetailScreen() {
 
           <Images images={request.images} />
 
-          <UnlockedComparisonSection onInviteForSiteVisit={openSiteVisitInvite} request={request} />
+          <UnlockedComparisonSection
+            discardingResponseId={discardingResponseId}
+            onDiscardProResponse={handleDiscardProResponse}
+            onInviteForSiteVisit={openSiteVisitInvite}
+            onSelectProResponse={handleSelectProResponse}
+            request={request}
+            selectingResponseId={selectingResponseId}
+          />
+
+          {discardError ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('couldNotRemoveProResponse')} tone="warning" />
+              <AppText color={colors.slate700}>{discardError}</AppText>
+            </AppCard>
+          ) : null}
+
+          {selectionError ? (
+            <AppCard accentColor={colors.warning600}>
+              <StatusBadge label={t('couldNotSelectPro')} tone="warning" />
+              <AppText color={colors.slate700}>{selectionError}</AppText>
+            </AppCard>
+          ) : null}
 
           {siteVisitFormResponse ? (
             <CustomerSiteVisitInviteForm
@@ -576,11 +677,19 @@ function ProjectSummaryCard({ request }: { request: CustomerProRequestDetailResp
 }
 
 function UnlockedComparisonSection({
+  discardingResponseId,
+  onDiscardProResponse,
   onInviteForSiteVisit,
+  onSelectProResponse,
   request,
+  selectingResponseId,
 }: {
+  discardingResponseId: string | null;
+  onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   request: CustomerProRequestDetailResponse['proRequest'];
+  selectingResponseId: string | null;
 }) {
   const comparison = request.unlockedComparison;
   if (!comparison?.canViewFullComparison) return null;
@@ -598,9 +707,13 @@ function UnlockedComparisonSection({
         <View style={styles.stack}>
           {comparison.responses.map((response) => (
             <ComparisonResponseCard
-              canInviteForSiteVisit={canInvite}
+              canInviteForSiteVisit={canInvite && Boolean(response.isSelected)}
+              isDiscarding={discardingResponseId === response.responseId}
+              isSelecting={selectingResponseId === response.responseId}
               key={response.responseId}
+              onDiscardProResponse={onDiscardProResponse}
               onInviteForSiteVisit={onInviteForSiteVisit}
+              onSelectProResponse={onSelectProResponse}
               response={response}
             />
           ))}
@@ -615,11 +728,19 @@ function UnlockedComparisonSection({
 
 function ComparisonResponseCard({
   canInviteForSiteVisit,
+  isDiscarding,
+  isSelecting,
+  onDiscardProResponse,
   onInviteForSiteVisit,
+  onSelectProResponse,
   response,
 }: {
   canInviteForSiteVisit: boolean;
+  isDiscarding: boolean;
+  isSelecting: boolean;
+  onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   response: CustomerUnlockedProComparisonResponse;
 }) {
   const profileImageUrl = response.profileImageUrl ? resolveApiMediaUrl(response.profileImageUrl) : null;
@@ -646,6 +767,7 @@ function ComparisonResponseCard({
           <View style={styles.badgeRow}>
             <StatusBadge label={response.profileVerifiedLabel || t('reviewedByTaskly')} tone="success" />
             <StatusBadge label={response.independentProLabel || t('independentPro')} tone="pro" />
+            {response.isSelected ? <StatusBadge label={t('selectedPro')} tone="success" /> : null}
           </View>
         </View>
       </View>
@@ -678,9 +800,32 @@ function ComparisonResponseCard({
       <AppText color={colors.slate500} variant="caption">
         {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
       </AppText>
+      {response.canSelectPro ? (
+        <>
+          <AppText color={colors.slate700}>{t('selectProHelper')}</AppText>
+          <AppButton
+            loading={isSelecting}
+            onPress={() => onSelectProResponse(response)}
+            tone="pro"
+          >
+            {t('selectThisPro')}
+          </AppButton>
+        </>
+      ) : null}
       {canInviteForSiteVisit ? (
         <AppButton onPress={() => onInviteForSiteVisit(response)} tone="pro" variant="outline">
           {t('inviteForSiteVisit')}
+        </AppButton>
+      ) : null}
+      {!response.isSelected ? (
+        <AppButton
+          disabled={isDiscarding}
+          loading={isDiscarding}
+          onPress={() => onDiscardProResponse(response)}
+          tone="neutral"
+          variant="ghost"
+        >
+          {t('removeProFromComparison')}
         </AppButton>
       ) : null}
     </View>
@@ -797,14 +942,14 @@ function SiteVisitStateCard({
       {contactState ? (
         <Info
           label={t('sharedDetails')}
-          value={contactState.state === 'shared_for_site_visit' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
+          value={contactState.state === 'shared_for_site_visit' || contactState.state === 'shared_for_selected_pro' ? t('contactDetailsSharedForSiteVisit') : t('contactDetailsHidden')}
         />
       ) : null}
       {addressState ? (
         <Info
           label={t('siteVisit')}
           value={
-            addressState.state === 'shared_for_site_visit'
+            addressState.state === 'shared_for_site_visit' || addressState.state === 'shared_for_selected_pro'
               ? t('addressSharedForSiteVisit')
               : addressState.state === 'area_only'
                 ? t('cityAreaOnly')
