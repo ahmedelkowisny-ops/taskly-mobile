@@ -39,3 +39,10 @@ yarn-error.*
 app-example
 
 .env
+
+.idea/
+android/
+gradle-full-log.txt
+gradle-error.txt
+android-build-log.txt
+
