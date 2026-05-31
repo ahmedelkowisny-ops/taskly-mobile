@@ -69,6 +69,11 @@ type ValidationFieldKey =
   | 'electricalChecklistPowerAccess'
   | 'electricalChecklistReplacementOnly'
   | 'electricalReplacementAtExistingPoint'
+  | 'plumbingAccessAvailable'
+  | 'plumbingChecklistIssueVisible'
+  | 'plumbingChecklistPartsReady'
+  | 'plumbingChecklistShutoffAccess'
+  | 'plumbingIssueVisibleLocalized'
   | 'mountingCableConcealmentRequested'
   | 'mountingChecklistItemReady'
   | 'mountingChecklistMeasurementsChecked'
@@ -296,6 +301,11 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     'scopeData.checklistReplacementOnly': 'electricalChecklistReplacementOnly',
     'scopeData.checklistPowerAccess': 'electricalChecklistPowerAccess',
     'scopeData.checklistNoNewWiring': 'electricalChecklistNoNewWiring',
+    'scopeData.plumbingIssueVisibleLocalized': 'plumbingIssueVisibleLocalized',
+    'scopeData.plumbingAccessAvailable': 'plumbingAccessAvailable',
+    'scopeData.checklistIssueVisible': 'plumbingChecklistIssueVisible',
+    'scopeData.checklistShutoffAccess': 'plumbingChecklistShutoffAccess',
+    'scopeData.checklistPartsReady': 'plumbingChecklistPartsReady',
     title: 'title',
   };
 
@@ -402,6 +412,11 @@ export default function CustomerPostTaskScreen() {
   const [electricalChecklistReplacementOnly, setElectricalChecklistReplacementOnly] = useState(false);
   const [electricalChecklistPowerAccess, setElectricalChecklistPowerAccess] = useState(false);
   const [electricalChecklistNoNewWiring, setElectricalChecklistNoNewWiring] = useState(false);
+  const [plumbingIssueVisibleLocalized, setPlumbingIssueVisibleLocalized] = useState(false);
+  const [plumbingAccessAvailable, setPlumbingAccessAvailable] = useState(false);
+  const [plumbingChecklistIssueVisible, setPlumbingChecklistIssueVisible] = useState(false);
+  const [plumbingChecklistShutoffAccess, setPlumbingChecklistShutoffAccess] = useState(false);
+  const [plumbingChecklistPartsReady, setPlumbingChecklistPartsReady] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -636,6 +651,11 @@ export default function CustomerPostTaskScreen() {
     setElectricalChecklistReplacementOnly(false);
     setElectricalChecklistPowerAccess(false);
     setElectricalChecklistNoNewWiring(false);
+    setPlumbingIssueVisibleLocalized(false);
+    setPlumbingAccessAvailable(false);
+    setPlumbingChecklistIssueVisible(false);
+    setPlumbingChecklistShutoffAccess(false);
+    setPlumbingChecklistPartsReady(false);
   }, [selectedCategoryId]);
 
   const handlePickImages = useCallback(async () => {
@@ -893,6 +913,24 @@ export default function CustomerPostTaskScreen() {
       }
     }
 
+    if (selectedCategory?.slug === 'minor_plumbing_fix') {
+      if (!plumbingIssueVisibleLocalized) {
+        addIssue('plumbingIssueVisibleLocalized', 'Issue visible', 'Please confirm the issue area is visible and localized.');
+      }
+      if (!plumbingAccessAvailable) {
+        addIssue('plumbingAccessAvailable', 'Access available', 'Please confirm shutoff/access is available.');
+      }
+      if (!plumbingChecklistIssueVisible) {
+        addIssue('plumbingChecklistIssueVisible', 'Leak/problem visible', 'Please confirm the leak/problem area is visible and localized.');
+      }
+      if (!plumbingChecklistShutoffAccess) {
+        addIssue('plumbingChecklistShutoffAccess', 'Shutoff access', 'Please confirm shutoff/access is available.');
+      }
+      if (!plumbingChecklistPartsReady) {
+        addIssue('plumbingChecklistPartsReady', 'Parts ready', 'Please confirm replacement parts are available if needed.');
+      }
+    }
+
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -987,6 +1025,11 @@ export default function CustomerPostTaskScreen() {
     electricalChecklistReplacementOnly,
     electricalReplacementAtExistingPoint,
     mountingCableConcealmentRequested,
+    plumbingAccessAvailable,
+    plumbingChecklistIssueVisible,
+    plumbingChecklistPartsReady,
+    plumbingChecklistShutoffAccess,
+    plumbingIssueVisibleLocalized,
     mountingChecklistItemReady,
     mountingChecklistMeasurementsChecked,
     mountingChecklistWallSurfaceSelected,
@@ -1017,6 +1060,8 @@ export default function CustomerPostTaskScreen() {
           'mountingChecklistItemReady', 'mountingChecklistWallSurfaceSelected', 'mountingChecklistMeasurementsChecked',
           'mountingTvSizeBand', 'mountingTvBracketAvailable', 'mountingCableConcealmentRequested',
           'electricalReplacementAtExistingPoint', 'electricalChecklistReplacementOnly', 'electricalChecklistPowerAccess', 'electricalChecklistNoNewWiring',
+          'plumbingIssueVisibleLocalized', 'plumbingAccessAvailable',
+          'plumbingChecklistIssueVisible', 'plumbingChecklistShutoffAccess', 'plumbingChecklistPartsReady',
         ],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
@@ -1100,6 +1145,7 @@ export default function CustomerPostTaskScreen() {
     const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
     const isGeneralMounting = selectedCategory?.slug === 'general_mounting';
     const isLightElectrical = selectedCategory?.slug === 'light_electrical';
+    const isPlumbingFix = selectedCategory?.slug === 'minor_plumbing_fix';
 
     setIsSubmitting(true);
     const result = await createCustomerTask(
@@ -1122,6 +1168,17 @@ export default function CustomerPostTaskScreen() {
                 assemblyInstructionsAvailable,
                 assemblyItemUnassembled,
                 assemblyPartsAvailable,
+              },
+            }
+          : {}),
+        ...(isPlumbingFix
+          ? {
+              scopeData: {
+                plumbingIssueVisibleLocalized,
+                plumbingAccessAvailable,
+                checklistIssueVisible: plumbingChecklistIssueVisible,
+                checklistShutoffAccess: plumbingChecklistShutoffAccess,
+                checklistPartsReady: plumbingChecklistPartsReady,
               },
             }
           : {}),
@@ -1231,6 +1288,11 @@ export default function CustomerPostTaskScreen() {
     electricalReplacementAtExistingPoint,
     estimatedTime,
     formValidation,
+    plumbingAccessAvailable,
+    plumbingChecklistIssueVisible,
+    plumbingChecklistPartsReady,
+    plumbingChecklistShutoffAccess,
+    plumbingIssueVisibleLocalized,
     getValidAccessToken,
     images,
     mountingCableConcealmentRequested,
@@ -1706,6 +1768,72 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('electricalChecklistReplacementOnly') ||
                 getFieldError('electricalChecklistPowerAccess') ||
                 getFieldError('electricalChecklistNoNewWiring')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+
+          {selectedCategory?.slug === 'minor_plumbing_fix' ? (
+            <View style={styles.scopeSection}>
+              <View style={styles.electricalWarningBanner}>
+                <Ionicons color={colors.warning600} name="warning-outline" size={16} />
+                <AppText color={colors.warning600} style={styles.electricalWarningText}>
+                  This service is limited to tightly scoped micro-jobs. Pipe rerouting and wall-breaking are not included.
+                </AppText>
+              </View>
+              <ScopeCheckboxRow
+                checked={plumbingIssueVisibleLocalized}
+                hasError={!!getFieldError('plumbingIssueVisibleLocalized')}
+                label="The issue area is visible and localized."
+                onPress={() => {
+                  setPlumbingIssueVisibleLocalized((v) => !v);
+                  clearFieldError('plumbingIssueVisibleLocalized');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={plumbingAccessAvailable}
+                hasError={!!getFieldError('plumbingAccessAvailable')}
+                label="Shutoff/access is available."
+                onPress={() => {
+                  setPlumbingAccessAvailable((v) => !v);
+                  clearFieldError('plumbingAccessAvailable');
+                }}
+              />
+              <AppText style={styles.fieldLabel}>Checklist</AppText>
+              <ScopeCheckboxRow
+                checked={plumbingChecklistIssueVisible}
+                hasError={!!getFieldError('plumbingChecklistIssueVisible')}
+                label="Leak/problem area is visible and localized."
+                onPress={() => {
+                  setPlumbingChecklistIssueVisible((v) => !v);
+                  clearFieldError('plumbingChecklistIssueVisible');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={plumbingChecklistShutoffAccess}
+                hasError={!!getFieldError('plumbingChecklistShutoffAccess')}
+                label="Shutoff/access is available."
+                onPress={() => {
+                  setPlumbingChecklistShutoffAccess((v) => !v);
+                  clearFieldError('plumbingChecklistShutoffAccess');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={plumbingChecklistPartsReady}
+                hasError={!!getFieldError('plumbingChecklistPartsReady')}
+                label="Replacement parts are available if needed."
+                onPress={() => {
+                  setPlumbingChecklistPartsReady((v) => !v);
+                  clearFieldError('plumbingChecklistPartsReady');
+                }}
+              />
+              {(getFieldError('plumbingIssueVisibleLocalized') ||
+                getFieldError('plumbingAccessAvailable') ||
+                getFieldError('plumbingChecklistIssueVisible') ||
+                getFieldError('plumbingChecklistShutoffAccess') ||
+                getFieldError('plumbingChecklistPartsReady')) ? (
                 <AppText color={colors.danger600} variant="small">
                   Please confirm all items before continuing.
                 </AppText>
@@ -2276,6 +2404,66 @@ export default function CustomerPostTaskScreen() {
                 />
                 <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
                   No new wiring or moving points is required.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          {selectedCategory?.slug === 'minor_plumbing_fix' ? (
+            <View style={styles.scopeReviewSection}>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.warning600} name="warning-outline" size={16} />
+                <AppText color={colors.warning600} style={styles.electricalWarningText}>
+                  Tightly scoped micro-jobs only. No pipe rerouting or wall-breaking.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={plumbingIssueVisibleLocalized ? colors.success600 : colors.warning600}
+                  name={plumbingIssueVisibleLocalized ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  The issue area is visible and localized.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={plumbingAccessAvailable ? colors.success600 : colors.warning600}
+                  name={plumbingAccessAvailable ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Shutoff/access is available.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={plumbingChecklistIssueVisible ? colors.success600 : colors.warning600}
+                  name={plumbingChecklistIssueVisible ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Leak/problem area is visible and localized.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={plumbingChecklistShutoffAccess ? colors.success600 : colors.warning600}
+                  name={plumbingChecklistShutoffAccess ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Shutoff/access is available.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={plumbingChecklistPartsReady ? colors.success600 : colors.warning600}
+                  name={plumbingChecklistPartsReady ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Replacement parts are available if needed.
                 </AppText>
               </View>
             </View>

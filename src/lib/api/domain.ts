@@ -452,6 +452,12 @@ export type TaskScopeData = {
   checklistReplacementOnly?: boolean;
   checklistPowerAccess?: boolean;
   checklistNoNewWiring?: boolean;
+  // minor_plumbing_fix
+  plumbingIssueVisibleLocalized?: boolean;
+  plumbingAccessAvailable?: boolean;
+  checklistIssueVisible?: boolean;
+  checklistShutoffAccess?: boolean;
+  checklistPartsReady?: boolean;
 };
 
 export type CreateCustomerTaskPayload = {
