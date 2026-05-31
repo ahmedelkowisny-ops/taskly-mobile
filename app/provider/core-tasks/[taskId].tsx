@@ -700,6 +700,7 @@ export default function ProviderCoreTaskDetailScreen() {
             <Info label="Address" value={task.addressPreviewLabel || t('locationSharedWhenReserved')} />
           </AppCard>
 
+          <ScopeChecklistCard task={task} />
           <Images images={task.images} />
           <ProviderIssueSupportCard task={task} />
           <ProviderCancellationSupportCard task={task} />
@@ -766,6 +767,32 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
       <AppText variant="sectionTitle">Images</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => <Image key={image.id} accessibilityLabel={image.alt} source={{ uri: image.url }} style={styles.image} />)}
+      </View>
+    </AppCard>
+  );
+}
+
+function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
+  const checklist = task.scopeChecklist ?? [];
+  if (!checklist.length) return null;
+
+  return (
+    <AppCard>
+      <StatusBadge label={`${checklist.filter((item) => item.checked).length}/${checklist.length}`} tone="core" />
+      <AppText variant="sectionTitle">Scope checklist</AppText>
+      <View style={styles.scopeChecklistList}>
+        {checklist.map((item, index) => (
+          <View key={`${item.code || 'scope'}-${index}`} style={styles.scopeChecklistRow}>
+            <View style={[styles.scopeChecklistIcon, item.checked ? styles.scopeChecklistIconChecked : null]}>
+              <AppText color={item.checked ? colors.white : colors.slate500} style={styles.scopeChecklistIconText}>
+                {item.checked ? 'OK' : '-'}
+              </AppText>
+            </View>
+            <AppText color={colors.slate700} style={styles.scopeChecklistLabel}>
+              {item.label || item.code || 'Scope item'}
+            </AppText>
+          </View>
+        ))}
       </View>
     </AppCard>
   );
@@ -1282,6 +1309,43 @@ const styles = StyleSheet.create({
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  scopeChecklistIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#D7E7FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  scopeChecklistIconChecked: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
+  },
+  scopeChecklistIconText: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  scopeChecklistLabel: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  scopeChecklistList: {
+    gap: spacing.sm,
+  },
+  scopeChecklistRow: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: '#D7E7FA',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
   stack: { gap: spacing.sm },
   timelineItem: { gap: spacing.xs },
 });

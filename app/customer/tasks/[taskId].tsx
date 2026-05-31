@@ -939,6 +939,7 @@ export default function CustomerTaskDetailScreen() {
         <>
           <TaskDetailHero task={task} />
           <TaskSummarySection task={task} />
+          <ScopeChecklistSection task={task} />
           <TaskScheduleSection task={task} />
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
           <PaymentSetupCard
@@ -1055,6 +1056,34 @@ function TaskSummarySection({ task }: { task: CustomerTaskDetail }) {
         <Info label={t('taskCardLocation')} value={task.cityLabel} />
         <Info label={t('taskCardSchedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
         <Info label={t('address')} value={task.addressPreviewLabel} />
+      </View>
+    </AppCard>
+  );
+}
+
+function ScopeChecklistSection({ task }: { task: CustomerTaskDetail }) {
+  const checklist = task.scopeChecklist ?? [];
+  if (!checklist.length) return null;
+
+  return (
+    <AppCard style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
+        <AppText variant="sectionTitle">Scope checklist</AppText>
+        <StatusBadge label={`${checklist.filter((item) => item.checked).length}/${checklist.length}`} tone="core" />
+      </View>
+      <View style={styles.scopeChecklistList}>
+        {checklist.map((item, index) => (
+          <View key={`${item.code || 'scope'}-${index}`} style={styles.scopeChecklistRow}>
+            <View style={[styles.scopeChecklistIcon, item.checked ? styles.scopeChecklistIconChecked : null]}>
+              <AppText color={item.checked ? colors.white : colors.slate500} style={styles.scopeChecklistIconText}>
+                {item.checked ? 'OK' : '-'}
+              </AppText>
+            </View>
+            <AppText color={colors.slate700} style={styles.scopeChecklistLabel}>
+              {item.label || item.code || 'Scope item'}
+            </AppText>
+          </View>
+        ))}
       </View>
     </AppCard>
   );
@@ -1826,6 +1855,43 @@ const styles = StyleSheet.create({
   },
   infoValue: { fontSize: 13, lineHeight: 18 },
   screenContent: { gap: spacing.lg },
+  scopeChecklistIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#D7E7FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
+  scopeChecklistIconChecked: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
+  },
+  scopeChecklistIconText: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
+  scopeChecklistLabel: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  scopeChecklistList: {
+    gap: spacing.sm,
+  },
+  scopeChecklistRow: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: '#D7E7FA',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
   sectionCard: {
     borderRadius: radius.lg,
     gap: spacing.md,

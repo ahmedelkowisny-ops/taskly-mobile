@@ -391,6 +391,12 @@ export type CustomerInterestedTaskerPreview = {
   toolsConfirmed: boolean;
 };
 
+export type TaskScopeChecklistItem = {
+  checked: boolean;
+  code: string;
+  label: string;
+};
+
 export type CustomerTaskDetail = {
   addressPreviewLabel: string;
   cancellationBlockedReason?: string | null;
@@ -411,6 +417,7 @@ export type CustomerTaskDetail = {
   refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
+  scopeChecklist?: TaskScopeChecklistItem[];
   status: string;
   statusLabel: string;
   supportReviewLabel?: string | null;
@@ -1043,6 +1050,7 @@ export type ProviderCoreTaskDetail = {
   refundState?: CoreRefundState;
   scheduledEndAt: string | null;
   scheduledStartAt: string | null;
+  scopeChecklist?: TaskScopeChecklistItem[];
   status: string;
   statusLabel: string;
   supportReviewLabel?: string | null;
