@@ -447,6 +447,11 @@ export type TaskScopeData = {
   checklistItemReady?: boolean;
   checklistWallSurfaceSelected?: boolean;
   checklistMeasurementsChecked?: boolean;
+  // light_electrical
+  electricalReplacementAtExistingPoint?: boolean;
+  checklistReplacementOnly?: boolean;
+  checklistPowerAccess?: boolean;
+  checklistNoNewWiring?: boolean;
 };
 
 export type CreateCustomerTaskPayload = {

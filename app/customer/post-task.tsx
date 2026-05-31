@@ -65,6 +65,10 @@ type ValidationFieldKey =
   | 'cityId'
   | 'description'
   | 'estimatedTime'
+  | 'electricalChecklistNoNewWiring'
+  | 'electricalChecklistPowerAccess'
+  | 'electricalChecklistReplacementOnly'
+  | 'electricalReplacementAtExistingPoint'
   | 'mountingCableConcealmentRequested'
   | 'mountingChecklistItemReady'
   | 'mountingChecklistMeasurementsChecked'
@@ -288,6 +292,10 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     'scopeData.checklistItemReady': 'mountingChecklistItemReady',
     'scopeData.checklistWallSurfaceSelected': 'mountingChecklistWallSurfaceSelected',
     'scopeData.checklistMeasurementsChecked': 'mountingChecklistMeasurementsChecked',
+    'scopeData.electricalReplacementAtExistingPoint': 'electricalReplacementAtExistingPoint',
+    'scopeData.checklistReplacementOnly': 'electricalChecklistReplacementOnly',
+    'scopeData.checklistPowerAccess': 'electricalChecklistPowerAccess',
+    'scopeData.checklistNoNewWiring': 'electricalChecklistNoNewWiring',
     title: 'title',
   };
 
@@ -390,6 +398,10 @@ export default function CustomerPostTaskScreen() {
   const [mountingChecklistItemReady, setMountingChecklistItemReady] = useState(false);
   const [mountingChecklistWallSurfaceSelected, setMountingChecklistWallSurfaceSelected] = useState(false);
   const [mountingChecklistMeasurementsChecked, setMountingChecklistMeasurementsChecked] = useState(false);
+  const [electricalReplacementAtExistingPoint, setElectricalReplacementAtExistingPoint] = useState(false);
+  const [electricalChecklistReplacementOnly, setElectricalChecklistReplacementOnly] = useState(false);
+  const [electricalChecklistPowerAccess, setElectricalChecklistPowerAccess] = useState(false);
+  const [electricalChecklistNoNewWiring, setElectricalChecklistNoNewWiring] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -620,6 +632,10 @@ export default function CustomerPostTaskScreen() {
     setMountingChecklistItemReady(false);
     setMountingChecklistWallSurfaceSelected(false);
     setMountingChecklistMeasurementsChecked(false);
+    setElectricalReplacementAtExistingPoint(false);
+    setElectricalChecklistReplacementOnly(false);
+    setElectricalChecklistPowerAccess(false);
+    setElectricalChecklistNoNewWiring(false);
   }, [selectedCategoryId]);
 
   const handlePickImages = useCallback(async () => {
@@ -862,6 +878,21 @@ export default function CustomerPostTaskScreen() {
       }
     }
 
+    if (selectedCategory?.slug === 'light_electrical') {
+      if (!electricalReplacementAtExistingPoint) {
+        addIssue('electricalReplacementAtExistingPoint', 'Replacement confirmed', 'Please confirm this is replacement work at an existing point.');
+      }
+      if (!electricalChecklistReplacementOnly) {
+        addIssue('electricalChecklistReplacementOnly', 'Replacement only', 'Please confirm this is replacement at an existing point only.');
+      }
+      if (!electricalChecklistPowerAccess) {
+        addIssue('electricalChecklistPowerAccess', 'Power access', 'Please confirm power can be safely turned off and accessed.');
+      }
+      if (!electricalChecklistNoNewWiring) {
+        addIssue('electricalChecklistNoNewWiring', 'No new wiring', 'Please confirm no new wiring or moving points is required.');
+      }
+    }
+
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -951,6 +982,10 @@ export default function CustomerPostTaskScreen() {
     description,
     endTime,
     estimatedTime,
+    electricalChecklistNoNewWiring,
+    electricalChecklistPowerAccess,
+    electricalChecklistReplacementOnly,
+    electricalReplacementAtExistingPoint,
     mountingCableConcealmentRequested,
     mountingChecklistItemReady,
     mountingChecklistMeasurementsChecked,
@@ -981,6 +1016,7 @@ export default function CustomerPostTaskScreen() {
           'mountingWallType', 'mountingItemCount',
           'mountingChecklistItemReady', 'mountingChecklistWallSurfaceSelected', 'mountingChecklistMeasurementsChecked',
           'mountingTvSizeBand', 'mountingTvBracketAvailable', 'mountingCableConcealmentRequested',
+          'electricalReplacementAtExistingPoint', 'electricalChecklistReplacementOnly', 'electricalChecklistPowerAccess', 'electricalChecklistNoNewWiring',
         ],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
@@ -1063,6 +1099,7 @@ export default function CustomerPostTaskScreen() {
 
     const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
     const isGeneralMounting = selectedCategory?.slug === 'general_mounting';
+    const isLightElectrical = selectedCategory?.slug === 'light_electrical';
 
     setIsSubmitting(true);
     const result = await createCustomerTask(
@@ -1085,6 +1122,16 @@ export default function CustomerPostTaskScreen() {
                 assemblyInstructionsAvailable,
                 assemblyItemUnassembled,
                 assemblyPartsAvailable,
+              },
+            }
+          : {}),
+        ...(isLightElectrical
+          ? {
+              scopeData: {
+                electricalReplacementAtExistingPoint,
+                checklistReplacementOnly: electricalChecklistReplacementOnly,
+                checklistPowerAccess: electricalChecklistPowerAccess,
+                checklistNoNewWiring: electricalChecklistNoNewWiring,
               },
             }
           : {}),
@@ -1178,6 +1225,10 @@ export default function CustomerPostTaskScreen() {
     assemblyItemUnassembled,
     assemblyPartsAvailable,
     description,
+    electricalChecklistNoNewWiring,
+    electricalChecklistPowerAccess,
+    electricalChecklistReplacementOnly,
+    electricalReplacementAtExistingPoint,
     estimatedTime,
     formValidation,
     getValidAccessToken,
@@ -1601,6 +1652,62 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('mountingChecklistMeasurementsChecked')) ? (
                 <AppText color={colors.danger600} variant="small">
                   Please confirm all checklist items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+
+          {selectedCategory?.slug === 'light_electrical' ? (
+            <View style={styles.scopeSection}>
+              <View style={styles.electricalWarningBanner}>
+                <Ionicons color={colors.warning600} name="warning-outline" size={16} />
+                <AppText color={colors.warning600} style={styles.electricalWarningText}>
+                  This service covers replacement at an existing point only. New wiring or moving points is not included.
+                </AppText>
+              </View>
+              <ScopeCheckboxRow
+                checked={electricalReplacementAtExistingPoint}
+                hasError={!!getFieldError('electricalReplacementAtExistingPoint')}
+                label="I confirm this is replacement work at an existing point."
+                onPress={() => {
+                  setElectricalReplacementAtExistingPoint((v) => !v);
+                  clearFieldError('electricalReplacementAtExistingPoint');
+                }}
+              />
+              <AppText style={styles.fieldLabel}>Checklist</AppText>
+              <ScopeCheckboxRow
+                checked={electricalChecklistReplacementOnly}
+                hasError={!!getFieldError('electricalChecklistReplacementOnly')}
+                label="This is replacement at an existing point only."
+                onPress={() => {
+                  setElectricalChecklistReplacementOnly((v) => !v);
+                  clearFieldError('electricalChecklistReplacementOnly');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={electricalChecklistPowerAccess}
+                hasError={!!getFieldError('electricalChecklistPowerAccess')}
+                label="Power can be safely turned off and accessed."
+                onPress={() => {
+                  setElectricalChecklistPowerAccess((v) => !v);
+                  clearFieldError('electricalChecklistPowerAccess');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={electricalChecklistNoNewWiring}
+                hasError={!!getFieldError('electricalChecklistNoNewWiring')}
+                label="No new wiring or moving points is required."
+                onPress={() => {
+                  setElectricalChecklistNoNewWiring((v) => !v);
+                  clearFieldError('electricalChecklistNoNewWiring');
+                }}
+              />
+              {(getFieldError('electricalReplacementAtExistingPoint') ||
+                getFieldError('electricalChecklistReplacementOnly') ||
+                getFieldError('electricalChecklistPowerAccess') ||
+                getFieldError('electricalChecklistNoNewWiring')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all items before continuing.
                 </AppText>
               ) : null}
             </View>
@@ -2119,6 +2226,56 @@ export default function CustomerPostTaskScreen() {
                 />
                 <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
                   Assembly area is clear and accessible.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          {selectedCategory?.slug === 'light_electrical' ? (
+            <View style={styles.scopeReviewSection}>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.warning600} name="warning-outline" size={16} />
+                <AppText color={colors.warning600} style={styles.electricalWarningText}>
+                  Safety restriction: replacement at existing point only.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={electricalReplacementAtExistingPoint ? colors.success600 : colors.warning600}
+                  name={electricalReplacementAtExistingPoint ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  I confirm this is replacement work at an existing point.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={electricalChecklistReplacementOnly ? colors.success600 : colors.warning600}
+                  name={electricalChecklistReplacementOnly ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  This is replacement at an existing point only.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={electricalChecklistPowerAccess ? colors.success600 : colors.warning600}
+                  name={electricalChecklistPowerAccess ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Power can be safely turned off and accessed.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={electricalChecklistNoNewWiring ? colors.success600 : colors.warning600}
+                  name={electricalChecklistNoNewWiring ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  No new wiring or moving points is required.
                 </AppText>
               </View>
             </View>
@@ -3162,5 +3319,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md,
+  },
+  electricalWarningBanner: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  electricalWarningText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });
