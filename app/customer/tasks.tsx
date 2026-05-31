@@ -4,7 +4,8 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { EmptyStateCard } from '@/src/components/taskly';
+import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
+import { CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerTasks } from '@/src/lib/api/customer';
 import {
@@ -16,19 +17,21 @@ import {
 } from '@/src/lib/api/domain';
 import { getMockCustomerTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type StatusTone = 'core' | 'pro' | 'success' | 'warning' | 'danger' | 'neutral';
 
 export default function CustomerTasksScreen() {
+  useI18n();
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<CustomerTasksResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const loadTasks = useCallback(async () => {
     setErrorMessage(null);
@@ -83,8 +86,9 @@ export default function CustomerTasksScreen() {
 
   return (
     <Screen contentStyle={styles.screenContent}>
+      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
+
       <View style={styles.pageHeader}>
-        <View style={styles.headerAccent} />
         <View style={styles.headerCopy}>
           <AppText variant="screenTitle">{t('myTasks')}</AppText>
           <AppText color={colors.slate700}>{t('tasklyTasksIntro')}</AppText>
@@ -139,7 +143,7 @@ export default function CustomerTasksScreen() {
         />
       ) : null}
 
-      <AppCard accentColor={colors.tasklyBlue600} style={styles.trustCard}>
+      <AppCard style={styles.trustCard}>
         <View style={styles.badgeRow}>
           <StatusBadge label={t('paymentProtected')} tone="success" />
           <StatusBadge label={t('supportWhenNeededChip')} tone="core" />
@@ -147,6 +151,8 @@ export default function CustomerTasksScreen() {
         <AppText variant="sectionTitle">{t('taskPaymentProtectedTitle')}</AppText>
         <AppText color={colors.slate700}>{t('paymentProtectedReleasedAfterApproval')}</AppText>
       </AppCard>
+
+      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }
@@ -157,7 +163,7 @@ function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSu
   const policySummary = getCorePolicySummary(task);
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600} style={styles.taskCard}>
+    <AppCard style={styles.taskCard}>
       <View style={styles.cardHeader}>
         <View style={styles.badgeRow}>
           <StatusBadge label={getCustomerTaskPhaseLabel(task)} tone="core" />
@@ -416,12 +422,6 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: spacing.md,
   },
-  headerAccent: {
-    backgroundColor: colors.tasklyBlue600,
-    borderRadius: radius.pill,
-    height: 36,
-    width: 5,
-  },
   headerCopy: {
     flex: 1,
     gap: spacing.xs,
@@ -487,7 +487,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   taskCard: {
-    borderRadius: radius.lg,
     gap: spacing.md,
     padding: spacing.lg,
   },

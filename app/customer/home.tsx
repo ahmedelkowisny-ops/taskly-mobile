@@ -3,10 +3,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
-import { EmptyStateCard, LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
+import { CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerHomeSummary } from '@/src/lib/api/customer';
 import { CustomerHomeResponse } from '@/src/lib/api/domain';
@@ -83,19 +83,7 @@ export default function CustomerHomeScreen() {
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
-      <View style={styles.topBar}>
-        <TasklyLogoText wordmarkOnly />
-        <View style={styles.headerActions}>
-          <LanguageToggle />
-          <Pressable
-            accessibilityLabel={t('menu')}
-            accessibilityRole="button"
-            onPress={() => setDrawerOpen(true)}
-            style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
-            <Ionicons color={colors.navy900} name="menu" size={21} />
-          </Pressable>
-        </View>
-      </View>
+      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.greeting}>
         <AppText style={styles.greetingTitle} variant="screenTitle">
@@ -296,7 +284,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   content: {
-    gap: spacing.lg,
+    gap: spacing.xl,
     paddingTop: spacing.lg,
   },
   greeting: {
@@ -315,28 +303,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  menuButton: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 12,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    width: 40,
-    elevation: 1,
-  },
   metric: {
     backgroundColor: colors.white,
     borderColor: '#E6EBF0',
     borderRadius: 14,
     borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
     gap: 2,
     padding: spacing.md,
   },
@@ -345,13 +316,7 @@ const styles = StyleSheet.create({
     borderColor: '#F3D6AF',
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  pressed: {
-    opacity: 0.84,
-    transform: [{ scale: 0.98 }],
   },
   screen: {
     backgroundColor: '#F7F9FB',
@@ -372,23 +337,6 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 8, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 22,
-    elevation: 2,
-  },
-  topBar: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 62,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
     elevation: 2,
   },
   trustCard: {

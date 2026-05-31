@@ -4,7 +4,8 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard } from '@/src/components/taskly';
+import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
+import { AssistantGuideCard, CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerProRequests } from '@/src/lib/api/customer';
 import { CustomerProRequestsResponse } from '@/src/lib/api/domain';
@@ -20,6 +21,7 @@ export default function CustomerProRequestsScreen() {
   const [data, setData] = useState<CustomerProRequestsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   const loadProRequests = useCallback(async () => {
@@ -75,6 +77,8 @@ export default function CustomerProRequestsScreen() {
 
   return (
     <Screen>
+      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
+
       <View style={styles.proHero}>
         <View style={styles.badgeRow}>
           <StatusBadge label={t('tasklyPro')} tone="pro" />
@@ -170,6 +174,8 @@ export default function CustomerProRequestsScreen() {
         title={t('unlockAndComparePros')}
         tone="pro"
       />
+
+      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }

@@ -53,13 +53,13 @@ const toneStyles = {
     muted: '#92400E',
   },
   taskly: {
-    accent: colors.tasklyBlue600,
+    accent: '#2C6BED',
     background: '#F8FBFF',
     border: '#D7E7FF',
     chipBorder: '#BFDBFE',
-    chipIcon: colors.tasklyBlue700,
-    cta: colors.tasklyBlue600,
-    muted: colors.tasklyBlue700,
+    chipIcon: '#1D4ED8',
+    cta: '#2C6BED',
+    muted: '#1D4ED8',
   },
 } as const;
 
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#E5E7EB',
+    borderColor: '#E6EBF0',
     borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     backgroundColor: colors.white,
-    borderColor: '#E5E7EB',
+    borderColor: '#E6EBF0',
     borderRadius: 28,
     borderWidth: 1,
     gap: spacing.lg,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   menuButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#E5E7EB',
+    borderColor: '#E6EBF0',
     borderRadius: radius.sm,
     borderWidth: 1,
     height: 38,
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   pathCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   },
   rolePanel: {
     backgroundColor: colors.white,
-    borderColor: '#E5E7EB',
+    borderColor: '#E6EBF0',
     borderRadius: 24,
     borderWidth: 1,
     gap: spacing.md,

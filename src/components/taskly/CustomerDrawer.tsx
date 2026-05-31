@@ -258,7 +258,7 @@ function DrawerNavItem({
         pressed && !active ? styles.itemPressed : null,
       ]}>
       {active ? <View style={[styles.activeBar, { backgroundColor: accent }]} /> : null}
-      <View style={[styles.itemIcon, active || isPro ? styles.itemIconAccent : null]}>
+      <View style={[styles.itemIcon, isPro ? styles.itemIconAccent : active ? styles.itemIconActiveTaskly : null]}>
         <Ionicons color={iconColor} name={icon} size={18} />
       </View>
       <AppText color={active ? colors.navy900 : colors.sidebarMuted} style={styles.itemText}>
@@ -367,6 +367,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.proOrange50,
     borderColor: '#F0D9B8',
   },
+  itemIconActiveTaskly: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: '#BFDBFE',
+  },
   itemPressed: {
     backgroundColor: colors.white,
   },
@@ -375,6 +379,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 17,
+    textTransform: 'uppercase',
   },
   languageCard: {
     alignItems: 'center',

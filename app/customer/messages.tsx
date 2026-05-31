@@ -4,7 +4,8 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
+import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
+import { CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageThreadSummary, MessageThreadsResponse } from '@/src/lib/api/domain';
 import { getMessageThreads } from '@/src/lib/api/messages';
@@ -18,6 +19,7 @@ export default function CustomerMessagesScreen() {
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -67,8 +69,9 @@ export default function CustomerMessagesScreen() {
 
   return (
     <Screen>
+      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
+
       <View style={styles.header}>
-        <ModeBadge mode="customer" />
         <AppText variant="screenTitle">{t('messages')}</AppText>
         <AppText color={colors.slate700}>{t('yourConversationsAppearHere')}</AppText>
       </View>
@@ -97,6 +100,8 @@ export default function CustomerMessagesScreen() {
           onPress={() => router.push(`/customer/messages/${encodeURIComponent(thread.id)}` as Href)}
         />
       ))}
+
+      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }
@@ -112,11 +117,10 @@ function StateCard({ label, message }: { label: string; message: string }) {
 
 function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageThreadSummary }) {
   const tone = thread.accent === 'pro' ? 'pro' : thread.accent === 'core' ? 'core' : 'neutral';
-  const accentColor = thread.accent === 'pro' ? colors.proOrange600 : thread.accent === 'core' ? colors.tasklyBlue600 : colors.navy900;
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress}>
-      <AppCard accentColor={accentColor}>
+      <AppCard>
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.unreadCount ? <StatusBadge label={`${thread.unreadCount} ${t('unreadMessages')}`} tone="warning" /> : null}
@@ -127,7 +131,6 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
         {thread.lastMessagePreview ? (
           <AppText color={colors.slate700}>{`${t('lastMessage')}: ${thread.lastMessagePreview}`}</AppText>
         ) : null}
-        <AppText color={colors.tasklyBlue700} variant="bodyStrong">{t('openConversation')}</AppText>
       </AppCard>
     </Pressable>
   );

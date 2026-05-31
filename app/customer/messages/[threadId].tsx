@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { FormField, ModeBadge } from '@/src/components/taskly';
+import { FormField } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageAttachment, MessageItem, MessageThreadDetailResponse, MessageThreadMeta } from '@/src/lib/api/domain';
 import { getMessageThread, sendMessage, sendMessageImage } from '@/src/lib/api/messages';
@@ -257,7 +257,6 @@ export default function CustomerMessageThreadScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <ModeBadge mode="customer" />
         <AppButton onPress={() => router.back()} variant="ghost">{t('backToTaskly')}</AppButton>
       </View>
 

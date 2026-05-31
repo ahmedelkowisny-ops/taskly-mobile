@@ -1,4 +1,5 @@
 export { AssistantGuideCard } from './AssistantGuideCard';
+export { CustomerTopBar } from './CustomerTopBar';
 export { EmptyStateCard } from './EmptyStateCard';
 export { FormField } from './FormField';
 export { FormSection } from './FormSection';

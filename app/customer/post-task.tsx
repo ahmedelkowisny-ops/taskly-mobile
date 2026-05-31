@@ -1,11 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   KeyboardTypeOptions,
+  Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleProp,
@@ -14,6 +20,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
 import { TasklyLogoText } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -45,6 +52,7 @@ type CatalogState = {
 };
 
 type WizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+type TimePickerTarget = 'start' | 'end' | null;
 
 type ValidationFieldKey =
   | 'address'
@@ -76,7 +84,23 @@ type StepMeta = {
 const CORE_TASK_UPLOAD_MAX_IMAGES = 5;
 const STEP_TOTAL = 6;
 const DEFAULT_TASK_LOCATION = { lat: 42.6977, lng: 23.3219 };
-const QUICK_BUDGETS = ['40', '70', '120'];
+const DEFAULT_TASK_ADDRESS = 'Sofia, Bulgaria';
+const TIME_SLOT_START_MINUTES = 6 * 60;
+const TIME_SLOT_END_MINUTES = 22 * 60;
+const TIME_SLOT_STEP_MINUTES = 15;
+const MIN_DURATION_MINUTES = 60;
+const MAX_DURATION_MINUTES = 6 * 60;
+const TODAY_LEAD_TIME_MINUTES = 60;
+const DEFAULT_FUTURE_START_TIME = '16:00';
+const DEFAULT_FUTURE_END_TIME = '20:00';
+const CATEGORY_BUDGET_RANGES: Record<string, { min: number; max: number; recommended: number }> = {
+  furniture_assembly:  { min: 20, max: 40,  recommended: 30 },
+  general_mounting:    { min: 20, max: 40,  recommended: 30 },
+  light_electrical:    { min: 20, max: 40,  recommended: 30 },
+  minor_plumbing_fix:  { min: 30, max: 60,  recommended: 45 },
+  heavy_lifting:       { min: 25, max: 35,  recommended: 30 },
+  painting_touchups:   { min: 20, max: 50,  recommended: 35 },
+};
 
 function parseNumberInput(value: string) {
   if (!value.trim()) return null;
@@ -105,6 +129,36 @@ function parseDateParts(value: string) {
   return { day, month, year };
 }
 
+function dateToIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayIsoDate() {
+  return dateToIsoDate(new Date());
+}
+
+function parseIsoDate(value: string) {
+  const parts = parseDateParts(value);
+  if (!parts) return null;
+
+  return new Date(parts.year, parts.month - 1, parts.day);
+}
+
+function getDateRelationToToday(value: string): 'invalid' | 'past' | 'today' | 'future' {
+  const date = parseIsoDate(value);
+  if (!date) return 'invalid';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (date.getTime() < today.getTime()) return 'past';
+  if (date.getTime() > today.getTime()) return 'future';
+  return 'today';
+}
+
 function parseTimeParts(value: string) {
   const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
   if (!match) return null;
@@ -112,6 +166,80 @@ function parseTimeParts(value: string) {
   return {
     hour: Number(match[1]),
     minute: Number(match[2]),
+  };
+}
+
+function parseTimeToMinutes(value: string) {
+  const parts = parseTimeParts(value);
+  if (!parts) return null;
+
+  return parts.hour * 60 + parts.minute;
+}
+
+function minutesToTimeString(totalMinutes: number) {
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function getRoundedTodayMinimumStartMinutes(now: Date = new Date()) {
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  return Math.ceil((minutesNow + TODAY_LEAD_TIME_MINUTES) / TIME_SLOT_STEP_MINUTES) * TIME_SLOT_STEP_MINUTES;
+}
+
+function clampMinutes(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getDefaultEndMinutes(startMinutes: number) {
+  const minEnd = startMinutes + MIN_DURATION_MINUTES;
+  const maxEnd = Math.min(startMinutes + MAX_DURATION_MINUTES, TIME_SLOT_END_MINUTES);
+  if (minEnd > maxEnd) return null;
+
+  const preferredEnd = Math.min(startMinutes + 120, maxEnd);
+  return Math.max(preferredEnd, minEnd);
+}
+
+function buildTimeOptions() {
+  const options: string[] = [];
+  for (let minute = TIME_SLOT_START_MINUTES; minute <= TIME_SLOT_END_MINUTES; minute += TIME_SLOT_STEP_MINUTES) {
+    options.push(minutesToTimeString(minute));
+  }
+
+  return options;
+}
+
+const TIME_OPTIONS = buildTimeOptions();
+
+function getDefaultTimesForDate(dateIso: string) {
+  const relation = getDateRelationToToday(dateIso);
+  const latestStart = TIME_SLOT_END_MINUTES - MIN_DURATION_MINUTES;
+
+  if (relation === 'invalid' || relation === 'past') {
+    return { startTime: '', endTime: '' };
+  }
+
+  if (relation === 'today') {
+    const minTodayStart = Math.max(getRoundedTodayMinimumStartMinutes(), TIME_SLOT_START_MINUTES);
+    if (minTodayStart > latestStart) return { startTime: '', endTime: '' };
+
+    const endMinutes = getDefaultEndMinutes(minTodayStart);
+    return {
+      startTime: minutesToTimeString(minTodayStart),
+      endTime: endMinutes === null ? '' : minutesToTimeString(endMinutes),
+    };
+  }
+
+  const targetStart = parseTimeToMinutes(DEFAULT_FUTURE_START_TIME) ?? TIME_SLOT_START_MINUTES;
+  const startMinutes = clampMinutes(targetStart, TIME_SLOT_START_MINUTES, latestStart);
+  const minEnd = startMinutes + MIN_DURATION_MINUTES;
+  const maxEnd = Math.min(startMinutes + MAX_DURATION_MINUTES, TIME_SLOT_END_MINUTES);
+  const targetEnd = parseTimeToMinutes(DEFAULT_FUTURE_END_TIME) ?? startMinutes + 120;
+  const endMinutes = clampMinutes(targetEnd, minEnd, maxEnd);
+
+  return {
+    startTime: minutesToTimeString(startMinutes),
+    endTime: minutesToTimeString(endMinutes),
   };
 }
 
@@ -216,12 +344,15 @@ export default function CustomerPostTaskScreen() {
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(DEFAULT_TASK_ADDRESS);
   const [scheduleDate, setScheduleDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [timePickerTarget, setTimePickerTarget] = useState<TimePickerTarget>(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [estimatedTime, setEstimatedTime] = useState('');
   const [budget, setBudget] = useState('');
+  const [budgetTrackWidth, setBudgetTrackWidth] = useState(0);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -234,6 +365,9 @@ export default function CustomerPostTaskScreen() {
   const [uploadProgressCurrent, setUploadProgressCurrent] = useState(0);
   const [uploadProgressTotal, setUploadProgressTotal] = useState(0);
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
+  const [selectedLatitude, setSelectedLatitude] = useState(DEFAULT_TASK_LOCATION.lat);
+  const [selectedLongitude, setSelectedLongitude] = useState(DEFAULT_TASK_LOCATION.lng);
+  const [selectedAddress, setSelectedAddress] = useState(DEFAULT_TASK_ADDRESS);
 
   const steps: StepMeta[] = [
     {
@@ -290,6 +424,102 @@ export default function CustomerPostTaskScreen() {
     () => catalog?.cities.find((city) => city.id === selectedCityId) ?? null,
     [catalog?.cities, selectedCityId],
   );
+  const categoryBudgetRange = useMemo(
+    () => (selectedCategory?.slug ? (CATEGORY_BUDGET_RANGES[selectedCategory.slug] ?? null) : null),
+    [selectedCategory],
+  );
+  const selectedBudgetValue = parseNumberInput(budget);
+  const budgetOptions = useMemo(() => {
+    if (!categoryBudgetRange) return [];
+
+    return Array.from(
+      { length: categoryBudgetRange.max - categoryBudgetRange.min + 1 },
+      (_, index) => categoryBudgetRange.min + index,
+    );
+  }, [categoryBudgetRange]);
+  const budgetProgressPercent = useMemo(() => {
+    if (!categoryBudgetRange || selectedBudgetValue === null) return 0;
+
+    const span = categoryBudgetRange.max - categoryBudgetRange.min;
+    if (span <= 0) return 100;
+
+    const clamped = Math.min(categoryBudgetRange.max, Math.max(categoryBudgetRange.min, selectedBudgetValue));
+    return ((clamped - categoryBudgetRange.min) / span) * 100;
+  }, [categoryBudgetRange, selectedBudgetValue]);
+  const recommendedBudgetPercent = useMemo(() => {
+    if (!categoryBudgetRange) return 50;
+
+    const span = categoryBudgetRange.max - categoryBudgetRange.min;
+    if (span <= 0) return 50;
+
+    return ((categoryBudgetRange.recommended - categoryBudgetRange.min) / span) * 100;
+  }, [categoryBudgetRange]);
+  const selectedScheduleDate = useMemo(() => parseIsoDate(scheduleDate) ?? new Date(), [scheduleDate]);
+  const reviewScheduleValue = useMemo(() => {
+    if (!scheduleDate) return '';
+
+    const formattedDate = selectedScheduleDate.toLocaleDateString(locale === 'bg' ? 'bg-BG' : 'en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    return startTime && endTime ? `${formattedDate}, ${startTime} - ${endTime}` : formattedDate;
+  }, [endTime, locale, scheduleDate, selectedScheduleDate, startTime]);
+  const selectedDateRelation = useMemo(() => getDateRelationToToday(scheduleDate), [scheduleDate]);
+  const availableStartTimes = useMemo(() => {
+    if (!scheduleDate || selectedDateRelation === 'invalid' || selectedDateRelation === 'past') return [];
+
+    const latestStart = TIME_SLOT_END_MINUTES - MIN_DURATION_MINUTES;
+    const minStart =
+      selectedDateRelation === 'today'
+        ? Math.max(getRoundedTodayMinimumStartMinutes(), TIME_SLOT_START_MINUTES)
+        : TIME_SLOT_START_MINUTES;
+
+    return TIME_OPTIONS.filter((option) => {
+      const minutes = parseTimeToMinutes(option);
+      return minutes !== null && minutes >= minStart && minutes <= latestStart;
+    });
+  }, [scheduleDate, selectedDateRelation]);
+  const availableEndTimes = useMemo(() => {
+    const startMinutes = parseTimeToMinutes(startTime);
+    if (startMinutes === null) return [];
+
+    const minEnd = startMinutes + MIN_DURATION_MINUTES;
+    const maxEnd = Math.min(startMinutes + MAX_DURATION_MINUTES, TIME_SLOT_END_MINUTES);
+
+    return TIME_OPTIONS.filter((option) => {
+      const minutes = parseTimeToMinutes(option);
+      return minutes !== null && minutes >= minEnd && minutes <= maxEnd;
+    });
+  }, [startTime]);
+  const scheduleCopy = useMemo(
+    () =>
+      locale === 'bg'
+        ? {
+            chooseDate: 'Избери дата',
+            dateHelper: 'Избери дата, за да предложим подходящи часове.',
+            datePast: 'Избери днешна или бъдеща дата.',
+            durationMax: 'Времевият прозорец може да е максимум 6 часа.',
+            durationMin: 'Времевият прозорец трябва да е поне 60 минути.',
+            endHelper: 'Първо избери начален час.',
+            noEndSlots: 'Няма валидни крайни часове за този старт.',
+            noSlotsToday: 'Няма останали валидни часове за днес.',
+            todayLead: 'За днес избери час поне 60 минути от сега.',
+          }
+        : {
+            chooseDate: 'Choose date',
+            dateHelper: 'Choose a date so we can suggest valid time slots.',
+            datePast: 'Choose today or a future date.',
+            durationMax: 'Time window can be at most 6 hours.',
+            durationMin: 'Time window must be at least 60 minutes.',
+            endHelper: 'Choose a start time first.',
+            noEndSlots: 'No valid end times for this start.',
+            noSlotsToday: 'No valid time slots remain for today.',
+            todayLead: 'For today, choose a time at least 60 minutes from now.',
+          },
+    [locale],
+  );
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -332,6 +562,12 @@ export default function CustomerPostTaskScreen() {
       void loadCatalog();
     }, [loadCatalog]),
   );
+
+  useEffect(() => {
+    if (!selectedCategory) return;
+    const range = CATEGORY_BUDGET_RANGES[selectedCategory.slug] ?? null;
+    if (range) setBudget(String(range.recommended));
+  }, [selectedCategory]);
 
   const handlePickImages = useCallback(async () => {
     const rules = catalog?.rules ?? getMockPostingRulesResponse().coreTask;
@@ -394,12 +630,132 @@ export default function CustomerPostTaskScreen() {
     });
   }, []);
 
+  const updateBudgetFromTrackPosition = useCallback(
+    (locationX: number) => {
+      if (!categoryBudgetRange || budgetTrackWidth <= 0) return;
+
+      const clampedX = Math.min(budgetTrackWidth, Math.max(0, locationX));
+      const percent = clampedX / budgetTrackWidth;
+      const nextBudget = Math.round(
+        categoryBudgetRange.min + percent * (categoryBudgetRange.max - categoryBudgetRange.min),
+      );
+
+      setBudget(String(nextBudget));
+      clearFieldError('budgetEur');
+    },
+    [budgetTrackWidth, categoryBudgetRange, clearFieldError],
+  );
+
+  const updateBudgetFromTrackEvent = useCallback(
+    (event: GestureResponderEvent) => {
+      updateBudgetFromTrackPosition(event.nativeEvent.locationX);
+    },
+    [updateBudgetFromTrackPosition],
+  );
+
+  const budgetPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: () => Boolean(categoryBudgetRange),
+        onPanResponderGrant: updateBudgetFromTrackEvent,
+        onPanResponderMove: updateBudgetFromTrackEvent,
+        onStartShouldSetPanResponder: () => Boolean(categoryBudgetRange),
+      }),
+    [categoryBudgetRange, updateBudgetFromTrackEvent],
+  );
+
+  const handleScheduleDateChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      setShowDatePicker(false);
+      if (event.type === 'dismissed' || !selectedDate) return;
+
+      const nextDate = dateToIsoDate(selectedDate);
+      const defaults = getDefaultTimesForDate(nextDate);
+
+      setScheduleDate(nextDate);
+      setStartTime(defaults.startTime);
+      setEndTime(defaults.endTime);
+      clearFieldError('scheduleDate');
+      clearFieldError('startTime');
+      clearFieldError('endTime');
+    },
+    [clearFieldError],
+  );
+
+  const handleStartTimeSelect = useCallback(
+    (nextStartTime: string) => {
+      const startMinutes = parseTimeToMinutes(nextStartTime);
+      if (startMinutes === null) {
+        setStartTime(nextStartTime);
+        setEndTime('');
+        clearFieldError('startTime');
+        clearFieldError('endTime');
+        return;
+      }
+
+      const minEnd = startMinutes + MIN_DURATION_MINUTES;
+      const maxEnd = Math.min(startMinutes + MAX_DURATION_MINUTES, TIME_SLOT_END_MINUTES);
+      const currentEndMinutes = parseTimeToMinutes(endTime);
+      const hasValidCurrentEnd =
+        currentEndMinutes !== null && currentEndMinutes >= minEnd && currentEndMinutes <= maxEnd;
+      const nextEndMinutes = hasValidCurrentEnd ? currentEndMinutes : getDefaultEndMinutes(startMinutes);
+
+      setStartTime(nextStartTime);
+      setEndTime(nextEndMinutes === null ? '' : minutesToTimeString(nextEndMinutes));
+      setTimePickerTarget(null);
+      clearFieldError('startTime');
+      clearFieldError('endTime');
+    },
+    [clearFieldError, endTime],
+  );
+
+  const handleEndTimeSelect = useCallback(
+    (nextEndTime: string) => {
+      setEndTime(nextEndTime);
+      setTimePickerTarget(null);
+      clearFieldError('endTime');
+    },
+    [clearFieldError],
+  );
+
+  const handleMapPress = useCallback(
+    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      setSelectedLatitude(latitude);
+      setSelectedLongitude(longitude);
+
+      const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      try {
+        const results = await Location.reverseGeocodeAsync({ latitude, longitude });
+        if (results.length > 0) {
+          const r = results[0];
+          const streetPart = [r.streetNumber, r.street].filter(Boolean).join(' ');
+          const resolved =
+            [streetPart, r.district, r.city].filter(Boolean).join(', ') || fallback;
+          setSelectedAddress(resolved);
+          setAddress(resolved);
+        } else {
+          setSelectedAddress(fallback);
+          setAddress(fallback);
+        }
+      } catch {
+        setSelectedAddress(fallback);
+        setAddress(fallback);
+      }
+      clearFieldError('address');
+    },
+    [clearFieldError],
+  );
+
   const formValidation = useMemo(() => {
     const issues: ValidationIssue[] = [];
     const minDescriptionLength = catalog?.rules.minDescriptionLength ?? 20;
     const parsedBudget = parseNumberInput(budget);
     const startIso = buildLocalIso(scheduleDate, startTime);
     const endIso = buildLocalIso(scheduleDate, endTime);
+    const scheduleRelation = getDateRelationToToday(scheduleDate);
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
     const addIssue = (key: ValidationFieldKey, label: string, message: string) => {
       issues.push({ key, label, message });
     };
@@ -423,23 +779,45 @@ export default function CustomerPostTaskScreen() {
     if (!address.trim()) addIssue('address', t('address'), t('missingAddress'));
     if (!scheduleDate.trim()) {
       addIssue('scheduleDate', t('scheduleDate'), t('scheduleDateRequired'));
-    } else if (!parseDateParts(scheduleDate)) {
+    } else if (scheduleRelation === 'invalid') {
       addIssue('scheduleDate', t('scheduleDate'), t('invalidDate'));
+    } else if (scheduleRelation === 'past') {
+      addIssue('scheduleDate', t('scheduleDate'), scheduleCopy.datePast);
     }
 
     if (!startTime.trim()) {
       addIssue('startTime', t('startTime'), t('startTimeRequired'));
-    } else if (!parseTimeParts(startTime)) {
+    } else if (startMinutes === null) {
       addIssue('startTime', t('startTime'), t('invalidTime'));
+    } else if (startMinutes < TIME_SLOT_START_MINUTES || startMinutes > TIME_SLOT_END_MINUTES - MIN_DURATION_MINUTES) {
+      addIssue('startTime', t('startTime'), t('invalidTime'));
+    } else if (scheduleRelation === 'today') {
+      const minTodayStart = Math.max(getRoundedTodayMinimumStartMinutes(), TIME_SLOT_START_MINUTES);
+      if (startMinutes < minTodayStart) {
+        addIssue('startTime', t('startTime'), scheduleCopy.todayLead);
+      }
     }
 
     if (!endTime.trim()) {
       addIssue('endTime', t('endTime'), t('endTimeRequired'));
-    } else if (!parseTimeParts(endTime)) {
+    } else if (endMinutes === null) {
+      addIssue('endTime', t('endTime'), t('invalidTime'));
+    } else if (endMinutes > TIME_SLOT_END_MINUTES) {
       addIssue('endTime', t('endTime'), t('invalidTime'));
     }
 
-    if (startIso && endIso && new Date(endIso) <= new Date(startIso)) {
+    if (startMinutes !== null && endMinutes !== null) {
+      if (endMinutes <= startMinutes) {
+        addIssue('endTime', t('endTime'), t('endTimeAfterStart'));
+      } else {
+        const duration = endMinutes - startMinutes;
+        if (duration < MIN_DURATION_MINUTES) {
+          addIssue('endTime', t('endTime'), scheduleCopy.durationMin);
+        } else if (duration > MAX_DURATION_MINUTES) {
+          addIssue('endTime', t('endTime'), scheduleCopy.durationMax);
+        }
+      }
+    } else if (startIso && endIso && new Date(endIso) <= new Date(startIso)) {
       addIssue('endTime', t('endTime'), t('endTimeAfterStart'));
     }
 
@@ -470,6 +848,7 @@ export default function CustomerPostTaskScreen() {
     estimatedTime,
     reviewConfirmed,
     scheduleDate,
+    scheduleCopy,
     selectedCategoryId,
     selectedCityId,
     startTime,
@@ -743,36 +1122,83 @@ export default function CustomerPostTaskScreen() {
       return (
         <View style={styles.cardStack}>
           <View style={styles.moneyCard}>
-            <Field
-              errorText={getFieldError('budgetEur')}
-              keyboardType="decimal-pad"
-              label={t('budget')}
-              onChangeText={(value) => {
-                setBudget(value);
-                clearFieldError('budgetEur');
-              }}
-              placeholder={t('budgetPlaceholder')}
-              prefix="€"
-              value={budget}
-            />
-            <View style={styles.quickBudgetRow}>
-              {QUICK_BUDGETS.map((amount) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={amount}
-                  onPress={() => {
-                    setBudget(amount);
-                    clearFieldError('budgetEur');
-                  }}
-                  style={[styles.quickBudgetChip, budget === amount ? styles.quickBudgetChipSelected : null]}>
-                  <AppText
-                    color={budget === amount ? colors.tasklyBlue600 : colors.slate700}
-                    variant="small">
-                    €{amount}
+            {categoryBudgetRange ? (
+              <>
+                <View style={styles.budgetHeroRow}>
+                  <View style={styles.budgetHeroCopy}>
+                    <AppText color={colors.slate700} style={styles.budgetEyebrow} variant="small">
+                      {t('budget')}
+                    </AppText>
+                    <AppText style={styles.budgetValue}>
+                      €{selectedBudgetValue ?? categoryBudgetRange.recommended}
+                    </AppText>
+                  </View>
+                  <View style={styles.recommendedPill}>
+                    <AppText color={colors.tasklyBlue600} style={styles.recommendedPillText}>
+                      {locale === 'bg' ? 'Препоръчано' : 'Recommended'} €{categoryBudgetRange.recommended}
+                    </AppText>
+                  </View>
+                </View>
+
+                <View style={styles.budgetTrackBlock}>
+                  <View
+                    onLayout={(event: LayoutChangeEvent) => setBudgetTrackWidth(event.nativeEvent.layout.width)}
+                    style={styles.budgetTouchArea}
+                    {...budgetPanResponder.panHandlers}>
+                    <View style={styles.budgetTrack} pointerEvents="none">
+                      <View style={[styles.budgetTrackFill, { width: `${budgetProgressPercent}%` }]} />
+                      <View style={[styles.budgetSelectedThumb, { left: `${budgetProgressPercent}%` }]} />
+                      <View style={[styles.budgetRecommendedDot, { left: `${recommendedBudgetPercent}%` }]} />
+                    </View>
+                  </View>
+                  <View style={styles.budgetRangeLabels}>
+                    <AppText color={colors.slate700} variant="small">
+                      €{categoryBudgetRange.min}
+                    </AppText>
+                    <AppText color={colors.slate700} variant="small">
+                      €{categoryBudgetRange.max}
+                    </AppText>
+                  </View>
+                </View>
+
+                <ScrollView
+                  contentContainerStyle={styles.budgetScroller}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}>
+                  {budgetOptions.map((amount) => {
+                    const amountStr = String(amount);
+                    const selected = selectedBudgetValue === amount;
+                    const recommended = amount === categoryBudgetRange.recommended;
+
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        key={amountStr}
+                        onPress={() => {
+                          setBudget(amountStr);
+                          clearFieldError('budgetEur');
+                        }}
+                        style={[
+                          styles.budgetValueChip,
+                          selected ? styles.budgetValueChipSelected : null,
+                          recommended ? styles.budgetValueChipRecommended : null,
+                        ]}>
+                        <AppText
+                          color={selected ? colors.tasklyBlue600 : colors.slate700}
+                          variant="small">
+                          €{amount}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {getFieldError('budgetEur') ? (
+                  <AppText color={colors.danger600} variant="small">
+                    {getFieldError('budgetEur')}
                   </AppText>
-                </Pressable>
-              ))}
-            </View>
+                ) : null}
+              </>
+            ) : null}
           </View>
           <View style={styles.guidanceCard}>
             <Ionicons color={colors.tasklyBlue600} name="shield-checkmark-outline" size={18} />
@@ -910,26 +1336,71 @@ export default function CustomerPostTaskScreen() {
             errorText={getFieldError('address')}
             label={t('address')}
             onChangeText={(value) => {
+              setSelectedAddress(value);
               setAddress(value);
               clearFieldError('address');
             }}
             placeholder={t('addressPlaceholder')}
-            value={address}
+            value={selectedAddress}
           />
-          <View style={styles.fieldRow}>
-            <Field
-              containerStyle={styles.fieldHalf}
-              errorText={getFieldError('scheduleDate')}
-              label={t('scheduleDate')}
-              onChangeText={(value) => {
-                setScheduleDate(value);
-                clearFieldError('scheduleDate');
-                clearFieldError('startTime');
-                clearFieldError('endTime');
+          <View style={styles.mapCard}>
+            <MapView
+              initialRegion={{
+                latitude: DEFAULT_TASK_LOCATION.lat,
+                longitude: DEFAULT_TASK_LOCATION.lng,
+                latitudeDelta: 0.04,
+                longitudeDelta: 0.04,
               }}
-              placeholder={t('scheduleDatePlaceholder')}
-              value={scheduleDate}
-            />
+              onPress={handleMapPress}
+              style={styles.mapView}>
+              <Marker coordinate={{ latitude: selectedLatitude, longitude: selectedLongitude }} />
+            </MapView>
+          </View>
+          <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
+            Tap the map to pin your service location
+          </AppText>
+          <View style={styles.fieldRow}>
+            <View style={[styles.field, styles.fieldHalf]}>
+              <AppText style={styles.fieldLabel}>{t('scheduleDate')}</AppText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setShowDatePicker(true)}
+                style={({ pressed }) => [
+                  styles.scheduleDateButton,
+                  getFieldError('scheduleDate') ? styles.inputError : null,
+                  { opacity: pressed ? 0.86 : 1 },
+                ]}>
+                <Ionicons color={colors.tasklyBlue600} name="calendar-outline" size={18} />
+                <AppText
+                  color={scheduleDate ? colors.navy900 : colors.slate500}
+                  style={styles.scheduleDateValue}>
+                  {scheduleDate
+                    ? selectedScheduleDate.toLocaleDateString(locale === 'bg' ? 'bg-BG' : 'en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : scheduleCopy.chooseDate}
+                </AppText>
+              </Pressable>
+              {showDatePicker ? (
+                <DateTimePicker
+                  minimumDate={parseIsoDate(getTodayIsoDate()) ?? new Date()}
+                  mode="date"
+                  onChange={handleScheduleDateChange}
+                  value={selectedScheduleDate}
+                />
+              ) : null}
+              {getFieldError('scheduleDate') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('scheduleDate')}
+                </AppText>
+              ) : (
+                <AppText color={colors.slate500} variant="small">
+                  {scheduleCopy.dateHelper}
+                </AppText>
+              )}
+            </View>
             <Field
               containerStyle={styles.fieldHalf}
               errorText={getFieldError('estimatedTime')}
@@ -942,32 +1413,138 @@ export default function CustomerPostTaskScreen() {
               value={estimatedTime}
             />
           </View>
-          <View style={styles.fieldRow}>
-            <Field
-              containerStyle={styles.fieldHalf}
-              errorText={getFieldError('startTime')}
-              label={t('startTime')}
-              onChangeText={(value) => {
-                setStartTime(value);
-                clearFieldError('startTime');
-                clearFieldError('endTime');
-              }}
-              placeholder={t('timePlaceholder')}
-              value={startTime}
-            />
-            <Field
-              containerStyle={styles.fieldHalf}
-              errorText={getFieldError('endTime')}
-              label={t('endTime')}
-              onChangeText={(value) => {
-                setEndTime(value);
-                clearFieldError('startTime');
-                clearFieldError('endTime');
-              }}
-              placeholder={t('timePlaceholder')}
-              value={endTime}
-            />
+          <View style={styles.scheduleSelectorCard}>
+            <View style={styles.scheduleSection}>
+              <View style={styles.scheduleSectionHeader}>
+                <AppText style={styles.fieldLabel}>{t('startTime')}</AppText>
+                {startTime ? <StatusBadge label={startTime} tone="core" /> : null}
+              </View>
+              {selectedDateRelation === 'today' && availableStartTimes.length === 0 ? (
+                <View style={styles.scheduleWarning}>
+                  <Ionicons color={colors.warning600} name="information-circle-outline" size={16} />
+                  <AppText color={colors.slate700} style={styles.scheduleWarningText} variant="small">
+                    {scheduleCopy.noSlotsToday}
+                  </AppText>
+                </View>
+              ) : null}
+              {scheduleDate ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={availableStartTimes.length === 0}
+                  onPress={() => setTimePickerTarget('start')}
+                  style={({ pressed }) => [
+                    styles.timeSelectField,
+                    availableStartTimes.length === 0 ? styles.timeSelectFieldDisabled : null,
+                    { opacity: pressed ? 0.86 : 1 },
+                  ]}>
+                  <AppText
+                    color={startTime ? colors.navy900 : colors.slate500}
+                    style={styles.timeSelectValue}>
+                    {startTime || t('startTime')}
+                  </AppText>
+                  <Ionicons color={colors.slate500} name="chevron-down" size={18} />
+                </Pressable>
+              ) : (
+                <AppText color={colors.slate500} variant="small">
+                  {scheduleCopy.dateHelper}
+                </AppText>
+              )}
+              {getFieldError('startTime') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('startTime')}
+                </AppText>
+              ) : null}
+            </View>
+
+            <View style={[styles.scheduleSection, !startTime ? styles.scheduleSectionDisabled : null]}>
+              <View style={styles.scheduleSectionHeader}>
+                <AppText style={styles.fieldLabel}>{t('endTime')}</AppText>
+                {endTime ? <StatusBadge label={endTime} tone="core" /> : null}
+              </View>
+              {startTime ? (
+                availableEndTimes.length ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setTimePickerTarget('end')}
+                    style={({ pressed }) => [
+                      styles.timeSelectField,
+                      { opacity: pressed ? 0.86 : 1 },
+                    ]}>
+                    <AppText
+                      color={endTime ? colors.navy900 : colors.slate500}
+                      style={styles.timeSelectValue}>
+                      {endTime || t('endTime')}
+                    </AppText>
+                    <Ionicons color={colors.slate500} name="chevron-down" size={18} />
+                  </Pressable>
+                ) : (
+                  <AppText color={colors.slate500} variant="small">
+                    {scheduleCopy.noEndSlots}
+                  </AppText>
+                )
+              ) : (
+                <AppText color={colors.slate500} variant="small">
+                  {scheduleCopy.endHelper}
+                </AppText>
+              )}
+              {getFieldError('endTime') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('endTime')}
+                </AppText>
+              ) : null}
+            </View>
           </View>
+          <Modal
+            animationType="slide"
+            onRequestClose={() => setTimePickerTarget(null)}
+            transparent
+            visible={timePickerTarget !== null}>
+            <Pressable style={styles.timePickerBackdrop} onPress={() => setTimePickerTarget(null)}>
+              <Pressable style={styles.timePickerSheet}>
+                <View style={styles.timePickerHeader}>
+                  <AppText style={styles.cardTitle}>
+                    {timePickerTarget === 'start' ? t('startTime') : t('endTime')}
+                  </AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setTimePickerTarget(null)}
+                    style={styles.timePickerClose}>
+                    <Ionicons color={colors.slate700} name="close" size={18} />
+                  </Pressable>
+                </View>
+                <ScrollView contentContainerStyle={styles.timePickerList}>
+                  {(timePickerTarget === 'start' ? availableStartTimes : availableEndTimes).map((option) => {
+                    const selected = timePickerTarget === 'start' ? startTime === option : endTime === option;
+
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        key={option}
+                        onPress={() => {
+                          if (timePickerTarget === 'start') {
+                            handleStartTimeSelect(option);
+                            return;
+                          }
+
+                          handleEndTimeSelect(option);
+                        }}
+                        style={[
+                          styles.timePickerOption,
+                          selected ? styles.timePickerOptionSelected : null,
+                        ]}>
+                        <AppText
+                          color={selected ? colors.tasklyBlue600 : colors.navy900}
+                          style={styles.timePickerOptionText}>
+                          {option}
+                        </AppText>
+                        {selected ? <Ionicons color={colors.tasklyBlue600} name="checkmark-circle" size={18} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </Pressable>
+            </Pressable>
+          </Modal>
         </View>
       );
     }
@@ -992,18 +1569,82 @@ export default function CustomerPostTaskScreen() {
           </View>
         ) : null}
         <View style={styles.summaryCard}>
-          <SummaryRow
-            label={t('selectedService')}
-            value={selectedCategory ? getLocalizedCategoryName(selectedCategory, locale) : ''}
-          />
-          <SummaryRow label={t('budget')} value={budget ? `€${budget}` : ''} />
-          <SummaryRow label={t('title')} value={title} />
-          <SummaryRow label={t('description')} value={description} />
-          <SummaryRow label={t('photos')} value={images.length ? String(images.length) : t('noPhotosAdded')} />
-          <SummaryRow label={t('city')} value={selectedCity ? getLocalizedCityName(selectedCity, locale) : ''} />
-          <SummaryRow label={t('address')} value={address} />
-          <SummaryRow label={t('scheduleDate')} value={scheduleDate} />
-          <SummaryRow label={t('timeWindow')} value={startTime && endTime ? `${startTime} - ${endTime}` : ''} />
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="construct-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('selectedService')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>
+              {selectedCategory ? getLocalizedCategoryName(selectedCategory, locale) : '-'}
+            </AppText>
+          </View>
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="calendar-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('scheduleDate')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>
+              {reviewScheduleValue || '-'}
+            </AppText>
+          </View>
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="location-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('city')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>
+              {selectedCity ? getLocalizedCityName(selectedCity, locale) : '-'}
+            </AppText>
+          </View>
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="navigate-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('address')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>{address || '-'}</AppText>
+          </View>
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="images-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('photos')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>
+              {images.length ? String(images.length) : t('noPhotosAdded')}
+            </AppText>
+          </View>
+          <View style={styles.reviewSummaryRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.slate500} name="document-text-outline" size={16} />
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('title')}
+              </AppText>
+            </View>
+            <AppText style={styles.reviewSummaryValue}>{title || '-'}</AppText>
+          </View>
+          <View style={styles.reviewSummaryDetails}>
+            <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+              {t('description')}
+            </AppText>
+            <AppText style={styles.reviewSummaryDetailsText}>{description || '-'}</AppText>
+          </View>
+          <View style={styles.reviewSummaryDivider} />
+          <View style={styles.reviewTotalRow}>
+            <View style={styles.reviewSummaryLabel}>
+              <Ionicons color={colors.navy900} name="card-outline" size={18} />
+              <AppText style={styles.reviewTotalLabel}>{t('budget')}</AppText>
+            </View>
+            <AppText style={styles.reviewTotalValue}>{budget ? `€${budget}` : '-'}</AppText>
+          </View>
         </View>
 
         <Pressable
@@ -1210,6 +1851,93 @@ const styles = StyleSheet.create({
   buttonStack: {
     gap: spacing.sm,
   },
+  budgetEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  budgetHeroCopy: {
+    gap: 3,
+  },
+  budgetHeroRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  budgetRangeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  budgetRecommendedDot: {
+    backgroundColor: colors.white,
+    borderColor: '#9DB8D6',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    height: 10,
+    marginLeft: -5,
+    position: 'absolute',
+    top: -3,
+    width: 10,
+  },
+  budgetScroller: {
+    gap: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  budgetSelectedThumb: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.white,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    height: 18,
+    marginLeft: -9,
+    position: 'absolute',
+    top: -6,
+    width: 18,
+  },
+  budgetTouchArea: {
+    justifyContent: 'center',
+    minHeight: 34,
+  },
+  budgetTrack: {
+    backgroundColor: '#D8E5F3',
+    borderRadius: radius.pill,
+    height: 7,
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  budgetTrackBlock: {
+    gap: spacing.sm,
+  },
+  budgetTrackFill: {
+    backgroundColor: colors.tasklyBlue600,
+    borderRadius: radius.pill,
+    height: '100%',
+  },
+  budgetValue: {
+    color: colors.navy900,
+    fontSize: 32,
+    fontWeight: '900',
+    lineHeight: 36,
+  },
+  budgetValueChip: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    minWidth: 58,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 9,
+  },
+  budgetValueChipRecommended: {
+    borderColor: '#9DB8D6',
+  },
+  budgetValueChipSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
   cardBody: {
     fontSize: 13,
     lineHeight: 18,
@@ -1386,9 +2114,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  mapCard: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  mapHelper: {
+    paddingVertical: spacing.xs,
+    textAlign: 'center',
+  },
+  mapView: {
+    height: 200,
+    width: '100%',
+  },
   moneyCard: {
-    backgroundColor: '#FBFDFF',
-    borderColor: '#DDE6F0',
+    backgroundColor: '#F7FAFF',
+    borderColor: '#DCE9F7',
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.md,
@@ -1461,22 +2201,67 @@ const styles = StyleSheet.create({
     height: 5,
     overflow: 'hidden',
   },
-  quickBudgetChip: {
+  recommendedPill: {
     backgroundColor: colors.white,
-    borderColor: colors.slate100,
+    borderColor: '#9DB8D6',
     borderRadius: radius.pill,
     borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
   },
-  quickBudgetChipSelected: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlue600,
+  recommendedPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 14,
   },
-  quickBudgetRow: {
+  scheduleDateButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  scheduleDateValue: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  scheduleSection: {
+    gap: spacing.sm,
+  },
+  scheduleSectionDisabled: {
+    opacity: 0.58,
+  },
+  scheduleSectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  scheduleSelectorCard: {
+    backgroundColor: '#F7FAFF',
+    borderColor: '#DCE9F7',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  scheduleWarning: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
+  scheduleWarningText: {
+    flex: 1,
   },
   reviewNotice: {
     alignItems: 'flex-start',
@@ -1487,6 +2272,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     padding: spacing.md,
+  },
+  reviewSummaryDetails: {
+    backgroundColor: colors.white,
+    borderColor: '#E6EBF0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 4,
+    padding: spacing.sm,
+  },
+  reviewSummaryDetailsText: {
+    color: colors.navy900,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  reviewSummaryDivider: {
+    backgroundColor: '#E6EBF0',
+    height: 1,
+  },
+  reviewSummaryLabel: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    minWidth: 0,
+  },
+  reviewSummaryLabelText: {
+    flexShrink: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  reviewSummaryRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  reviewSummaryValue: {
+    color: colors.navy900,
+    flex: 1,
+    flexShrink: 1,
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    textAlign: 'right',
+  },
+  reviewTotalLabel: {
+    color: colors.navy900,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  reviewTotalRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  reviewTotalValue: {
+    color: colors.navy900,
+    flexShrink: 0,
+    fontSize: 24,
+    fontWeight: '900',
+    lineHeight: 28,
+    textAlign: 'right',
   },
   screen: {
     backgroundColor: '#EEF3F8',
@@ -1566,11 +2415,11 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   summaryCard: {
-    backgroundColor: '#FBFDFF',
-    borderColor: '#E2EAF3',
-    borderRadius: radius.md,
+    backgroundColor: '#FAFCFE',
+    borderColor: '#DFE8F2',
+    borderRadius: radius.lg,
     borderWidth: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
     padding: spacing.md,
   },
   summaryRow: {
@@ -1587,6 +2436,99 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 92,
     textAlignVertical: 'top',
+  },
+  timeChip: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    minWidth: 68,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 9,
+  },
+  timeChipScroller: {
+    gap: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  timeChipSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  timePickerBackdrop: {
+    backgroundColor: 'rgba(15, 23, 42, 0.28)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  timePickerClose: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  timePickerHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  timePickerList: {
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  timePickerOption: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  timePickerOptionSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  timePickerOptionText: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  timePickerSheet: {
+    backgroundColor: '#F7FAFD',
+    borderColor: '#DFE8F2',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    gap: spacing.md,
+    maxHeight: '72%',
+    padding: spacing.md,
+  },
+  timeSelectField: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  timeSelectFieldDisabled: {
+    backgroundColor: colors.slate50,
+  },
+  timeSelectValue: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
   },
   titleBlock: {
     gap: 2,
