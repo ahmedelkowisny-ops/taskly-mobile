@@ -69,6 +69,13 @@ type ValidationFieldKey =
   | 'electricalChecklistPowerAccess'
   | 'electricalChecklistReplacementOnly'
   | 'electricalReplacementAtExistingPoint'
+  | 'heavyAccessType'
+  | 'heavyChecklistPathClear'
+  | 'heavyChecklistSizeWeightSet'
+  | 'heavyChecklistStairsElevatorSet'
+  | 'heavyItemCount'
+  | 'heavyTwoPersonLikely'
+  | 'heavyWeightBand'
   | 'plumbingAccessAvailable'
   | 'plumbingChecklistIssueVisible'
   | 'plumbingChecklistPartsReady'
@@ -272,7 +279,9 @@ function buildLocalIso(dateValue: string, timeValue: string) {
   return new Date(date.year, date.month - 1, date.day, time.hour, time.minute).toISOString();
 }
 
-function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
+function normalizeApiFieldErrors(fieldErrors: Record<string, string>, categorySlug?: string) {
+  const itemCountKey: ValidationFieldKey =
+    categorySlug === 'heavy_lifting' ? 'heavyItemCount' : 'mountingItemCount';
   const keyMap: Record<string, ValidationFieldKey> = {
     budget: 'budgetEur',
     budgetEur: 'budgetEur',
@@ -290,7 +299,7 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     'scopeData.assemblyItemUnassembled': 'assemblyItemUnassembled',
     'scopeData.assemblyPartsAvailable': 'assemblyPartsAvailable',
     'scopeData.wallType': 'mountingWallType',
-    'scopeData.itemCount': 'mountingItemCount',
+    'scopeData.itemCount': itemCountKey,
     'scopeData.tvSizeBand': 'mountingTvSizeBand',
     'scopeData.tvBracketAvailable': 'mountingTvBracketAvailable',
     'scopeData.cableConcealmentRequested': 'mountingCableConcealmentRequested',
@@ -306,6 +315,12 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     'scopeData.checklistIssueVisible': 'plumbingChecklistIssueVisible',
     'scopeData.checklistShutoffAccess': 'plumbingChecklistShutoffAccess',
     'scopeData.checklistPartsReady': 'plumbingChecklistPartsReady',
+    'scopeData.heavyWeightBand': 'heavyWeightBand',
+    'scopeData.heavyAccessType': 'heavyAccessType',
+    'scopeData.heavyTwoPersonLikely': 'heavyTwoPersonLikely',
+    'scopeData.checklistPathClear': 'heavyChecklistPathClear',
+    'scopeData.checklistStairsElevatorSet': 'heavyChecklistStairsElevatorSet',
+    'scopeData.checklistSizeWeightSet': 'heavyChecklistSizeWeightSet',
     title: 'title',
   };
 
@@ -417,6 +432,13 @@ export default function CustomerPostTaskScreen() {
   const [plumbingChecklistIssueVisible, setPlumbingChecklistIssueVisible] = useState(false);
   const [plumbingChecklistShutoffAccess, setPlumbingChecklistShutoffAccess] = useState(false);
   const [plumbingChecklistPartsReady, setPlumbingChecklistPartsReady] = useState(false);
+  const [heavyItemCount, setHeavyItemCount] = useState('');
+  const [heavyWeightBand, setHeavyWeightBand] = useState<'up_to_40' | '40_to_80' | '80_to_120' | '120_plus' | null>(null);
+  const [heavyAccessType, setHeavyAccessType] = useState<'elevator' | 'stairs' | 'both' | 'none' | null>(null);
+  const [heavyTwoPersonLikely, setHeavyTwoPersonLikely] = useState<boolean | null>(null);
+  const [heavyChecklistPathClear, setHeavyChecklistPathClear] = useState(false);
+  const [heavyChecklistStairsElevatorSet, setHeavyChecklistStairsElevatorSet] = useState(false);
+  const [heavyChecklistSizeWeightSet, setHeavyChecklistSizeWeightSet] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -656,6 +678,13 @@ export default function CustomerPostTaskScreen() {
     setPlumbingChecklistIssueVisible(false);
     setPlumbingChecklistShutoffAccess(false);
     setPlumbingChecklistPartsReady(false);
+    setHeavyItemCount('');
+    setHeavyWeightBand(null);
+    setHeavyAccessType(null);
+    setHeavyTwoPersonLikely(null);
+    setHeavyChecklistPathClear(false);
+    setHeavyChecklistStairsElevatorSet(false);
+    setHeavyChecklistSizeWeightSet(false);
   }, [selectedCategoryId]);
 
   const handlePickImages = useCallback(async () => {
@@ -931,6 +960,31 @@ export default function CustomerPostTaskScreen() {
       }
     }
 
+    if (selectedCategory?.slug === 'heavy_lifting') {
+      const parsedHeavyCount = Number.parseInt(heavyItemCount, 10);
+      if (!heavyItemCount.trim() || !Number.isFinite(parsedHeavyCount) || parsedHeavyCount <= 0) {
+        addIssue('heavyItemCount', 'Item count', 'Please enter the number of items (min 1).');
+      }
+      if (!heavyWeightBand) {
+        addIssue('heavyWeightBand', 'Weight band', 'Please select an estimated weight band.');
+      }
+      if (!heavyAccessType) {
+        addIssue('heavyAccessType', 'Access type', 'Please select stairs/elevator access.');
+      }
+      if (heavyTwoPersonLikely === null) {
+        addIssue('heavyTwoPersonLikely', 'Two-person job', 'Please confirm if this is likely a two-person job.');
+      }
+      if (!heavyChecklistPathClear) {
+        addIssue('heavyChecklistPathClear', 'Path clear', 'Please confirm the path is clear for safe carrying.');
+      }
+      if (!heavyChecklistStairsElevatorSet) {
+        addIssue('heavyChecklistStairsElevatorSet', 'Access set', 'Please confirm stairs/elevator information is set.');
+      }
+      if (!heavyChecklistSizeWeightSet) {
+        addIssue('heavyChecklistSizeWeightSet', 'Size/weight set', 'Please confirm approximate size and weight are provided.');
+      }
+    }
+
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -1025,6 +1079,13 @@ export default function CustomerPostTaskScreen() {
     electricalChecklistReplacementOnly,
     electricalReplacementAtExistingPoint,
     mountingCableConcealmentRequested,
+    heavyAccessType,
+    heavyChecklistPathClear,
+    heavyChecklistSizeWeightSet,
+    heavyChecklistStairsElevatorSet,
+    heavyItemCount,
+    heavyTwoPersonLikely,
+    heavyWeightBand,
     plumbingAccessAvailable,
     plumbingChecklistIssueVisible,
     plumbingChecklistPartsReady,
@@ -1062,6 +1123,8 @@ export default function CustomerPostTaskScreen() {
           'electricalReplacementAtExistingPoint', 'electricalChecklistReplacementOnly', 'electricalChecklistPowerAccess', 'electricalChecklistNoNewWiring',
           'plumbingIssueVisibleLocalized', 'plumbingAccessAvailable',
           'plumbingChecklistIssueVisible', 'plumbingChecklistShutoffAccess', 'plumbingChecklistPartsReady',
+          'heavyItemCount', 'heavyWeightBand', 'heavyAccessType', 'heavyTwoPersonLikely',
+          'heavyChecklistPathClear', 'heavyChecklistStairsElevatorSet', 'heavyChecklistSizeWeightSet',
         ],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
@@ -1146,6 +1209,7 @@ export default function CustomerPostTaskScreen() {
     const isGeneralMounting = selectedCategory?.slug === 'general_mounting';
     const isLightElectrical = selectedCategory?.slug === 'light_electrical';
     const isPlumbingFix = selectedCategory?.slug === 'minor_plumbing_fix';
+    const isHeavyLifting = selectedCategory?.slug === 'heavy_lifting';
 
     setIsSubmitting(true);
     const result = await createCustomerTask(
@@ -1189,6 +1253,19 @@ export default function CustomerPostTaskScreen() {
                 checklistReplacementOnly: electricalChecklistReplacementOnly,
                 checklistPowerAccess: electricalChecklistPowerAccess,
                 checklistNoNewWiring: electricalChecklistNoNewWiring,
+              },
+            }
+          : {}),
+        ...(isHeavyLifting
+          ? {
+              scopeData: {
+                itemCount: Number.parseInt(heavyItemCount, 10) || undefined,
+                heavyWeightBand: heavyWeightBand ?? undefined,
+                heavyAccessType: heavyAccessType ?? undefined,
+                heavyTwoPersonLikely: heavyTwoPersonLikely ?? undefined,
+                checklistPathClear: heavyChecklistPathClear,
+                checklistStairsElevatorSet: heavyChecklistStairsElevatorSet,
+                checklistSizeWeightSet: heavyChecklistSizeWeightSet,
               },
             }
           : {}),
@@ -1271,7 +1348,7 @@ export default function CustomerPostTaskScreen() {
         : undefined;
 
     if (maybeFieldErrors) {
-      setFieldErrors(normalizeApiFieldErrors(maybeFieldErrors));
+      setFieldErrors(normalizeApiFieldErrors(maybeFieldErrors, selectedCategory?.slug));
     }
 
     setSubmitError(getSafeApiMessage(result.error.message));
@@ -1288,6 +1365,13 @@ export default function CustomerPostTaskScreen() {
     electricalReplacementAtExistingPoint,
     estimatedTime,
     formValidation,
+    heavyAccessType,
+    heavyChecklistPathClear,
+    heavyChecklistSizeWeightSet,
+    heavyChecklistStairsElevatorSet,
+    heavyItemCount,
+    heavyTwoPersonLikely,
+    heavyWeightBand,
     plumbingAccessAvailable,
     plumbingChecklistIssueVisible,
     plumbingChecklistPartsReady,
@@ -1836,6 +1920,116 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('plumbingChecklistPartsReady')) ? (
                 <AppText color={colors.danger600} variant="small">
                   Please confirm all items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+
+          {selectedCategory?.slug === 'heavy_lifting' ? (
+            <View style={styles.scopeSection}>
+              <Field
+                errorText={getFieldError('heavyItemCount')}
+                keyboardType="numeric"
+                label="Item count"
+                onChangeText={(v) => {
+                  setHeavyItemCount(v);
+                  clearFieldError('heavyItemCount');
+                }}
+                placeholder="e.g. 2"
+                value={heavyItemCount}
+              />
+
+              <AppText style={styles.fieldLabel}>Estimated weight band</AppText>
+              <ScopeOptionGroup
+                options={[
+                  { value: 'up_to_40', label: 'Up to 40 kg' },
+                  { value: '40_to_80', label: '40–80 kg' },
+                  { value: '80_to_120', label: '80–120 kg' },
+                  { value: '120_plus', label: '120+ kg' },
+                ]}
+                value={heavyWeightBand ?? ''}
+                onSelect={(v) => {
+                  setHeavyWeightBand(v as 'up_to_40' | '40_to_80' | '80_to_120' | '120_plus');
+                  clearFieldError('heavyWeightBand');
+                }}
+              />
+              {getFieldError('heavyWeightBand') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('heavyWeightBand')}
+                </AppText>
+              ) : null}
+
+              <AppText style={styles.fieldLabel}>Stairs / elevator access</AppText>
+              <ScopeOptionGroup
+                options={[
+                  { value: 'elevator', label: 'Elevator' },
+                  { value: 'stairs', label: 'Stairs' },
+                  { value: 'both', label: 'Both' },
+                  { value: 'none', label: 'No stairs/elevator' },
+                ]}
+                value={heavyAccessType ?? ''}
+                onSelect={(v) => {
+                  setHeavyAccessType(v as 'elevator' | 'stairs' | 'both' | 'none');
+                  clearFieldError('heavyAccessType');
+                }}
+              />
+              {getFieldError('heavyAccessType') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('heavyAccessType')}
+                </AppText>
+              ) : null}
+
+              <AppText style={styles.fieldLabel}>Likely two-person job</AppText>
+              <ScopeOptionGroup
+                options={[
+                  { value: 'true', label: 'Yes' },
+                  { value: 'false', label: 'No' },
+                ]}
+                value={heavyTwoPersonLikely === null ? '' : String(heavyTwoPersonLikely)}
+                onSelect={(v) => {
+                  setHeavyTwoPersonLikely(v === 'true');
+                  clearFieldError('heavyTwoPersonLikely');
+                }}
+              />
+              {getFieldError('heavyTwoPersonLikely') ? (
+                <AppText color={colors.danger600} variant="small">
+                  {getFieldError('heavyTwoPersonLikely')}
+                </AppText>
+              ) : null}
+
+              <AppText style={styles.fieldLabel}>Checklist</AppText>
+              <ScopeCheckboxRow
+                checked={heavyChecklistPathClear}
+                hasError={!!getFieldError('heavyChecklistPathClear')}
+                label="Path is clear for safe carrying."
+                onPress={() => {
+                  setHeavyChecklistPathClear((v) => !v);
+                  clearFieldError('heavyChecklistPathClear');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={heavyChecklistStairsElevatorSet}
+                hasError={!!getFieldError('heavyChecklistStairsElevatorSet')}
+                label="Stairs/elevator information is set."
+                onPress={() => {
+                  setHeavyChecklistStairsElevatorSet((v) => !v);
+                  clearFieldError('heavyChecklistStairsElevatorSet');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={heavyChecklistSizeWeightSet}
+                hasError={!!getFieldError('heavyChecklistSizeWeightSet')}
+                label="Approximate size and weight are provided."
+                onPress={() => {
+                  setHeavyChecklistSizeWeightSet((v) => !v);
+                  clearFieldError('heavyChecklistSizeWeightSet');
+                }}
+              />
+              {(getFieldError('heavyChecklistPathClear') ||
+                getFieldError('heavyChecklistStairsElevatorSet') ||
+                getFieldError('heavyChecklistSizeWeightSet')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all checklist items before continuing.
                 </AppText>
               ) : null}
             </View>
@@ -2464,6 +2658,65 @@ export default function CustomerPostTaskScreen() {
                 />
                 <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
                   Replacement parts are available if needed.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          {selectedCategory?.slug === 'heavy_lifting' ? (
+            <View style={styles.scopeReviewSection}>
+              <AppText style={styles.fieldLabel}>Scope summary</AppText>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="list-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Items: {heavyItemCount || '-'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="barbell-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Weight: {heavyWeightBand === 'up_to_40' ? 'Up to 40 kg' : heavyWeightBand === '40_to_80' ? '40–80 kg' : heavyWeightBand === '80_to_120' ? '80–120 kg' : heavyWeightBand === '120_plus' ? '120+ kg' : '-'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="navigate-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Access: {heavyAccessType === 'elevator' ? 'Elevator' : heavyAccessType === 'stairs' ? 'Stairs' : heavyAccessType === 'both' ? 'Both' : heavyAccessType === 'none' ? 'No stairs/elevator' : '-'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons color={colors.tasklyBlue600} name="people-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Two-person job: {heavyTwoPersonLikely === null ? '-' : heavyTwoPersonLikely ? 'Yes' : 'No'}
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={heavyChecklistPathClear ? colors.success600 : colors.warning600}
+                  name={heavyChecklistPathClear ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Path is clear for safe carrying.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={heavyChecklistStairsElevatorSet ? colors.success600 : colors.warning600}
+                  name={heavyChecklistStairsElevatorSet ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Stairs/elevator information is set.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={heavyChecklistSizeWeightSet ? colors.success600 : colors.warning600}
+                  name={heavyChecklistSizeWeightSet ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Approximate size and weight are provided.
                 </AppText>
               </View>
             </View>

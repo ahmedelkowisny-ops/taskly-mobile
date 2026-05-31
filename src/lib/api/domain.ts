@@ -458,6 +458,13 @@ export type TaskScopeData = {
   checklistIssueVisible?: boolean;
   checklistShutoffAccess?: boolean;
   checklistPartsReady?: boolean;
+  // heavy_lifting (itemCount reused from general_mounting)
+  heavyWeightBand?: 'up_to_40' | '40_to_80' | '80_to_120' | '120_plus';
+  heavyAccessType?: 'elevator' | 'stairs' | 'both' | 'none';
+  heavyTwoPersonLikely?: boolean;
+  checklistPathClear?: boolean;
+  checklistStairsElevatorSet?: boolean;
+  checklistSizeWeightSet?: boolean;
 };
 
 export type CreateCustomerTaskPayload = {
