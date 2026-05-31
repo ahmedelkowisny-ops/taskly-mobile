@@ -71,6 +71,9 @@ type ValidationFieldKey =
   | 'electricalReplacementAtExistingPoint'
   | 'heavyAccessType'
   | 'heavyChecklistPathClear'
+  | 'paintingChecklistCoverageConfirmed'
+  | 'paintingChecklistPaintAvailable'
+  | 'paintingChecklistSurfaceReady'
   | 'heavyChecklistSizeWeightSet'
   | 'heavyChecklistStairsElevatorSet'
   | 'heavyItemCount'
@@ -321,6 +324,9 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>, categorySl
     'scopeData.checklistPathClear': 'heavyChecklistPathClear',
     'scopeData.checklistStairsElevatorSet': 'heavyChecklistStairsElevatorSet',
     'scopeData.checklistSizeWeightSet': 'heavyChecklistSizeWeightSet',
+    'scopeData.checklistSurfaceReady': 'paintingChecklistSurfaceReady',
+    'scopeData.checklistPaintAvailable': 'paintingChecklistPaintAvailable',
+    'scopeData.checklistCoverageConfirmed': 'paintingChecklistCoverageConfirmed',
     title: 'title',
   };
 
@@ -439,6 +445,9 @@ export default function CustomerPostTaskScreen() {
   const [heavyChecklistPathClear, setHeavyChecklistPathClear] = useState(false);
   const [heavyChecklistStairsElevatorSet, setHeavyChecklistStairsElevatorSet] = useState(false);
   const [heavyChecklistSizeWeightSet, setHeavyChecklistSizeWeightSet] = useState(false);
+  const [paintingChecklistSurfaceReady, setPaintingChecklistSurfaceReady] = useState(false);
+  const [paintingChecklistPaintAvailable, setPaintingChecklistPaintAvailable] = useState(false);
+  const [paintingChecklistCoverageConfirmed, setPaintingChecklistCoverageConfirmed] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -685,6 +694,9 @@ export default function CustomerPostTaskScreen() {
     setHeavyChecklistPathClear(false);
     setHeavyChecklistStairsElevatorSet(false);
     setHeavyChecklistSizeWeightSet(false);
+    setPaintingChecklistSurfaceReady(false);
+    setPaintingChecklistPaintAvailable(false);
+    setPaintingChecklistCoverageConfirmed(false);
   }, [selectedCategoryId]);
 
   const handlePickImages = useCallback(async () => {
@@ -985,6 +997,18 @@ export default function CustomerPostTaskScreen() {
       }
     }
 
+    if (selectedCategory?.slug === 'painting_touchups') {
+      if (!paintingChecklistSurfaceReady) {
+        addIssue('paintingChecklistSurfaceReady', 'Surface ready', 'Please confirm the area/surface is ready for painting.');
+      }
+      if (!paintingChecklistPaintAvailable) {
+        addIssue('paintingChecklistPaintAvailable', 'Paint available', 'Please confirm paint/materials are available or clearly requested.');
+      }
+      if (!paintingChecklistCoverageConfirmed) {
+        addIssue('paintingChecklistCoverageConfirmed', 'Scope confirmed', 'Please confirm scope is limited to a small painting job.');
+      }
+    }
+
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -1086,6 +1110,9 @@ export default function CustomerPostTaskScreen() {
     heavyItemCount,
     heavyTwoPersonLikely,
     heavyWeightBand,
+    paintingChecklistCoverageConfirmed,
+    paintingChecklistPaintAvailable,
+    paintingChecklistSurfaceReady,
     plumbingAccessAvailable,
     plumbingChecklistIssueVisible,
     plumbingChecklistPartsReady,
@@ -1125,6 +1152,7 @@ export default function CustomerPostTaskScreen() {
           'plumbingChecklistIssueVisible', 'plumbingChecklistShutoffAccess', 'plumbingChecklistPartsReady',
           'heavyItemCount', 'heavyWeightBand', 'heavyAccessType', 'heavyTwoPersonLikely',
           'heavyChecklistPathClear', 'heavyChecklistStairsElevatorSet', 'heavyChecklistSizeWeightSet',
+          'paintingChecklistSurfaceReady', 'paintingChecklistPaintAvailable', 'paintingChecklistCoverageConfirmed',
         ],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
@@ -1210,6 +1238,7 @@ export default function CustomerPostTaskScreen() {
     const isLightElectrical = selectedCategory?.slug === 'light_electrical';
     const isPlumbingFix = selectedCategory?.slug === 'minor_plumbing_fix';
     const isHeavyLifting = selectedCategory?.slug === 'heavy_lifting';
+    const isPaintingTouchups = selectedCategory?.slug === 'painting_touchups';
 
     setIsSubmitting(true);
     const result = await createCustomerTask(
@@ -1253,6 +1282,15 @@ export default function CustomerPostTaskScreen() {
                 checklistReplacementOnly: electricalChecklistReplacementOnly,
                 checklistPowerAccess: electricalChecklistPowerAccess,
                 checklistNoNewWiring: electricalChecklistNoNewWiring,
+              },
+            }
+          : {}),
+        ...(isPaintingTouchups
+          ? {
+              scopeData: {
+                checklistSurfaceReady: paintingChecklistSurfaceReady,
+                checklistPaintAvailable: paintingChecklistPaintAvailable,
+                checklistCoverageConfirmed: paintingChecklistCoverageConfirmed,
               },
             }
           : {}),
@@ -1372,6 +1410,9 @@ export default function CustomerPostTaskScreen() {
     heavyItemCount,
     heavyTwoPersonLikely,
     heavyWeightBand,
+    paintingChecklistCoverageConfirmed,
+    paintingChecklistPaintAvailable,
+    paintingChecklistSurfaceReady,
     plumbingAccessAvailable,
     plumbingChecklistIssueVisible,
     plumbingChecklistPartsReady,
@@ -2030,6 +2071,45 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('heavyChecklistSizeWeightSet')) ? (
                 <AppText color={colors.danger600} variant="small">
                   Please confirm all checklist items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
+
+          {selectedCategory?.slug === 'painting_touchups' ? (
+            <View style={styles.scopeSection}>
+              <ScopeCheckboxRow
+                checked={paintingChecklistSurfaceReady}
+                hasError={!!getFieldError('paintingChecklistSurfaceReady')}
+                label="The area/surface is ready for painting."
+                onPress={() => {
+                  setPaintingChecklistSurfaceReady((v) => !v);
+                  clearFieldError('paintingChecklistSurfaceReady');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={paintingChecklistPaintAvailable}
+                hasError={!!getFieldError('paintingChecklistPaintAvailable')}
+                label="Paint/materials are available or clearly requested."
+                onPress={() => {
+                  setPaintingChecklistPaintAvailable((v) => !v);
+                  clearFieldError('paintingChecklistPaintAvailable');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={paintingChecklistCoverageConfirmed}
+                hasError={!!getFieldError('paintingChecklistCoverageConfirmed')}
+                label="Scope is limited to small touch-up painting."
+                onPress={() => {
+                  setPaintingChecklistCoverageConfirmed((v) => !v);
+                  clearFieldError('paintingChecklistCoverageConfirmed');
+                }}
+              />
+              {(getFieldError('paintingChecklistSurfaceReady') ||
+                getFieldError('paintingChecklistPaintAvailable') ||
+                getFieldError('paintingChecklistCoverageConfirmed')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all items before continuing.
                 </AppText>
               ) : null}
             </View>
@@ -2717,6 +2797,40 @@ export default function CustomerPostTaskScreen() {
                 />
                 <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
                   Approximate size and weight are provided.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          {selectedCategory?.slug === 'painting_touchups' ? (
+            <View style={styles.scopeReviewSection}>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={paintingChecklistSurfaceReady ? colors.success600 : colors.warning600}
+                  name={paintingChecklistSurfaceReady ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  The area/surface is ready for painting.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={paintingChecklistPaintAvailable ? colors.success600 : colors.warning600}
+                  name={paintingChecklistPaintAvailable ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Paint/materials are available or clearly requested.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={paintingChecklistCoverageConfirmed ? colors.success600 : colors.warning600}
+                  name={paintingChecklistCoverageConfirmed ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Scope is limited to small touch-up painting.
                 </AppText>
               </View>
             </View>

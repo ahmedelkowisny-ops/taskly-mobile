@@ -458,6 +458,10 @@ export type TaskScopeData = {
   checklistIssueVisible?: boolean;
   checklistShutoffAccess?: boolean;
   checklistPartsReady?: boolean;
+  // painting_touchups
+  checklistSurfaceReady?: boolean;
+  checklistPaintAvailable?: boolean;
+  checklistCoverageConfirmed?: boolean;
   // heavy_lifting (itemCount reused from general_mounting)
   heavyWeightBand?: 'up_to_40' | '40_to_80' | '80_to_120' | '120_plus';
   heavyAccessType?: 'elevator' | 'stairs' | 'both' | 'none';
