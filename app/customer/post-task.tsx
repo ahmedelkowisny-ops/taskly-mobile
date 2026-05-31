@@ -56,6 +56,10 @@ type TimePickerTarget = 'start' | 'end' | null;
 
 type ValidationFieldKey =
   | 'address'
+  | 'assemblyAreaClear'
+  | 'assemblyInstructionsAvailable'
+  | 'assemblyItemUnassembled'
+  | 'assemblyPartsAvailable'
   | 'budgetEur'
   | 'categorySlug'
   | 'cityId'
@@ -264,6 +268,10 @@ function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
     preferredTimeWindow: 'endTime',
     scheduledEndAt: 'endTime',
     scheduledStartAt: 'startTime',
+    'scopeData.assemblyAreaClear': 'assemblyAreaClear',
+    'scopeData.assemblyInstructionsAvailable': 'assemblyInstructionsAvailable',
+    'scopeData.assemblyItemUnassembled': 'assemblyItemUnassembled',
+    'scopeData.assemblyPartsAvailable': 'assemblyPartsAvailable',
     title: 'title',
   };
 
@@ -353,6 +361,10 @@ export default function CustomerPostTaskScreen() {
   const [estimatedTime, setEstimatedTime] = useState('');
   const [budget, setBudget] = useState('');
   const [budgetTrackWidth, setBudgetTrackWidth] = useState(0);
+  const [assemblyPartsAvailable, setAssemblyPartsAvailable] = useState(false);
+  const [assemblyInstructionsAvailable, setAssemblyInstructionsAvailable] = useState(false);
+  const [assemblyItemUnassembled, setAssemblyItemUnassembled] = useState(false);
+  const [assemblyAreaClear, setAssemblyAreaClear] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
@@ -569,6 +581,13 @@ export default function CustomerPostTaskScreen() {
     if (range) setBudget(String(range.recommended));
   }, [selectedCategory]);
 
+  useEffect(() => {
+    setAssemblyPartsAvailable(false);
+    setAssemblyInstructionsAvailable(false);
+    setAssemblyItemUnassembled(false);
+    setAssemblyAreaClear(false);
+  }, [selectedCategoryId]);
+
   const handlePickImages = useCallback(async () => {
     const rules = catalog?.rules ?? getMockPostingRulesResponse().coreTask;
     const maxImages = Math.min(rules.maxImages, CORE_TASK_UPLOAD_MAX_IMAGES);
@@ -760,7 +779,24 @@ export default function CustomerPostTaskScreen() {
       issues.push({ key, label, message });
     };
 
+    const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
+
     if (!selectedCategoryId) addIssue('categorySlug', t('category'), t('missingCategory'));
+
+    if (isFurnitureAssembly) {
+      if (!assemblyPartsAvailable) {
+        addIssue('assemblyPartsAvailable', 'Parts available', 'Please confirm all parts are available.');
+      }
+      if (!assemblyInstructionsAvailable) {
+        addIssue('assemblyInstructionsAvailable', 'Instructions available', 'Please confirm instructions are available if possible.');
+      }
+      if (!assemblyItemUnassembled) {
+        addIssue('assemblyItemUnassembled', 'Item unassembled', 'Please confirm the item is unassembled unless stated otherwise.');
+      }
+      if (!assemblyAreaClear) {
+        addIssue('assemblyAreaClear', 'Area clear', 'Please confirm the assembly area is clear and accessible.');
+      }
+    }
     if (!budget.trim()) {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
@@ -841,6 +877,10 @@ export default function CustomerPostTaskScreen() {
     };
   }, [
     address,
+    assemblyAreaClear,
+    assemblyInstructionsAvailable,
+    assemblyItemUnassembled,
+    assemblyPartsAvailable,
     budget,
     catalog?.rules.minDescriptionLength,
     description,
@@ -849,6 +889,7 @@ export default function CustomerPostTaskScreen() {
     reviewConfirmed,
     scheduleDate,
     scheduleCopy,
+    selectedCategory,
     selectedCategoryId,
     selectedCityId,
     startTime,
@@ -860,7 +901,7 @@ export default function CustomerPostTaskScreen() {
       const stepKeys: Record<WizardStep, ValidationFieldKey[]> = {
         1: ['categorySlug'],
         2: ['budgetEur'],
-        3: ['title', 'description'],
+        3: ['title', 'description', 'assemblyPartsAvailable', 'assemblyInstructionsAvailable', 'assemblyItemUnassembled', 'assemblyAreaClear'],
         4: [],
         5: ['cityId', 'address', 'scheduleDate', 'startTime', 'endTime', 'estimatedTime'],
         6: ['reviewConfirm'],
@@ -940,6 +981,8 @@ export default function CustomerPostTaskScreen() {
       return;
     }
 
+    const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
+
     setIsSubmitting(true);
     const result = await createCustomerTask(
       {
@@ -954,6 +997,16 @@ export default function CustomerPostTaskScreen() {
         scheduledEndAt: formValidation.endIso,
         scheduledStartAt: formValidation.startIso,
         title: title.trim(),
+        ...(isFurnitureAssembly
+          ? {
+              scopeData: {
+                assemblyAreaClear,
+                assemblyInstructionsAvailable,
+                assemblyItemUnassembled,
+                assemblyPartsAvailable,
+              },
+            }
+          : {}),
       },
       authToken,
     );
@@ -1020,12 +1073,17 @@ export default function CustomerPostTaskScreen() {
     setSubmitError(getSafeApiMessage(result.error.message));
   }, [
     address,
+    assemblyAreaClear,
+    assemblyInstructionsAvailable,
+    assemblyItemUnassembled,
+    assemblyPartsAvailable,
     description,
     estimatedTime,
     formValidation,
     getValidAccessToken,
     images,
     router,
+    selectedCategory,
     selectedCategoryId,
     selectedCityId,
     status,
@@ -1214,6 +1272,7 @@ export default function CustomerPostTaskScreen() {
     }
 
     if (currentStep === 3) {
+      const isFurnitureAssembly = selectedCategory?.slug === 'furniture_assembly';
       return (
         <View style={styles.cardStack}>
           <Field
@@ -1239,6 +1298,58 @@ export default function CustomerPostTaskScreen() {
             placeholder={t('detailsPlaceholder')}
             value={description}
           />
+          {isFurnitureAssembly ? (
+            <View style={styles.scopeSection}>
+              <AppText style={styles.fieldLabel}>Scope confirmation</AppText>
+              <AppText color={colors.slate700} style={styles.cardBody}>
+                Confirm the following so Taskly can match the right Tasker.
+              </AppText>
+              <ScopeCheckboxRow
+                checked={assemblyPartsAvailable}
+                hasError={!!getFieldError('assemblyPartsAvailable')}
+                label="All required parts are available."
+                onPress={() => {
+                  setAssemblyPartsAvailable((v) => !v);
+                  clearFieldError('assemblyPartsAvailable');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={assemblyInstructionsAvailable}
+                hasError={!!getFieldError('assemblyInstructionsAvailable')}
+                label="Instruction manual is available if possible."
+                onPress={() => {
+                  setAssemblyInstructionsAvailable((v) => !v);
+                  clearFieldError('assemblyInstructionsAvailable');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={assemblyItemUnassembled}
+                hasError={!!getFieldError('assemblyItemUnassembled')}
+                label="Item is new/unassembled unless stated otherwise."
+                onPress={() => {
+                  setAssemblyItemUnassembled((v) => !v);
+                  clearFieldError('assemblyItemUnassembled');
+                }}
+              />
+              <ScopeCheckboxRow
+                checked={assemblyAreaClear}
+                hasError={!!getFieldError('assemblyAreaClear')}
+                label="Assembly area is clear and accessible."
+                onPress={() => {
+                  setAssemblyAreaClear((v) => !v);
+                  clearFieldError('assemblyAreaClear');
+                }}
+              />
+              {(getFieldError('assemblyPartsAvailable') ||
+                getFieldError('assemblyInstructionsAvailable') ||
+                getFieldError('assemblyItemUnassembled') ||
+                getFieldError('assemblyAreaClear')) ? (
+                <AppText color={colors.danger600} variant="small">
+                  Please confirm all scope items before continuing.
+                </AppText>
+              ) : null}
+            </View>
+          ) : null}
         </View>
       );
     }
@@ -1637,6 +1748,51 @@ export default function CustomerPostTaskScreen() {
             </AppText>
             <AppText style={styles.reviewSummaryDetailsText}>{description || '-'}</AppText>
           </View>
+          {selectedCategory?.slug === 'furniture_assembly' ? (
+            <View style={styles.scopeReviewSection}>
+              <AppText style={styles.fieldLabel}>Scope confirmation</AppText>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={assemblyPartsAvailable ? colors.success600 : colors.warning600}
+                  name={assemblyPartsAvailable ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  All required parts are available.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={assemblyInstructionsAvailable ? colors.success600 : colors.warning600}
+                  name={assemblyInstructionsAvailable ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Instruction manual is available if possible.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={assemblyItemUnassembled ? colors.success600 : colors.warning600}
+                  name={assemblyItemUnassembled ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Item is new/unassembled unless stated otherwise.
+                </AppText>
+              </View>
+              <View style={styles.scopeReviewItem}>
+                <Ionicons
+                  color={assemblyAreaClear ? colors.success600 : colors.warning600}
+                  name={assemblyAreaClear ? 'checkmark-circle' : 'alert-circle-outline'}
+                  size={16}
+                />
+                <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+                  Assembly area is clear and accessible.
+                </AppText>
+              </View>
+            </View>
+          ) : null}
           <View style={styles.reviewSummaryDivider} />
           <View style={styles.reviewTotalRow}>
             <View style={styles.reviewSummaryLabel}>
@@ -1794,6 +1950,36 @@ type FieldProps = {
   prefix?: string;
   value: string;
 };
+
+function ScopeCheckboxRow({
+  checked,
+  hasError,
+  label,
+  onPress,
+}: {
+  checked: boolean;
+  hasError: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.scopeCheckboxRow,
+        hasError ? styles.scopeCheckboxRowError : null,
+        { opacity: pressed ? 0.82 : 1 },
+      ]}>
+      <View style={[styles.checkbox, checked ? styles.checkboxSelected : null]}>
+        {checked ? <Ionicons color={colors.white} name="checkmark" size={15} /> : null}
+      </View>
+      <AppText color={colors.slate700} style={styles.scopeCheckboxLabel}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
 
 function Field({
   containerStyle,
@@ -2545,5 +2731,39 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
+  },
+  scopeSection: {
+    gap: spacing.sm,
+  },
+  scopeCheckboxRow: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  scopeCheckboxRowError: {
+    borderColor: colors.danger600,
+  },
+  scopeCheckboxLabel: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  scopeReviewSection: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: '#D7E7FA',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  scopeReviewItem: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

@@ -431,6 +431,13 @@ export type CustomerTaskDetailResponse = {
   task: CustomerTaskDetail;
 };
 
+export type FurnitureAssemblyScopeData = {
+  assemblyAreaClear?: boolean;
+  assemblyInstructionsAvailable?: boolean;
+  assemblyItemUnassembled?: boolean;
+  assemblyPartsAvailable?: boolean;
+};
+
 export type CreateCustomerTaskPayload = {
   address: string;
   budgetEur: number;
@@ -445,6 +452,7 @@ export type CreateCustomerTaskPayload = {
   };
   scheduledEndAt: string;
   scheduledStartAt: string;
+  scopeData?: FurnitureAssemblyScopeData;
   title: string;
 };
 
