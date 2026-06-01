@@ -1021,7 +1021,7 @@ export default function CustomerPostProRequestScreen() {
           {isLoading ? (
             <View style={styles.stateCard}>
               <StatusBadge label={t('loading')} tone="pro" />
-              <AppText variant="sectionTitle">{t('loadingProRequestSetup')}</AppText>
+              <AppText variant="cardTitle">{t('loadingProRequestSetup')}</AppText>
               <AppText color={colors.slate700}>{t('loadingProRequestSetupBody')}</AppText>
             </View>
           ) : null}
@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1219,9 +1219,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.navy900,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    lineHeight: 29,
+    lineHeight: 28,
   },
   iconBox: {
     alignItems: 'center',
@@ -1324,15 +1324,15 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.navy900,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 26,
+    lineHeight: 21,
   },
   reviewTrustCard: {
     alignItems: 'flex-start',
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
@@ -1404,7 +1404,7 @@ const styles = StyleSheet.create({
   summaryRow: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,
