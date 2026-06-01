@@ -98,7 +98,7 @@ export default function CustomerTasksScreen() {
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600} style={styles.stateCard}>
           <StatusBadge label={t('loading')} tone="core" />
-          <AppText variant="sectionTitle">{t('loadingTasklyTasks')}</AppText>
+          <AppText variant="cardTitle">{t('loadingTasklyTasks')}</AppText>
           <AppText color={colors.slate700}>{t('loadingTasklyTasksBody')}</AppText>
         </AppCard>
       ) : null}
@@ -109,7 +109,7 @@ export default function CustomerTasksScreen() {
             label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')}
             tone={isUnauthorized ? 'warning' : 'danger'}
           />
-          <AppText variant="sectionTitle">
+          <AppText variant="cardTitle">
             {isUnauthorized ? t('signInToViewTasklyTasks') : t('couldNotRefreshTasklyTasks')}
           </AppText>
           <AppText color={colors.slate700}>{errorMessage || t('retryOrContinueDemoBackendUnavailable')}</AppText>
@@ -148,7 +148,7 @@ export default function CustomerTasksScreen() {
           <StatusBadge label={t('paymentProtected')} tone="success" />
           <StatusBadge label={t('supportWhenNeededChip')} tone="core" />
         </View>
-        <AppText variant="sectionTitle">{t('taskPaymentProtectedTitle')}</AppText>
+        <AppText variant="cardTitle">{t('taskPaymentProtectedTitle')}</AppText>
         <AppText color={colors.slate700}>{t('paymentProtectedReleasedAfterApproval')}</AppText>
       </AppCard>
 
@@ -179,7 +179,7 @@ function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSu
       </View>
 
       <View style={styles.cardMain}>
-        <AppText style={styles.cardTitle} variant="sectionTitle">
+        <AppText style={styles.cardTitle} variant="cardTitle">
           {task.title}
         </AppText>
         <AppText color={colors.slate700} style={styles.cardSubtitle}>
@@ -415,8 +415,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   cardTitle: {
-    fontSize: 18,
-    lineHeight: 23,
+    fontSize: 17,
+    lineHeight: 22,
   },
   detailsButton: {
     minHeight: 38,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: colors.white,
     borderColor: colors.slate100,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   stateCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
   },
   taskCard: {
     gap: spacing.md,
@@ -494,6 +494,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   trustCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
   },
 });

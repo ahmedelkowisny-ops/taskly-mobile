@@ -937,7 +937,7 @@ export default function CustomerTaskDetailScreen() {
       {message ? (
         <AppCard accentColor={colors.warning600}>
           <StatusBadge label={stateLabel || t('latestUpdate')} tone="warning" />
-          <AppText variant="sectionTitle">{message}</AppText>
+          <AppText variant="cardTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} variant="outline">{t('retry')}</AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
@@ -1060,7 +1060,7 @@ function TaskSummarySection({ task }: { task: CustomerTaskDetail }) {
   return (
     <AppCard style={styles.sectionCard}>
       <View style={styles.sectionHeader}>
-        <AppText variant="sectionTitle">{t('taskSummary')}</AppText>
+        <AppText variant="cardTitle">{t('taskSummary')}</AppText>
         <StatusBadge label="Taskly" tone="core" />
       </View>
       <AppText color={colors.slate700} style={styles.descriptionText}>
@@ -1083,7 +1083,7 @@ function ScopeChecklistSection({ task }: { task: CustomerTaskDetail }) {
   return (
     <AppCard style={styles.sectionCard}>
       <View style={styles.sectionHeader}>
-        <AppText variant="sectionTitle">Scope checklist</AppText>
+        <AppText variant="cardTitle">{t('scopeChecklist')}</AppText>
         <StatusBadge label={`${checklist.filter((item) => item.checked).length}/${checklist.length}`} tone="core" />
       </View>
       <View style={styles.scopeChecklistList}>
@@ -1112,7 +1112,7 @@ function TaskScheduleSection({ task }: { task: CustomerTaskDetail }) {
   return (
     <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
       <View style={styles.sectionHeader}>
-        <AppText variant="sectionTitle">{t('taskSchedule')}</AppText>
+        <AppText variant="cardTitle">{t('taskSchedule')}</AppText>
         <StatusBadge label={t('paymentProtected')} tone="success" />
       </View>
       <View style={styles.infoGrid}>
@@ -1137,7 +1137,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
   if (!images.length) return null;
   return (
     <AppCard style={styles.sectionCard}>
-      <AppText variant="sectionTitle">{t('taskPhotos')}</AppText>
+      <AppText variant="cardTitle">{t('taskPhotos')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => (
           <Image
@@ -1155,7 +1155,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
 function Timeline({ items, accent }: { accent: 'core'; items: { description: string; id: string; label: string; status: string }[] }) {
   return (
     <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
-      <AppText variant="sectionTitle">{t('taskTimeline')}</AppText>
+      <AppText variant="cardTitle">{t('taskTimeline')}</AppText>
       {items.map((item) => (
         <View key={item.id} style={styles.timelineItem}>
           <StatusBadge label={getTimelineStatusLabel(item.status)} tone={accent} />
@@ -1194,7 +1194,7 @@ function NextActions({
 
   return (
     <AppCard style={styles.sectionCard}>
-      <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
+      <AppText variant="cardTitle">{t('nextSteps')}</AppText>
       {isCompletionReview ? (
         <AppText color={colors.slate700}>{t('completionRequested')}</AppText>
       ) : actions.blockedReason || actions.blockedReasonCode ? (
@@ -1225,7 +1225,7 @@ function InterestedTaskers({
   return (
     <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
       <StatusBadge label={t('chooseTasker')} tone="core" />
-      <AppText variant="sectionTitle">{t('taskerResponses')}</AppText>
+      <AppText variant="cardTitle">{t('taskerResponses')}</AppText>
       <AppText color={colors.slate700}>{t('nextStepPaymentSetup')}</AppText>
       {taskers.length === 0 ? (
         <AppText color={colors.slate700}>{t('noInterestedTaskersYet')}</AppText>
@@ -1281,7 +1281,7 @@ function PaymentStateCard({
         <StatusBadge label={getPaymentStateLabel(paymentState)} tone={getPaymentStateTone(paymentState)} />
         {paymentState.paymentRequired ? <StatusBadge label={t('protectedPaymentFlow')} tone="neutral" /> : null}
       </View>
-      <AppText variant="sectionTitle">{t('taskPaymentProtectedTitle')}</AppText>
+      <AppText variant="cardTitle">{t('taskPaymentProtectedTitle')}</AppText>
       <AppText color={colors.slate700}>{getPaymentStateHelperText(paymentState)}</AppText>
       {hasPaymentSetupAction(nextActions) ? <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText> : null}
     </AppCard>
@@ -1314,7 +1314,7 @@ function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
           <StatusBadge label={getRefundStateLabel(refund)} tone="neutral" />
         ) : null}
       </View>
-      <AppText variant="sectionTitle">{t('cancellationAndSupport')}</AppText>
+      <AppText variant="cardTitle">{t('cancellationAndSupport')}</AppText>
       {cancellation ? <AppText color={colors.slate700}>{cancellation.helperText}</AppText> : null}
       {cancellation?.estimatedPolicyOutcomeLabel ? (
         <AppText color={colors.slate700}>{cancellation.estimatedPolicyOutcomeLabel}</AppText>
@@ -1381,7 +1381,7 @@ function CustomerCancellationSupportActions({
         label={canRequestSupport ? t('requestSupportReview') : isLateCancellation ? t('lateCancellationWarning') : t('freeCancellationAvailable')}
         tone={isLateCancellation || canRequestSupport ? 'warning' : 'neutral'}
       />
-      <AppText variant="sectionTitle">{canRequestSupport ? t('contactSupport') : t('cancelTask')}</AppText>
+      <AppText variant="cardTitle">{canRequestSupport ? t('contactSupport') : t('cancelTask')}</AppText>
       {canCancel ? (
         <>
           <AppText color={colors.slate700}>
@@ -1466,7 +1466,7 @@ function PaymentSetupCard({
   return (
     <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
       <StatusBadge label={t('paymentProtected')} tone="core" />
-      <AppText variant="sectionTitle">{getPaymentSetupButtonLabel(task.nextActions)}</AppText>
+      <AppText variant="cardTitle">{getPaymentSetupButtonLabel(task.nextActions)}</AppText>
       <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText>
       <AppText color={colors.slate700}>{t('paymentProtectedReleasedAfterApproval')}</AppText>
       <AppText color={colors.slate700}>{t('paymentHoldScheduledFlow')}</AppText>
@@ -1535,7 +1535,7 @@ function CompletionDecision({
   return (
     <AppCard accentColor={colors.warning600} style={styles.sectionCard}>
       <StatusBadge label={t('waitingForCustomerApproval')} tone="warning" />
-      <AppText variant="sectionTitle">{t('approveCompletionPrompt')}</AppText>
+      <AppText variant="cardTitle">{t('approveCompletionPrompt')}</AppText>
       <AppText color={colors.slate700}>
         {canApprove ? t('approveCompletionPaymentReady') : t('approvalWaitingPaymentReady')}
       </AppText>
@@ -1850,7 +1850,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   heroCard: {
-    borderRadius: radius.lg,
     gap: spacing.md,
     padding: spacing.lg,
   },
@@ -1925,7 +1924,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   sectionCard: {
-    borderRadius: radius.lg,
     gap: spacing.md,
     padding: spacing.lg,
   },
