@@ -14,7 +14,7 @@ import { getMockCustomerHomeResponse, getMockUserSession } from '@/src/lib/api/m
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerHomeScreen() {
   useI18n();
@@ -97,14 +97,14 @@ export default function CustomerHomeScreen() {
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600}>
           <StatusBadge label={t('loading')} tone="core" />
-          <AppText variant="sectionTitle">{t('loadingCustomerArea')}</AppText>
+          <AppText variant="cardTitle">{t('loadingCustomerArea')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
-          <AppText variant="sectionTitle">
+          <AppText variant="cardTitle">
             {isUnauthorized ? t('signInToViewCustomerActivity') : t('couldNotRefreshCustomerActivity')}
           </AppText>
           <AppText color={colors.slate700}>
@@ -142,7 +142,7 @@ export default function CustomerHomeScreen() {
       {summary ? (
         <View style={styles.summaryCard}>
           <View style={styles.sectionHeader}>
-            <AppText variant="sectionTitle">{t('customerSummaryTitle')}</AppText>
+            <AppText variant="cardTitle">{t('customerSummaryTitle')}</AppText>
           </View>
           <View style={styles.metricsGrid}>
             <Metric label={t('openShort')} value={summary.openTasksCount} />
@@ -168,7 +168,7 @@ export default function CustomerHomeScreen() {
                 label={highlight.statusLabel}
                 tone={highlight.accent === 'pro' ? 'pro' : highlight.accent === 'warning' ? 'warning' : 'core'}
               />
-              <AppText variant="sectionTitle">{highlight.title}</AppText>
+              <AppText variant="cardTitle">{highlight.title}</AppText>
               <AppText color={colors.slate700}>{highlight.description}</AppText>
             </View>
           ))}
@@ -181,7 +181,7 @@ export default function CustomerHomeScreen() {
       )}
 
       <View style={styles.trustCard}>
-        <AppText variant="sectionTitle">{t('customerHomeTrustTitle')}</AppText>
+        <AppText variant="cardTitle">{t('customerHomeTrustTitle')}</AppText>
         <View style={styles.trustChips}>
           <TrustChip icon="shield-checkmark-outline" label={t('paymentProtectedChip')} tone="core" />
           <TrustChip icon="ribbon-outline" label={t('approvedProsChip')} tone="pro" />
@@ -196,7 +196,7 @@ export default function CustomerHomeScreen() {
 
 const styles = StyleSheet.create({
   actionCard: {
-    borderRadius: 24,
+    borderRadius: radius.card,
     borderWidth: 1,
     elevation: 2,
     gap: spacing.md,
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   actionTitleWrap: {
     flex: 1,
-    gap: 2,
+    gap: 4,
   },
   activityCard: {
     backgroundColor: colors.white,
@@ -251,6 +251,7 @@ const styles = StyleSheet.create({
     borderColor: '#F3D6AF',
   },
   activityCardWarning: {
+    backgroundColor: '#FFFBF2',
     borderColor: '#F8D8A7',
   },
   activitySection: {
@@ -308,6 +309,8 @@ const styles = StyleSheet.create({
     borderColor: '#E6EBF0',
     borderRadius: 14,
     borderWidth: 1,
+    flexBasis: '48%',
+    flexGrow: 1,
     gap: 2,
     padding: spacing.md,
   },
@@ -316,6 +319,8 @@ const styles = StyleSheet.create({
     borderColor: '#F3D6AF',
   },
   metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   screen: {
@@ -386,14 +391,14 @@ function HomeActionCard({
   return (
     <View style={[styles.actionCard, isPro ? styles.actionCardPro : styles.actionCardCore]}>
       <View style={styles.actionHeader}>
-        <View style={[styles.actionIcon, { backgroundColor: isPro ? colors.white : colors.tasklyBlue50 }]}>
+        <View style={[styles.actionIcon, { backgroundColor: isPro ? colors.proOrange50 : colors.tasklyBlue50 }]}>
           <Ionicons color={accentColor} name={icon} size={22} />
         </View>
         <View style={styles.actionTitleWrap}>
           <AppText color={accentColor} variant="small">
             {title}
           </AppText>
-          <AppText variant="sectionTitle">{subtitle}</AppText>
+          <AppText variant="cardTitle">{subtitle}</AppText>
         </View>
       </View>
       <View style={styles.chipRow}>
