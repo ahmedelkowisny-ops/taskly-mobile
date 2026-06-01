@@ -1552,8 +1552,8 @@ export default function CustomerPostTaskScreen() {
                     {...budgetPanResponder.panHandlers}>
                     <View style={styles.budgetTrack} pointerEvents="none">
                       <View style={[styles.budgetTrackFill, { width: `${budgetProgressPercent}%` }]} />
-                      <View style={[styles.budgetSelectedThumb, { left: (budgetProgressPercent / 100) * budgetTrackWidth - 9 }]} />
-                      <View style={[styles.budgetRecommendedDot, { left: (recommendedBudgetPercent / 100) * budgetTrackWidth - 5 }]} />
+                      <View style={[styles.budgetSelectedThumb, { left: budgetTrackWidth > 0 ? (budgetProgressPercent / 100) * budgetTrackWidth - 9 : 0 }]} />
+                      <View style={[styles.budgetRecommendedDot, { left: budgetTrackWidth > 0 ? (recommendedBudgetPercent / 100) * budgetTrackWidth - 5 : 0 }]} />
                     </View>
                   </View>
                   <View style={styles.budgetRangeLabels}>
