@@ -116,19 +116,49 @@ export default function ProviderProRequestsScreen() {
           {data.proRequests.map((request) => (
             <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                <StatusBadge label={t('tasklyProRequest')} tone="pro" />
                 <StatusBadge label={request.statusLabel} tone="pro" />
                 <StatusBadge
                   label={request.proResponseState?.badgeLabel || request.responseStatusLabel}
                   tone={getProResponseBadgeTone(request.proResponseState?.status)}
                 />
+                {request.photoCountLabel ? <StatusBadge label={request.photoCountLabel} tone="neutral" /> : null}
               </View>
               <AppText variant="sectionTitle">{request.title}</AppText>
               <AppText color={colors.slate700}>
                 {request.categoryLabel} - {request.cityLabel}
               </AppText>
-              <AppText color={colors.slate700}>{request.timelineLabel}</AppText>
+              <AppText color={colors.slate700}>
+                {t('timeline')}: {request.timelineLabel}
+              </AppText>
+              {request.budgetLabel ? (
+                <AppText color={colors.slate700}>
+                  {t('budget')}: {request.budgetLabel}
+                </AppText>
+              ) : null}
+              {request.customerUnlockStatusLabel ? (
+                <AppText color={colors.slate700}>{localizeProviderProLabel(request.customerUnlockStatusLabel)}</AppText>
+              ) : null}
+              {request.siteVisitStatusLabel ? (
+                <AppText color={colors.slate700}>
+                  {t('siteVisit')}: {localizeProviderProLabel(request.siteVisitStatusLabel)}
+                </AppText>
+              ) : null}
+              {request.proResponseSummary?.roughQuoteLabel ? (
+                <AppText color={colors.slate700}>
+                  {t('yourResponse')}: {request.proResponseSummary.roughQuoteLabel}
+                </AppText>
+              ) : null}
+              {request.proResponseBlockedReason ? (
+                <AppText color={colors.warning600}>
+                  {t('blockedReason')}: {request.proResponseBlockedReason}
+                </AppText>
+              ) : null}
               {request.proResponseState?.helperText ? (
                 <AppText color={colors.slate700}>{request.proResponseState.helperText}</AppText>
+              ) : null}
+              {request.chatAvailabilityLabel && request.proChat?.capabilities.canRead ? (
+                <AppText color={colors.proOrangeText}>{localizeProviderProLabel(request.chatAvailabilityLabel)}</AppText>
               ) : null}
               <AppButton
                 onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
@@ -168,4 +198,34 @@ function getProResponseBadgeTone(status?: string) {
   if (status === 'response_hidden' || status === 'profile_under_review') return 'warning';
   if (status === 'submitted_locked') return 'pro';
   return 'neutral';
+}
+
+function localizeProviderProLabel(label: string) {
+  switch (label) {
+    case 'Customer unlocked comparison':
+      return t('customerUnlockedComparison');
+    case 'Customer has not unlocked yet':
+      return t('customerHasNotUnlockedYet');
+    case 'You are selected for this request':
+      return t('youAreSelectedForThisRequest');
+    case 'Not selected yet':
+      return t('notSelectedYet');
+    case 'Protected details available':
+      return t('protectedDetailsAvailable');
+    case 'Protected details hidden':
+      return t('protectedDetailsHidden');
+    case 'Address visible after selection':
+      return t('addressVisibleAfterSelection');
+    case 'Chat available':
+      return t('chatAvailable');
+    case 'Chat available after unlock':
+      return t('chatAvailableAfterUnlock');
+    case 'Site visit invited':
+    case 'Invite received':
+      return t('siteVisitInvited');
+    case 'Site visit unavailable':
+      return t('siteVisitUnavailable');
+    default:
+      return label;
+  }
 }

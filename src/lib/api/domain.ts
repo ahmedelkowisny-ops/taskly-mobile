@@ -1215,18 +1215,28 @@ export type ProviderCoreIssueActionResponse = {
 };
 
 export type ProviderProRequestSummary = {
+  budgetLabel?: string;
   categoryLabel: string;
+  chatAvailabilityLabel?: string | null;
   cityLabel: string;
   createdAt: string;
+  customerUnlockStatusLabel?: string | null;
   id: string;
+  imageCount?: number;
   isEligibleToRespond: boolean;
   nextAction: ProviderNextAction;
+  photoCountLabel?: string | null;
+  proChat?: {
+    capabilities: MessageThreadCapabilities;
+    messageThreadId: string;
+  } | null;
   proResponseBlockedReason?: string | null;
   proResponseBlockedReasonCode?: string | null;
   proResponseCapabilities?: ProviderProResponseCapabilities;
   proResponseState?: ProviderProResponseState;
   proResponseSummary?: ProviderProResponseSummary | null;
   responseStatusLabel: string;
+  siteVisitStatusLabel?: string | null;
   status: string;
   statusLabel: string;
   timelineLabel: string;
@@ -1333,12 +1343,15 @@ export type ProviderProRequestDetail = {
   allowedContactFields?: string[];
   budgetLabel: string;
   categoryLabel: string;
+  chatAvailabilityLabel?: string | null;
   cityLabel: string;
   contactVisibilityState?: ProContactVisibilityState;
   createdAt: string;
+  customerUnlockStatusLabel?: string | null;
   description: string;
   eligibility: EligibilitySummary;
   id: string;
+  imageCount?: number;
   images: DetailImage[];
   messageThreadId?: string | null;
   myResponse: ProviderProResponseSummary | null;
@@ -1348,17 +1361,22 @@ export type ProviderProRequestDetail = {
   proResponseCapabilities?: ProviderProResponseCapabilities;
   proResponseState?: ProviderProResponseState;
   proResponseSummary?: ProviderProResponseSummary | null;
+  photoCountLabel?: string | null;
   proChat?: {
     capabilities: MessageThreadCapabilities;
     messageThreadId: string;
   } | null;
+  protectedDetailsLabel?: string | null;
   responseEditDefaults?: ProviderProResponseEditDefaults | null;
+  responseVisibilityLabel?: string | null;
+  selectedProStateLabel?: string | null;
   siteVisitBlockedReason?: string | null;
   siteVisitBlockedReasonCode?: string | null;
   siteVisitInvites?: ProSiteVisitInviteSummary[];
   siteVisitNextActions?: ProSiteVisitNextActions;
   siteVisitState?: ProSiteVisitState;
   siteVisitSummary?: string;
+  siteVisitStatusLabel?: string | null;
   status: string;
   statusLabel: string;
   timelineLabel: string;

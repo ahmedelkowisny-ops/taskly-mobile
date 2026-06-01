@@ -105,8 +105,8 @@ export default function ProviderProRequestDetailScreen() {
 
     if (status !== 'authenticated') {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this provider Taskly Pro project.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredProviderProRequestDetail'));
       return;
     }
 
@@ -115,8 +115,8 @@ export default function ProviderProRequestDetailScreen() {
 
     if (!authToken) {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this provider Taskly Pro project.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredProviderProRequestDetail'));
       setIsLoading(false);
       return;
     }
@@ -131,7 +131,7 @@ export default function ProviderProRequestDetailScreen() {
 
     setData(null);
     setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
-    setMessage(result.status === 404 ? 'This Taskly Pro project was not found or is not available to this provider account.' : 'Could not load this Taskly Pro project.');
+    setMessage(result.status === 404 ? t('providerProRequestNotFound') : t('couldNotLoadProviderProRequest'));
   }, [getValidAccessToken, proRequestId, status]);
 
   useFocusEffect(
@@ -310,17 +310,17 @@ export default function ProviderProRequestDetailScreen() {
     <Screen>
       <View style={styles.header}>
         <ModeBadge mode="providerPro" />
-        <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
+        <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message={t('loadingProviderProDetail')} /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('loadingProviderProDetail')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={stateLabel || 'Notice'} tone="warning" />
+          <StatusBadge label={stateLabel || t('notice')} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
-            <AppButton onPress={loadDetail} tone="pro" variant="outline">Retry</AppButton>
+            <AppButton onPress={loadDetail} tone="pro" variant="outline">{t('retry')}</AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
           </View>
         </AppCard>
@@ -329,7 +329,11 @@ export default function ProviderProRequestDetailScreen() {
       {request ? (
         <>
           <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <StatusBadge label={request.statusLabel} tone="pro" />
+            <View style={styles.badgeRow}>
+              <StatusBadge label={t('tasklyProRequest')} tone="pro" />
+              <StatusBadge label={request.statusLabel} tone="pro" />
+              {request.photoCountLabel ? <StatusBadge label={request.photoCountLabel} tone="neutral" /> : null}
+            </View>
             <AppText variant="screenTitle">{request.title}</AppText>
             <AppText color={colors.slate700}>{request.description}</AppText>
             <AppText color={colors.slate700}>{request.categoryLabel} - {request.cityLabel}</AppText>
@@ -340,6 +344,45 @@ export default function ProviderProRequestDetailScreen() {
             <Info label={t('budget')} value={request.budgetLabel} />
             <Info label={t('timeline')} value={request.timelineLabel} />
             <Info label={t('created')} value={new Date(request.createdAt).toLocaleDateString()} />
+            {request.customerUnlockStatusLabel ? (
+              <Info label={t('customerAccess')} value={localizeProviderProLabel(request.customerUnlockStatusLabel)} />
+            ) : null}
+            {request.selectedProStateLabel ? (
+              <Info label={t('selectedPro')} value={localizeProviderProLabel(request.selectedProStateLabel)} />
+            ) : null}
+            {request.siteVisitStatusLabel ? (
+              <Info label={t('siteVisit')} value={localizeProviderProLabel(request.siteVisitStatusLabel)} />
+            ) : null}
+            {request.chatAvailabilityLabel ? (
+              <Info label={t('proChat')} value={localizeProviderProLabel(request.chatAvailabilityLabel)} />
+            ) : null}
+          </AppCard>
+
+          <AppCard>
+            <View style={styles.badgeRow}>
+              <StatusBadge label={t('protectedDetails')} tone="pro" />
+              {request.protectedDetailsLabel ? <StatusBadge label={localizeProviderProLabel(request.protectedDetailsLabel)} tone="neutral" /> : null}
+            </View>
+            {request.addressVisibilityState ? (
+              <>
+                <Info label={t('address')} value={request.addressVisibilityState.stateLabel} />
+                <AppText color={colors.slate700}>{request.addressVisibilityState.helperText}</AppText>
+                {request.addressVisibilityState.addressLabel ? (
+                  <Info label={t('address')} value={request.addressVisibilityState.addressLabel} />
+                ) : null}
+                {request.addressVisibilityState.accessNotesLabel ? (
+                  <Info label={t('accessNotes')} value={request.addressVisibilityState.accessNotesLabel} />
+                ) : null}
+              </>
+            ) : (
+              <AppText color={colors.slate700}>{t('protectedDetailsHidden')}</AppText>
+            )}
+            {request.contactVisibilityState ? (
+              <>
+                <Info label={t('sharedDetails')} value={request.contactVisibilityState.stateLabel} />
+                <AppText color={colors.slate700}>{request.contactVisibilityState.helperText}</AppText>
+              </>
+            ) : null}
           </AppCard>
 
           {responseNotice ? (
@@ -366,10 +409,13 @@ export default function ProviderProRequestDetailScreen() {
           <Images images={request.images} />
 
           <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <AppText variant="sectionTitle">{t('proResponse')}</AppText>
+            <AppText variant="sectionTitle">{t('yourResponse')}</AppText>
             {request.myResponse ? (
               <>
-                <StatusBadge label={request.myResponse.statusLabel} tone="success" />
+                <View style={styles.badgeRow}>
+                  <StatusBadge label={request.myResponse.statusLabel} tone="success" />
+                  {request.responseVisibilityLabel ? <StatusBadge label={request.responseVisibilityLabel} tone="neutral" /> : null}
+                </View>
                 {request.myResponse.shortMessagePreview ? (
                   <AppText color={colors.slate700}>{request.myResponse.shortMessagePreview}</AppText>
                 ) : null}
@@ -946,4 +992,34 @@ function getSiteVisitTone(status?: string) {
   if (status === 'invited' || status === 'alternate_time_proposed') return 'pro';
   if (status === 'declined' || status === 'cancelled' || status === 'blocked') return 'warning';
   return 'neutral';
+}
+
+function localizeProviderProLabel(label: string) {
+  switch (label) {
+    case 'Customer unlocked comparison':
+      return t('customerUnlockedComparison');
+    case 'Customer has not unlocked yet':
+      return t('customerHasNotUnlockedYet');
+    case 'You are selected for this request':
+      return t('youAreSelectedForThisRequest');
+    case 'Not selected yet':
+      return t('notSelectedYet');
+    case 'Protected details available':
+      return t('protectedDetailsAvailable');
+    case 'Protected details hidden':
+      return t('protectedDetailsHidden');
+    case 'Address visible after selection':
+      return t('addressVisibleAfterSelection');
+    case 'Chat available':
+      return t('chatAvailable');
+    case 'Chat available after unlock':
+      return t('chatAvailableAfterUnlock');
+    case 'Site visit invited':
+    case 'Invite received':
+      return t('siteVisitInvited');
+    case 'Site visit unavailable':
+      return t('siteVisitUnavailable');
+    default:
+      return label;
+  }
 }
