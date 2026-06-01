@@ -10,8 +10,7 @@ import { t, TranslationKey, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
-import { LanguageToggle } from './LanguageToggle';
-import { TasklyLogoText } from './TasklyLogoText';
+import { PublicTopBar } from './PublicTopBar';
 
 type RegisterOption = {
   body: TranslationKey;
@@ -77,7 +76,7 @@ export function RegisterChoiceScreen() {
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
-      <RegistrationTopBar />
+      <PublicTopBar />
 
       <View style={styles.header}>
         <AppText style={styles.title} variant="screenTitle">
@@ -180,7 +179,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
-      <RegistrationTopBar />
+      <PublicTopBar />
 
       <View style={styles.header}>
         <View style={[styles.formIcon, { backgroundColor: role === 'pro' ? colors.proOrange50 : colors.tasklyBlue50 }]}>
@@ -284,19 +283,6 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
         </Pressable>
       </AppCard>
     </Screen>
-  );
-}
-
-function RegistrationTopBar() {
-  return (
-    <View style={styles.topRow}>
-      <View style={styles.brandMark}>
-        <TasklyLogoText compact iconOnly />
-      </View>
-      <View style={styles.topActions}>
-        <LanguageToggle />
-      </View>
-    </View>
   );
 }
 
@@ -430,21 +416,6 @@ const styles = StyleSheet.create({
   backText: {
     textAlign: 'center',
   },
-  brandMark: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#DCEBFA',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    elevation: 1,
-    height: 46,
-    justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 5, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    width: 46,
-  },
   content: {
     gap: spacing.lg,
     justifyContent: 'flex-start',
@@ -555,15 +526,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 30,
     textAlign: 'center',
-  },
-  topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  topActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
 });

@@ -3,7 +3,7 @@ import { Href, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 
-import { LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
+import { PublicTopBar } from '@/src/components/taskly';
 import { AppButton, AppText, Screen } from '@/src/components/ui';
 import { canAccessCustomerWorkspace, canAccessProviderWorkspace } from '@/src/lib/auth/workspaceAccess';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -74,58 +74,54 @@ export default function WelcomeScreen() {
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
-      <View style={styles.topRow}>
-        <View style={styles.brandMark}>
-          <TasklyLogoText compact iconOnly />
-        </View>
-        <View style={styles.topActions}>
-          <LanguageToggle />
-          <AppButton onPress={() => router.push('/login' as Href)} style={styles.loginButton} variant="outline">
-            {t('loginTitle')}
-          </AppButton>
-        </View>
-      </View>
+      <PublicTopBar>
+        <AppButton onPress={() => router.push('/login' as Href)} style={styles.loginButton} variant="outline">
+          {t('loginTitle')}
+        </AppButton>
+      </PublicTopBar>
 
-      <Animated.View
-        style={[
-          styles.heroBox,
-          {
-            opacity: heroOpacity,
-            transform: [{ translateY: heroTranslateY }, { scale: heroScale }],
-          },
-        ]}>
-        <AppText style={styles.heroTitle} variant="screenTitle">
-          {t('entryWebHeadline')}
-        </AppText>
-        <AppText color={colors.slate700} style={styles.heroBody}>
-          {t('entryWebSubtitle')}
-        </AppText>
-      </Animated.View>
-
-      <View style={styles.actionStack}>
-        {loginActions.map((action) => (
-          <RoleActionButton
-            action={action}
-            key={action.id}
-            onPress={() => {
-              openRole(action.id);
-            }}
-          />
-        ))}
-      </View>
-
-      <View style={styles.registerLine}>
-        <AppText color={colors.slate500} style={styles.registerText}>
-          {t('newToTaskly')}
-        </AppText>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push('/register' as Href)}
-          style={({ pressed }) => [styles.registerLink, pressed ? styles.pressed : null]}>
-          <AppText color={colors.tasklyBlue600} style={styles.registerLinkText}>
-            {t('createAccount')}
+      <View style={styles.mainContent}>
+        <Animated.View
+          style={[
+            styles.heroBox,
+            {
+              opacity: heroOpacity,
+              transform: [{ translateY: heroTranslateY }, { scale: heroScale }],
+            },
+          ]}>
+          <AppText style={styles.heroTitle} variant="screenTitle">
+            {t('entryWebHeadline')}
           </AppText>
-        </Pressable>
+          <AppText color={colors.slate700} style={styles.heroBody}>
+            {t('entryWebSubtitle')}
+          </AppText>
+        </Animated.View>
+
+        <View style={styles.actionStack}>
+          {loginActions.map((action) => (
+            <RoleActionButton
+              action={action}
+              key={action.id}
+              onPress={() => {
+                openRole(action.id);
+              }}
+            />
+          ))}
+        </View>
+
+        <View style={styles.registerLine}>
+          <AppText color={colors.slate500} style={styles.registerText}>
+            {t('newToTaskly')}
+          </AppText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/register' as Href)}
+            style={({ pressed }) => [styles.registerLink, pressed ? styles.pressed : null]}>
+            <AppText color={colors.tasklyBlue600} style={styles.registerLinkText}>
+              {t('createAccount')}
+            </AppText>
+          </Pressable>
+        </View>
       </View>
 
     </Screen>
@@ -234,26 +230,11 @@ const styles = StyleSheet.create({
   actionStack: {
     gap: spacing.sm,
   },
-  brandMark: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#DCEBFA',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 46,
-    justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 5, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    width: 46,
-    elevation: 1,
-  },
   content: {
-    gap: spacing.md,
-    justifyContent: 'center',
+    gap: spacing.lg,
+    justifyContent: 'flex-start',
     paddingBottom: spacing.xl,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
   },
   heroBody: {
     fontSize: 14,
@@ -283,6 +264,11 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+  },
+  mainContent: {
+    flex: 1,
+    gap: spacing.md,
+    justifyContent: 'center',
   },
   pressed: {
     opacity: 0.88,
@@ -379,15 +365,5 @@ const styles = StyleSheet.create({
   },
   screen: {
     backgroundColor: '#F6F9FD',
-  },
-  topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  topActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
 });

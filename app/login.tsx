@@ -3,7 +3,7 @@ import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
+import { PublicTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
@@ -63,14 +63,7 @@ export default function LoginScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
-        <View style={styles.topRow}>
-          <View style={styles.brandMark}>
-            <TasklyLogoText compact iconOnly />
-          </View>
-          <View style={styles.topActions}>
-            <LanguageToggle />
-          </View>
-        </View>
+        <PublicTopBar />
 
         <View style={styles.mainContent}>
           <View style={styles.hero}>
@@ -182,21 +175,6 @@ const styles = StyleSheet.create({
   backLinkText: {
     textAlign: 'center',
   },
-  brandMark: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#DCEBFA',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 46,
-    justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 5, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    width: 46,
-    elevation: 1,
-  },
   content: {
     justifyContent: 'flex-start',
     paddingBottom: spacing.xl,
@@ -267,16 +245,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     textAlign: 'center',
-  },
-  topActions: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  topRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
 });
 
