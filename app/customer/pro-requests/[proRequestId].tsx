@@ -877,7 +877,7 @@ function CustomerSiteVisitInviteForm({
         errorText={errors.preferredDate}
         label={t('preferredDate')}
         onChangeText={(value) => onChange('preferredDate', value)}
-        placeholder="2026-06-15"
+        placeholder={t('datePlaceholder')}
         value={values.preferredDate}
       />
       <FormField

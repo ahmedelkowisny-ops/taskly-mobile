@@ -1743,7 +1743,7 @@ export default function CustomerPostTaskScreen() {
                   setMountingItemCount(v);
                   clearFieldError('mountingItemCount');
                 }}
-                placeholder="e.g. 2"
+                placeholder={t('itemCountPlaceholder')}
                 value={mountingItemCount}
               />
 
@@ -1838,7 +1838,7 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('mountingChecklistWallSurfaceSelected') ||
                 getFieldError('mountingChecklistMeasurementsChecked')) ? (
                 <AppText color={colors.danger600} variant="small">
-                  Please confirm all checklist items before continuing.
+                  {t('confirmChecklistItems')}
                 </AppText>
               ) : null}
             </View>
@@ -1976,7 +1976,7 @@ export default function CustomerPostTaskScreen() {
                   setHeavyItemCount(v);
                   clearFieldError('heavyItemCount');
                 }}
-                placeholder="e.g. 2"
+                placeholder={t('itemCountPlaceholder')}
                 value={heavyItemCount}
               />
 
@@ -2070,7 +2070,7 @@ export default function CustomerPostTaskScreen() {
                 getFieldError('heavyChecklistStairsElevatorSet') ||
                 getFieldError('heavyChecklistSizeWeightSet')) ? (
                 <AppText color={colors.danger600} variant="small">
-                  Please confirm all checklist items before continuing.
+                  {t('confirmChecklistItems')}
                 </AppText>
               ) : null}
             </View>

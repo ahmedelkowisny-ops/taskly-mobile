@@ -703,7 +703,7 @@ function ProviderSiteVisitActionForm({
             errorText={errors.proposedDate}
             label={t('preferredDate')}
             onChangeText={(value) => onChange('proposedDate', value)}
-            placeholder="2026-06-15"
+            placeholder={t('datePlaceholder')}
             value={values.proposedDate}
           />
           <FormField
@@ -780,7 +780,7 @@ function ProResponseForm({
             keyboardType="decimal-pad"
             label={t('minimumQuote')}
             onChangeText={(value) => onChange('roughQuoteMin', value)}
-            placeholder="EUR"
+            placeholder={t('quoteAmountPlaceholder')}
             value={values.roughQuoteMin}
           />
           <FormField
@@ -788,7 +788,7 @@ function ProResponseForm({
             keyboardType="decimal-pad"
             label={t('maximumQuote')}
             onChangeText={(value) => onChange('roughQuoteMax', value)}
-            placeholder="EUR"
+            placeholder={t('quoteAmountPlaceholder')}
             value={values.roughQuoteMax}
           />
         </View>

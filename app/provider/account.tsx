@@ -33,9 +33,7 @@ export default function ProviderAccountScreen() {
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('account')}</AppText>
-        <AppText color={colors.slate700}>
-          Provider Workspace account, role state, and notification placeholders.
-        </AppText>
+        <AppText color={colors.slate700}>{t('providerAccountIntro')}</AppText>
       </View>
 
       <AppCard>
@@ -43,10 +41,8 @@ export default function ProviderAccountScreen() {
           <ModeBadge mode="providerCore" />
           <ModeBadge mode="providerPro" />
         </View>
-        <AppText variant="sectionTitle">Dual Provider Workspace</AppText>
-        <AppText color={colors.slate700}>
-          Taskly Tasker and Taskly Pro access can both live in the Provider Workspace when your account allows them. Workspace switching and notifications follow account permissions.
-        </AppText>
+        <AppText variant="sectionTitle">{t('dualProviderWorkspace')}</AppText>
+        <AppText color={colors.slate700}>{t('dualProviderWorkspaceBody')}</AppText>
         <AppText color={colors.slate500} variant="caption">
           {status === 'authenticated' ? `${session.user.displayName} - ${session.user.email}` : getProviderModeSummary(session)}
         </AppText>
@@ -62,19 +58,19 @@ export default function ProviderAccountScreen() {
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <ModeBadge mode="providerCore" />
-        <AppText variant="sectionTitle">Taskly account readiness</AppText>
+        <AppText variant="sectionTitle">{t('tasklyAccountReadiness')}</AppText>
         <AppText color={colors.slate700}>{getCoreTaskerStatusLabel(coreTaskerStatus)}</AppText>
       </AppCard>
 
       <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
         <ModeBadge mode="providerPro" />
-        <AppText variant="sectionTitle">Pro account readiness</AppText>
+        <AppText variant="sectionTitle">{t('proAccountReadiness')}</AppText>
         <AppText color={colors.slate700}>{getProStatusLabel(proStatus)}</AppText>
       </AppCard>
 
       <AssistantGuideCard
-        body="Future account errors, loading states, empty states, and unauthorized states should be explicit and mobile-friendly."
-        title="Account checks"
+        body={t('accountChecksBody')}
+        title={t('accountChecks')}
       />
 
       <WorkspaceSwitchHint />
@@ -84,7 +80,7 @@ export default function ProviderAccountScreen() {
       </AppButton>
 
       <AppButton onPress={() => router.push('/')} variant="ghost">
-        Back to Taskly
+        {t('backToTaskly')}
       </AppButton>
     </Screen>
   );
