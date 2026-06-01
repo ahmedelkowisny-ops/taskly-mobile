@@ -84,7 +84,7 @@ export default function ProviderCoreTasksScreen() {
     <Screen>
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerCore" />
-        <AppText variant="screenTitle">{t('coreTasks')}</AppText>
+        <AppText variant="screenTitle">{t('tasklyTasks')}</AppText>
         <AppText color={colors.slate700}>
           {t('providerTasklyTasksIntro')}
         </AppText>
@@ -123,8 +123,14 @@ export default function ProviderCoreTasksScreen() {
           {data.tasks.map((task) => (
             <AppCard key={task.id} accentColor={colors.tasklyBlue600}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                <StatusBadge label={t('tasklyTask')} tone="core" />
                 <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
                 <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
+                {task.providerPaymentBreakdown?.isEstimate ? (
+                  <StatusBadge label={t('paymentEstimate')} tone="warning" />
+                ) : task.providerPaymentBreakdown?.source === 'payment_record' ? (
+                  <StatusBadge label={t('paymentRecord')} tone="success" />
+                ) : null}
                 {task.hasScheduleConflict ? (
                   <StatusBadge label={t('scheduleConflict')} tone="warning" />
                 ) : null}
@@ -148,25 +154,23 @@ export default function ProviderCoreTasksScreen() {
                 ) : null}
               </View>
               <AppText variant="sectionTitle">{task.title}</AppText>
-              <AppText color={colors.slate700}>
-                {task.categoryLabel} - {task.cityLabel}
-              </AppText>
-              <AppText color={colors.slate700}>
-                {task.priceLabel} - {task.customerPreviewLabel}
-              </AppText>
+              <View style={{ gap: spacing.xs }}>
+                <ListMetaRow label={t('tasklyTask')} value={task.categoryLabel} />
+                <ListMetaRow label={t('location')} value={task.cityLabel} />
+                <ListMetaRow label={t('price')} value={task.priceLabel} />
+                <ListMetaRow label={t('customer')} value={task.customerPreviewLabel} />
+              </View>
               {task.providerPaymentBreakdown?.providerPayoutLabel ? (
                 <View style={{ gap: spacing.xs }}>
                   <AppText variant="bodyStrong">
-                    {t(task.providerPaymentBreakdown.isEstimate ? 'estimatedProviderPayout' : 'providerPayout')}: {task.providerPaymentBreakdown.providerPayoutLabel}
+                    {t(task.providerPaymentBreakdown.isEstimate ? 'estimatedProviderPayout' : 'finalPayout')}: {task.providerPaymentBreakdown.providerPayoutLabel}
                   </AppText>
                   {task.providerPaymentBreakdown.providerPayoutHint ? (
                     <AppText color={colors.slate500}>{task.providerPaymentBreakdown.providerPayoutHint}</AppText>
                   ) : null}
                 </View>
               ) : null}
-              <AppText color={colors.slate700}>
-                {t('schedule')}: {formatSchedule(task.scheduledStartAt, task.scheduledEndAt)}
-              </AppText>
+              <ListMetaRow label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
               {task.hasScheduleConflict ? (
                 <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText>
               ) : null}
@@ -187,7 +191,7 @@ export default function ProviderCoreTasksScreen() {
       ) : data && !isLoading ? (
         <EmptyStateCard
           body={data.emptyState.description}
-          title={data.emptyState.title}
+          title={t('noMatchingTasklyTasks')}
         />
       ) : null}
 
@@ -196,6 +200,15 @@ export default function ProviderCoreTasksScreen() {
         <AppText color={colors.slate700}>{t('providerTasklyTaskerReadiness')}</AppText>
       </AppCard>
     </Screen>
+  );
+}
+
+function ListMetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.sm, justifyContent: 'space-between' }}>
+      <AppText color={colors.slate500} variant="small">{label}</AppText>
+      <AppText color={colors.slate700} style={{ flex: 1, textAlign: 'right' }}>{value}</AppText>
+    </View>
   );
 }
 

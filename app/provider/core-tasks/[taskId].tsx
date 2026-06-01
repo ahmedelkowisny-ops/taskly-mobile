@@ -692,6 +692,7 @@ export default function ProviderCoreTaskDetailScreen() {
         <>
           <AppCard accentColor={colors.tasklyBlue600}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <StatusBadge label={t('tasklyTask')} tone="core" />
               <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
               {task.hasScheduleConflict ? <StatusBadge label={t('scheduleConflict')} tone="warning" /> : null}
             </View>
@@ -702,7 +703,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
           <AppCard>
             <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
-            <Info label={t('price')} value={task.priceLabel} />
+            <AppText variant="sectionTitle">{t('taskDetails')}</AppText>
             <Info label={t('customer')} value={task.customerPreviewLabel} />
             <Info label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             {task.hasScheduleConflict ? <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText> : null}
@@ -787,15 +788,16 @@ function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }
         <StatusBadge label={breakdown.isEstimate ? t('paymentEstimate') : t('paymentRecord')} tone={breakdown.isEstimate ? 'warning' : 'success'} />
         {breakdown.paymentStateLabel ? <StatusBadge label={breakdown.paymentStateLabel} tone="neutral" /> : null}
       </View>
-      <AppText variant="sectionTitle">{t('providerPaymentBreakdown')}</AppText>
+      <AppText variant="sectionTitle">{t('paymentDetails')}</AppText>
       {breakdown.customerTotalLabel ? <Info label={t('customerPays')} value={breakdown.customerTotalLabel} /> : null}
       {breakdown.grossTaskPriceLabel ? <Info label={t('grossTaskPrice')} value={breakdown.grossTaskPriceLabel} /> : null}
       {breakdown.tasklyFeeLabel ? <Info label={t('tasklyFee')} value={breakdown.tasklyFeeLabel} /> : null}
-      {breakdown.providerPayoutLabel ? <Info label={t('youReceive')} value={breakdown.providerPayoutLabel} /> : null}
+      {breakdown.providerPayoutLabel ? <Info label={breakdown.isEstimate ? t('estimatedProviderPayout') : t('finalPayout')} value={breakdown.providerPayoutLabel} /> : null}
+      {breakdown.paymentStateLabel ? <Info label={t('paymentState')} value={breakdown.paymentStateLabel} /> : null}
       {breakdown.providerPayoutHint ? <AppText color={colors.slate500}>{breakdown.providerPayoutHint}</AppText> : null}
       {hasCancellationBreakdown ? (
         <View style={{ gap: spacing.xs }}>
-          <AppText variant="bodyStrong">{t('lateCancellationBreakdown')}</AppText>
+          <AppText variant="bodyStrong">{t('cancellationDetails')}</AppText>
           {breakdown.cancellationFeeBreakdownLabel ? <Info label={t('cancellationFee')} value={breakdown.cancellationFeeBreakdownLabel} /> : null}
           {breakdown.lateCancellationProviderShareLabel ? <Info label={t('lateCancellationProviderShare')} value={breakdown.lateCancellationProviderShareLabel} /> : null}
           {breakdown.lateCancellationPlatformShareLabel ? <Info label={t('lateCancellationPlatformShare')} value={breakdown.lateCancellationPlatformShareLabel} /> : null}
@@ -948,7 +950,7 @@ function ProviderCancellationSupportCard({ task }: { task: ProviderCoreTaskDetai
           <StatusBadge label={refund.statusLabel} tone="neutral" />
         ) : null}
       </View>
-      <AppText variant="sectionTitle">{t('cancellationAndSupport')}</AppText>
+      <AppText variant="sectionTitle">{t('cancellationDetails')}</AppText>
       {cancellation ? <AppText color={colors.slate700}>{cancellation.helperText}</AppText> : null}
       {task.supportReviewLabel ? <AppText color={colors.slate700}>{task.supportReviewLabel}</AppText> : null}
       {dispute && isRelevantProviderDisputeState(dispute) ? <AppText color={colors.slate700}>{dispute.helperText}</AppText> : null}
