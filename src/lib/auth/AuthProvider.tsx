@@ -4,10 +4,11 @@ import {
   getCurrentSession,
   loginWithEmailPassword,
   logoutMobileSession,
+  registerMobileAccount,
   refreshMobileSession,
 } from '@/src/lib/api/auth';
 import { getMockUserSession } from '@/src/lib/api/mockApi';
-import { ApiError, ApiResult, UserSession } from '@/src/lib/api/types';
+import { ApiError, ApiResult, RegisterRequest, UserSession } from '@/src/lib/api/types';
 import {
   clearAuthTokens,
   getAccessToken,
@@ -26,6 +27,7 @@ export type AuthContextValue = {
   isDemoMode: boolean;
   login: (email: string, password: string) => Promise<ApiResult<UserSession>>;
   logout: () => Promise<void>;
+  register: (input: Omit<RegisterRequest, 'deviceName'>) => Promise<ApiResult<UserSession>>;
   refreshSession: () => Promise<void>;
   restoreStoredSession: () => Promise<void>;
   session: UserSession | null;
@@ -182,6 +184,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  const register = useCallback(async (input: Omit<RegisterRequest, 'deviceName'>): Promise<ApiResult<UserSession>> => {
+    setStatus('loading');
+    setError(null);
+    setIsDemoMode(false);
+
+    const result = await registerMobileAccount({
+      ...input,
+      deviceName: 'Taskly mobile',
+    });
+
+    if (!result.ok) {
+      setSession(null);
+      setMemoryAccessToken(null);
+      setError(result.error);
+      setStatus(isUnauthenticatedError(result.error, result.status) ? 'unauthenticated' : 'error');
+      return result;
+    }
+
+    const stored = await saveAuthTokens(result.data.tokens);
+
+    if (!stored) {
+      setError(makeAuthError('TOKEN_STORAGE_UNAVAILABLE', 'Secure token storage is unavailable on this device.'));
+    }
+
+    setSession(result.data.session);
+    setMemoryAccessToken(result.data.tokens.accessToken);
+    setStatus('authenticated');
+
+    return {
+      data: result.data.session,
+      ok: true,
+      status: result.status,
+    };
+  }, []);
+
   const getValidAccessToken = useCallback(async () => {
     const accessToken = memoryAccessToken ?? (await getAccessToken());
 
@@ -291,6 +328,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isDemoMode,
       login,
       logout,
+      register,
       refreshSession,
       restoreStoredSession,
       session,
@@ -304,6 +342,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isDemoMode,
       login,
       logout,
+      register,
       refreshSession,
       restoreStoredSession,
       session,

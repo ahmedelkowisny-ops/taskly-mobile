@@ -3,11 +3,14 @@ import { endpoints } from './endpoints';
 import {
   ApiRequestOptions,
   ApiResult,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   LoginRequest,
   LoginResponse,
   LogoutResponse,
   RefreshRequest,
   RefreshResponse,
+  RegisterRequest,
   UserSession,
 } from './types';
 
@@ -22,6 +25,20 @@ export function getCurrentSession(options: CurrentSessionOptions = {}): Promise<
 
 export function loginWithEmailPassword(input: LoginRequest): Promise<ApiResult<LoginResponse>> {
   return apiRequest<LoginResponse>(endpoints.auth.login, {
+    body: input,
+    method: 'POST',
+  });
+}
+
+export function registerMobileAccount(input: RegisterRequest): Promise<ApiResult<LoginResponse>> {
+  return apiRequest<LoginResponse>(endpoints.auth.register, {
+    body: input,
+    method: 'POST',
+  });
+}
+
+export function requestMobilePasswordReset(input: ForgotPasswordRequest): Promise<ApiResult<ForgotPasswordResponse>> {
+  return apiRequest<ForgotPasswordResponse>(endpoints.auth.forgotPassword, {
     body: input,
     method: 'POST',
   });

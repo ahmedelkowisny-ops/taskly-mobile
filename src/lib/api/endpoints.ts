@@ -3,8 +3,10 @@
 export const endpoints = {
   auth: {
     currentSession: '/api/mobile/auth/session',
+    forgotPassword: '/api/mobile/auth/forgot-password',
     login: '/api/mobile/auth/login',
     logout: '/api/mobile/auth/logout',
+    register: '/api/mobile/auth/register',
     refreshSession: '/api/mobile/auth/refresh',
   },
   catalog: {

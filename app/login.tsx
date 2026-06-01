@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import {
@@ -63,105 +63,158 @@ export default function LoginScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
-        <View style={styles.topBar}>
-          <TasklyLogoText compact wordmarkOnly />
-          <LanguageToggle />
+        <View style={styles.topRow}>
+          <View style={styles.brandMark}>
+            <TasklyLogoText compact iconOnly />
+          </View>
+          <View style={styles.topActions}>
+            <LanguageToggle />
+          </View>
         </View>
 
-        <View style={styles.hero}>
-          <StatusBadge label={t('tasklyAccount')} tone="neutral" />
-          <AppText style={styles.title} variant="screenTitle">
-            {t('loginTitle')}
-          </AppText>
-          <AppText color={colors.slate700}>{t('loginIntro')}</AppText>
-        </View>
-
-        <AppCard>
-          {roleCopy ? (
-            <View style={styles.roleContext}>
-              <View style={[styles.iconCircle, { backgroundColor: roleCopy.accent === colors.proOrange600 ? colors.proOrange50 : colors.tasklyBlue50 }]}>
-                <Ionicons color={roleCopy.accent} name={roleIcons[selectedRole ?? 'customer']} size={20} />
-              </View>
-              <View style={styles.roleCopy}>
-                <AppText color={colors.slate500} variant="small">
-                  {t('selectedRole')}
-                </AppText>
-                <AppText variant="bodyStrong">{roleCopy.title}</AppText>
-                <AppText color={colors.slate700} variant="caption">
-                  {roleCopy.body}
-                </AppText>
-              </View>
-            </View>
-          ) : null}
-
-          <View style={styles.field}>
-            <AppText variant="bodyStrong">{t('emailLabel')}</AppText>
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="email"
-              editable={!loading}
-              inputMode="email"
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.slate500}
-              style={styles.input}
-              textContentType="emailAddress"
-              value={email}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <AppText variant="bodyStrong">{t('passwordLabel')}</AppText>
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="password"
-              editable={!loading}
-              onChangeText={setPassword}
-              onSubmitEditing={() => {
-                void onSubmit();
-              }}
-            placeholder={t('passwordLabel')}
-              placeholderTextColor={colors.slate500}
-              secureTextEntry
-              style={styles.input}
-              textContentType="password"
-              value={password}
-            />
-          </View>
-
-          {error ? (
-            <AppText color={colors.danger600} variant="caption">
-              {error}
+        <View style={styles.mainContent}>
+          <View style={styles.hero}>
+            <AppText style={styles.title} variant="screenTitle">
+              {t('loginTitle')}
             </AppText>
-          ) : null}
+            <AppText color={colors.slate700} style={styles.subtitle}>
+              {t('loginIntro')}
+            </AppText>
+          </View>
 
-          <AppButton
-            loading={loading}
-            onPress={() => {
-              void onSubmit();
-            }}>
-            {t('loginTitle')}
-          </AppButton>
+          <AppCard>
+            {roleCopy ? (
+              <View style={styles.roleContext}>
+                <View style={[styles.iconCircle, { backgroundColor: roleCopy.accent === colors.proOrange600 ? colors.proOrange50 : colors.tasklyBlue50 }]}>
+                  <Ionicons color={roleCopy.accent} name={roleIcons[selectedRole ?? 'customer']} size={20} />
+                </View>
+                <View style={styles.roleCopy}>
+                  <AppText color={colors.slate500} variant="small">
+                    {t('selectedRole')}
+                  </AppText>
+                  <AppText variant="bodyStrong">{roleCopy.title}</AppText>
+                  <AppText color={colors.slate700} variant="caption">
+                    {roleCopy.body}
+                  </AppText>
+                </View>
+              </View>
+            ) : null}
 
-          <AppButton onPress={() => router.push('/')} tone="neutral" variant="ghost">
-            {t('backToTaskly')}
-          </AppButton>
-        </AppCard>
+            <View style={styles.field}>
+              <AppText variant="bodyStrong">{t('emailLabel')}</AppText>
+              <TextInput
+                autoCapitalize="none"
+                autoComplete="email"
+                editable={!loading}
+                inputMode="email"
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.slate500}
+                style={styles.input}
+                textContentType="emailAddress"
+                value={email}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <AppText variant="bodyStrong">{t('passwordLabel')}</AppText>
+              <TextInput
+                autoCapitalize="none"
+                autoComplete="password"
+                editable={!loading}
+                onChangeText={setPassword}
+                onSubmitEditing={() => {
+                  void onSubmit();
+                }}
+                placeholder={t('passwordLabel')}
+                placeholderTextColor={colors.slate500}
+                secureTextEntry
+                style={styles.input}
+                textContentType="password"
+                value={password}
+              />
+            </View>
+
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push('/forgot-password' as Href)}
+              style={({ pressed }) => [styles.forgotRow, pressed ? styles.pressed : null]}>
+              <AppText color={colors.slate500} style={styles.forgotText} variant="caption">
+                {t('forgotPassword')}
+              </AppText>
+            </Pressable>
+
+            {error ? (
+              <AppText color={colors.danger600} variant="caption">
+                {error}
+              </AppText>
+            ) : null}
+
+            <AppButton
+              loading={loading}
+              onPress={() => {
+                void onSubmit();
+              }}>
+              {t('loginTitle')}
+            </AppButton>
+
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push('/')}
+              style={({ pressed }) => [styles.backLink, pressed ? styles.pressed : null]}>
+              <AppText color={colors.slate500} style={styles.backLinkText} variant="caption">
+                {t('backToTaskly')}
+              </AppText>
+            </Pressable>
+          </AppCard>
+        </View>
       </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
+  backLink: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  backLinkText: {
+    textAlign: 'center',
+  },
+  brandMark: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DCEBFA',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 46,
     justifyContent: 'center',
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 5, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    width: 46,
+    elevation: 1,
+  },
+  content: {
+    justifyContent: 'flex-start',
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg,
   },
   field: {
     gap: spacing.sm,
   },
+  forgotRow: {
+    alignItems: 'flex-end',
+    marginTop: -spacing.xs,
+  },
+  forgotText: {
+    textAlign: 'right',
+  },
   hero: {
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   iconCircle: {
     alignItems: 'center',
@@ -182,7 +235,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   keyboard: {
+    flex: 1,
+    gap: spacing.xl,
+  },
+  mainContent: {
     gap: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  pressed: {
+    opacity: 0.72,
   },
   roleContext: {
     alignItems: 'center',
@@ -198,10 +259,21 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
   title: {
     fontSize: 24,
+    textAlign: 'center',
   },
-  topBar: {
+  topActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  topRow: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -41,6 +41,31 @@ export type LoginRequest = {
   password: string;
 };
 
+export type RegisterRole = 'customer' | 'tasker' | 'pro';
+
+export type RegisterRequest = {
+  confirmPassword: string;
+  deviceId?: string;
+  deviceName?: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  phone: string;
+  preferredLocale?: Locale;
+  role: RegisterRole;
+};
+
+export type ForgotPasswordRequest = {
+  email: string;
+  preferredLocale?: Locale;
+};
+
+export type ForgotPasswordResponse = {
+  message: string;
+  success: boolean;
+};
+
 export type RefreshRequest = {
   deviceId?: string;
   deviceName?: string;

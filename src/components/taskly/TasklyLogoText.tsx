@@ -4,6 +4,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 
 type TasklyLogoTextProps = {
   compact?: boolean;
+  iconOnly?: boolean;
   showMark?: boolean;
   style?: StyleProp<ViewStyle>;
   wordmarkOnly?: boolean;
@@ -11,10 +12,25 @@ type TasklyLogoTextProps = {
 
 export function TasklyLogoText({
   compact = false,
+  iconOnly = false,
   showMark = false,
   style,
   wordmarkOnly = false,
 }: TasklyLogoTextProps) {
+  if (iconOnly) {
+    return (
+      <View style={[styles.row, style]}>
+        <Image
+          accessibilityIgnoresInvertColors
+          accessibilityLabel="Taskly"
+          resizeMode="contain"
+          source={require('@/assets/branding/taskly-logo-icon.png')}
+          style={[styles.mark, compact ? styles.markCompact : null]}
+        />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.row, style]}>
       {showMark && !wordmarkOnly ? (
