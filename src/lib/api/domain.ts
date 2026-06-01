@@ -1290,9 +1290,14 @@ export type ProviderProResponseEditDefaults = {
   currency: string;
   customerPreparationNotes: string | null;
   earliestStartDate: string | null;
+  excludedItems?: string[];
   excludedNotes: string | null;
+  estimateConfidence?: string;
+  estimatedDuration?: string | null;
+  includedItems?: string[];
   includedNotes: string | null;
   materialsIncluded: string;
+  responseType?: string;
   roughQuoteMax: number | null;
   roughQuoteMin: number | null;
   shortMessage: string | null;
@@ -1302,15 +1307,19 @@ export type ProviderProResponseEditDefaults = {
 export type ProviderProResponsePayload = {
   assumptions?: string;
   availability?: string;
-  currency?: string;
   customerPreparationNotes?: string;
   earliestStartDate?: string | null;
+  excludedItems?: string[];
   excludedNotes?: string;
+  estimateConfidence?: string;
+  estimatedDuration?: string;
+  includedItems?: string[];
   includedNotes?: string;
-  materialsIncluded?: boolean | null;
+  materialsIncluded?: string;
+  responseType?: string;
   roughQuoteMax?: number | null;
   roughQuoteMin?: number | null;
-  shortMessage: string;
+  shortMessage?: string;
   siteVisitPolicy?: string;
 };
 

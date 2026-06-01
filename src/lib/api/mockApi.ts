@@ -2534,9 +2534,14 @@ export function getMockProviderProRequestDetailResponse(proRequestId = 'demo-pro
             currency: 'EUR',
             customerPreparationNotes: 'Customer should confirm measurements.',
             earliestStartDate: null,
+            excludedItems: ['FINAL_MEASUREMENTS'],
             excludedNotes: 'Final materials list depends on site visit.',
+            estimateConfidence: 'ROUGH_ESTIMATE',
+            estimatedDuration: null,
+            includedItems: ['LABOR', 'TOOLS', 'MATERIALS'],
             includedNotes: 'Labor and basic materials.',
             materialsIncluded: 'LABOR_AND_MATERIALS',
+            responseType: 'CAN_HANDLE',
             roughQuoteMax: 1800,
             roughQuoteMin: 1200,
             shortMessage: 'I can review the project details and prepare a rough quote range.',
@@ -2624,16 +2629,11 @@ export function submitOrUpdateMockProviderProResponse(
         customerPreviewLabel: 'Customer sees a limited preview before access is unlocked.',
         hiddenFromCustomer: false,
         id: 'demo-response-local',
-        materialsIncluded:
-          payload.materialsIncluded === true
-            ? 'LABOR_AND_MATERIALS'
-            : payload.materialsIncluded === false
-              ? 'LABOR_ONLY'
-              : 'NEEDS_CONFIRMATION',
+        materialsIncluded: payload.materialsIncluded || 'LABOR_ONLY',
         roughQuoteLabel,
         roughQuoteMax: max,
         roughQuoteMin: min,
-        shortMessagePreview: payload.shortMessage,
+        shortMessagePreview: payload.shortMessage || 'Structured response submitted.',
         siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
         status: 'SUBMITTED',
         statusLabel: 'Response submitted',
@@ -2670,16 +2670,11 @@ export function submitOrUpdateMockProviderProResponse(
         customerPreviewLabel: 'Customer sees a limited preview before access is unlocked.',
         hiddenFromCustomer: false,
         id: 'demo-response-local',
-        materialsIncluded:
-          payload.materialsIncluded === true
-            ? 'LABOR_AND_MATERIALS'
-            : payload.materialsIncluded === false
-              ? 'LABOR_ONLY'
-              : 'NEEDS_CONFIRMATION',
+        materialsIncluded: payload.materialsIncluded || 'LABOR_ONLY',
         roughQuoteLabel,
         roughQuoteMax: max,
         roughQuoteMin: min,
-        shortMessagePreview: payload.shortMessage,
+        shortMessagePreview: payload.shortMessage || 'Structured response submitted.',
         siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
         status: 'SUBMITTED',
         statusLabel: 'Response submitted',
@@ -2693,17 +2688,17 @@ export function submitOrUpdateMockProviderProResponse(
         currency: 'EUR',
         customerPreparationNotes: payload.customerPreparationNotes || null,
         earliestStartDate: payload.earliestStartDate || null,
+        excludedItems: payload.excludedItems || [],
         excludedNotes: payload.excludedNotes || null,
+        estimateConfidence: payload.estimateConfidence || 'ROUGH_ESTIMATE',
+        estimatedDuration: payload.estimatedDuration || null,
+        includedItems: payload.includedItems || [],
         includedNotes: payload.includedNotes || null,
-        materialsIncluded:
-          payload.materialsIncluded === true
-            ? 'LABOR_AND_MATERIALS'
-            : payload.materialsIncluded === false
-              ? 'LABOR_ONLY'
-              : 'NEEDS_CONFIRMATION',
+        materialsIncluded: payload.materialsIncluded || 'LABOR_ONLY',
+        responseType: payload.responseType || 'CAN_HANDLE',
         roughQuoteMax: max,
         roughQuoteMin: min,
-        shortMessage: payload.shortMessage,
+        shortMessage: payload.shortMessage || null,
         siteVisitPolicy: payload.siteVisitPolicy || 'DEPENDS',
       },
       status: 'RESPONSES_RECEIVED',

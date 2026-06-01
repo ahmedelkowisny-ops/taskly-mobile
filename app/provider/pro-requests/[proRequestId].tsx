@@ -1,7 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { FormField, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -21,7 +21,7 @@ import {
   submitOrUpdateProviderProResponse,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { t } from '@/src/lib/i18n';
+import { t, type TranslationKey } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -30,9 +30,14 @@ type ResponseFormValues = {
   availability: string;
   customerPreparationNotes: string;
   earliestStartDate: string;
+  excludedItems: string[];
   excludedNotes: string;
+  estimateConfidence: string;
+  estimatedDuration: string;
+  includedItems: string[];
   includedNotes: string;
-  materialsIncluded: boolean | null;
+  materialsIncluded: string;
+  responseType: string;
   roughQuoteMax: string;
   roughQuoteMin: string;
   shortMessage: string;
@@ -54,17 +59,87 @@ type ProviderSiteVisitFormErrors = Partial<Record<keyof ProviderSiteVisitFormVal
 
 const emptyFormValues: ResponseFormValues = {
   assumptions: '',
-  availability: '',
+  availability: 'NEXT_WEEK',
   customerPreparationNotes: '',
   earliestStartDate: '',
+  excludedItems: [],
   excludedNotes: '',
+  estimateConfidence: 'ROUGH_ESTIMATE',
+  estimatedDuration: '',
+  includedItems: [],
   includedNotes: '',
-  materialsIncluded: null,
+  materialsIncluded: 'LABOR_ONLY',
+  responseType: 'CAN_HANDLE',
   roughQuoteMax: '',
   roughQuoteMin: '',
   shortMessage: '',
-  siteVisitPolicy: '',
+  siteVisitPolicy: 'DEPENDS',
 };
+
+type ResponseOption = { labelKey: TranslationKey; value: string };
+
+const responseTypeOptions: ResponseOption[] = [
+  { value: 'CAN_HANDLE', labelKey: 'proResponseTypeCanHandle' },
+  { value: 'NEEDS_SITE_VISIT', labelKey: 'proResponseTypeNeedsSiteVisit' },
+  { value: 'NEEDS_MORE_DETAILS', labelKey: 'proResponseTypeNeedsMoreDetails' },
+  { value: 'CAN_HANDLE_PART', labelKey: 'proResponseTypeCanHandlePart' },
+  { value: 'SUITABLE_FOR_TEAM', labelKey: 'proResponseTypeSuitableForTeam' },
+];
+
+const materialsOptions: ResponseOption[] = [
+  { value: 'LABOR_ONLY', labelKey: 'proMaterialsLaborOnly' },
+  { value: 'LABOR_AND_MATERIALS', labelKey: 'proMaterialsLaborAndMaterials' },
+  { value: 'PARTIAL_MATERIALS', labelKey: 'proMaterialsPartialMaterials' },
+  { value: 'MATERIALS_NOT_INCLUDED', labelKey: 'proMaterialsNotIncluded' },
+  { value: 'NEEDS_CONFIRMATION', labelKey: 'proMaterialsNeedsConfirmation' },
+];
+
+const estimateConfidenceOptions: ResponseOption[] = [
+  { value: 'ROUGH_ESTIMATE', labelKey: 'proEstimateRough' },
+  { value: 'FAIR_FROM_DETAILS', labelKey: 'proEstimateFairFromDetails' },
+  { value: 'REQUIRES_SITE_VISIT', labelKey: 'proEstimateRequiresSiteVisit' },
+];
+
+const siteVisitPolicyOptions: ResponseOption[] = [
+  { value: 'NOT_NEEDED', labelKey: 'proSiteVisitNotNeeded' },
+  { value: 'FREE_SITE_VISIT', labelKey: 'proSiteVisitFree' },
+  { value: 'PAID_SITE_VISIT', labelKey: 'proSiteVisitPaid' },
+  { value: 'REQUIRED_BEFORE_FINAL_QUOTE', labelKey: 'proSiteVisitRequiredBeforeFinalQuote' },
+  { value: 'DEPENDS', labelKey: 'proSiteVisitDepends' },
+];
+
+const availabilityOptions: ResponseOption[] = [
+  { value: 'THIS_WEEK', labelKey: 'proAvailabilityThisWeek' },
+  { value: 'NEXT_WEEK', labelKey: 'proAvailabilityNextWeek' },
+  { value: 'TWO_TO_THREE_WEEKS', labelKey: 'proAvailabilityTwoToThreeWeeks' },
+  { value: 'THIS_MONTH', labelKey: 'proAvailabilityThisMonth' },
+  { value: 'DEPENDS_ON_PROJECT', labelKey: 'proAvailabilityDependsOnProject' },
+  { value: 'EVENINGS_WEEKENDS', labelKey: 'proAvailabilityEveningsWeekends' },
+];
+
+const includedItemOptions: ResponseOption[] = [
+  { value: 'LABOR', labelKey: 'proIncludedLabor' },
+  { value: 'TOOLS', labelKey: 'proIncludedTools' },
+  { value: 'MEASUREMENTS', labelKey: 'proIncludedMeasurements' },
+  { value: 'SITE_VISIT', labelKey: 'proIncludedSiteVisit' },
+  { value: 'CLEANUP', labelKey: 'proIncludedCleanup' },
+  { value: 'TRANSPORT', labelKey: 'proIncludedTransport' },
+  { value: 'MATERIALS', labelKey: 'proIncludedMaterials' },
+  { value: 'WASTE_REMOVAL', labelKey: 'proIncludedWasteRemoval' },
+  { value: 'CONSULTATION', labelKey: 'proIncludedConsultation' },
+  { value: 'WARRANTY', labelKey: 'proIncludedWarranty' },
+];
+
+const excludedItemOptions: ResponseOption[] = [
+  { value: 'MATERIALS', labelKey: 'proExcludedMaterials' },
+  { value: 'DEMOLITION', labelKey: 'proExcludedDemolition' },
+  { value: 'WASTE_REMOVAL', labelKey: 'proExcludedWasteRemoval' },
+  { value: 'PARKING_ACCESS_COSTS', labelKey: 'proExcludedParkingAccessCosts' },
+  { value: 'HIDDEN_PLUMBING_ELECTRICAL', labelKey: 'proExcludedHiddenPlumbingElectrical' },
+  { value: 'FINAL_MEASUREMENTS', labelKey: 'proExcludedFinalMeasurements' },
+  { value: 'PERMITS', labelKey: 'proExcludedPermits' },
+  { value: 'EXTRA_REPAIRS_DISCOVERED', labelKey: 'proExcludedExtraRepairsDiscovered' },
+];
 
 const emptySiteVisitFormValues: ProviderSiteVisitFormValues = {
   message: '',
@@ -678,6 +753,14 @@ function ProResponseForm({
       <AppText variant="sectionTitle">{t('yourResponse')}</AppText>
       {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
 
+      <OptionGroup
+        errorText={errors.responseType}
+        label={t('responseType')}
+        onSelect={(value) => onChange('responseType', value)}
+        options={responseTypeOptions}
+        value={values.responseType}
+      />
+
       <FormField
         errorText={errors.shortMessage}
         helperText={t('pleaseRemoveContactDetails')}
@@ -690,6 +773,7 @@ function ProResponseForm({
 
       <AppCard backgroundColor={colors.proOrange50}>
         <AppText variant="bodyStrong">{t('roughQuote')}</AppText>
+        <AppText color={colors.slate500} variant="small">{t('roughQuoteRequiredExceptSiteVisit')}</AppText>
         <View style={styles.twoColumn}>
           <FormField
             errorText={errors.roughQuoteMin}
@@ -710,59 +794,76 @@ function ProResponseForm({
         </View>
       </AppCard>
 
-      <AppCard backgroundColor={colors.proOrange50}>
-        <AppText variant="bodyStrong">{t('materialsIncluded')}</AppText>
-        <View style={styles.segmentRow}>
-          <AppButton
-            onPress={() => onChange('materialsIncluded', true)}
-            tone="pro"
-            variant={values.materialsIncluded === true ? 'filled' : 'outline'}>
-            {t('yes')}
-          </AppButton>
-          <AppButton
-            onPress={() => onChange('materialsIncluded', false)}
-            tone="pro"
-            variant={values.materialsIncluded === false ? 'filled' : 'outline'}>
-            {t('no')}
-          </AppButton>
-          <AppButton
-            onPress={() => onChange('materialsIncluded', null)}
-            tone="neutral"
-            variant={values.materialsIncluded === null ? 'filled' : 'outline'}>
-            {t('toBeConfirmed')}
-          </AppButton>
-        </View>
-      </AppCard>
+      <OptionGroup
+        errorText={errors.materialsIncluded}
+        label={t('materialsIncluded')}
+        onSelect={(value) => onChange('materialsIncluded', value)}
+        options={materialsOptions}
+        value={values.materialsIncluded}
+      />
+
+      <OptionGroup
+        errorText={errors.estimateConfidence}
+        label={t('estimateConfidence')}
+        onSelect={(value) => onChange('estimateConfidence', value)}
+        options={estimateConfidenceOptions}
+        value={values.estimateConfidence}
+      />
+
+      <OptionGroup
+        errorText={errors.siteVisitPolicy}
+        label={t('siteVisitPolicy')}
+        onSelect={(value) => onChange('siteVisitPolicy', value)}
+        options={siteVisitPolicyOptions}
+        value={values.siteVisitPolicy}
+      />
+
+      <OptionGroup
+        errorText={errors.availability}
+        label={t('availability')}
+        onSelect={(value) => onChange('availability', value)}
+        options={availabilityOptions}
+        value={values.availability}
+      />
 
       <FormField
-        label={t('whatIsIncluded')}
+        label={t('estimatedDuration')}
+        onChangeText={(value) => onChange('estimatedDuration', value)}
+        value={values.estimatedDuration}
+      />
+
+      <CheckboxGroup
+        errorText={errors.includedItems}
+        label={t('includedItems')}
+        onToggle={(value) => onChange('includedItems', toggleString(values.includedItems, value))}
+        options={includedItemOptions}
+        values={values.includedItems}
+      />
+
+      <CheckboxGroup
+        errorText={errors.excludedItems}
+        label={t('excludedItems')}
+        onToggle={(value) => onChange('excludedItems', toggleString(values.excludedItems, value))}
+        options={excludedItemOptions}
+        values={values.excludedItems}
+      />
+
+      <FormField
+        label={t('includedNotes')}
         multiline
         onChangeText={(value) => onChange('includedNotes', value)}
         value={values.includedNotes}
       />
       <FormField
-        label={t('whatIsNotIncluded')}
+        label={t('excludedNotes')}
         multiline
         onChangeText={(value) => onChange('excludedNotes', value)}
         value={values.excludedNotes}
       />
       <FormField
-        label={t('availability')}
-        onChangeText={(value) => onChange('availability', value)}
-        placeholder="NEXT_WEEK"
-        value={values.availability}
-      />
-      <FormField
         label={t('earliestStartDate')}
         onChangeText={(value) => onChange('earliestStartDate', value)}
-        placeholder="2026-06-01"
         value={values.earliestStartDate}
-      />
-      <FormField
-        label={t('siteVisitPolicy')}
-        onChangeText={(value) => onChange('siteVisitPolicy', value)}
-        placeholder="DEPENDS"
-        value={values.siteVisitPolicy}
       />
       <FormField
         label={t('customerPreparation')}
@@ -789,6 +890,81 @@ function ProResponseForm({
   );
 }
 
+function OptionGroup({
+  errorText,
+  label,
+  onSelect,
+  options,
+  value,
+}: {
+  errorText?: string;
+  label: string;
+  onSelect: (value: string) => void;
+  options: ResponseOption[];
+  value: string;
+}) {
+  return (
+    <AppCard backgroundColor={colors.proOrange50}>
+      <AppText variant="bodyStrong">{label}</AppText>
+      {errorText ? <AppText color={colors.danger600}>{errorText}</AppText> : null}
+      <View style={styles.optionGrid}>
+        {options.map((option) => {
+          const selected = value === option.value;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={option.value}
+              onPress={() => onSelect(option.value)}
+              style={[styles.optionPill, selected ? styles.optionPillSelected : null]}>
+              <AppText color={selected ? colors.white : colors.slate700} variant="small">
+                {t(option.labelKey)}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </AppCard>
+  );
+}
+
+function CheckboxGroup({
+  errorText,
+  label,
+  onToggle,
+  options,
+  values,
+}: {
+  errorText?: string;
+  label: string;
+  onToggle: (value: string) => void;
+  options: ResponseOption[];
+  values: string[];
+}) {
+  return (
+    <AppCard backgroundColor={colors.proOrange50}>
+      <AppText variant="bodyStrong">{label}</AppText>
+      {errorText ? <AppText color={colors.danger600}>{errorText}</AppText> : null}
+      <View style={styles.optionGrid}>
+        {options.map((option) => {
+          const selected = values.includes(option.value);
+          return (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
+              key={option.value}
+              onPress={() => onToggle(option.value)}
+              style={[styles.optionPill, selected ? styles.optionPillSelected : null]}>
+              <AppText color={selected ? colors.white : colors.slate700} variant="small">
+                {t(option.labelKey)}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </AppCard>
+  );
+}
+
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
@@ -796,6 +972,10 @@ function StateCard({ label, message }: { label: string; message: string }) {
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
   );
+}
+
+function toggleString(values: string[], value: string) {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
 function Info({ label, value }: { label: string; value: string }) {
@@ -811,18 +991,21 @@ function getInitialResponseFormValues(request: NonNullable<ProviderProRequestDet
   const defaults = request.responseEditDefaults;
   return {
     assumptions: defaults?.assumptions || '',
-    availability: defaults?.availability || '',
+    availability: defaults?.availability || 'NEXT_WEEK',
     customerPreparationNotes: defaults?.customerPreparationNotes || '',
     earliestStartDate: defaults?.earliestStartDate || '',
+    excludedItems: defaults?.excludedItems || [],
     excludedNotes: defaults?.excludedNotes || '',
+    estimateConfidence: defaults?.estimateConfidence || 'ROUGH_ESTIMATE',
+    estimatedDuration: defaults?.estimatedDuration || '',
+    includedItems: defaults?.includedItems || [],
     includedNotes: defaults?.includedNotes || '',
-    materialsIncluded: defaults?.materialsIncluded
-      ? defaults.materialsIncluded === 'LABOR_AND_MATERIALS' || defaults.materialsIncluded === 'PARTIAL_MATERIALS'
-      : null,
+    materialsIncluded: defaults?.materialsIncluded || 'LABOR_ONLY',
+    responseType: defaults?.responseType || 'CAN_HANDLE',
     roughQuoteMax: defaults?.roughQuoteMax ? String(defaults.roughQuoteMax) : '',
     roughQuoteMin: defaults?.roughQuoteMin ? String(defaults.roughQuoteMin) : '',
     shortMessage: defaults?.shortMessage || '',
-    siteVisitPolicy: defaults?.siteVisitPolicy || '',
+    siteVisitPolicy: defaults?.siteVisitPolicy || 'DEPENDS',
   };
 }
 
@@ -834,9 +1017,11 @@ function toNumberOrNull(value: string) {
 }
 
 function hasObviousContactDetails(values: ResponseFormValues) {
-  const merged = Object.values(values)
-    .filter((value) => typeof value === 'string')
-    .join('\n');
+  const merged = [
+    ...Object.values(values).filter((value): value is string => typeof value === 'string'),
+    ...values.includedItems,
+    ...values.excludedItems,
+  ].join('\n');
 
   return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(merged) ||
     /(?:\+?\d[\d\s().-]{6,}\d)/.test(merged) ||
@@ -847,15 +1032,27 @@ function validateResponseForm(values: ResponseFormValues): ResponseFormErrors {
   const errors: ResponseFormErrors = {};
   const min = toNumberOrNull(values.roughQuoteMin);
   const max = toNumberOrNull(values.roughQuoteMax);
+  const needsPriceRange = values.responseType !== 'NEEDS_SITE_VISIT' && values.responseType !== 'NEEDS_MORE_DETAILS';
+  const hasPartialPrice = (min === null) !== (max === null);
 
-  if (!values.shortMessage.trim()) {
-    errors.shortMessage = t('shortMessageRequired');
-  }
+  if (!responseTypeOptions.some((option) => option.value === values.responseType)) errors.responseType = t('invalidSelection');
+  if (!materialsOptions.some((option) => option.value === values.materialsIncluded)) errors.materialsIncluded = t('invalidSelection');
+  if (!estimateConfidenceOptions.some((option) => option.value === values.estimateConfidence)) errors.estimateConfidence = t('invalidSelection');
+  if (!siteVisitPolicyOptions.some((option) => option.value === values.siteVisitPolicy)) errors.siteVisitPolicy = t('invalidSelection');
+  if (!availabilityOptions.some((option) => option.value === values.availability)) errors.availability = t('invalidSelection');
   if (Number.isNaN(min)) {
     errors.roughQuoteMin = t('quoteRangeInvalid');
   }
   if (Number.isNaN(max)) {
     errors.roughQuoteMax = t('quoteRangeInvalid');
+  }
+  if (hasPartialPrice) {
+    errors.roughQuoteMin = errors.roughQuoteMin || t('quoteRangeBothRequired');
+    errors.roughQuoteMax = errors.roughQuoteMax || t('quoteRangeBothRequired');
+  }
+  if (needsPriceRange && min === null && max === null) {
+    errors.roughQuoteMin = t('quoteRangeRequired');
+    errors.roughQuoteMax = t('quoteRangeRequired');
   }
   if (min !== null && max !== null && !Number.isNaN(min) && !Number.isNaN(max) && max < min) {
     errors.roughQuoteMax = t('quoteRangeInvalid');
@@ -874,12 +1071,16 @@ function toResponsePayload(values: ResponseFormValues): ProviderProResponsePaylo
   return {
     assumptions: values.assumptions.trim(),
     availability: values.availability.trim(),
-    currency: 'EUR',
     customerPreparationNotes: values.customerPreparationNotes.trim(),
     earliestStartDate: values.earliestStartDate.trim() || null,
+    excludedItems: values.excludedItems,
     excludedNotes: values.excludedNotes.trim(),
+    estimateConfidence: values.estimateConfidence,
+    estimatedDuration: values.estimatedDuration.trim(),
+    includedItems: values.includedItems,
     includedNotes: values.includedNotes.trim(),
     materialsIncluded: values.materialsIncluded,
+    responseType: values.responseType,
     roughQuoteMax: Number.isNaN(max) ? null : max,
     roughQuoteMin: Number.isNaN(min) ? null : min,
     shortMessage: values.shortMessage.trim(),
@@ -967,6 +1168,19 @@ const styles = StyleSheet.create({
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  optionPill: {
+    backgroundColor: colors.white,
+    borderColor: colors.proAmber500,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  optionPillSelected: {
+    backgroundColor: colors.proOrange600,
+    borderColor: colors.proOrange600,
+  },
   segmentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   siteVisitInvite: {
     backgroundColor: colors.white,
