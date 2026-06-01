@@ -164,7 +164,6 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onClose} style={styles.scrim} />
         <Animated.View style={[styles.animatedDrawer, { transform: [{ translateX }], width: drawerWidth }]}>
           <SafeAreaView style={styles.drawer}>
             <View style={styles.header}>
@@ -226,6 +225,7 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
             </View>
           </SafeAreaView>
         </Animated.View>
+        <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onClose} style={styles.scrim} />
       </View>
     </Modal>
   );
@@ -376,9 +376,9 @@ const styles = StyleSheet.create({
   },
   itemText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 17,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
     textTransform: 'uppercase',
   },
   languageCard: {
@@ -437,7 +437,8 @@ const styles = StyleSheet.create({
     opacity: 0.86,
   },
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    alignSelf: 'stretch',
+    flex: 1,
   },
   trustNote: {
     alignItems: 'flex-start',

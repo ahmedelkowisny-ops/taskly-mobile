@@ -11,11 +11,12 @@ import { MessageThreadSummary, MessageThreadsResponse } from '@/src/lib/api/doma
 import { getMessageThreads } from '@/src/lib/api/messages';
 import { getMockMessageThreadsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerMessagesScreen() {
+  useI18n();
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
@@ -126,7 +127,7 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
           {thread.unreadCount ? <StatusBadge label={`${thread.unreadCount} ${t('unreadMessages')}`} tone="warning" /> : null}
           {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
         </View>
-        <AppText variant="sectionTitle">{thread.title}</AppText>
+        <AppText variant="cardTitle">{thread.title}</AppText>
         {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
         {thread.lastMessagePreview ? (
           <AppText color={colors.slate700}>{`${t('lastMessage')}: ${thread.lastMessagePreview}`}</AppText>

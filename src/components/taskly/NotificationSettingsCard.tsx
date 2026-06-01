@@ -74,9 +74,9 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
     const result = await getNotificationPreferences(authToken);
     if (result.ok) {
       setPreferences(result.data.preferences);
-    } else {
-      setError(result.error.message);
     }
+    // Silently fall back to defaults when preferences fail to load —
+    // the card still renders usably and the user can interact with toggles.
     setIsLoading(false);
   }, [getValidAccessToken, status]);
 
@@ -154,7 +154,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
         return;
       }
 
-      setError(result.message);
+      setError(t('couldNotSaveNotificationSettings'));
       return;
     }
 
