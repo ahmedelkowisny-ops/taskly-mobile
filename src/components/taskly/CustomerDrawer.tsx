@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { usePathname, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import {
@@ -31,7 +31,7 @@ type CustomerDrawerProps = {
 
 type DrawerItem = {
   icon: keyof typeof Ionicons.glyphMap;
-  isActive: (pathname: string) => boolean;
+  isActive: (pathname: string, supportMessagesActive: boolean) => boolean;
   label: string;
   route: Href;
   tone?: 'taskly' | 'pro';
@@ -46,10 +46,12 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
   useI18n();
   const router = useRouter();
   const pathname = usePathname();
+  const params = useLocalSearchParams<{ context?: string }>();
   const { logout } = useAuth();
   const { width } = useWindowDimensions();
   const drawerWidth = Math.min(width * 0.88, 344);
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
+  const supportMessagesActive = pathname === '/customer/messages' && params.context === 'support';
 
   useEffect(() => {
     if (!visible) {
@@ -119,15 +121,15 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
       items: [
         {
           icon: 'chatbubbles-outline',
-          isActive: (current) => current.startsWith('/customer/messages'),
-          label: t('drawerChat'),
+          isActive: (current, isSupport) => current.startsWith('/customer/messages') && !isSupport,
+          label: t('messages'),
           route: '/customer/messages' as Href,
         },
         {
           icon: 'mail-outline',
-          isActive: () => false,
+          isActive: (current, isSupport) => current.startsWith('/customer/messages') && isSupport,
           label: t('drawerSupportMessages'),
-          route: '/customer/messages' as Href,
+          route: '/customer/messages?context=support' as Href,
         },
       ],
     },
@@ -136,15 +138,15 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
       items: [
         {
           icon: 'person-outline',
-          isActive: (current) => current === '/customer/account',
+          isActive: (current) => current === '/customer/profile' || current === '/customer/account',
           label: t('drawerProfile'),
-          route: '/customer/account' as Href,
+          route: '/customer/profile' as Href,
         },
         {
           icon: 'settings-outline',
-          isActive: () => false,
+          isActive: (current) => current === '/customer/settings',
           label: t('drawerSettings'),
-          route: '/customer/account' as Href,
+          route: '/customer/settings' as Href,
         },
       ],
     },
@@ -194,7 +196,7 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
                   <View style={styles.groupItems}>
                     {group.items.map((item) => (
                       <DrawerNavItem
-                        active={item.isActive(pathname)}
+                        active={item.isActive(pathname, supportMessagesActive)}
                         icon={item.icon}
                         key={`${group.label}-${item.label}`}
                         label={item.label}

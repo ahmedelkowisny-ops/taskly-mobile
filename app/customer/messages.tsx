@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -18,6 +18,7 @@ import { spacing } from '@/src/theme/spacing';
 export default function CustomerMessagesScreen() {
   useI18n();
   const router = useRouter();
+  const params = useLocalSearchParams<{ context?: string }>();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -66,15 +67,21 @@ export default function CustomerMessagesScreen() {
     }, [loadThreads]),
   );
 
-  const threads = data?.threads ?? [];
+  const supportOnly = params.context === 'support';
+  const allThreads = data?.threads ?? [];
+  const threads = supportOnly
+    ? allThreads.filter((thread) => thread.contextType === 'SUPPORT' || thread.id.startsWith('admin:'))
+    : allThreads;
 
   return (
     <Screen>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.header}>
-        <AppText variant="screenTitle">{t('messages')}</AppText>
-        <AppText color={colors.slate700}>{t('yourConversationsAppearHere')}</AppText>
+        <AppText variant="screenTitle">{supportOnly ? t('supportMessagesTitle') : t('messages')}</AppText>
+        <AppText color={colors.slate700}>
+          {supportOnly ? t('supportMessagesInboxHelper') : t('yourConversationsAppearHere')}
+        </AppText>
       </View>
 
       {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
@@ -91,7 +98,10 @@ export default function CustomerMessagesScreen() {
       ) : null}
 
       {!isLoading && !message && threads.length === 0 ? (
-        <EmptyStateCard body={t('yourConversationsAppearHere')} title={t('noMessagesYet')} />
+        <EmptyStateCard
+          body={supportOnly ? t('noSupportMessagesBody') : t('yourConversationsAppearHere')}
+          title={supportOnly ? t('noSupportMessagesYet') : t('noMessagesYet')}
+        />
       ) : null}
 
       {threads.map((thread) => (

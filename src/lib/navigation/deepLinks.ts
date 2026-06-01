@@ -98,7 +98,7 @@ function targetFromParts({
       return { entityType, href: '/provider/account' as Href, source, workspace };
     }
 
-    return { entityType, href: '/customer/account' as Href, source, workspace: 'customer' };
+    return { entityType, href: '/customer/settings' as Href, source, workspace: 'customer' };
   }
 
   if (!workspace || !entityId) return null;
@@ -264,7 +264,7 @@ export function resolveDeepLinkTargetFromPath(pathInput: string, source: DeepLin
     });
   }
 
-  if (path === '/customer/account' || path === '/account/notifications') {
+  if (path === '/customer/settings' || path === '/customer/account' || path === '/account/notifications') {
     return targetFromParts({
       entityType: 'notification_settings',
       source,

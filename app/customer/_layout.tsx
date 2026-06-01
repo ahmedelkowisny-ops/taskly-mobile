@@ -91,10 +91,22 @@ export default function CustomerLayout() {
           }}
         />
         <Tabs.Screen
-          name="account"
+          name="profile"
           options={{
             title: t('tabAccount'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="person-outline" size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          options={{
+            href: null,
           }}
         />
       </Tabs>
