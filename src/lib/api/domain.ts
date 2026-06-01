@@ -109,6 +109,30 @@ export type NotificationPreferencesResponse = {
   preferences: NotificationPreferences;
 };
 
+export type MobileNotificationRouteData = {
+  entityId?: string;
+  entityType?: 'core_task' | 'message_thread' | 'notification_settings' | 'pro_request';
+  routeHint?: string;
+  source?: string;
+  workspace?: 'customer' | 'provider';
+};
+
+export type MobileNotificationItem = {
+  createdAt: string;
+  id: number;
+  link: string | null;
+  message: string;
+  read: boolean;
+  routeData: MobileNotificationRouteData | null;
+  title: string;
+  type: string;
+};
+
+export type MobileNotificationsResponse = {
+  notifications: MobileNotificationItem[];
+  unreadCount: number;
+};
+
 export type NotificationTokenRegistrationResponse = NotificationPreferencesResponse & {
   tokenRegistration: {
     appWorkspace?: string | null;

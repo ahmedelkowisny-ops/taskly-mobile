@@ -6,6 +6,7 @@ export { FormSection } from './FormSection';
 export { ImagePickerPlaceholder } from './ImagePickerPlaceholder';
 export { LanguageToggle } from './LanguageToggle';
 export { ModeBadge } from './ModeBadge';
+export { NotificationBell } from './NotificationBell';
 export { NotificationSettingsCard } from './NotificationSettingsCard';
 export { ProviderStatusCard } from './ProviderStatusCard';
 export { PublicTopBar } from './PublicTopBar';

@@ -6,6 +6,7 @@ import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
+import { NotificationBell } from './NotificationBell';
 import { TasklyLogoText } from './TasklyLogoText';
 
 type CustomerTopBarProps = {
@@ -25,9 +26,12 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
         <Ionicons color={colors.navy900} name="menu" size={21} />
       </Pressable>
       <View style={styles.topBarCenter}>
-        <TasklyLogoText wordmarkOnly />
+        <TasklyLogoText compact wordmarkOnly />
       </View>
-      <LanguageToggle />
+      <View style={styles.topBarActions}>
+        <NotificationBell compact />
+        <LanguageToggle />
+      </View>
     </View>
   );
 }
@@ -72,5 +76,10 @@ const styles = StyleSheet.create({
   topBarCenter: {
     alignItems: 'center',
     flex: 1,
+  },
+  topBarActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

@@ -7,12 +7,12 @@ import {
   Easing,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
@@ -48,7 +48,11 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
   const params = useLocalSearchParams<{ context?: string }>();
   const { logout } = useAuth();
   const { width } = useWindowDimensions();
-  const drawerWidth = Math.min(width * 0.88, 344);
+  const insets = useSafeAreaInsets();
+  const drawerWidth = Math.min(width * 0.74, 286);
+  const panelTopInset = Math.max(insets.top + spacing.md, spacing.xl);
+  const panelBottomInset = Math.max(insets.bottom + spacing.lg, spacing.xxl);
+  const drawerBottomPadding = spacing.lg;
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
   const supportMessagesActive = pathname === '/customer/messages' && params.context === 'support';
 
@@ -72,10 +76,10 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
       label: t('drawerGroupMain'),
       items: [
         {
-          icon: 'home-outline',
-          isActive: (current) => current === '/customer/home' || current === '/customer',
-          label: t('drawerHome'),
-          route: '/customer/home' as Href,
+          icon: 'grid-outline',
+          isActive: (current) => current === '/customer/dashboard',
+          label: t('drawerMyDashboard'),
+          route: '/customer/dashboard' as Href,
         },
       ],
     },
@@ -165,11 +169,21 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
   return (
     <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
       <View style={styles.overlay}>
-        <Animated.View style={[styles.animatedDrawer, { transform: [{ translateX }], width: drawerWidth }]}>
-          <SafeAreaView style={styles.drawer}>
+        <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onClose} style={styles.scrim} />
+        <Animated.View
+          style={[
+            styles.animatedDrawer,
+            {
+              bottom: panelBottomInset,
+              top: panelTopInset,
+              transform: [{ translateX }],
+              width: drawerWidth,
+            },
+          ]}>
+          <SafeAreaView style={[styles.drawer, { paddingBottom: drawerBottomPadding }]}>
             <View style={styles.header}>
-              <View style={styles.logoBlock}>
-                <TasklyLogoText compact wordmarkOnly />
+              <View style={styles.headerIdentity}>
+                <TasklyLogoText compact iconOnly />
                 <AppText color={colors.sidebarMuted} style={styles.areaLabel} variant="small">
                   {t('drawerCustomerArea')}
                 </AppText>
@@ -179,7 +193,7 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
               </Pressable>
             </View>
 
-            <ScrollView contentContainerStyle={styles.navContent} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.navContent} showsVerticalScrollIndicator={false} style={styles.navScroll}>
               {drawerGroups.map((group) => (
                 <View key={group.label} style={styles.group}>
                   <AppText color={colors.sidebarMuted} style={styles.groupLabel} variant="small">
@@ -202,24 +216,17 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
             </ScrollView>
 
             <View style={styles.footer}>
-              <View style={styles.trustNote}>
-                <Ionicons color={colors.tasklyBlue600} name="shield-checkmark-outline" size={16} />
-                <AppText color={colors.sidebarMuted} style={styles.trustText} variant="small">
-                  {t('drawerTrustNote')}
-                </AppText>
-              </View>
               <Pressable accessibilityRole="button" onPress={handleLogout} style={({ pressed }) => [styles.logoutButton, pressed ? styles.pressed : null]}>
                 <View style={styles.logoutIcon}>
-                  <Ionicons color={colors.danger600} name="log-out-outline" size={18} />
+                  <Ionicons color={colors.slate500} name="log-out-outline" size={18} />
                 </View>
-                <AppText color={colors.danger600} style={styles.logoutLabel} variant="bodyStrong">
+                <AppText color={colors.slate500} style={styles.logoutLabel} variant="bodyStrong">
                   {t('drawerLogout')}
                 </AppText>
               </Pressable>
             </View>
           </SafeAreaView>
         </Animated.View>
-        <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onClose} style={styles.scrim} />
       </View>
     </Modal>
   );
@@ -279,12 +286,16 @@ const styles = StyleSheet.create({
     width: 4,
   },
   animatedDrawer: {
-    height: '100%',
+    borderBottomRightRadius: 28,
+    borderTopRightRadius: 28,
+    left: 0,
+    position: 'absolute',
     shadowColor: colors.navy900,
     shadowOffset: { height: 0, width: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
+    shadowOpacity: 0.1,
+    shadowRadius: 28,
     elevation: 12,
+    zIndex: 1,
   },
   areaLabel: {
     letterSpacing: 0,
@@ -300,33 +311,36 @@ const styles = StyleSheet.create({
     width: 44,
   },
   drawer: {
-    backgroundColor: colors.sidebarBackground,
-    borderBottomRightRadius: radius.card,
+    backgroundColor: colors.white,
+    borderBottomRightRadius: 28,
     borderColor: colors.sidebarBorder,
+    borderBottomWidth: 1,
     borderRightWidth: 1,
-    borderTopRightRadius: radius.card,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
     flex: 1,
-    gap: spacing.md,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    gap: spacing.sm,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.md,
   },
   footer: {
     borderTopColor: colors.sidebarBorder,
     borderTopWidth: 1,
-    gap: spacing.md,
-    paddingTop: spacing.md,
+    flexShrink: 0,
+    paddingTop: spacing.sm,
   },
   group: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   groupItems: {
     gap: spacing.sm,
   },
   groupLabel: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '800',
     letterSpacing: 0.3,
+    lineHeight: 14,
     paddingHorizontal: spacing.sm,
   },
   header: {
@@ -336,13 +350,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingTop: spacing.xs,
   },
+  headerIdentity: {
+    gap: spacing.xs,
+  },
   item: {
     alignItems: 'center',
     borderRadius: radius.md,
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
     minHeight: 44,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     position: 'relative',
   },
   itemActive: {
@@ -377,11 +394,8 @@ const styles = StyleSheet.create({
   itemText: {
     flex: 1,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     lineHeight: 16,
-  },
-  logoBlock: {
-    gap: 2,
   },
   logoutButton: {
     alignItems: 'center',
@@ -390,9 +404,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
     minHeight: 44,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   logoutIcon: {
     alignItems: 'center',
@@ -405,38 +419,25 @@ const styles = StyleSheet.create({
   },
   logoutLabel: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
   },
   navContent: {
-    gap: spacing.md,
-    paddingBottom: spacing.sm,
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  navScroll: {
+    flex: 1,
   },
   overlay: {
-    alignItems: 'flex-start',
     backgroundColor: 'rgba(8, 12, 20, 0.18)',
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
   },
   pressed: {
     opacity: 0.86,
   },
   scrim: {
-    alignSelf: 'stretch',
-    flex: 1,
-  },
-  trustNote: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.white,
-    borderColor: colors.sidebarBorder,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  trustText: {
-    flex: 1,
-    lineHeight: 17,
+    ...StyleSheet.absoluteFillObject,
   },
 });

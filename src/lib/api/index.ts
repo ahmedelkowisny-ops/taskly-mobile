@@ -23,7 +23,10 @@ export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageU
 export { resolveApiMediaUrl } from './media';
 export { getMessageThread, getMessageThreads, sendMessage, sendMessageImage } from './messages';
 export {
+  getNotifications,
   getNotificationPreferences,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
   registerNotificationToken,
   unregisterNotificationToken,
   updateNotificationPreferences,
@@ -121,6 +124,9 @@ export type {
   MessageThreadMeta,
   MessageThreadsResponse,
   MarkProviderCoreTaskOnTheWayResponse,
+  MobileNotificationItem,
+  MobileNotificationRouteData,
+  MobileNotificationsResponse,
   NextAction,
   NotificationPreferenceUpdatePayload,
   NotificationPreferences,

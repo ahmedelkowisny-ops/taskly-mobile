@@ -35,6 +35,12 @@ export default function CustomerLayout() {
           }}
         />
         <Tabs.Screen
+          name="dashboard"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="tasks/[taskId]"
           options={{
             href: null,

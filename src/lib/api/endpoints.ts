@@ -45,6 +45,9 @@ export const endpoints = {
     threads: '/api/mobile/messages/threads',
   },
   notifications: {
+    list: '/api/mobile/notifications',
+    markAllRead: '/api/mobile/notifications/read-all',
+    markRead: (notificationId: string) => `/api/mobile/notifications/${notificationId}/read`,
     preferences: '/api/mobile/notifications/preferences',
     registerPushToken: '/api/mobile/notifications/register-token',
     unregisterPushToken: '/api/mobile/notifications/unregister-token',
