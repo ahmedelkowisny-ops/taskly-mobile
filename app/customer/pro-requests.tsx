@@ -93,7 +93,7 @@ export default function CustomerProRequestsScreen() {
       {isLoading ? (
         <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
           <StatusBadge label={t('loading')} tone="pro" />
-          <AppText variant="sectionTitle">{t('loadingProRequests')}</AppText>
+          <AppText variant="cardTitle">{t('loadingProRequests')}</AppText>
           <AppText color={colors.slate700}>{t('fetchingCustomerProRequests')}</AppText>
         </AppCard>
       ) : null}
@@ -101,7 +101,7 @@ export default function CustomerProRequestsScreen() {
       {errorMessage || isUnauthorized ? (
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
-          <AppText variant="sectionTitle">
+          <AppText variant="cardTitle">
             {isUnauthorized ? t('proRequestsNeedRealSession') : t('couldNotRefreshProRequests')}
           </AppText>
           <AppText color={colors.slate700}>
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   accessLine: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     padding: spacing.md,
   },
@@ -263,15 +263,15 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.navy900,
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
-    lineHeight: 26,
+    lineHeight: 22,
   },
   heroTitle: {
     color: colors.navy900,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 30,
   },
   metaGrid: {
     gap: spacing.sm,

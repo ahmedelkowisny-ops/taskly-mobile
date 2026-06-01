@@ -484,7 +484,7 @@ export default function CustomerProRequestDetailScreen() {
       {message ? (
         <AppCard accentColor={colors.warning600}>
           <StatusBadge label={stateLabel || t('currentStatus')} tone="warning" />
-          <AppText variant="sectionTitle">{message}</AppText>
+          <AppText variant="cardTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} tone="pro" variant="outline">{t('retry')}</AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
@@ -617,7 +617,7 @@ export default function CustomerProRequestDetailScreen() {
 
           {!request.unlockedComparison?.canViewFullComparison ? (
             <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <AppText variant="sectionTitle">{t('proResponses')}</AppText>
+            <AppText variant="cardTitle">{t('proResponses')}</AppText>
             {request.responsePreviews.length ? request.responsePreviews.map((response) => (
               <View key={response.id} style={styles.response}>
                 <StatusBadge label={response.statusLabel} tone={response.isLocked ? 'warning' : 'success'} />
@@ -710,7 +710,7 @@ function UnlockedComparisonSection({
         <StatusBadge label={t('proAccessUnlocked')} tone="success" />
         <StatusBadge label={comparison.comparisonLabel || t('fullComparison')} tone="pro" />
       </View>
-      <AppText variant="sectionTitle">{t('compareApprovedPros')}</AppText>
+      <AppText variant="cardTitle">{t('compareApprovedPros')}</AppText>
       <AppText color={colors.slate700}>{comparison.helperText || t('comparisonChoiceHelper')}</AppText>
       {comparison.responses.length ? (
         <View style={styles.stack}>
@@ -869,7 +869,7 @@ function CustomerSiteVisitInviteForm({
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
       <StatusBadge label={t('inviteForSiteVisit')} tone="pro" />
-      <AppText variant="sectionTitle">{response.displayName}</AppText>
+      <AppText variant="cardTitle">{response.displayName}</AppText>
       <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
       <AppText color={colors.slate700}>{t('contactDetailsSharedWhenAllowed')}</AppText>
       {errors.form ? <AppText color={colors.danger600}>{errors.form}</AppText> : null}
@@ -932,7 +932,7 @@ function SiteVisitStateCard({
         <StatusBadge label={t('siteVisit')} tone="pro" />
         <StatusBadge label={state.statusLabel} tone={getSiteVisitTone(state.status)} />
       </View>
-      <AppText variant="sectionTitle">{t('siteVisitInvitations')}</AppText>
+      <AppText variant="cardTitle">{t('siteVisitInvitations')}</AppText>
       <AppText color={colors.slate700}>{request.siteVisitSummary || state.helperText}</AppText>
       <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
       {request.siteVisitBlockedReason ? (
@@ -1015,7 +1015,7 @@ function ProAccessCard({
         <StatusBadge label={t('proAccess')} tone="pro" />
         <StatusBadge label={statusLabel} tone={isUnlocked ? 'success' : nextActions?.canUnlockProResponses ? 'pro' : 'warning'} />
       </View>
-      <AppText variant="sectionTitle">{t('unlockAndComparePros')}</AppText>
+      <AppText variant="cardTitle">{t('unlockAndComparePros')}</AppText>
       <AppText color={colors.slate700}>{t('postingIsFree')}</AppText>
       <AppText color={colors.slate700}>{request.proAccessSummary || state?.helperText || t('unlockAvailableAfterProResponses')}</AppText>
       <Info label={t('proAccessFee')} value={request.proAccessFeeLabel || request.proAccessPaymentState?.amountLabel || t('toBeConfirmed')} />
@@ -1056,7 +1056,7 @@ function ProAccessPaymentConfirmCard({
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
       <StatusBadge label={t('secureCheckout')} tone="pro" />
-      <AppText variant="sectionTitle">{t('proAccessPayment')}</AppText>
+      <AppText variant="cardTitle">{t('proAccessPayment')}</AppText>
       <AppText color={colors.slate700}>{t('postingWasFree')}</AppText>
       <AppText color={colors.slate700}>{t('prosHaveResponded')}</AppText>
       <Info label={t('proAccessFee')} value={request.proAccessFeeLabel || request.proAccessPaymentState?.amountLabel || t('toBeConfirmed')} />
@@ -1109,7 +1109,7 @@ function ProAccessSupportCard({
         <StatusBadge label={t('proAccessSupport')} tone="pro" />
         <StatusBadge label={getProAccessSupportStatusLabel(supportState.statusLabel, refundState.status)} tone={getProAccessSupportTone(supportState.status, refundState.status, paymentStatus)} />
       </View>
-      <AppText variant="sectionTitle">{t('proAccessRefundSupportReview')}</AppText>
+      <AppText variant="cardTitle">{t('proAccessRefundSupportReview')}</AppText>
       <Info label={t('supportStatus')} value={supportState.statusLabel || t('noProAccessSupportReview')} />
       <Info label={t('refundStatus')} value={refundState.statusLabel || t('refundReview')} />
       {request.proAccessRefundSummary ? (
@@ -1152,7 +1152,7 @@ function ProAccessSupportRequestForm({
   return (
     <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
       <StatusBadge label={t('requestReview')} tone="pro" />
-      <AppText variant="sectionTitle">{t('tellUsWhatHappened')}</AppText>
+      <AppText variant="cardTitle">{t('tellUsWhatHappened')}</AppText>
       <AppText color={colors.slate700}>{t('tasklyWillReviewProAccessRequest')}</AppText>
       <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
       <AppText color={colors.slate700}>{t('proAccessUnlocksComparisonNotWork')}</AppText>
@@ -1221,7 +1221,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
   if (!images.length) return null;
   return (
     <AppCard>
-      <AppText variant="sectionTitle">{t('images')}</AppText>
+      <AppText variant="cardTitle">{t('images')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => (
           <Image
@@ -1239,7 +1239,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
 function NextActions({ actions }: { actions: { label: string; type: string }[] }) {
   return (
     <AppCard>
-      <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
+      <AppText variant="cardTitle">{t('nextSteps')}</AppText>
       {actions.map((action) => (
         <AppButton key={action.type} disabled tone="pro" variant="outline">{action.label}</AppButton>
       ))}
@@ -1352,9 +1352,9 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.navy900,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 34,
+    lineHeight: 30,
   },
   image: { aspectRatio: 1, borderRadius: radius.lg, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -1362,7 +1362,7 @@ const styles = StyleSheet.create({
   infoRow: {
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,
@@ -1381,13 +1381,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 18,
   },
-  profileImage: { backgroundColor: colors.proOrange50, borderRadius: radius.lg, height: 56, width: 56 },
+  profileImage: { backgroundColor: colors.proOrange50, borderRadius: 28, height: 56, width: 56 },
   profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
   profileText: { flex: 1, gap: spacing.xs },
   response: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,
@@ -1395,7 +1395,7 @@ const styles = StyleSheet.create({
   siteVisitInvite: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,
