@@ -3109,9 +3109,9 @@ function Field({
 const styles = StyleSheet.create({
   bookingTitle: {
     color: colors.navy900,
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '800',
-    lineHeight: 31,
+    lineHeight: 28,
   },
   buttonStack: {
     gap: spacing.sm,
@@ -3394,7 +3394,7 @@ const styles = StyleSheet.create({
   moneyCard: {
     backgroundColor: '#F7FAFF',
     borderColor: '#DCE9F7',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
@@ -3407,7 +3407,7 @@ const styles = StyleSheet.create({
   photoBox: {
     backgroundColor: '#FBFDFF',
     borderColor: '#DDE6F0',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
@@ -3510,7 +3510,7 @@ const styles = StyleSheet.create({
   scheduleSelectorCard: {
     backgroundColor: '#F7FAFF',
     borderColor: '#DCE9F7',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
@@ -3613,7 +3613,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: '#FBFDFF',
     borderColor: '#DDE6F0',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
@@ -3636,7 +3636,7 @@ const styles = StyleSheet.create({
   stepCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.94)',
     borderColor: '#E2EAF3',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
@@ -3675,14 +3675,14 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
   },
   stepTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
-    lineHeight: 26,
+    lineHeight: 22,
   },
   summaryCard: {
     backgroundColor: '#FAFCFE',
     borderColor: '#DFE8F2',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
@@ -3812,7 +3812,12 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   scopeSection: {
+    backgroundColor: '#F7FAFF',
+    borderColor: '#DCE9F7',
+    borderRadius: radius.card,
+    borderWidth: 1,
     gap: spacing.sm,
+    padding: spacing.md,
   },
   scopeCheckboxRow: {
     alignItems: 'flex-start',
