@@ -100,7 +100,15 @@ export function NotificationDeepLinkHandler() {
   useEffect(() => {
     const response = Notifications.getLastNotificationResponse();
     if (response) {
-      handleNotificationResponse(response);
+      const target = resolveDeepLinkTargetFromNotificationData(
+        response.notification.request.content.data as NotificationRouteData,
+      );
+
+      if (target) {
+        handleNotificationResponse(response);
+      }
+
+      void Notifications.clearLastNotificationResponseAsync();
     }
 
     const notificationSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
