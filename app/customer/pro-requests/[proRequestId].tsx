@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import * as WebBrowser from 'expo-web-browser';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
@@ -230,6 +230,12 @@ export default function CustomerProRequestDetailScreen() {
     setSiteVisitFormResponse(response);
     setSiteVisitFormValues(emptyCustomerSiteVisitForm);
   }, []);
+
+  const openProChat = useCallback((response: CustomerUnlockedProComparisonResponse) => {
+    const threadId = response.proChat?.messageThreadId || response.messageThreadId;
+    if (!threadId || !response.proChat?.capabilities.canRead) return;
+    router.push(`/customer/messages/${encodeURIComponent(threadId)}` as Href);
+  }, [router]);
 
   const closeSiteVisitInvite = useCallback(() => {
     setSiteVisitFormResponse(null);
@@ -561,6 +567,7 @@ export default function CustomerProRequestDetailScreen() {
             discardingResponseId={discardingResponseId}
             onDiscardProResponse={handleDiscardProResponse}
             onInviteForSiteVisit={openSiteVisitInvite}
+            onOpenProChat={openProChat}
             onSelectProResponse={handleSelectProResponse}
             request={request}
             selectingResponseId={selectingResponseId}
@@ -680,6 +687,7 @@ function UnlockedComparisonSection({
   discardingResponseId,
   onDiscardProResponse,
   onInviteForSiteVisit,
+  onOpenProChat,
   onSelectProResponse,
   request,
   selectingResponseId,
@@ -687,6 +695,7 @@ function UnlockedComparisonSection({
   discardingResponseId: string | null;
   onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  onOpenProChat: (response: CustomerUnlockedProComparisonResponse) => void;
   onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   request: CustomerProRequestDetailResponse['proRequest'];
   selectingResponseId: string | null;
@@ -713,6 +722,7 @@ function UnlockedComparisonSection({
               key={response.responseId}
               onDiscardProResponse={onDiscardProResponse}
               onInviteForSiteVisit={onInviteForSiteVisit}
+              onOpenProChat={onOpenProChat}
               onSelectProResponse={onSelectProResponse}
               response={response}
             />
@@ -732,6 +742,7 @@ function ComparisonResponseCard({
   isSelecting,
   onDiscardProResponse,
   onInviteForSiteVisit,
+  onOpenProChat,
   onSelectProResponse,
   response,
 }: {
@@ -740,6 +751,7 @@ function ComparisonResponseCard({
   isSelecting: boolean;
   onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
+  onOpenProChat: (response: CustomerUnlockedProComparisonResponse) => void;
   onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   response: CustomerUnlockedProComparisonResponse;
 }) {
@@ -815,6 +827,11 @@ function ComparisonResponseCard({
       {canInviteForSiteVisit ? (
         <AppButton onPress={() => onInviteForSiteVisit(response)} tone="pro" variant="outline">
           {t('inviteForSiteVisit')}
+        </AppButton>
+      ) : null}
+      {response.proChat?.capabilities.canRead && (response.proChat.messageThreadId || response.messageThreadId) ? (
+        <AppButton onPress={() => onOpenProChat(response)} tone="pro" variant="outline">
+          {t('openProChat')}
         </AppButton>
       ) : null}
       {!response.isSelected ? (

@@ -846,7 +846,12 @@ export type CustomerUnlockedProComparisonResponse = {
   includedNotes: string | null;
   independentProLabel: string;
   materialsIncluded: string | null;
+  messageThreadId?: string | null;
   portfolioCount: number;
+  proChat?: {
+    capabilities: MessageThreadCapabilities;
+    messageThreadId: string;
+  } | null;
   proProfileId: string;
   profileImageUrl: string | null;
   profileSummary: string | null;
@@ -1319,6 +1324,7 @@ export type ProviderProRequestDetail = {
   eligibility: EligibilitySummary;
   id: string;
   images: DetailImage[];
+  messageThreadId?: string | null;
   myResponse: ProviderProResponseSummary | null;
   nextActions: DetailNextAction[];
   proResponseBlockedReason?: string | null;
@@ -1326,6 +1332,10 @@ export type ProviderProRequestDetail = {
   proResponseCapabilities?: ProviderProResponseCapabilities;
   proResponseState?: ProviderProResponseState;
   proResponseSummary?: ProviderProResponseSummary | null;
+  proChat?: {
+    capabilities: MessageThreadCapabilities;
+    messageThreadId: string;
+  } | null;
   responseEditDefaults?: ProviderProResponseEditDefaults | null;
   siteVisitBlockedReason?: string | null;
   siteVisitBlockedReasonCode?: string | null;

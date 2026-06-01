@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
@@ -300,6 +300,12 @@ export default function ProviderProRequestDetailScreen() {
     setSiteVisitErrors(getProviderSiteVisitErrorMessages(result.error.details, result.error.message));
   }, [getValidAccessToken, proRequestId, request, siteVisitActionMode, siteVisitValues, status]);
 
+  const openProChat = useCallback(() => {
+    const threadId = request?.proChat?.messageThreadId || request?.messageThreadId;
+    if (!threadId || !request?.proChat?.capabilities.canRead) return;
+    router.push(`/provider/messages/${encodeURIComponent(threadId)}` as Href);
+  }, [request?.messageThreadId, request?.proChat, router]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -377,6 +383,11 @@ export default function ProviderProRequestDetailScreen() {
                 <Info label={t('submitted')} value={new Date(request.myResponse.submittedAt).toLocaleDateString()} />
                 {request.myResponse.visibilityLabel ? (
                   <AppText color={colors.slate700}>{request.myResponse.visibilityLabel}</AppText>
+                ) : null}
+                {request.proChat?.capabilities.canRead && (request.proChat.messageThreadId || request.messageThreadId) ? (
+                  <AppButton onPress={openProChat} tone="pro" variant="outline">
+                    {t('openProChat')}
+                  </AppButton>
                 ) : null}
               </>
             ) : (

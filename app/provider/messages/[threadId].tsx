@@ -388,7 +388,7 @@ function MessageComposer({
       <StatusBadge label={t('textOrPhotoMessagesOnly')} tone={canSend ? visual.tone : 'neutral'} />
       {canSend ? (
         <>
-          <AppText color={colors.slate700}>{t('coreTaskChatsOnly')}</AppText>
+          <AppText color={colors.slate700}>{t('tasklyChatsBackendSafe')}</AppText>
           <FormField
             errorText={isTooLong ? t('messageTooLong') : undefined}
             label={t('typeMessage')}
@@ -527,12 +527,13 @@ function canSendTextInThread(thread: MessageThreadMeta) {
 }
 
 function canSendAttachmentsInThread(thread: MessageThreadMeta) {
-  return thread.capabilities.canSendText && thread.capabilities.canSendAttachments && thread.contextType === 'CORE_TASK';
+  return thread.capabilities.canSendText && thread.capabilities.canSendAttachments && (thread.contextType === 'CORE_TASK' || thread.contextType === 'PRO_REQUEST');
 }
 
 function getSendErrorMessage(code: string) {
   if (code === 'EMPTY_MESSAGE') return t('messageCannotBeEmpty');
   if (code === 'MESSAGE_TOO_LONG') return t('messageTooLong');
+  if (code === 'CONTACT_DETAILS_NOT_ALLOWED') return t('contactDetailsSharedWhenAllowed');
   if (code === 'SENDING_NOT_SUPPORTED') return t('sendingNotAvailable');
   return t('couldNotSendMessage');
 }
