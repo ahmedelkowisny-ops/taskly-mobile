@@ -1552,8 +1552,8 @@ export default function CustomerPostTaskScreen() {
                     {...budgetPanResponder.panHandlers}>
                     <View style={styles.budgetTrack} pointerEvents="none">
                       <View style={[styles.budgetTrackFill, { width: `${budgetProgressPercent}%` }]} />
-                      <View style={[styles.budgetSelectedThumb, { left: budgetTrackWidth > 0 ? (budgetProgressPercent / 100) * budgetTrackWidth - 9 : 0 }]} />
-                      <View style={[styles.budgetRecommendedDot, { left: budgetTrackWidth > 0 ? (recommendedBudgetPercent / 100) * budgetTrackWidth - 5 : 0 }]} />
+                      <View style={[styles.budgetSelectedThumb, { transform: [{ translateX: budgetTrackWidth > 0 ? (budgetProgressPercent / 100) * budgetTrackWidth - 9 : 0 }] }]} />
+                      <View style={[styles.budgetRecommendedDot, { transform: [{ translateX: budgetTrackWidth > 0 ? (recommendedBudgetPercent / 100) * budgetTrackWidth - 5 : 0 }] }]} />
                     </View>
                   </View>
                   <View style={styles.budgetRangeLabels}>
@@ -3141,6 +3141,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
     height: 10,
+    left: 0,
     position: 'absolute',
     top: -3,
     width: 10,
@@ -3155,6 +3156,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 2,
     height: 18,
+    left: 0,
     position: 'absolute',
     top: -6,
     width: 18,

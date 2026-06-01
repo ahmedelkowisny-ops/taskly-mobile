@@ -48,8 +48,6 @@ export default function CustomerAccountScreen() {
         </View>
       </View>
 
-      <NotificationSettingsCard workspace="customer" />
-
       <View style={styles.settingsCard}>
         <View style={styles.settingsRow}>
           <View style={styles.settingsRowIcon}>
@@ -63,6 +61,8 @@ export default function CustomerAccountScreen() {
       <AppButton onPress={handleLogout} tone="neutral" variant="outline">
         {t('drawerLogout')}
       </AppButton>
+
+      <NotificationSettingsCard workspace="customer" />
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>

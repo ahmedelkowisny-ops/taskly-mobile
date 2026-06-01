@@ -85,10 +85,6 @@ export default function CustomerHomeScreen() {
     <Screen contentStyle={styles.content} style={styles.screen}>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
-      <AppText color={colors.tasklyBlue600} style={{ fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
-        {(() => { console.log('BUILD_CHECK_QA_FIXES_ACTIVE_RENDERED'); return 'Build check: QA fixes active'; })()}
-      </AppText>
-
       <View style={styles.greeting}>
         <AppText style={styles.greetingTitle} variant="screenTitle">
           {t('welcomeName').replace('{name}', displayName)}
