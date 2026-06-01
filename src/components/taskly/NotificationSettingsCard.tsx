@@ -106,7 +106,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       setIsSaving(false);
 
       if (!result.ok) {
-        setError(result.error.message || t('couldNotSaveNotificationSettings'));
+        setError(t('couldNotSaveNotificationSettings'));
         return false;
       }
 

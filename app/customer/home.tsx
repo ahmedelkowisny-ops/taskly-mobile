@@ -189,6 +189,10 @@ export default function CustomerHomeScreen() {
         </View>
       </View>
 
+      <AppText color={colors.slate500} style={{ fontSize: 11, textAlign: 'center' }}>
+        Build check: QA fixes active
+      </AppText>
+
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
