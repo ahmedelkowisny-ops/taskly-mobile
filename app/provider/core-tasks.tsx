@@ -69,7 +69,7 @@ export default function ProviderCoreTasksScreen() {
     setErrorMessage(
       result.status === 401 || result.status === 403
         ? 'Login or Provider Workspace access is required.'
-        : 'Could not load Taskly task previews.',
+        : t('couldNotLoadTasklyTaskPreviews'),
     );
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -86,15 +86,15 @@ export default function ProviderCoreTasksScreen() {
         <ModeBadge mode="providerCore" />
         <AppText variant="screenTitle">{t('coreTasks')}</AppText>
         <AppText color={colors.slate700}>
-          Approved Taskly Taskers see matching tasks by city and category inside the Provider Workspace.
+          {t('providerTasklyTasksIntro')}
         </AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.tasklyBlue600}>
-          <StatusBadge label="Loading" tone="core" />
-          <AppText variant="sectionTitle">Loading Taskly task previews</AppText>
-          <AppText color={colors.slate700}>Loading matching Taskly tasks.</AppText>
+          <StatusBadge label={t('loading')} tone="core" />
+          <AppText variant="sectionTitle">{t('loadingTasklyTaskPreviews')}</AppText>
+          <AppText color={colors.slate700}>{t('loadingMatchingTasklyTasks')}</AppText>
         </AppCard>
       ) : null}
 
@@ -102,14 +102,14 @@ export default function ProviderCoreTasksScreen() {
         <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
-            {isUnauthorized ? 'Taskly tasks need Provider access' : 'Could not refresh Taskly tasks'}
+            {isUnauthorized ? t('tasklyTasksNeedProviderAccess') : t('couldNotRefreshTasklyTasks')}
           </AppText>
           <AppText color={colors.slate700}>
             {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
           <View style={{ gap: spacing.sm }}>
             <AppButton onPress={loadTasks} variant="outline">
-              Retry
+              {t('retry')}
             </AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
               {t('continueDemoMode')}
@@ -125,6 +125,12 @@ export default function ProviderCoreTasksScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
                 <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
+                {task.hasScheduleConflict ? (
+                  <StatusBadge label={t('scheduleConflict')} tone="warning" />
+                ) : null}
+                {task.unreadMessagesCount > 0 ? (
+                  <StatusBadge label={t('unreadMessagesCount').replace('{count}', String(task.unreadMessagesCount))} tone="warning" />
+                ) : null}
                 {getProviderNextActionHint(task) ? (
                   <StatusBadge label={getProviderNextActionHint(task) || ''} tone="success" />
                 ) : null}
@@ -148,13 +154,32 @@ export default function ProviderCoreTasksScreen() {
               <AppText color={colors.slate700}>
                 {task.priceLabel} - {task.customerPreviewLabel}
               </AppText>
+              {task.providerPaymentBreakdown?.providerPayoutLabel ? (
+                <View style={{ gap: spacing.xs }}>
+                  <AppText variant="bodyStrong">
+                    {t(task.providerPaymentBreakdown.isEstimate ? 'estimatedProviderPayout' : 'providerPayout')}: {task.providerPaymentBreakdown.providerPayoutLabel}
+                  </AppText>
+                  {task.providerPaymentBreakdown.providerPayoutHint ? (
+                    <AppText color={colors.slate500}>{task.providerPaymentBreakdown.providerPayoutHint}</AppText>
+                  ) : null}
+                </View>
+              ) : null}
+              <AppText color={colors.slate700}>
+                {t('schedule')}: {formatSchedule(task.scheduledStartAt, task.scheduledEndAt)}
+              </AppText>
+              {task.hasScheduleConflict ? (
+                <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText>
+              ) : null}
+              {getProviderBlockedReason(task) ? (
+                <AppText color={colors.slate700}>{getProviderBlockedReason(task)}</AppText>
+              ) : null}
               {getProviderSupportSummary(task) ? (
                 <AppText color={colors.slate700}>{getProviderSupportSummary(task)}</AppText>
               ) : null}
               <AppButton
                 onPress={() => router.push(`/provider/core-tasks/${task.id}` as Href)}
                 variant="outline">
-                View details
+                {t('viewDetails')}
               </AppButton>
             </AppCard>
           ))}
@@ -167,13 +192,8 @@ export default function ProviderCoreTasksScreen() {
       ) : null}
 
       <AppCard accentColor={colors.tasklyBlue600}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-          <StatusBadge label="Taskly Tasker" tone="core" />
-          <StatusBadge label="Stripe verification" tone="warning" />
-        </View>
-        <AppText color={colors.slate700}>
-          Stripe verification is shown here only as Taskly task payout readiness, not as Taskly Pro logic.
-        </AppText>
+        <StatusBadge label={t('tasklyTasker')} tone="core" />
+        <AppText color={colors.slate700}>{t('providerTasklyTaskerReadiness')}</AppText>
       </AppCard>
     </Screen>
   );
@@ -268,6 +288,15 @@ function getProviderSupportSummary(task: ProviderCoreTaskSummary) {
   return null;
 }
 
+function getProviderBlockedReason(task: ProviderCoreTaskSummary) {
+  return (
+    task.nextActions.blockedReason ||
+    task.nextActions.providerBlockedReason ||
+    task.providerBlockedReason ||
+    null
+  );
+}
+
 function getProviderIssueBadgeLabel(
   issue?: ProviderCoreIssueState,
   support?: ProviderCoreIssueState,
@@ -313,4 +342,11 @@ function getPaymentStatusLabel(label: string) {
 
 function isPaymentProtected(label: string) {
   return label === 'Payment protected' || label === t('paymentProtected');
+}
+
+function formatSchedule(start: string | null, end: string | null) {
+  if (!start) return t('noScheduleSet');
+  const startLabel = new Date(start).toLocaleString();
+  const endLabel = end ? new Date(end).toLocaleTimeString() : '';
+  return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
 }

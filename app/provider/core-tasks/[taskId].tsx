@@ -70,8 +70,8 @@ export default function ProviderCoreTaskDetailScreen() {
 
     if (status !== 'authenticated') {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this provider Taskly task detail.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredTasklyTaskDetail'));
       return;
     }
 
@@ -80,8 +80,8 @@ export default function ProviderCoreTaskDetailScreen() {
 
     if (!authToken) {
       setData(null);
-      setStateLabel('Login required');
-      setMessage('Login is required to load this provider Taskly task detail.');
+      setStateLabel(t('loginRequired'));
+      setMessage(t('loginRequiredTasklyTaskDetail'));
       setIsLoading(false);
       return;
     }
@@ -96,7 +96,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
     setData(null);
     setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
-    setMessage(result.status === 404 ? 'This task was not found or is not available to this provider account.' : 'Could not load this task detail.');
+    setMessage(result.status === 404 ? t('providerTasklyTaskNotFound') : t('couldNotLoadTasklyTaskDetail'));
   }, [getValidAccessToken, status, taskId]);
 
   useFocusEffect(
@@ -672,10 +672,10 @@ export default function ProviderCoreTaskDetailScreen() {
     <Screen>
       <View style={styles.header}>
         <ModeBadge mode="providerCore" />
-        <AppButton onPress={() => router.back()} variant="ghost">Back</AppButton>
+        <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
       </View>
 
-      {isLoading ? <StateCard label={t('loading')} message="Loading provider Taskly task detail." /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('loadingProviderTasklyTaskDetail')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
@@ -691,7 +691,10 @@ export default function ProviderCoreTaskDetailScreen() {
       {task ? (
         <>
           <AppCard accentColor={colors.tasklyBlue600}>
-            <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
+              {task.hasScheduleConflict ? <StatusBadge label={t('scheduleConflict')} tone="warning" /> : null}
+            </View>
             <AppText variant="screenTitle">{task.title}</AppText>
             <AppText color={colors.slate700}>{task.description}</AppText>
             <AppText color={colors.slate700}>{task.categoryLabel} - {task.cityLabel}</AppText>
@@ -699,12 +702,15 @@ export default function ProviderCoreTaskDetailScreen() {
 
           <AppCard>
             <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
-            <Info label="Price" value={task.priceLabel} />
-            <Info label="Customer" value={task.customerPreviewLabel} />
-            <Info label="Schedule" value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
-            <Info label="Address" value={task.addressPreviewLabel || t('locationSharedWhenReserved')} />
+            <Info label={t('price')} value={task.priceLabel} />
+            <Info label={t('customer')} value={task.customerPreviewLabel} />
+            <Info label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
+            {task.hasScheduleConflict ? <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText> : null}
+            <Info label={t('address')} value={task.addressPreviewLabel || t('addressSharedAfterSelection')} />
           </AppCard>
 
+          <ProviderPaymentBreakdownCard task={task} />
+          <ProviderStatusCard task={task} />
           <ScopeChecklistCard task={task} />
           <Images images={task.images} />
           <ProviderIssueSupportCard task={task} />
@@ -765,11 +771,48 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }) {
+  const breakdown = task.providerPaymentBreakdown;
+  if (!breakdown || breakdown.source === 'unavailable') return null;
+
+  const hasCancellationBreakdown = Boolean(
+    breakdown.cancellationFeeBreakdownLabel ||
+    breakdown.lateCancellationProviderShareLabel ||
+    breakdown.lateCancellationPlatformShareLabel,
+  );
+
+  return (
+    <AppCard accentColor={colors.success600}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <StatusBadge label={breakdown.isEstimate ? t('paymentEstimate') : t('paymentRecord')} tone={breakdown.isEstimate ? 'warning' : 'success'} />
+        {breakdown.paymentStateLabel ? <StatusBadge label={breakdown.paymentStateLabel} tone="neutral" /> : null}
+      </View>
+      <AppText variant="sectionTitle">{t('providerPaymentBreakdown')}</AppText>
+      {breakdown.customerTotalLabel ? <Info label={t('customerPays')} value={breakdown.customerTotalLabel} /> : null}
+      {breakdown.grossTaskPriceLabel ? <Info label={t('grossTaskPrice')} value={breakdown.grossTaskPriceLabel} /> : null}
+      {breakdown.tasklyFeeLabel ? <Info label={t('tasklyFee')} value={breakdown.tasklyFeeLabel} /> : null}
+      {breakdown.providerPayoutLabel ? <Info label={t('youReceive')} value={breakdown.providerPayoutLabel} /> : null}
+      {breakdown.providerPayoutHint ? <AppText color={colors.slate500}>{breakdown.providerPayoutHint}</AppText> : null}
+      {hasCancellationBreakdown ? (
+        <View style={{ gap: spacing.xs }}>
+          <AppText variant="bodyStrong">{t('lateCancellationBreakdown')}</AppText>
+          {breakdown.cancellationFeeBreakdownLabel ? <Info label={t('cancellationFee')} value={breakdown.cancellationFeeBreakdownLabel} /> : null}
+          {breakdown.lateCancellationProviderShareLabel ? <Info label={t('lateCancellationProviderShare')} value={breakdown.lateCancellationProviderShareLabel} /> : null}
+          {breakdown.lateCancellationPlatformShareLabel ? <Info label={t('lateCancellationPlatformShare')} value={breakdown.lateCancellationPlatformShareLabel} /> : null}
+        </View>
+      ) : null}
+    </AppCard>
+  );
+}
+
 function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
   if (!images.length) return null;
   return (
     <AppCard>
-      <AppText variant="sectionTitle">Images</AppText>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <StatusBadge label={t('photoCount').replace('{count}', String(images.length))} tone="core" />
+      </View>
+      <AppText variant="sectionTitle">{t('images')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => <Image key={image.id} accessibilityLabel={image.alt} source={{ uri: image.url }} style={styles.image} />)}
       </View>
@@ -784,13 +827,13 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
   return (
     <AppCard>
       <StatusBadge label={`${checklist.filter((item) => item.checked).length}/${checklist.length}`} tone="core" />
-      <AppText variant="sectionTitle">Scope checklist</AppText>
+      <AppText variant="sectionTitle">{t('scopeChecklist')}</AppText>
       <View style={styles.scopeChecklistList}>
         {checklist.map((item, index) => (
           <View key={`${item.code || 'scope'}-${index}`} style={styles.scopeChecklistRow}>
             <View style={[styles.scopeChecklistIcon, item.checked ? styles.scopeChecklistIconChecked : null]}>
               <AppText color={item.checked ? colors.white : colors.slate500} style={styles.scopeChecklistIconText}>
-                {item.checked ? 'OK' : '-'}
+                {item.checked ? t('checkedShort') : '-'}
               </AppText>
             </View>
             <AppText color={colors.slate700} style={styles.scopeChecklistLabel}>
@@ -806,13 +849,38 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
 function Timeline({ items }: { items: { description: string; id: string; label: string; status: string }[] }) {
   return (
     <AppCard accentColor={colors.tasklyBlue600}>
-      <AppText variant="sectionTitle">Timeline</AppText>
+      <AppText variant="sectionTitle">{t('timeline')}</AppText>
       {items.map((item) => (
         <View key={item.id} style={styles.timelineItem}>
           <StatusBadge label={item.status} tone="core" />
           <AppText variant="bodyStrong">{item.label}</AppText>
           <AppText color={colors.slate700}>{item.description}</AppText>
         </View>
+      ))}
+    </AppCard>
+  );
+}
+
+function ProviderStatusCard({ task }: { task: ProviderCoreTaskDetail }) {
+  const messages = [
+    task.nextActions.blockedReason,
+    task.nextActions.providerBlockedReason,
+    task.providerBlockedReason,
+    task.supportReviewLabel,
+    task.providerSupportReviewLabel,
+    task.cancellationPolicySummary,
+  ].filter((item): item is string => Boolean(item && item.trim().length > 0));
+
+  if (!messages.length) return null;
+
+  return (
+    <AppCard accentColor={colors.tasklyBlue600}>
+      <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
+      <AppText variant="sectionTitle">{t('tasklyTaskStatus')}</AppText>
+      {messages.map((item, index) => (
+        <AppText key={`${item}-${index}`} color={index === 0 ? colors.slate700 : colors.slate500}>
+          {item}
+        </AppText>
       ))}
     </AppCard>
   );
@@ -927,7 +995,7 @@ function ProviderActions({
 
   return (
     <AppCard accentColor={hasPrimaryAction ? colors.tasklyBlue600 : undefined}>
-      <AppText variant="sectionTitle">Next steps</AppText>
+      <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
       {primaryAction === 'express_interest' ? (
         <>
           <AppText color={colors.slate700}>{t('customerWillChooseTasker')}</AppText>
@@ -953,7 +1021,7 @@ function ProviderActions({
         </>
       ) : null}
       {primaryAction === 'open_chat' ? (
-        <AppText color={colors.slate700}>{t('openConversation')}</AppText>
+        <AppText color={colors.slate700}>{t('openChat')}</AppText>
       ) : null}
 
       {actionMessage ? (
@@ -978,7 +1046,7 @@ function ProviderActions({
         </View>
       ) : primaryAction === 'open_chat' ? (
         <AppButton onPress={onOpenChat} variant="outline">
-          {t('openConversation')}
+          {t('openChat')}
         </AppButton>
       ) : primaryAction === 'mark_on_the_way' ? (
         <View style={styles.stack}>
@@ -1212,7 +1280,7 @@ function isPaymentProtected(label: string) {
 }
 
 function formatSchedule(start: string | null, end: string | null) {
-  if (!start) return 'Schedule not set';
+  if (!start) return t('noScheduleSet');
   const startLabel = new Date(start).toLocaleString();
   const endLabel = end ? new Date(end).toLocaleTimeString() : '';
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;

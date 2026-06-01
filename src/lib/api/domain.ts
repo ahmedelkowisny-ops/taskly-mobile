@@ -1065,6 +1065,7 @@ export type ProviderCoreTaskSummary = {
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  providerPaymentBreakdown?: ProviderCorePaymentBreakdown | null;
   providerBlockedReason?: string | null;
   providerCancellationState?: ProviderCoreIssueState;
   providerDisputeState?: ProviderCoreIssueState;
@@ -1110,6 +1111,20 @@ export type ProviderCoreTaskNextActions = {
   };
 };
 
+export type ProviderCorePaymentBreakdown = {
+  customerTotalLabel: string | null;
+  grossTaskPriceLabel: string | null;
+  tasklyFeeLabel: string | null;
+  providerPayoutLabel: string | null;
+  providerPayoutHint: string | null;
+  paymentStateLabel: string | null;
+  isEstimate: boolean;
+  source: 'payment_record' | 'estimate' | 'unavailable';
+  cancellationFeeBreakdownLabel?: string | null;
+  lateCancellationProviderShareLabel?: string | null;
+  lateCancellationPlatformShareLabel?: string | null;
+};
+
 export type ProviderCoreTaskDetail = {
   addressPreviewLabel: string;
   cancellationBlockedReason?: string | null;
@@ -1127,6 +1142,7 @@ export type ProviderCoreTaskDetail = {
   nextActions: ProviderCoreTaskNextActions;
   paymentStatusLabel: string;
   priceLabel: string;
+  providerPaymentBreakdown?: ProviderCorePaymentBreakdown | null;
   providerBlockedReason?: string | null;
   providerCancellationState?: ProviderCoreIssueState;
   providerDisputeState?: ProviderCoreIssueState;
