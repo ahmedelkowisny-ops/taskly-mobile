@@ -21,7 +21,6 @@ import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { AppText } from '../ui';
-import { LanguageToggle } from './LanguageToggle';
 import { TasklyLogoText } from './TasklyLogoText';
 
 type CustomerDrawerProps = {
@@ -180,13 +179,6 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
               </Pressable>
             </View>
 
-            <View style={styles.languageCard}>
-              <AppText color={colors.sidebarMuted} style={styles.languageLabel} variant="small">
-                {t('drawerLanguage')}
-              </AppText>
-              <LanguageToggle />
-            </View>
-
             <ScrollView contentContainerStyle={styles.navContent} showsVerticalScrollIndicator={false}>
               {drawerGroups.map((group) => (
                 <View key={group.label} style={styles.group}>
@@ -264,10 +256,16 @@ function DrawerNavItem({
         <Ionicons color={iconColor} name={icon} size={18} />
       </View>
       <AppText color={active ? colors.navy900 : colors.sidebarMuted} style={styles.itemText}>
-        {label}
+        {toTitleCase(label)}
       </AppText>
     </Pressable>
   );
+}
+
+function toTitleCase(value: string) {
+  return value
+    .toLocaleLowerCase()
+    .replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase());
 }
 
 const styles = StyleSheet.create({
@@ -308,7 +306,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderTopRightRadius: radius.card,
     flex: 1,
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
@@ -323,7 +321,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   groupItems: {
-    gap: 6,
+    gap: spacing.sm,
   },
   groupLabel: {
     fontSize: 11,
@@ -381,21 +379,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 16,
-    textTransform: 'uppercase',
-  },
-  languageCard: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.sidebarBorder,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  languageLabel: {
-    fontWeight: '800',
   },
   logoBlock: {
     gap: 2,
@@ -425,7 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   navContent: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing.sm,
   },
   overlay: {

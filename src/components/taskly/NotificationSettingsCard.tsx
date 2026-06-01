@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, Switch, View } from 'react-native';
+import { Linking, StyleSheet, Switch, View } from 'react-native';
 
 import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import {
@@ -188,8 +188,8 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
   );
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard style={styles.card}>
+      <View style={styles.badgeRow}>
         <StatusBadge label={t('notifications')} tone="neutral" />
         <StatusBadge
           label={preferences.pushEnabled ? t('pushNotifications') : t('notificationsDisabled')}
@@ -206,10 +206,16 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
 
       {isLoading ? <AppText color={colors.slate700}>{t('loading')}</AppText> : null}
       {notice ? <AppText color={colors.success600}>{notice}</AppText> : null}
-      {error ? <AppText color={colors.danger600}>{error}</AppText> : null}
+      {error ? (
+        <View style={styles.errorChip}>
+          <AppText color={colors.white} style={styles.errorChipText} variant="caption">
+            {error}
+          </AppText>
+        </View>
+      ) : null}
 
       {!preferences.pushEnabled ? (
-        <View style={{ gap: spacing.sm }}>
+        <View style={styles.actionStack}>
           <AppButton loading={isSaving} onPress={enableNotifications}>
             {t('enableAlerts')}
           </AppButton>
@@ -226,7 +232,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
         />
       )}
 
-      <View style={{ gap: spacing.sm }}>
+      <View style={styles.preferenceStack}>
         {preferenceRows.map((row) => (
           <PreferenceRow
             disabled={isSaving}
@@ -259,11 +265,54 @@ function PreferenceRow({
   value: boolean;
 }) {
   return (
-    <View style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' }}>
-      <AppText color={colors.slate700} style={{ flex: 1 }}>
+    <View style={styles.preferenceRow}>
+      <AppText color={colors.slate700} style={styles.preferenceLabel}>
         {label}
       </AppText>
-      <Switch disabled={disabled} onValueChange={onValueChange} value={value} />
+      <Switch
+        disabled={disabled}
+        ios_backgroundColor={colors.slate100}
+        onValueChange={onValueChange}
+        thumbColor={value ? colors.white : colors.white}
+        trackColor={{ false: colors.slate100, true: colors.tasklyBlue600 }}
+        value={value}
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  actionStack: {
+    gap: spacing.sm,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  card: {
+    borderColor: colors.border,
+  },
+  errorChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.warning600,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  errorChipText: {
+    fontWeight: '700',
+  },
+  preferenceLabel: {
+    flex: 1,
+  },
+  preferenceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  preferenceStack: {
+    gap: spacing.sm,
+  },
+});

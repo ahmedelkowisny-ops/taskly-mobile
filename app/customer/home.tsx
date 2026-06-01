@@ -305,23 +305,31 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   metric: {
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: 14,
     borderWidth: 1,
     flexBasis: '48%',
     flexGrow: 1,
-    gap: 2,
+    gap: spacing.xs,
     padding: spacing.md,
+  },
+  metricNumber: {
+    fontSize: 24,
+    lineHeight: 30,
   },
   metricPro: {
     backgroundColor: colors.proOrange50,
-    borderColor: '#F3D6AF',
+    borderColor: colors.proOrangeBorder,
   },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  proActionButton: {
+    backgroundColor: colors.proOrange600,
+    borderColor: colors.proOrange600,
   },
   screen: {
     backgroundColor: '#F7F9FB',
@@ -350,6 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     gap: spacing.md,
+    marginTop: spacing.md,
     padding: spacing.lg,
   },
   trustChip: {
@@ -410,7 +419,7 @@ function HomeActionCard({
           </View>
         ))}
       </View>
-      <AppButton onPress={onPress} tone={isPro ? 'pro' : 'core'}>
+      <AppButton onPress={onPress} style={isPro ? styles.proActionButton : null} tone={isPro ? 'pro' : 'core'}>
         {cta}
       </AppButton>
     </View>
@@ -443,7 +452,7 @@ function Metric({ accent = 'core', label, value }: { accent?: 'core' | 'pro'; la
       <AppText color={colors.slate500} variant="small">
         {label}
       </AppText>
-      <AppText variant="sectionTitle">{value}</AppText>
+      <AppText style={styles.metricNumber} variant="sectionTitle">{value}</AppText>
     </View>
   );
 }
