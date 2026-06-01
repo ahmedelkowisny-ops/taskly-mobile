@@ -103,9 +103,12 @@ export function RegisterChoiceScreen() {
       <Pressable
         accessibilityRole="link"
         onPress={() => router.push('/login')}
-        style={({ pressed }) => [styles.backLink, pressed ? styles.pressedSoft : null]}>
+        style={({ pressed }) => [styles.signInRow, pressed ? styles.pressedSoft : null]}>
         <AppText color={colors.slate500} style={styles.backText} variant="caption">
-          {t('alreadyHaveAccount')} {t('signIn')}
+          {t('alreadyHaveAccount')}
+        </AppText>
+        <AppText color={colors.tasklyBlue600} style={styles.signInText} variant="caption">
+          {t('signIn')}
         </AppText>
       </Pressable>
     </Screen>
@@ -191,7 +194,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
         </AppText>
       </View>
 
-      <AppCard accentColor={accent}>
+      <AppCard>
         <View style={styles.nameRow}>
           <FormField
             error={fieldErrors.firstName}
@@ -290,14 +293,17 @@ function RegistrationTopBar() {
       <View style={styles.brandMark}>
         <TasklyLogoText compact iconOnly />
       </View>
-      <LanguageToggle />
+      <View style={styles.topActions}>
+        <LanguageToggle />
+      </View>
     </View>
   );
 }
 
 function RegisterOptionCard({ option, onPress }: { option: RegisterOption; onPress: () => void }) {
-  const accent = getAccent(option.tone);
-  const isPro = option.tone === 'pro';
+  const visual = getRegisterRoleVisual(option.tone);
+  const foreground = option.tone === 'customer' ? colors.white : colors.slate700;
+  const iconColor = option.tone === 'customer' ? colors.white : visual.accent;
 
   return (
     <Pressable
@@ -306,21 +312,23 @@ function RegisterOptionCard({ option, onPress }: { option: RegisterOption; onPre
       style={({ pressed }) => [
         styles.optionCard,
         {
-          backgroundColor: isPro ? colors.proOrange50 : colors.white,
-          borderColor: pressed ? accent : isPro ? colors.proOrangeBorder : colors.slate100,
+          backgroundColor: visual.background,
+          borderColor: pressed ? visual.accent : visual.border,
         },
         pressed ? styles.pressed : null,
       ]}>
-      <View style={[styles.optionIcon, { backgroundColor: isPro ? colors.white : colors.tasklyBlue50 }]}>
-        <Ionicons color={accent} name={option.icon} size={19} />
+      <View style={[styles.optionIcon, { backgroundColor: visual.iconBackground, borderColor: visual.border }]}>
+        <Ionicons color={iconColor} name={option.icon} size={19} />
       </View>
       <View style={styles.optionText}>
-        <AppText style={styles.optionTitle}>{t(option.title)}</AppText>
-        <AppText color={colors.slate700} style={styles.optionBody}>
+        <AppText color={visual.titleColor} style={styles.optionTitle}>
+          {t(option.title)}
+        </AppText>
+        <AppText color={foreground} style={styles.optionBody}>
           {t(option.body)}
         </AppText>
       </View>
-      <Ionicons color={accent} name="chevron-forward" size={18} />
+      <Ionicons color={iconColor} name="chevron-forward" size={18} />
     </Pressable>
   );
 }
@@ -372,6 +380,36 @@ function getAccent(role: RegisterRole) {
   return colors.tasklyBlue600;
 }
 
+function getRegisterRoleVisual(role: RegisterRole) {
+  if (role === 'pro') {
+    return {
+      accent: colors.proOrange600,
+      background: colors.proOrange50,
+      border: colors.proOrangeBorder,
+      iconBackground: colors.white,
+      titleColor: colors.proOrangeTextDark,
+    };
+  }
+
+  if (role === 'tasker') {
+    return {
+      accent: colors.tasklyBlue700,
+      background: colors.white,
+      border: colors.slate100,
+      iconBackground: colors.tasklyBlue50,
+      titleColor: colors.navy900,
+    };
+  }
+
+  return {
+    accent: colors.tasklyBlue600,
+    background: colors.tasklyBlue600,
+    border: colors.tasklyBlue600,
+    iconBackground: 'rgba(255,255,255,0.16)',
+    titleColor: colors.white,
+  };
+}
+
 function getFriendlyRegistrationError(code: string) {
   if (code === 'EMAIL_ALREADY_EXISTS') return t('emailAlreadyExists');
   if (code === 'PASSWORD_TOO_SHORT') return t('registrationPasswordTooShort');
@@ -408,10 +446,10 @@ const styles = StyleSheet.create({
     width: 46,
   },
   content: {
-    gap: spacing.xl,
-    justifyContent: 'center',
+    gap: spacing.lg,
+    justifyContent: 'flex-start',
     paddingBottom: spacing.xl,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
   },
   field: {
     flex: 1,
@@ -435,7 +473,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.navy900,
     fontSize: 16,
-    minHeight: 48,
+    height: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -473,6 +511,7 @@ const styles = StyleSheet.create({
   optionIcon: {
     alignItems: 'center',
     borderRadius: radius.md,
+    borderWidth: 1,
     height: 38,
     justifyContent: 'center',
     width: 38,
@@ -496,6 +535,17 @@ const styles = StyleSheet.create({
   screen: {
     backgroundColor: '#F6F9FD',
   },
+  signInRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'center',
+    paddingVertical: spacing.xs,
+  },
+  signInText: {
+    fontWeight: '800',
+    textAlign: 'center',
+  },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
@@ -510,5 +560,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  topActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

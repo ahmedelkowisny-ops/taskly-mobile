@@ -49,7 +49,9 @@ export default function ForgotPasswordScreen() {
         <View style={styles.brandMark}>
           <TasklyLogoText compact iconOnly />
         </View>
-        <LanguageToggle />
+        <View style={styles.topActions}>
+          <LanguageToggle />
+        </View>
       </View>
 
       <View style={styles.header}>
@@ -143,10 +145,10 @@ const styles = StyleSheet.create({
     width: 46,
   },
   content: {
-    gap: spacing.xl,
-    justifyContent: 'center',
+    gap: spacing.lg,
+    justifyContent: 'flex-start',
     paddingBottom: spacing.xl,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.lg,
   },
   field: {
     gap: spacing.sm,
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     color: colors.navy900,
     fontSize: 16,
-    minHeight: 48,
+    height: 48,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -199,5 +201,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  topActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });
