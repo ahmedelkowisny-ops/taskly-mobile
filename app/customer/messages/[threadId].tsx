@@ -324,7 +324,7 @@ export default function CustomerMessageThreadScreen() {
           return (
         <>
           <ThreadHeader thread={thread} />
-          <Messages accent={thread.accent} messages={data.messages ?? []} />
+          <Messages accent={thread.accent} contextType={thread.contextType} messages={data.messages ?? []} />
           {thread.supportStatus === 'RESOLUTION_REQUESTED' ? (
             <ResolutionCard
               isLoading={isResolvingIssue}
@@ -401,7 +401,27 @@ function ResolutionEventMessage({ message }: { message: MessageItem }) {
   );
 }
 
-function Messages({ accent, messages }: { accent: MessageThreadMeta['accent']; messages: MessageItem[] }) {
+function getSupportBubbleStyle(isMine: boolean) {
+  return {
+    bubbleStyle: isMine
+      ? [styles.messageBubble, styles.supportBubbleMine]
+      : [styles.messageBubble, styles.supportBubbleOther],
+    bodyColor: colors.navy900,
+    senderColor: colors.slate700,
+    timeColor: colors.slate500,
+  };
+}
+
+function Messages({
+  accent,
+  contextType,
+  messages,
+}: {
+  accent: MessageThreadMeta['accent'];
+  contextType: MessageThreadMeta['contextType'];
+  messages: MessageItem[];
+}) {
+  const isSupportThread = contextType === 'SUPPORT';
   const mineColor = getThreadAccentColor(accent);
 
   if (!messages.length) {
@@ -418,6 +438,21 @@ function Messages({ accent, messages }: { accent: MessageThreadMeta['accent']; m
         if (message.messageKind && RESOLUTION_KIND_LABEL[message.messageKind]) {
           return <ResolutionEventMessage key={message.id} message={message} />;
         }
+
+        if (isSupportThread) {
+          const { bubbleStyle, bodyColor, senderColor, timeColor } = getSupportBubbleStyle(message.isMine);
+          return (
+            <View key={message.id} style={bubbleStyle}>
+              <AppText color={senderColor} variant="small">
+                {message.isMine ? t('you') : message.senderName}
+              </AppText>
+              {message.attachments?.length ? <MessageAttachments attachments={message.attachments} /> : null}
+              {message.body ? <AppText color={bodyColor}>{message.body}</AppText> : null}
+              <AppText color={timeColor} variant="small">{formatDate(message.createdAt)}</AppText>
+            </View>
+          );
+        }
+
         return (
           <View
             key={message.id}
@@ -730,6 +765,18 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: colors.slate50,
     borderColor: colors.slate100,
+    borderWidth: 1,
+  },
+  supportBubbleMine: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderWidth: 1,
+  },
+  supportBubbleOther: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
     borderWidth: 1,
   },
   photoButton: {
