@@ -1,11 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
 import { CustomerTopBar } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
@@ -14,7 +13,6 @@ import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerProfileScreen() {
   useI18n();
-  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { session: authSession, status } = useAuth();
   const session = authSession ?? getMockUserSession();
@@ -58,22 +56,6 @@ export default function CustomerProfileScreen() {
         <InfoRow label={t('accountEmail')} value={email || t('emailNotAvailable')} />
         <InfoRow label={t('accountRole')} value={t('customer')} />
         <InfoRow label={t('customerAccess')} value={session.workspaceAccess.customer ? t('available') : t('notAvailable')} />
-      </AppCard>
-
-      <AppCard>
-        <View style={styles.cardHeader}>
-          <Ionicons color={colors.proOrange600} name="grid-outline" size={22} />
-          <AppText variant="cardTitle">{t('profileShortcuts')}</AppText>
-        </View>
-        <AppButton onPress={() => router.push('/customer/tasks' as Href)} variant="outline">
-          {t('drawerMyTasklyTasks')}
-        </AppButton>
-        <AppButton onPress={() => router.push('/customer/pro-requests' as Href)} tone="pro" variant="outline">
-          {t('drawerMyTasklyProProjects')}
-        </AppButton>
-        <AppButton onPress={() => router.push('/customer/settings' as Href)} tone="neutral" variant="outline">
-          {t('drawerSettings')}
-        </AppButton>
       </AppCard>
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />

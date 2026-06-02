@@ -15,23 +15,31 @@ export default function CustomerLayout() {
           headerShown: false,
           tabBarActiveTintColor: colors.tasklyBlue600,
           tabBarInactiveTintColor: colors.slate500,
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarItemStyle: {
+            borderRadius: 18,
+            marginHorizontal: 6,
+            marginVertical: 7,
+          },
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '800' },
           tabBarStyle: {
+            backgroundColor: colors.white,
             borderTopColor: colors.slate100,
+            height: 74,
+            paddingBottom: 10,
+            paddingHorizontal: 62,
+            paddingTop: 8,
           },
         }}>
         <Tabs.Screen
           name="home"
           options={{
-            title: t('tabHome'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="home-outline" size={size} />,
+            href: null,
           }}
         />
         <Tabs.Screen
           name="tasks"
           options={{
-            title: t('tabTasks'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="list-outline" size={size} />,
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -49,11 +57,12 @@ export default function CustomerLayout() {
         <Tabs.Screen
           name="post-task"
           options={{
-            title: t('tabPost'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="add-circle-outline" size={size} />,
-            tabBarStyle: {
-              display: 'none',
-            },
+            title: t('tabTaskShort'),
+            tabBarActiveBackgroundColor: colors.tasklyBlue50,
+            tabBarActiveTintColor: colors.tasklyBlue700,
+            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="add-circle" size={size + 5} />,
+            tabBarInactiveBackgroundColor: colors.tasklyBlue50,
+            tabBarInactiveTintColor: colors.tasklyBlue600,
           }}
         />
         <Tabs.Screen
@@ -71,8 +80,7 @@ export default function CustomerLayout() {
         <Tabs.Screen
           name="messages"
           options={{
-            title: t('tabMessages'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="chatbubbles-outline" size={size} />,
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -90,17 +98,18 @@ export default function CustomerLayout() {
         <Tabs.Screen
           name="post-pro-request"
           options={{
-            href: null,
-            tabBarStyle: {
-              display: 'none',
-            },
+            title: t('tabProShort'),
+            tabBarActiveBackgroundColor: colors.proOrange50,
+            tabBarActiveTintColor: colors.proOrangeText,
+            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="add-circle" size={size + 5} />,
+            tabBarInactiveBackgroundColor: colors.proOrange50,
+            tabBarInactiveTintColor: colors.proOrange600,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
-            title: t('tabAccount'),
-            tabBarIcon: ({ color, size }) => <Ionicons color={color} name="person-outline" size={size} />,
+            href: null,
           }}
         />
         <Tabs.Screen

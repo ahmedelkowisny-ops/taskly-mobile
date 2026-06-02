@@ -76,6 +76,12 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
       label: t('drawerGroupMain'),
       items: [
         {
+          icon: 'home-outline',
+          isActive: (current) => current === '/customer/home' || current === '/customer',
+          label: t('drawerHome'),
+          route: '/customer/home' as Href,
+        },
+        {
           icon: 'grid-outline',
           isActive: (current) => current === '/customer/dashboard',
           label: t('drawerMyDashboard'),

@@ -131,6 +131,8 @@ export const bg = {
   tabHome: 'Начало',
   tabTasks: 'Задачи',
   tabPro: 'Pro',
+  tabTaskShort: 'Задача',
+  tabProShort: 'Pro',
   tabMessages: 'Съобщения',
   tabAccount: 'Профил',
   welcomeName: 'Здравей, {name}',

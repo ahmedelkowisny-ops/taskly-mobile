@@ -115,6 +115,8 @@ export const en = {
   tabTasks: 'Tasks',
   tabPost: 'Post',
   tabPro: 'Pro',
+  tabTaskShort: 'Task',
+  tabProShort: 'Pro',
   tabMessages: 'Messages',
   tabAccount: 'Profile',
   welcomeName: 'Welcome, {name}',
