@@ -796,6 +796,8 @@ function ComparisonResponseCard({
         <Info label={t('portfolio')} value={`${response.portfolioCount}`} />
       </View>
 
+      <ProPortfolioProjects projects={response.portfolioProjects || []} />
+
       {response.yearsExperienceLabel || response.categoryLabel || response.cityLabel ? (
         <AppText color={colors.slate500} variant="caption">
           {[response.yearsExperienceLabel, response.categoryLabel, response.cityLabel].filter(Boolean).join(' - ')}
@@ -906,6 +908,55 @@ function CustomerSiteVisitInviteForm({
         <AppButton disabled={isSubmitting} onPress={onCancel} tone="neutral" variant="ghost">{t('cancel')}</AppButton>
       </View>
     </AppCard>
+  );
+}
+
+function ProPortfolioProjects({ projects }: { projects: NonNullable<CustomerUnlockedProComparisonResponse['portfolioProjects']> }) {
+  if (!projects.length) {
+    return <AppText color={colors.slate500}>{t('noPortfolioProjectsAddedYet')}</AppText>;
+  }
+
+  return (
+    <View style={styles.portfolioSection}>
+      <AppText variant="bodyStrong">{t('portfolioProjects')}</AppText>
+      <View style={styles.stack}>
+        {projects.map((project) => {
+          const firstImage = project.images[0];
+          const imageUrl = firstImage ? resolveApiMediaUrl(firstImage.url) : null;
+
+          return (
+            <View key={project.id} style={styles.portfolioProjectCard}>
+              {imageUrl ? (
+                <Image
+                  accessibilityLabel={`${project.title} ${firstImage?.typeLabel || t('projectPhoto')}`}
+                  source={{ uri: imageUrl }}
+                  style={styles.portfolioProjectImage}
+                />
+              ) : null}
+              <View style={styles.portfolioProjectBody}>
+                <AppText variant="bodyStrong">{project.title}</AppText>
+                {project.categoryLabel || project.cityLabel ? (
+                  <AppText color={colors.slate500} variant="small">
+                    {[project.categoryLabel, project.cityLabel].filter(Boolean).join(' / ')}
+                  </AppText>
+                ) : null}
+                {project.description ? <AppText color={colors.slate700}>{project.description}</AppText> : null}
+                {project.approximateDuration || project.optionalPriceRange ? (
+                  <AppText color={colors.slate500} variant="caption">
+                    {[project.approximateDuration, project.optionalPriceRange].filter(Boolean).join(' - ')}
+                  </AppText>
+                ) : null}
+                {project.images.length > 1 ? (
+                  <AppText color={colors.slate500} variant="caption">
+                    {t('projectPhotos')}: {project.images.length}
+                  </AppText>
+                ) : null}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -1369,6 +1420,30 @@ const styles = StyleSheet.create({
   },
   issueOptions: { gap: spacing.sm },
   noteBlock: { gap: spacing.xs },
+  portfolioProjectBody: {
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  portfolioProjectCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  portfolioProjectImage: {
+    aspectRatio: 16 / 9,
+    backgroundColor: colors.proOrange50,
+    width: '100%',
+  },
+  portfolioSection: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   proHero: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,

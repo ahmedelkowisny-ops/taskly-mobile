@@ -874,6 +874,26 @@ export type CustomerProResponsePreview = {
   statusLabel: string;
 };
 
+export type CustomerUnlockedProPortfolioImage = {
+  id: string;
+  sortOrder: number;
+  type: 'AFTER' | 'BEFORE' | 'GENERAL' | string;
+  typeLabel: string;
+  url: string;
+};
+
+export type CustomerUnlockedProPortfolioProject = {
+  approximateDuration: string | null;
+  categoryLabel: string | null;
+  cityLabel: string | null;
+  description: string | null;
+  id: string;
+  images: CustomerUnlockedProPortfolioImage[];
+  optionalPriceRange: string | null;
+  title: string;
+  updatedAt: string;
+};
+
 export type CustomerUnlockedProComparisonResponse = {
   assumptions: string | null;
   availability: string | null;
@@ -891,6 +911,7 @@ export type CustomerUnlockedProComparisonResponse = {
   materialsIncluded: string | null;
   messageThreadId?: string | null;
   portfolioCount: number;
+  portfolioProjects?: CustomerUnlockedProPortfolioProject[];
   proChat?: {
     capabilities: MessageThreadCapabilities;
     messageThreadId: string;
