@@ -5,6 +5,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 type TasklyLogoTextProps = {
   compact?: boolean;
   iconOnly?: boolean;
+  navIcon?: boolean;
   showMark?: boolean;
   style?: StyleProp<ViewStyle>;
   wordmarkOnly?: boolean;
@@ -13,11 +14,12 @@ type TasklyLogoTextProps = {
 export function TasklyLogoText({
   compact = false,
   iconOnly = false,
+  navIcon = false,
   showMark = false,
   style,
   wordmarkOnly = false,
 }: TasklyLogoTextProps) {
-  if (iconOnly) {
+  if (iconOnly || navIcon) {
     return (
       <View style={[styles.row, style]}>
         <Image
@@ -25,7 +27,7 @@ export function TasklyLogoText({
           accessibilityLabel="Taskly"
           resizeMode="contain"
           source={require('@/assets/branding/taskly-logo-icon.png')}
-          style={[styles.mark, compact ? styles.markCompact : null]}
+          style={[styles.mark, compact ? styles.markCompact : null, navIcon ? styles.markNav : null]}
         />
       </View>
     );
@@ -75,5 +77,10 @@ const styles = StyleSheet.create({
   markCompact: {
     height: 34,
     width: 34,
+  },
+  markNav: {
+    borderRadius: 14,
+    height: 42,
+    width: 42,
   },
 });

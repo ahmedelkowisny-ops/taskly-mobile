@@ -2,9 +2,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardTypeOptions,
+  Modal,
   Pressable,
   ScrollView,
   StyleProp,
@@ -214,6 +216,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 
 export default function CustomerPostProRequestScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
@@ -223,6 +226,7 @@ export default function CustomerPostProRequestScreen() {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [district, setDistrict] = useState('');
   const [addressNotes, setAddressNotes] = useState('');
   const [locationNotes, setLocationNotes] = useState('');
@@ -718,30 +722,77 @@ export default function CustomerPostProRequestScreen() {
           <View style={styles.sectionCard}>
             <AppText style={styles.sectionTitle}>{activeStep.title}</AppText>
             <AppText color={colors.slate700}>{activeStep.body}</AppText>
-            <View style={styles.optionList}>
-              {catalog?.cities.map((city) => {
-                const selected = selectedCityId === city.id;
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={city.id}
-                    onPress={() => {
-                      setSelectedCityId(city.id);
-                      clearFieldError('cityId');
-                    }}
-                    style={({ pressed }) => [
-                      styles.cityCard,
-                      selected ? styles.selectionCardSelected : null,
-                      pressed ? styles.pressed : null,
-                    ]}>
-                    <AppText color={colors.navy900} variant="bodyStrong">{getLocalizedCityName(city, locale)}</AppText>
-                    {selected ? <Ionicons color={colors.proOrange600} name="checkmark-circle" size={22} /> : null}
-                  </Pressable>
-                );
-              })}
-              {!catalog?.cities.length ? <AppText color={colors.slate500}>{t('noCitiesAvailable')}</AppText> : null}
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowCityPicker(true)}
+              style={({ pressed }) => [
+                styles.selectField,
+                getFieldError('cityId') ? styles.inputError : null,
+                pressed ? styles.pressed : null,
+              ]}>
+              <Ionicons color={colors.proOrange600} name="location-outline" size={18} />
+              <AppText
+                color={selectedCity ? colors.navy900 : colors.slate500}
+                style={styles.selectFieldValue}>
+                {selectedCity ? getLocalizedCityName(selectedCity, locale) : t('selectCity')}
+              </AppText>
+              <Ionicons color={colors.slate500} name="chevron-down" size={18} />
+            </Pressable>
+            {!catalog?.cities.length ? <AppText color={colors.slate500}>{t('noCitiesAvailable')}</AppText> : null}
             {getFieldError('cityId') ? <AppText color={colors.danger600} variant="small">{getFieldError('cityId')}</AppText> : null}
+            <Modal
+              animationType="slide"
+              onRequestClose={() => setShowCityPicker(false)}
+              transparent
+              visible={showCityPicker}>
+              <Pressable style={styles.pickerBackdrop} onPress={() => setShowCityPicker(false)}>
+                <Pressable style={[styles.pickerSheet, { marginBottom: Math.max(insets.bottom, spacing.sm) }]}>
+                  <View style={styles.pickerHeader}>
+                    <AppText style={styles.sectionTitle}>{t('selectCity')}</AppText>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setShowCityPicker(false)}
+                      style={styles.pickerClose}>
+                      <Ionicons color={colors.proOrangeTextDark} name="close" size={18} />
+                    </Pressable>
+                  </View>
+                  <ScrollView
+                    contentContainerStyle={[
+                      styles.pickerList,
+                      { paddingBottom: Math.max(insets.bottom + spacing.xxl, spacing.xxl) },
+                    ]}
+                    keyboardShouldPersistTaps="handled"
+                    style={styles.pickerScroll}>
+                    {catalog?.cities.map((city) => {
+                      const selected = selectedCityId === city.id;
+
+                      return (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          key={city.id}
+                          onPress={() => {
+                            setSelectedCityId(city.id);
+                            clearFieldError('cityId');
+                            setShowCityPicker(false);
+                          }}
+                          style={[
+                            styles.pickerOption,
+                            selected ? styles.pickerOptionSelected : null,
+                          ]}>
+                          <AppText
+                            color={selected ? colors.proOrange600 : colors.navy900}
+                            style={styles.pickerOptionText}>
+                            {getLocalizedCityName(city, locale)}
+                          </AppText>
+                          {selected ? <Ionicons color={colors.proOrange600} name="checkmark-circle" size={18} /> : null}
+                        </Pressable>
+                      );
+                    })}
+                  </ScrollView>
+                </Pressable>
+              </Pressable>
+            </Modal>
           </View>
 
           <View style={styles.sectionCard}>
@@ -972,7 +1023,7 @@ export default function CustomerPostProRequestScreen() {
     <Screen scroll={false}>
       <View style={styles.shell}>
         <View style={styles.header}>
-          <TasklyLogoText compact wordmarkOnly />
+          <TasklyLogoText navIcon />
           <Pressable accessibilityLabel={t('close')} onPress={() => router.back()} style={styles.closeButton}>
             <Ionicons color={colors.proOrangeTextDark} name="close" size={22} />
           </Pressable>
@@ -1167,17 +1218,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.proOrange600,
     borderColor: colors.proOrange500,
   },
-  cityCard: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.proOrangeBorder,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 52,
-    padding: spacing.md,
-  },
   closeButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -1296,6 +1336,64 @@ const styles = StyleSheet.create({
   optionList: {
     gap: spacing.sm,
   },
+  pickerBackdrop: {
+    backgroundColor: 'rgba(15, 23, 42, 0.28)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  pickerClose: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  pickerHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  pickerList: {
+    gap: spacing.sm,
+  },
+  pickerOption: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  pickerOptionSelected: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrange600,
+  },
+  pickerOptionText: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  pickerSheet: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginHorizontal: spacing.sm,
+    maxHeight: '68%',
+    padding: spacing.md,
+  },
+  pickerScroll: {
+    maxHeight: 360,
+  },
   optionText: {
     flex: 1,
     gap: spacing.xs,
@@ -1360,6 +1458,23 @@ const styles = StyleSheet.create({
   selectionCardSelected: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrange600,
+  },
+  selectField: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 50,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  selectFieldValue: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
   },
   shell: {
     backgroundColor: colors.slate50,

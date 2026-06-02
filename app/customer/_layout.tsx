@@ -147,18 +147,23 @@ function CustomerCreateBar({ navigation, state }: CustomerTabBarProps) {
   const visibility = useRef(new Animated.Value(1)).current;
   const bottomOffset = Math.max(insets.bottom + spacing.lg, spacing.xxl);
   const visibleRoutes = state.routes.filter((route) => createRoutes.includes(route.name as (typeof createRoutes)[number]));
+  const activeRouteName = state.routes[state.index]?.name;
+  const isCreateRouteActive = createRoutes.includes(activeRouteName as (typeof createRoutes)[number]);
+  const isCreateBarHidden = isCreateRouteActive || Boolean(controls?.hidden);
 
   useEffect(() => {
-    showCreateBar?.();
-  }, [showCreateBar, state.index]);
+    if (!isCreateRouteActive) {
+      showCreateBar?.();
+    }
+  }, [isCreateRouteActive, showCreateBar, state.index]);
 
   useEffect(() => {
     Animated.timing(visibility, {
       duration: 180,
-      toValue: controls?.hidden ? 0 : 1,
+      toValue: isCreateBarHidden ? 0 : 1,
       useNativeDriver: true,
     }).start();
-  }, [controls?.hidden, visibility]);
+  }, [isCreateBarHidden, visibility]);
 
   const translateY = visibility.interpolate({
     inputRange: [0, 1],
@@ -167,7 +172,7 @@ function CustomerCreateBar({ navigation, state }: CustomerTabBarProps) {
 
   return (
     <Animated.View
-      pointerEvents={controls?.hidden ? 'none' : 'box-none'}
+      pointerEvents={isCreateBarHidden ? 'none' : 'box-none'}
       style={[
         styles.tabBarWrap,
         {

@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
@@ -125,12 +126,12 @@ const TODAY_LEAD_TIME_MINUTES = 60;
 const DEFAULT_FUTURE_START_TIME = '16:00';
 const DEFAULT_FUTURE_END_TIME = '20:00';
 const CATEGORY_BUDGET_RANGES: Record<string, { min: number; max: number; recommended: number }> = {
-  furniture_assembly:  { min: 20, max: 40,  recommended: 30 },
-  general_mounting:    { min: 20, max: 40,  recommended: 30 },
-  light_electrical:    { min: 20, max: 40,  recommended: 30 },
-  minor_plumbing_fix:  { min: 30, max: 60,  recommended: 45 },
-  heavy_lifting:       { min: 25, max: 35,  recommended: 30 },
-  painting_touchups:   { min: 20, max: 50,  recommended: 35 },
+  furniture_assembly:  { min: 20, max: 100, recommended: 30 },
+  general_mounting:    { min: 20, max: 100, recommended: 30 },
+  light_electrical:    { min: 20, max: 100, recommended: 30 },
+  minor_plumbing_fix:  { min: 30, max: 100, recommended: 45 },
+  heavy_lifting:       { min: 25, max: 100, recommended: 30 },
+  painting_touchups:   { min: 20, max: 100, recommended: 35 },
 };
 
 function parseNumberInput(value: string) {
@@ -357,6 +358,12 @@ function formatStepIndicator(step: StepMeta) {
     .replace('{support}', step.support);
 }
 
+function formatBudgetRangeError(min: number, max: number) {
+  return t('budgetRangeError')
+    .replace('{min}', String(min))
+    .replace('{max}', String(max));
+}
+
 function getCategoryIcon(category: CatalogCategory): keyof typeof Ionicons.glyphMap {
   const value = `${category.slug} ${category.nameEn}`.toLowerCase();
 
@@ -382,21 +389,9 @@ function getLocalizedCityName(city: CityOption, locale: 'bg' | 'en') {
   return locale === 'bg' ? city.nameBg || city.nameEn : city.nameEn || city.nameBg;
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.summaryRow}>
-      <AppText color={colors.slate500} variant="small">
-        {label}
-      </AppText>
-      <AppText color={colors.navy900} style={styles.summaryValue} variant="bodyStrong">
-        {value || '-'}
-      </AppText>
-    </View>
-  );
-}
-
 export default function CustomerPostTaskScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
@@ -411,6 +406,7 @@ export default function CustomerPostTaskScreen() {
   const [address, setAddress] = useState(DEFAULT_TASK_ADDRESS);
   const [scheduleDate, setScheduleDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [timePickerTarget, setTimePickerTarget] = useState<TimePickerTarget>(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -525,14 +521,6 @@ export default function CustomerPostTaskScreen() {
     [selectedCategory],
   );
   const selectedBudgetValue = parseNumberInput(budget);
-  const budgetOptions = useMemo(() => {
-    if (!categoryBudgetRange) return [];
-
-    return Array.from(
-      { length: categoryBudgetRange.max - categoryBudgetRange.min + 1 },
-      (_, index) => categoryBudgetRange.min + index,
-    );
-  }, [categoryBudgetRange]);
   const budgetProgressPercent = useMemo(() => {
     if (!categoryBudgetRange || selectedBudgetValue === null) return 0;
 
@@ -542,14 +530,6 @@ export default function CustomerPostTaskScreen() {
     const clamped = Math.min(categoryBudgetRange.max, Math.max(categoryBudgetRange.min, selectedBudgetValue));
     return ((clamped - categoryBudgetRange.min) / span) * 100;
   }, [categoryBudgetRange, selectedBudgetValue]);
-  const recommendedBudgetPercent = useMemo(() => {
-    if (!categoryBudgetRange) return 50;
-
-    const span = categoryBudgetRange.max - categoryBudgetRange.min;
-    if (span <= 0) return 50;
-
-    return ((categoryBudgetRange.recommended - categoryBudgetRange.min) / span) * 100;
-  }, [categoryBudgetRange]);
   const selectedScheduleDate = useMemo(() => parseIsoDate(scheduleDate) ?? new Date(), [scheduleDate]);
   const reviewScheduleValue = useMemo(() => {
     if (!scheduleDate) return '';
@@ -1014,6 +994,8 @@ export default function CustomerPostTaskScreen() {
       addIssue('budgetEur', t('budget'), t('missingBudget'));
     } else if (parsedBudget === null || parsedBudget <= 0) {
       addIssue('budgetEur', t('budget'), t('invalidBudget'));
+    } else if (categoryBudgetRange && (parsedBudget < categoryBudgetRange.min || parsedBudget > categoryBudgetRange.max)) {
+      addIssue('budgetEur', t('budget'), formatBudgetRangeError(categoryBudgetRange.min, categoryBudgetRange.max));
     }
 
     if (!title.trim()) addIssue('title', t('title'), t('missingTitle'));
@@ -1096,6 +1078,7 @@ export default function CustomerPostTaskScreen() {
     assemblyPartsAvailable,
     budget,
     catalog?.rules.minDescriptionLength,
+    categoryBudgetRange,
     description,
     endTime,
     estimatedTime,
@@ -1541,7 +1524,7 @@ export default function CustomerPostTaskScreen() {
                   </View>
                   <View style={styles.recommendedPill}>
                     <AppText color={colors.tasklyBlue600} style={styles.recommendedPillText}>
-                      {locale === 'bg' ? 'Препоръчано' : 'Recommended'} €{categoryBudgetRange.recommended}
+                      {t('recommended')} €{categoryBudgetRange.recommended}
                     </AppText>
                   </View>
                 </View>
@@ -1553,8 +1536,7 @@ export default function CustomerPostTaskScreen() {
                     {...budgetPanResponder.panHandlers}>
                     <View style={styles.budgetTrack} pointerEvents="none">
                       <View style={[styles.budgetTrackFill, { width: `${budgetProgressPercent}%` }]} />
-                      <View style={[styles.budgetSelectedThumb, { transform: [{ translateX: budgetTrackWidth > 0 ? (budgetProgressPercent / 100) * budgetTrackWidth - 9 : 0 }] }]} />
-                      <View style={[styles.budgetRecommendedDot, { transform: [{ translateX: budgetTrackWidth > 0 ? (recommendedBudgetPercent / 100) * budgetTrackWidth - 5 : 0 }] }]} />
+                      <View style={[styles.budgetSelectedThumb, { left: `${budgetProgressPercent}%` }]} />
                     </View>
                   </View>
                   <View style={styles.budgetRangeLabels}>
@@ -1567,37 +1549,6 @@ export default function CustomerPostTaskScreen() {
                   </View>
                 </View>
 
-                <ScrollView
-                  contentContainerStyle={styles.budgetScroller}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}>
-                  {budgetOptions.map((amount) => {
-                    const amountStr = String(amount);
-                    const selected = selectedBudgetValue === amount;
-                    const recommended = amount === categoryBudgetRange.recommended;
-
-                    return (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={amountStr}
-                        onPress={() => {
-                          setBudget(amountStr);
-                          clearFieldError('budgetEur');
-                        }}
-                        style={[
-                          styles.budgetValueChip,
-                          selected ? styles.budgetValueChipSelected : null,
-                          recommended ? styles.budgetValueChipRecommended : null,
-                        ]}>
-                        <AppText
-                          color={selected ? colors.tasklyBlue600 : colors.slate700}
-                          variant="small">
-                          €{amount}
-                        </AppText>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
                 {getFieldError('budgetEur') ? (
                   <AppText color={colors.danger600} variant="small">
                     {getFieldError('budgetEur')}
@@ -2176,32 +2127,23 @@ export default function CustomerPostTaskScreen() {
         <View style={styles.cardStack}>
           <View style={styles.citySection}>
             <AppText variant="small">{t('chooseCity')}</AppText>
-            <View style={styles.optionGrid}>
-              {catalog?.cities.map((city) => {
-                const selected = selectedCityId === city.id;
-
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={city.id}
-                    onPress={() => {
-                      setSelectedCityId(city.id);
-                      clearFieldError('cityId');
-                    }}
-                    style={({ pressed }) => [
-                      styles.cityChip,
-                      selected ? styles.cityChipSelected : null,
-                      { opacity: pressed ? 0.86 : 1 },
-                    ]}>
-                    <AppText
-                      color={selected ? colors.tasklyBlue600 : colors.slate700}
-                      variant="small">
-                      {getLocalizedCityName(city, locale)}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setShowCityPicker(true)}
+              style={({ pressed }) => [
+                styles.selectField,
+                getFieldError('cityId') ? styles.inputError : null,
+                { opacity: pressed ? 0.86 : 1 },
+              ]}>
+              <Ionicons color={colors.tasklyBlue600} name="location-outline" size={18} />
+              <AppText
+                color={selectedCity ? colors.navy900 : colors.slate500}
+                style={styles.selectFieldValue}>
+                {selectedCity ? getLocalizedCityName(selectedCity, locale) : t('selectCity')}
+              </AppText>
+              <Ionicons color={colors.slate500} name="chevron-down" size={18} />
+            </Pressable>
+            {!catalog?.cities.length ? <AppText color={colors.slate500}>{t('noCitiesAvailable')}</AppText> : null}
             {getFieldError('cityId') ? (
               <AppText color={colors.danger600} variant="small">
                 {getFieldError('cityId')}
@@ -2233,8 +2175,61 @@ export default function CustomerPostTaskScreen() {
             </MapView>
           </View>
           <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
-            Tap the map to pin your service location
+            {t('mapPinHelper')}
           </AppText>
+          <Modal
+            animationType="slide"
+            onRequestClose={() => setShowCityPicker(false)}
+            transparent
+            visible={showCityPicker}>
+            <Pressable style={styles.pickerBackdrop} onPress={() => setShowCityPicker(false)}>
+              <Pressable style={[styles.pickerSheet, { marginBottom: Math.max(insets.bottom, spacing.sm) }]}>
+                <View style={styles.pickerHeader}>
+                  <AppText style={styles.cardTitle}>{t('selectCity')}</AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setShowCityPicker(false)}
+                    style={styles.pickerClose}>
+                    <Ionicons color={colors.slate700} name="close" size={18} />
+                  </Pressable>
+                </View>
+                <ScrollView
+                  contentContainerStyle={[
+                    styles.pickerList,
+                    { paddingBottom: Math.max(insets.bottom + spacing.xxl, spacing.xxl) },
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  style={styles.pickerScroll}>
+                  {catalog?.cities.map((city) => {
+                    const selected = selectedCityId === city.id;
+
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        key={city.id}
+                        onPress={() => {
+                          setSelectedCityId(city.id);
+                          clearFieldError('cityId');
+                          setShowCityPicker(false);
+                        }}
+                        style={[
+                          styles.pickerOption,
+                          selected ? styles.pickerOptionSelected : null,
+                        ]}>
+                        <AppText
+                          color={selected ? colors.tasklyBlue600 : colors.navy900}
+                          style={styles.pickerOptionText}>
+                          {getLocalizedCityName(city, locale)}
+                        </AppText>
+                        {selected ? <Ionicons color={colors.tasklyBlue600} name="checkmark-circle" size={18} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </Pressable>
+            </Pressable>
+          </Modal>
           <View style={styles.fieldRow}>
             <View style={[styles.field, styles.fieldHalf]}>
               <AppText style={styles.fieldLabel}>{t('scheduleDate')}</AppText>
@@ -2874,7 +2869,7 @@ export default function CustomerPostTaskScreen() {
       <View style={styles.shell}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <TasklyLogoText wordmarkOnly />
+            <TasklyLogoText navIcon />
             <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
               <Ionicons color={colors.slate700} name="close" size={22} />
             </Pressable>
@@ -3140,28 +3135,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  budgetRecommendedDot: {
-    backgroundColor: colors.white,
-    borderColor: '#9DB8D6',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    height: 10,
-    left: 0,
-    position: 'absolute',
-    top: -3,
-    width: 10,
-  },
-  budgetScroller: {
-    gap: spacing.sm,
-    paddingRight: spacing.md,
-  },
   budgetSelectedThumb: {
     backgroundColor: colors.tasklyBlue600,
     borderColor: colors.white,
     borderRadius: radius.pill,
     borderWidth: 2,
     height: 18,
-    left: 0,
+    marginLeft: -9,
     position: 'absolute',
     top: -6,
     width: 18,
@@ -3190,23 +3170,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '900',
     lineHeight: 36,
-  },
-  budgetValueChip: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#DDE6F0',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    minWidth: 58,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 9,
-  },
-  budgetValueChipRecommended: {
-    borderColor: '#9DB8D6',
-  },
-  budgetValueChipSelected: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlue600,
   },
   cardBody: {
     fontSize: 13,
@@ -3237,18 +3200,6 @@ const styles = StyleSheet.create({
   },
   checkboxSelected: {
     backgroundColor: colors.tasklyBlue600,
-    borderColor: colors.tasklyBlue600,
-  },
-  cityChip: {
-    backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-  },
-  cityChipSelected: {
-    backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlue600,
   },
   citySection: {
@@ -3484,6 +3435,64 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 14,
   },
+  pickerBackdrop: {
+    backgroundColor: 'rgba(15, 23, 42, 0.28)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  pickerClose: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.slate100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  pickerHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  pickerList: {
+    gap: spacing.sm,
+  },
+  pickerOption: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  pickerOptionSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  pickerOptionText: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  pickerSheet: {
+    backgroundColor: colors.white,
+    borderColor: '#DFE8F2',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginHorizontal: spacing.sm,
+    maxHeight: '68%',
+    padding: spacing.md,
+  },
+  pickerScroll: {
+    maxHeight: 360,
+  },
   scheduleDateButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -3702,6 +3711,23 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 14,
     lineHeight: 19,
+  },
+  selectField: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  selectFieldValue: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
   },
   textArea: {
     minHeight: 92,

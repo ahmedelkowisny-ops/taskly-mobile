@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -7,6 +7,7 @@ import { spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
 import { NotificationBell } from './NotificationBell';
+import { TasklyLogoText } from './TasklyLogoText';
 
 type CustomerTopBarProps = {
   onMenuPress: () => void;
@@ -25,13 +26,7 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
           style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
           <Ionicons color={colors.navy900} name="menu" size={21} />
         </Pressable>
-        <Image
-          accessibilityIgnoresInvertColors
-          accessibilityLabel="Taskly"
-          resizeMode="contain"
-          source={require('@/assets/branding/taskly-logo-icon.png')}
-          style={styles.logoIcon}
-        />
+        <TasklyLogoText navIcon />
       </View>
       <View style={styles.topBarActions}>
         <NotificationBell compact />
@@ -46,11 +41,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  logoIcon: {
-    borderRadius: 14,
-    height: 42,
-    width: 42,
   },
   menuButton: {
     alignItems: 'center',
