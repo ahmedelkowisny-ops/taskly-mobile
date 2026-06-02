@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -7,7 +7,6 @@ import { spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
 import { NotificationBell } from './NotificationBell';
-import { TasklyLogoText } from './TasklyLogoText';
 
 type CustomerTopBarProps = {
   onMenuPress: () => void;
@@ -18,15 +17,21 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
 
   return (
     <View style={styles.topBar}>
-      <Pressable
-        accessibilityLabel={t('menu')}
-        accessibilityRole="button"
-        onPress={onMenuPress}
-        style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
-        <Ionicons color={colors.navy900} name="menu" size={21} />
-      </Pressable>
-      <View style={styles.topBarCenter}>
-        <TasklyLogoText compact wordmarkOnly />
+      <View style={styles.brandCluster}>
+        <Pressable
+          accessibilityLabel={t('menu')}
+          accessibilityRole="button"
+          onPress={onMenuPress}
+          style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
+          <Ionicons color={colors.navy900} name="menu" size={21} />
+        </Pressable>
+        <Image
+          accessibilityIgnoresInvertColors
+          accessibilityLabel="Taskly"
+          resizeMode="contain"
+          source={require('@/assets/branding/taskly-logo-icon.png')}
+          style={styles.logoIcon}
+        />
       </View>
       <View style={styles.topBarActions}>
         <NotificationBell compact />
@@ -37,6 +42,16 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
 }
 
 const styles = StyleSheet.create({
+  brandCluster: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  logoIcon: {
+    borderRadius: 14,
+    height: 42,
+    width: 42,
+  },
   menuButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -72,10 +87,6 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 6, width: 0 },
     shadowOpacity: 0.05,
     shadowRadius: 18,
-  },
-  topBarCenter: {
-    alignItems: 'center',
-    flex: 1,
   },
   topBarActions: {
     alignItems: 'center',

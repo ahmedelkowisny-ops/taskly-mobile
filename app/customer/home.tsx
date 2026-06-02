@@ -138,15 +138,22 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
   },
   greeting: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: 28,
+    borderWidth: 1,
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   greetingBody: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 20,
   },
   greetingTitle: {
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 21,
+    fontWeight: '700',
+    lineHeight: 27,
   },
   headerActions: {
     alignItems: 'center',
