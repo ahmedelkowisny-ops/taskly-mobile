@@ -77,5 +77,6 @@ export const endpoints = {
     proRequestSiteVisitProposeTime: (proRequestId: string, siteVisitId: string) => `/api/mobile/provider/pro-requests/${proRequestId}/site-visits/${siteVisitId}/propose-time`,
     proRequests: '/api/mobile/provider/pro-requests',
     profile: '/api/mobile/provider/profile',
+    taskerProfile: '/api/mobile/provider/tasker-profile',
   },
 } as const;

@@ -38,6 +38,7 @@ export {
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
   getProviderDashboard,
+  getProviderTaskerProfile,
   getProviderProfile,
   getProviderProRequestDetail,
   getProviderProRequests,
@@ -47,6 +48,7 @@ export {
   requestProviderCoreTaskCompletion,
   requestProviderCoreTaskSupport,
   startProviderCoreTask,
+  updateProviderTaskerProfile,
 } from './provider';
 export {
   getMockCitiesCatalogResponse,
@@ -157,6 +159,8 @@ export type {
   ProviderNextAction,
   ProviderProfileResponse,
   ProviderProfileSummary,
+  ProviderTaskerProfile,
+  ProviderTaskerProfileResponse,
   ProviderProCategoryStatus,
   ProviderProRequestDetail,
   ProviderProRequestDetailResponse,
@@ -178,6 +182,7 @@ export type {
   TaskDetail,
   TaskSummary,
   UpdateCustomerProfilePayload,
+  UpdateProviderTaskerProfilePayload,
 } from './domain';
 export type {
   ApiError,

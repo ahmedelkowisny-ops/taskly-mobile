@@ -1498,6 +1498,41 @@ export type ProviderProfileResponse = {
   profile: ProviderProfileSummary;
 };
 
+export type ProviderTaskerProfile = {
+  bio: string;
+  cityLabel: string;
+  displayName: string;
+  email: string;
+  firstName: string;
+  hasCar: boolean;
+  hourlyRate: string;
+  languagesSpoken: string[];
+  lastName: string;
+  phone: string;
+  profilePhotoUrl: string | null;
+  serviceArea: string;
+  serviceCategories: string[];
+  taskerStatus: string;
+  toolsEquipment: string[];
+};
+
+export type ProviderTaskerProfileResponse = {
+  profile: ProviderTaskerProfile;
+  session?: UserSession;
+};
+
+export type UpdateProviderTaskerProfilePayload = {
+  bio?: string;
+  firstName: string;
+  hasCar: boolean;
+  hourlyRate?: string;
+  languagesSpoken?: string[];
+  lastName: string;
+  phone?: string;
+  serviceArea?: string;
+  toolsEquipment?: string[];
+};
+
 export type MessageContextType = 'CORE_TASK' | 'OTHER' | 'PRO_REQUEST' | 'SUPPORT';
 export type MessageAccent = 'core' | 'neutral' | 'pro';
 export type MessageSenderRole = 'ADMIN' | 'CUSTOMER' | 'PRO' | 'SUPPORT' | 'SYSTEM' | 'TASKER';

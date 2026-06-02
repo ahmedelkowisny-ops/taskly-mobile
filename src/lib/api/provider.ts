@@ -10,6 +10,7 @@ import {
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
   ProviderProfileResponse,
+  ProviderTaskerProfileResponse,
   ProviderProResponseMutationResponse,
   ProviderProResponsePayload,
   ProviderProRequestDetailResponse,
@@ -21,6 +22,7 @@ import {
   RequestProviderCoreTaskCompletionPayload,
   RequestProviderCoreTaskCompletionResponse,
   StartProviderCoreTaskResponse,
+  UpdateProviderTaskerProfilePayload,
 } from './domain';
 import { ApiResult } from './types';
 
@@ -217,6 +219,34 @@ export function getProviderProfile(authToken: string): Promise<ApiResult<Provide
   return apiRequest<ProviderProfileResponse>(endpoints.provider.profile, {
     authToken,
     method: 'GET',
+  });
+}
+
+export function getProviderTaskerProfile(authToken: string): Promise<ApiResult<ProviderTaskerProfileResponse>> {
+  return apiRequest<ProviderTaskerProfileResponse>(endpoints.provider.taskerProfile, {
+    authToken,
+    method: 'GET',
+  });
+}
+
+export function updateProviderTaskerProfile(
+  payload: UpdateProviderTaskerProfilePayload,
+  authToken: string,
+): Promise<ApiResult<ProviderTaskerProfileResponse>> {
+  return apiRequest<ProviderTaskerProfileResponse>(endpoints.provider.taskerProfile, {
+    authToken,
+    body: {
+      bio: payload.bio ?? '',
+      firstName: payload.firstName,
+      hasCar: payload.hasCar,
+      hourlyRate: payload.hourlyRate ?? '',
+      languagesSpoken: payload.languagesSpoken ?? [],
+      lastName: payload.lastName,
+      phone: payload.phone ?? '',
+      serviceArea: payload.serviceArea ?? '',
+      toolsEquipment: payload.toolsEquipment ?? [],
+    },
+    method: 'PATCH',
   });
 }
 
