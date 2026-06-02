@@ -1584,6 +1584,10 @@ export type ProviderTaskerProfileResponse = {
   session?: UserSession;
 };
 
+export type ProviderTaskerProfilePhotoUploadResponse = ProviderTaskerProfileResponse & {
+  photoUrl: string;
+};
+
 export type UpdateProviderTaskerProfilePayload = {
   bio?: string;
   firstName: string;

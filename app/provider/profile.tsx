@@ -26,8 +26,16 @@ import {
   updateProviderProProfile,
   updateProviderTaskerProfile,
 } from '@/src/lib/api/provider';
+import { canUploadSelectedImage, uploadProviderTaskerProfilePhoto } from '@/src/lib/api/imageUploads';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
+import {
+  compressSelectedImage,
+  defaultAcceptedImageTypes,
+  pickTasklyImages,
+  requestImageLibraryPermission,
+  validateSelectedImages,
+} from '@/src/lib/images/imagePicker';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
@@ -130,6 +138,7 @@ export default function ProviderProfileScreen() {
   const [isSavingTasker, setIsSavingTasker] = useState(false);
   const [taskerNotice, setTaskerNotice] = useState<string | null>(null);
   const [taskerErrorMessage, setTaskerErrorMessage] = useState<string | null>(null);
+  const [isUploadingTaskerPhoto, setIsUploadingTaskerPhoto] = useState(false);
   const [proProfile, setProProfile] = useState<ProviderProProfile | null>(null);
   const [proDraft, setProDraft] = useState<ProDraft>(emptyProDraft);
   const [proFieldErrors, setProFieldErrors] = useState<ProFieldErrors>({});
@@ -380,6 +389,69 @@ export default function ProviderProfileScreen() {
     await loadProfile();
   }
 
+  async function handleChangeTaskerPhoto() {
+    if (status !== 'authenticated') {
+      setTaskerErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setTaskerNotice(null);
+    setTaskerErrorMessage(null);
+
+    const permission = await requestImageLibraryPermission();
+    if (!permission.granted) {
+      setTaskerErrorMessage(t('photoPermissionNeeded'));
+      return;
+    }
+
+    const selected = await pickTasklyImages({ maxImages: 1 });
+    if (!selected.length) {
+      return;
+    }
+
+    const validation = validateSelectedImages(selected, {
+      acceptedImageTypes: defaultAcceptedImageTypes,
+      maxImages: 1,
+    });
+
+    if (!validation.accepted.length) {
+      setTaskerErrorMessage(t('unsupportedImageType'));
+      return;
+    }
+
+    const processedImage = await compressSelectedImage(validation.accepted[0], {
+      compress: 0.78,
+      maxFileSizeBeforeCompression: 900_000,
+      maxWidth: 1600,
+    });
+
+    if (!canUploadSelectedImage(processedImage)) {
+      setTaskerErrorMessage(processedImage.errorMessage || t('couldNotUpdatePhoto'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setTaskerErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsUploadingTaskerPhoto(true);
+    const result = await uploadProviderTaskerProfilePhoto(processedImage, authToken);
+    setIsUploadingTaskerPhoto(false);
+
+    if (!result.ok) {
+      setTaskerErrorMessage(getPhotoUploadErrorMessage(result.error));
+      return;
+    }
+
+    setTaskerProfile(result.data.profile);
+    setTaskerDraft(toTaskerDraft(result.data.profile));
+    setTaskerNotice(t('photoUpdated'));
+    await refreshSession();
+    await loadProfile();
+  }
+
   function beginProEdit() {
     if (!proProfile) return;
     setProDraft(toProDraft(proProfile));
@@ -588,7 +660,12 @@ export default function ProviderProfileScreen() {
       ) : null}
 
       {taskerProfile ? (
-        <ProfilePhotoCard profile={taskerProfile} />
+        <ProfilePhotoCard
+          canChangePhoto={status === 'authenticated'}
+          isUploading={isUploadingTaskerPhoto}
+          onChangePhoto={handleChangeTaskerPhoto}
+          profile={taskerProfile}
+        />
       ) : null}
 
       {profile ? (
@@ -609,15 +686,15 @@ export default function ProviderProfileScreen() {
           </View>
           {!isEditingTasker && taskerProfile && status === 'authenticated' ? (
             <AppButton onPress={beginTaskerEdit} style={styles.headerButton} variant="outline">
-              {t('edit')}
+              {t('editProfile')}
             </AppButton>
           ) : null}
         </View>
         <AppText color={colors.slate700}>
           {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : t('taskerProfileEmptyHelper')}
         </AppText>
-        {profile?.coreCities.length ? <AppText color={colors.slate500}>Cities: {profile.coreCities.join(', ')}</AppText> : null}
-        {profile?.coreCategories.length ? <AppText color={colors.slate500}>Categories: {profile.coreCategories.join(', ')}</AppText> : null}
+        {profile?.coreCities.length ? <AppText color={colors.slate500}>{t('cities')}: {profile.coreCities.join(', ')}</AppText> : null}
+        {profile?.coreCategories.length ? <AppText color={colors.slate500}>{t('services')}: {profile.coreCategories.join(', ')}</AppText> : null}
 
         {taskerErrorMessage ? <InlineMessage message={taskerErrorMessage} tone="error" /> : null}
         {taskerNotice ? <InlineMessage message={taskerNotice} tone="success" /> : null}
@@ -653,7 +730,7 @@ export default function ProviderProfileScreen() {
             <FormField
               editable={isEditingTasker && !isSavingTasker}
               errorText={taskerFieldErrors.bio}
-              label={t('taskerBio')}
+              label={t('aboutYou')}
               multiline
               onChangeText={(value) => setTaskerDraft((current) => ({ ...current, bio: value }))}
               value={taskerDraft.bio}
@@ -676,14 +753,14 @@ export default function ProviderProfileScreen() {
             <FormField
               editable={isEditingTasker && !isSavingTasker}
               helperText={t('commaSeparatedHelper')}
-              label={t('languagesSpoken')}
+              label={t('languages')}
               onChangeText={(value) => setTaskerDraft((current) => ({ ...current, languagesText: value }))}
               value={taskerDraft.languagesText}
             />
             <FormField
               editable={isEditingTasker && !isSavingTasker}
               helperText={t('commaSeparatedHelper')}
-              label={t('toolsEquipment')}
+              label={t('skillsAndTools')}
               onChangeText={(value) => setTaskerDraft((current) => ({ ...current, toolsText: value }))}
               value={taskerDraft.toolsText}
             />
@@ -697,8 +774,8 @@ export default function ProviderProfileScreen() {
 
             <InfoRow label={t('accountEmail')} value={taskerProfile.email || t('emailNotAvailable')} />
             <InfoRow label={t('taskerStatus')} value={taskerProfile.taskerStatus} />
-            <InfoRow label={t('cityCoverage')} value={taskerProfile.cityLabel || t('needsAttention')} />
-            <InfoRow label={t('serviceCategoriesLabel')} value={taskerProfile.serviceCategories.length ? taskerProfile.serviceCategories.join(', ') : t('needsAttention')} />
+            <InfoRow label={t('cities')} value={taskerProfile.cityLabel || t('needsAttention')} />
+            <InfoRow label={t('services')} value={taskerProfile.serviceCategories.length ? taskerProfile.serviceCategories.join(', ') : t('needsAttention')} />
             <InfoRow label={t('skillsAndTools')} value={formatProfileList([...taskerProfile.toolsEquipment, ...taskerProfile.languagesSpoken])} />
             <AppText color={colors.slate500} variant="small">
               {t('taskerProfileReadonlyNote')}
@@ -1166,7 +1243,17 @@ function buildTaskerReadinessItems(
   ];
 }
 
-function ProfilePhotoCard({ profile }: { profile: ProviderTaskerProfile }) {
+function ProfilePhotoCard({
+  canChangePhoto,
+  isUploading,
+  onChangePhoto,
+  profile,
+}: {
+  canChangePhoto: boolean;
+  isUploading: boolean;
+  onChangePhoto: () => void;
+  profile: ProviderTaskerProfile;
+}) {
   const initials = getInitials(profile);
 
   return (
@@ -1189,9 +1276,21 @@ function ProfilePhotoCard({ profile }: { profile: ProviderTaskerProfile }) {
           <AppText color={colors.slate700}>
             {profile.profilePhotoUrl ? t('profilePhotoReady') : t('profilePhotoPlaceholderBody')}
           </AppText>
-          <AppText color={colors.slate500} variant="small">
-            {t('profilePhotoDisplayOnly')}
-          </AppText>
+          {canChangePhoto ? (
+            <AppButton
+              disabled={isUploading}
+              loading={isUploading}
+              onPress={onChangePhoto}
+              style={styles.photoButton}
+              variant="outline"
+            >
+              {isUploading ? t('uploadingPhoto') : t('changePhoto')}
+            </AppButton>
+          ) : (
+            <AppText color={colors.slate500} variant="small">
+              {t('profilePhotoDisplayOnly')}
+            </AppText>
+          )}
         </View>
       </View>
     </AppCard>
@@ -1343,6 +1442,14 @@ function getTaskerFieldErrorsFromApiError(error: ApiError): TaskerFieldErrors {
   if (record.hourlyRate) fieldErrors.hourlyRate = t('hourlyRateInvalid');
 
   return fieldErrors;
+}
+
+function getPhotoUploadErrorMessage(error: ApiError) {
+  if (error.code === 'IMAGE_TOO_LARGE') return t('imageTooLarge10Mb');
+  if (error.code === 'UNSUPPORTED_IMAGE_TYPE') return t('unsupportedImageType');
+  if (error.code === 'MISSING_IMAGE' || error.code === 'INVALID_MULTIPART_BODY') return t('chooseAnotherPhoto');
+  if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN') return t('pleaseLoginToContinue');
+  return t('couldNotUpdatePhoto');
 }
 
 function getProFieldErrorsFromApiError(error: ApiError): ProFieldErrors {
@@ -1519,6 +1626,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  photoButton: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
   },
   photoText: {
     flex: 1,

@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { CustomerImageUploadResponse } from './domain';
+import { CustomerImageUploadResponse, ProviderTaskerProfilePhotoUploadResponse } from './domain';
 import { endpoints } from './endpoints';
 import { ApiResult } from './types';
 import { LocalSelectedImage } from '@/src/lib/images/types';
@@ -85,6 +85,18 @@ export function uploadCustomerProRequestImage(
   return apiRequest<CustomerImageUploadResponse>(endpoints.customer.proRequestImageUpload(proRequestId), {
     authToken,
     body: buildImageFormData(image, index),
+    method: 'POST',
+    timeoutMs: 30000,
+  });
+}
+
+export function uploadProviderTaskerProfilePhoto(
+  image: LocalSelectedImage,
+  authToken: string,
+): Promise<ApiResult<ProviderTaskerProfilePhotoUploadResponse>> {
+  return apiRequest<ProviderTaskerProfilePhotoUploadResponse>(endpoints.provider.taskerProfilePhoto, {
+    authToken,
+    body: buildImageFormData(image, 0),
     method: 'POST',
     timeoutMs: 30000,
   });

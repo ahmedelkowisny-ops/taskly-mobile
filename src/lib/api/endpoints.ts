@@ -84,5 +84,6 @@ export const endpoints = {
     proProfilePortfolioProject: (projectId: string) => `/api/mobile/provider/pro-profile/portfolio/${encodeURIComponent(projectId)}`,
     profile: '/api/mobile/provider/profile',
     taskerProfile: '/api/mobile/provider/tasker-profile',
+    taskerProfilePhoto: '/api/mobile/provider/tasker-profile/photo',
   },
 } as const;
