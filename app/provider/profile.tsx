@@ -1117,6 +1117,11 @@ type ReadinessItem = {
   label: string;
 };
 
+function isPayoutReadyFromLabel(stripeStatusLabel: string | null | undefined) {
+  const stripeLabel = String(stripeStatusLabel || '').toLocaleLowerCase();
+  return Boolean(stripeLabel && (stripeLabel.includes('complete') || stripeLabel.includes('ready') || stripeLabel.includes('verified')));
+}
+
 function buildTaskerReadinessItems(
   taskerProfile: ProviderTaskerProfile | null,
   profile: ProviderProfileResponse['profile'] | undefined,
@@ -1130,8 +1135,7 @@ function buildTaskerReadinessItems(
   const hasCity = Boolean(taskerProfile?.cityLabel.trim() || profile?.coreCities.length);
   const hasCategories = Boolean(taskerProfile?.serviceCategories.length || profile?.coreCategories.length);
   const hasSkillsAndTools = Boolean(taskerProfile?.toolsEquipment.length || taskerProfile?.languagesSpoken.length);
-  const stripeLabel = String(profile?.stripeStatusLabel || '').toLocaleLowerCase();
-  const payoutReady = Boolean(stripeLabel && (stripeLabel.includes('complete') || stripeLabel.includes('ready') || stripeLabel.includes('verified')));
+  const payoutReady = isPayoutReadyFromLabel(profile?.stripeStatusLabel);
 
   return [
     {
@@ -1155,7 +1159,7 @@ function buildTaskerReadinessItems(
       label: t('skillsAndTools'),
     },
     {
-      body: profile?.stripeStatusLabel || t('payoutSetupUnavailable'),
+      body: payoutReady ? profile?.stripeStatusLabel || t('ready') : t('payoutSetupNeedsAttention'),
       complete: payoutReady,
       label: t('payoutSetup'),
     },
@@ -1195,6 +1199,8 @@ function ProfilePhotoCard({ profile }: { profile: ProviderTaskerProfile }) {
 }
 
 function TaskerReadinessCard({ items, stripeStatusLabel }: { items: ReadinessItem[]; stripeStatusLabel: string | null }) {
+  const payoutReady = isPayoutReadyFromLabel(stripeStatusLabel);
+
   return (
     <AppCard backgroundColor={colors.white}>
       <View style={styles.sectionHeader}>
@@ -1220,8 +1226,16 @@ function TaskerReadinessCard({ items, stripeStatusLabel }: { items: ReadinessIte
       </View>
       {stripeStatusLabel ? (
         <View style={styles.payoutBox}>
-          <AppText variant="bodyStrong">{t('payoutSetup')}</AppText>
+          <View style={styles.payoutHeader}>
+            <AppText variant="bodyStrong">{t('payoutSetup')}</AppText>
+            <StatusBadge label={payoutReady ? t('ready') : t('needsAttention')} tone={payoutReady ? 'success' : 'warning'} />
+          </View>
           <AppText color={colors.slate700}>{stripeStatusLabel}</AppText>
+          {!payoutReady ? (
+            <AppText color={colors.slate500} variant="small">
+              {t('payoutActionsUnavailableMobile')}
+            </AppText>
+          ) : null}
         </View>
       ) : null}
     </AppCard>
@@ -1495,6 +1509,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.md,
   },
+  payoutHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
   photoRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -1538,7 +1558,7 @@ const styles = StyleSheet.create({
     width: 28,
   },
   readinessIconAttention: {
-    backgroundColor: colors.proOrange50,
+    backgroundColor: colors.slate100,
   },
   readinessIconComplete: {
     backgroundColor: colors.tasklyBlue50,
