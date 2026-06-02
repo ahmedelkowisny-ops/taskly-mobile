@@ -6,11 +6,15 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { getCities, getCoreCategories } from '@/src/lib/api/catalog';
 import type {
+  CatalogCategory,
+  CityOption,
   ProviderProPortfolioProject,
   ProviderProPortfolioImageType,
   ProviderProProfile,
   ProviderProfileResponse,
+  TaskerAvailability,
   ProviderTaskerProfile,
 } from '@/src/lib/api/domain';
 import type { ApiError } from '@/src/lib/api/types';
@@ -41,7 +45,9 @@ import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type TaskerDraft = {
+  availability: TaskerAvailability;
   bio: string;
+  cityId: string;
   firstName: string;
   hasCar: boolean;
   hourlyRate: string;
@@ -49,13 +55,16 @@ type TaskerDraft = {
   lastName: string;
   phone: string;
   serviceArea: string;
+  serviceCategorySlugs: string[];
   toolsText: string;
 };
 
 type TaskerFieldErrors = Partial<Record<keyof TaskerDraft, string>>;
 
 const emptyTaskerDraft: TaskerDraft = {
+  availability: createDefaultAvailability(),
   bio: '',
+  cityId: '',
   firstName: '',
   hasCar: false,
   hourlyRate: '',
@@ -63,6 +72,7 @@ const emptyTaskerDraft: TaskerDraft = {
   lastName: '',
   phone: '',
   serviceArea: '',
+  serviceCategorySlugs: [],
   toolsText: '',
 };
 
@@ -147,6 +157,8 @@ export default function ProviderProfileScreen() {
   const [proNotice, setProNotice] = useState<string | null>(null);
   const [proErrorMessage, setProErrorMessage] = useState<string | null>(null);
   const [portfolioProjects, setPortfolioProjects] = useState<ProviderProPortfolioProject[]>([]);
+  const [cityOptions, setCityOptions] = useState<CityOption[]>([]);
+  const [coreCategoryOptions, setCoreCategoryOptions] = useState<CatalogCategory[]>([]);
   const [projectDraft, setProjectDraft] = useState<ProProjectDraft>(emptyProProjectDraft);
   const [projectFieldErrors, setProjectFieldErrors] = useState<ProProjectFieldErrors>({});
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -169,6 +181,9 @@ export default function ProviderProfileScreen() {
       taskerDraft.hourlyRate.trim() !== current.hourlyRate ||
       taskerDraft.serviceArea.trim() !== current.serviceArea ||
       taskerDraft.hasCar !== current.hasCar ||
+      taskerDraft.cityId !== current.cityId ||
+      taskerDraft.serviceCategorySlugs.join(',') !== current.serviceCategorySlugs.join(',') ||
+      JSON.stringify(taskerDraft.availability) !== JSON.stringify(current.availability) ||
       normalizeListText(taskerDraft.languagesText) !== normalizeListText(current.languagesText) ||
       normalizeListText(taskerDraft.toolsText) !== normalizeListText(current.toolsText)
     );
@@ -210,6 +225,8 @@ export default function ProviderProfileScreen() {
       setProProfile(null);
       setProDraft(emptyProDraft);
       setPortfolioProjects([]);
+      setCityOptions([]);
+      setCoreCategoryOptions([]);
       setIsEditingPro(false);
       setIsProjectFormOpen(false);
       setIsLoading(false);
@@ -224,6 +241,8 @@ export default function ProviderProfileScreen() {
       setProProfile(null);
       setProDraft(emptyProDraft);
       setPortfolioProjects([]);
+      setCityOptions([]);
+      setCoreCategoryOptions([]);
       setIsEditingPro(false);
       setIsProjectFormOpen(false);
       setIsUnauthorized(status === 'unauthenticated');
@@ -244,11 +263,13 @@ export default function ProviderProfileScreen() {
       return;
     }
 
-    const [result, taskerResult, proResult, portfolioResult] = await Promise.all([
+    const [result, taskerResult, proResult, portfolioResult, citiesResult, categoriesResult] = await Promise.all([
       getProviderProfile(authToken),
       getProviderTaskerProfile(authToken),
       getProviderProProfile(authToken),
       getProviderProPortfolio(authToken),
+      getCities(authToken),
+      getCoreCategories(authToken),
     ]);
 
     if (result.ok) {
@@ -308,6 +329,9 @@ export default function ProviderProfileScreen() {
         );
       }
     }
+
+    setCityOptions(citiesResult.ok ? citiesResult.data.cities.filter((city) => city.isActive) : []);
+    setCoreCategoryOptions(categoriesResult.ok ? categoriesResult.data.categories.filter((category) => category.isActive) : []);
 
     setIsLoading(false);
   }, [getValidAccessToken, status]);
@@ -369,6 +393,9 @@ export default function ProviderProfileScreen() {
         phone: taskerDraft.phone.trim(),
         serviceArea: taskerDraft.serviceArea.trim(),
         toolsEquipment: parseListText(taskerDraft.toolsText),
+        availability: taskerDraft.availability,
+        cityId: taskerDraft.cityId,
+        serviceCategorySlugs: taskerDraft.serviceCategorySlugs,
       },
       authToken,
     );
@@ -750,6 +777,23 @@ export default function ProviderProfileScreen() {
               onChangeText={(value) => setTaskerDraft((current) => ({ ...current, serviceArea: value }))}
               value={taskerDraft.serviceArea}
             />
+            <EditableChipSection
+              disabled={!isEditingTasker || isSavingTasker}
+              helperText={t('selectYourCity')}
+              label={t('editCityCoverage')}
+              options={cityOptions.map((city) => ({ label: getCityLabel(city), value: city.id }))}
+              onToggle={(value) => setTaskerDraft((current) => ({ ...current, cityId: value }))}
+              selectedValues={taskerDraft.cityId ? [taskerDraft.cityId] : []}
+              single
+            />
+            <EditableChipSection
+              disabled={!isEditingTasker || isSavingTasker}
+              helperText={t('chooseServicesYouCanHandle')}
+              label={t('serviceCategoriesLabel')}
+              options={coreCategoryOptions.map((category) => ({ label: getCategoryLabel(category), value: category.slug }))}
+              onToggle={(value) => setTaskerDraft((current) => ({ ...current, serviceCategorySlugs: toggleValue(current.serviceCategorySlugs, value) }))}
+              selectedValues={taskerDraft.serviceCategorySlugs}
+            />
             <FormField
               editable={isEditingTasker && !isSavingTasker}
               helperText={t('commaSeparatedHelper')}
@@ -771,6 +815,11 @@ export default function ProviderProfileScreen() {
                 <ToggleChip disabled={!isEditingTasker || isSavingTasker} label={t('no')} onPress={() => setTaskerDraft((current) => ({ ...current, hasCar: false }))} selected={!taskerDraft.hasCar} />
               </View>
             </View>
+            <AvailabilityEditor
+              disabled={!isEditingTasker || isSavingTasker}
+              onChange={(availability) => setTaskerDraft((current) => ({ ...current, availability }))}
+              value={taskerDraft.availability}
+            />
 
             <InfoRow label={t('accountEmail')} value={taskerProfile.email || t('emailNotAvailable')} />
             <InfoRow label={t('taskerStatus')} value={taskerProfile.taskerStatus} />
@@ -778,7 +827,7 @@ export default function ProviderProfileScreen() {
             <InfoRow label={t('services')} value={taskerProfile.serviceCategories.length ? taskerProfile.serviceCategories.join(', ') : t('needsAttention')} />
             <InfoRow label={t('skillsAndTools')} value={formatProfileList([...taskerProfile.toolsEquipment, ...taskerProfile.languagesSpoken])} />
             <AppText color={colors.slate500} variant="small">
-              {t('taskerProfileReadonlyNote')}
+              {t('matchingChangesNote')}
             </AppText>
 
             {isEditingTasker ? (
@@ -1117,7 +1166,9 @@ export default function ProviderProfileScreen() {
 
 function toTaskerDraft(profile: ProviderTaskerProfile): TaskerDraft {
   return {
+    availability: normalizeTaskerAvailability(profile.availability),
     bio: profile.bio,
+    cityId: profile.cityId || '',
     firstName: profile.firstName,
     hasCar: profile.hasCar,
     hourlyRate: profile.hourlyRate,
@@ -1125,6 +1176,7 @@ function toTaskerDraft(profile: ProviderTaskerProfile): TaskerDraft {
     lastName: profile.lastName,
     phone: profile.phone,
     serviceArea: profile.serviceArea,
+    serviceCategorySlugs: profile.serviceCategorySlugs ?? [],
     toolsText: profile.toolsEquipment.join(', '),
   };
 }
@@ -1186,6 +1238,165 @@ function parseLineListText(value: string) {
       return true;
     })
     .slice(0, 10);
+}
+
+const availabilityDays = [
+  { key: 'mon', label: 'Mon' },
+  { key: 'tue', label: 'Tue' },
+  { key: 'wed', label: 'Wed' },
+  { key: 'thu', label: 'Thu' },
+  { key: 'fri', label: 'Fri' },
+  { key: 'sat', label: 'Sat' },
+  { key: 'sun', label: 'Sun' },
+] as const;
+
+function createDefaultAvailability(): TaskerAvailability {
+  return {
+    notes: '',
+    timezone: 'Europe/Sofia',
+    weekly: {
+      mon: { enabled: false, start: '09:00', end: '17:00' },
+      tue: { enabled: false, start: '09:00', end: '17:00' },
+      wed: { enabled: false, start: '09:00', end: '17:00' },
+      thu: { enabled: false, start: '09:00', end: '17:00' },
+      fri: { enabled: false, start: '09:00', end: '17:00' },
+      sat: { enabled: false, start: '09:00', end: '17:00' },
+      sun: { enabled: false, start: '09:00', end: '17:00' },
+    },
+  };
+}
+
+function normalizeTaskerAvailability(value: TaskerAvailability | null | undefined): TaskerAvailability {
+  const fallback = createDefaultAvailability();
+  if (!value?.weekly) return fallback;
+
+  return {
+    notes: typeof value.notes === 'string' ? value.notes : '',
+    timezone: value.timezone || 'Europe/Sofia',
+    weekly: availabilityDays.reduce((weekly, day) => {
+      const current = value.weekly[day.key] ?? fallback.weekly[day.key];
+      weekly[day.key] = {
+        enabled: current.enabled === true,
+        end: current.end || '17:00',
+        start: current.start || '09:00',
+      };
+      return weekly;
+    }, {} as TaskerAvailability['weekly']),
+  };
+}
+
+function toggleValue(values: string[], value: string) {
+  return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+}
+
+function getCityLabel(city: CityOption) {
+  return city.nameEn || city.nameBg || city.slug;
+}
+
+function getCategoryLabel(category: CatalogCategory) {
+  return category.nameEn || category.nameBg || category.slug;
+}
+
+function EditableChipSection({
+  disabled,
+  helperText,
+  label,
+  onToggle,
+  options,
+  selectedValues,
+  single = false,
+}: {
+  disabled: boolean;
+  helperText: string;
+  label: string;
+  onToggle: (value: string) => void;
+  options: { label: string; value: string }[];
+  selectedValues: string[];
+  single?: boolean;
+}) {
+  return (
+    <View style={styles.editBlock}>
+      <AppText variant="bodyStrong">{label}</AppText>
+      <AppText color={colors.slate500} variant="small">{helperText}</AppText>
+      <View style={styles.chipGrid}>
+        {options.map((option) => {
+          const selected = selectedValues.includes(option.value);
+          return (
+            <ToggleChip
+              disabled={disabled || (single && selected)}
+              key={option.value}
+              label={option.label}
+              onPress={() => onToggle(option.value)}
+              selected={selected}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function AvailabilityEditor({
+  disabled,
+  onChange,
+  value,
+}: {
+  disabled: boolean;
+  onChange: (value: TaskerAvailability) => void;
+  value: TaskerAvailability;
+}) {
+  const normalized = normalizeTaskerAvailability(value);
+
+  function updateDay(dayKey: keyof TaskerAvailability['weekly'], patch: Partial<TaskerAvailability['weekly'][typeof dayKey]>) {
+    onChange({
+      ...normalized,
+      weekly: {
+        ...normalized.weekly,
+        [dayKey]: {
+          ...normalized.weekly[dayKey],
+          ...patch,
+        },
+      },
+    });
+  }
+
+  return (
+    <View style={styles.editBlock}>
+      <AppText variant="bodyStrong">{t('availability')}</AppText>
+      <AppText color={colors.slate500} variant="small">{t('readyToReceiveMatchingTasks')}</AppText>
+      <View style={styles.availabilityList}>
+        {availabilityDays.map((day) => {
+          const current = normalized.weekly[day.key];
+          return (
+            <View key={day.key} style={styles.availabilityRow}>
+              <ToggleChip
+                disabled={disabled}
+                label={day.label}
+                onPress={() => updateDay(day.key, { enabled: !current.enabled })}
+                selected={current.enabled}
+              />
+              <View style={styles.availabilityTimeField}>
+                <FormField
+                  editable={!disabled && current.enabled}
+                  label={t('start')}
+                  onChangeText={(text) => updateDay(day.key, { start: text })}
+                  value={current.start}
+                />
+              </View>
+              <View style={styles.availabilityTimeField}>
+                <FormField
+                  editable={!disabled && current.enabled}
+                  label={t('end')}
+                  onChangeText={(text) => updateDay(day.key, { end: text })}
+                  value={current.end}
+                />
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 type ReadinessItem = {
@@ -1555,6 +1766,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  availabilityList: {
+    gap: spacing.sm,
+  },
+  availabilityRow: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.sm,
+  },
+  availabilityTimeField: {
+    minWidth: 0,
+  },
   avatar: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -1581,6 +1806,14 @@ const styles = StyleSheet.create({
   form: {
     gap: spacing.md,
     marginTop: spacing.sm,
+  },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  editBlock: {
+    gap: spacing.sm,
   },
   headerButton: {
     minHeight: 40,

@@ -1562,7 +1562,9 @@ export type ProviderProfileResponse = {
 };
 
 export type ProviderTaskerProfile = {
+  availability?: TaskerAvailability | null;
   bio: string;
+  cityId?: string;
   cityLabel: string;
   displayName: string;
   email: string;
@@ -1575,8 +1577,21 @@ export type ProviderTaskerProfile = {
   profilePhotoUrl: string | null;
   serviceArea: string;
   serviceCategories: string[];
+  serviceCategorySlugs?: string[];
   taskerStatus: string;
   toolsEquipment: string[];
+};
+
+export type TaskerAvailabilityDay = {
+  enabled: boolean;
+  end: string;
+  start: string;
+};
+
+export type TaskerAvailability = {
+  notes?: string;
+  timezone: string;
+  weekly: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', TaskerAvailabilityDay>;
 };
 
 export type ProviderTaskerProfileResponse = {
@@ -1598,6 +1613,9 @@ export type UpdateProviderTaskerProfilePayload = {
   phone?: string;
   serviceArea?: string;
   toolsEquipment?: string[];
+  availability?: TaskerAvailability;
+  cityId?: string;
+  serviceCategorySlugs?: string[];
 };
 
 export type ProviderProProfileCategory = {

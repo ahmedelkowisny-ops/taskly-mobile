@@ -250,6 +250,9 @@ export function updateProviderTaskerProfile(
       phone: payload.phone ?? '',
       serviceArea: payload.serviceArea ?? '',
       toolsEquipment: payload.toolsEquipment ?? [],
+      ...(payload.availability ? { availability: payload.availability } : null),
+      ...(payload.cityId ? { cityId: payload.cityId } : null),
+      ...(payload.serviceCategorySlugs ? { serviceCategorySlugs: payload.serviceCategorySlugs } : null),
     },
     method: 'PATCH',
   });
