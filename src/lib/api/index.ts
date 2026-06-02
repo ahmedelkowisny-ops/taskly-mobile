@@ -35,9 +35,13 @@ export {
 } from './notifications';
 export {
   expressInterestInCoreTask,
+  createProviderProPortfolioProject,
+  deleteProviderProPortfolioProject,
   getProviderCoreTaskDetail,
   getProviderCoreTasks,
   getProviderDashboard,
+  getProviderProPortfolio,
+  getProviderProProfile,
   getProviderTaskerProfile,
   getProviderProfile,
   getProviderProRequestDetail,
@@ -48,6 +52,8 @@ export {
   requestProviderCoreTaskCompletion,
   requestProviderCoreTaskSupport,
   startProviderCoreTask,
+  updateProviderProPortfolioProject,
+  updateProviderProProfile,
   updateProviderTaskerProfile,
 } from './provider';
 export {
@@ -157,6 +163,14 @@ export type {
   ProviderDashboardResponse,
   ProviderDashboardSummary,
   ProviderNextAction,
+  ProviderProPortfolioImage,
+  ProviderProPortfolioImageType,
+  ProviderProPortfolioProject,
+  ProviderProPortfolioProjectResponse,
+  ProviderProPortfolioResponse,
+  ProviderProProfile,
+  ProviderProProfileCategory,
+  ProviderProProfileResponse,
   ProviderProfileResponse,
   ProviderProfileSummary,
   ProviderTaskerProfile,
@@ -182,7 +196,9 @@ export type {
   TaskDetail,
   TaskSummary,
   UpdateCustomerProfilePayload,
+  UpdateProviderProProfilePayload,
   UpdateProviderTaskerProfilePayload,
+  UpsertProviderProPortfolioProjectPayload,
 } from './domain';
 export type {
   ApiError,

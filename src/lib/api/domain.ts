@@ -1533,6 +1533,97 @@ export type UpdateProviderTaskerProfilePayload = {
   toolsEquipment?: string[];
 };
 
+export type ProviderProProfileCategory = {
+  label: string;
+  status: 'approved' | 'pending' | 'rejected' | 'suspended' | string;
+};
+
+export type ProviderProProfile = {
+  bio: string;
+  businessType: string;
+  categories: ProviderProProfileCategory[];
+  cityLabels: string[];
+  displayName: string;
+  id: string;
+  internalEmail: string;
+  internalPhone: string;
+  invoiceAvailable: boolean;
+  languages: string[];
+  portfolioProjectsCount: number;
+  profileImageUrl: string | null;
+  quotePreference: string;
+  siteVisitPreference: string;
+  status: string;
+  teamSize: string;
+  tradeName: string;
+  warrantyNote: string;
+  yearsExperience: string;
+};
+
+export type ProviderProProfileResponse = {
+  profile: ProviderProProfile;
+};
+
+export type UpdateProviderProProfilePayload = {
+  bio?: string;
+  businessType?: string;
+  displayName: string;
+  internalEmail?: string;
+  internalPhone?: string;
+  invoiceAvailable: boolean;
+  languages?: string[];
+  profileImageUrl?: string;
+  quotePreference?: string;
+  siteVisitPreference?: string;
+  teamSize?: string;
+  tradeName?: string;
+  warrantyNote?: string;
+  yearsExperience?: string;
+};
+
+export type ProviderProPortfolioImageType = 'AFTER' | 'BEFORE' | 'GENERAL';
+
+export type ProviderProPortfolioImage = {
+  id: string;
+  sortOrder: number;
+  type: ProviderProPortfolioImageType;
+  url: string;
+};
+
+export type ProviderProPortfolioProject = {
+  approximateDuration: string;
+  categoryName: string;
+  cityName: string;
+  createdAt: string;
+  customerPermissionConfirmed: boolean;
+  description: string;
+  id: string;
+  images: ProviderProPortfolioImage[];
+  optionalPriceRange: string;
+  title: string;
+  updatedAt: string;
+};
+
+export type ProviderProPortfolioResponse = {
+  projects: ProviderProPortfolioProject[];
+};
+
+export type UpsertProviderProPortfolioProjectPayload = {
+  approximateDuration?: string;
+  categoryName?: string;
+  cityName?: string;
+  customerPermissionConfirmed: boolean;
+  description?: string;
+  imageType?: ProviderProPortfolioImageType;
+  imageUrls?: string[];
+  optionalPriceRange?: string;
+  title: string;
+};
+
+export type ProviderProPortfolioProjectResponse = {
+  project: ProviderProPortfolioProject;
+};
+
 export type MessageContextType = 'CORE_TASK' | 'OTHER' | 'PRO_REQUEST' | 'SUPPORT';
 export type MessageAccent = 'core' | 'neutral' | 'pro';
 export type MessageSenderRole = 'ADMIN' | 'CUSTOMER' | 'PRO' | 'SUPPORT' | 'SYSTEM' | 'TASKER';

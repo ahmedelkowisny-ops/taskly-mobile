@@ -9,6 +9,9 @@ import {
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
+  ProviderProPortfolioProjectResponse,
+  ProviderProPortfolioResponse,
+  ProviderProProfileResponse,
   ProviderProfileResponse,
   ProviderTaskerProfileResponse,
   ProviderProResponseMutationResponse,
@@ -22,7 +25,9 @@ import {
   RequestProviderCoreTaskCompletionPayload,
   RequestProviderCoreTaskCompletionResponse,
   StartProviderCoreTaskResponse,
+  UpdateProviderProProfilePayload,
   UpdateProviderTaskerProfilePayload,
+  UpsertProviderProPortfolioProjectPayload,
 } from './domain';
 import { ApiResult } from './types';
 
@@ -247,6 +252,93 @@ export function updateProviderTaskerProfile(
       toolsEquipment: payload.toolsEquipment ?? [],
     },
     method: 'PATCH',
+  });
+}
+
+export function getProviderProProfile(authToken: string): Promise<ApiResult<ProviderProProfileResponse>> {
+  return apiRequest<ProviderProProfileResponse>(endpoints.provider.proProfile, {
+    authToken,
+    method: 'GET',
+  });
+}
+
+export function updateProviderProProfile(
+  payload: UpdateProviderProProfilePayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProProfileResponse>> {
+  return apiRequest<ProviderProProfileResponse>(endpoints.provider.proProfile, {
+    authToken,
+    body: {
+      bio: payload.bio ?? '',
+      businessType: payload.businessType ?? '',
+      displayName: payload.displayName,
+      internalEmail: payload.internalEmail ?? '',
+      internalPhone: payload.internalPhone ?? '',
+      invoiceAvailable: payload.invoiceAvailable,
+      languages: payload.languages ?? [],
+      profileImageUrl: payload.profileImageUrl ?? '',
+      quotePreference: payload.quotePreference ?? '',
+      siteVisitPreference: payload.siteVisitPreference ?? '',
+      teamSize: payload.teamSize ?? '',
+      tradeName: payload.tradeName ?? '',
+      warrantyNote: payload.warrantyNote ?? '',
+      yearsExperience: payload.yearsExperience ?? '',
+    },
+    method: 'PATCH',
+  });
+}
+
+export function getProviderProPortfolio(authToken: string): Promise<ApiResult<ProviderProPortfolioResponse>> {
+  return apiRequest<ProviderProPortfolioResponse>(endpoints.provider.proProfilePortfolio, {
+    authToken,
+    method: 'GET',
+  });
+}
+
+function toPortfolioProjectBody(payload: UpsertProviderProPortfolioProjectPayload) {
+  return {
+    approximateDuration: payload.approximateDuration ?? '',
+    categoryName: payload.categoryName ?? '',
+    cityName: payload.cityName ?? '',
+    customerPermissionConfirmed: payload.customerPermissionConfirmed,
+    description: payload.description ?? '',
+    imageType: payload.imageType ?? 'GENERAL',
+    imageUrls: payload.imageUrls ?? [],
+    optionalPriceRange: payload.optionalPriceRange ?? '',
+    title: payload.title,
+  };
+}
+
+export function createProviderProPortfolioProject(
+  payload: UpsertProviderProPortfolioProjectPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProPortfolioProjectResponse>> {
+  return apiRequest<ProviderProPortfolioProjectResponse>(endpoints.provider.proProfilePortfolio, {
+    authToken,
+    body: toPortfolioProjectBody(payload),
+    method: 'POST',
+  });
+}
+
+export function updateProviderProPortfolioProject(
+  projectId: string,
+  payload: UpsertProviderProPortfolioProjectPayload,
+  authToken: string,
+): Promise<ApiResult<ProviderProPortfolioProjectResponse>> {
+  return apiRequest<ProviderProPortfolioProjectResponse>(endpoints.provider.proProfilePortfolioProject(projectId), {
+    authToken,
+    body: toPortfolioProjectBody(payload),
+    method: 'PATCH',
+  });
+}
+
+export function deleteProviderProPortfolioProject(
+  projectId: string,
+  authToken: string,
+): Promise<ApiResult<{ ok: true }>> {
+  return apiRequest<{ ok: true }>(endpoints.provider.proProfilePortfolioProject(projectId), {
+    authToken,
+    method: 'DELETE',
   });
 }
 

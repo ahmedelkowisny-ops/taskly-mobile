@@ -5,10 +5,26 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AssistantGuideCard, FormField, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import type { ProviderProfileResponse, ProviderTaskerProfile } from '@/src/lib/api/domain';
+import type {
+  ProviderProPortfolioProject,
+  ProviderProPortfolioImageType,
+  ProviderProProfile,
+  ProviderProfileResponse,
+  ProviderTaskerProfile,
+} from '@/src/lib/api/domain';
 import type { ApiError } from '@/src/lib/api/types';
 import { getMockProviderProfileResponse } from '@/src/lib/api/mockApi';
-import { getProviderProfile, getProviderTaskerProfile, updateProviderTaskerProfile } from '@/src/lib/api/provider';
+import {
+  createProviderProPortfolioProject,
+  deleteProviderProPortfolioProject,
+  getProviderProPortfolio,
+  getProviderProfile,
+  getProviderProProfile,
+  getProviderTaskerProfile,
+  updateProviderProPortfolioProject,
+  updateProviderProProfile,
+  updateProviderTaskerProfile,
+} from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { getCoreTaskerStatusLabel, getProStatusLabel } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
@@ -41,6 +57,67 @@ const emptyTaskerDraft: TaskerDraft = {
   toolsText: '',
 };
 
+type ProDraft = {
+  bio: string;
+  businessType: string;
+  displayName: string;
+  internalEmail: string;
+  internalPhone: string;
+  invoiceAvailable: boolean;
+  languagesText: string;
+  profileImageUrl: string;
+  quotePreference: string;
+  siteVisitPreference: string;
+  teamSize: string;
+  tradeName: string;
+  warrantyNote: string;
+  yearsExperience: string;
+};
+
+type ProProjectDraft = {
+  approximateDuration: string;
+  categoryName: string;
+  cityName: string;
+  customerPermissionConfirmed: boolean;
+  description: string;
+  imageType: ProviderProPortfolioImageType;
+  imageUrlsText: string;
+  optionalPriceRange: string;
+  title: string;
+};
+
+type ProFieldErrors = Partial<Record<keyof ProDraft, string>>;
+type ProProjectFieldErrors = Partial<Record<keyof ProProjectDraft, string>>;
+
+const emptyProDraft: ProDraft = {
+  bio: '',
+  businessType: '',
+  displayName: '',
+  internalEmail: '',
+  internalPhone: '',
+  invoiceAvailable: false,
+  languagesText: '',
+  profileImageUrl: '',
+  quotePreference: '',
+  siteVisitPreference: '',
+  teamSize: '',
+  tradeName: '',
+  warrantyNote: '',
+  yearsExperience: '',
+};
+
+const emptyProProjectDraft: ProProjectDraft = {
+  approximateDuration: '',
+  categoryName: '',
+  cityName: '',
+  customerPermissionConfirmed: false,
+  description: '',
+  imageType: 'GENERAL',
+  imageUrlsText: '',
+  optionalPriceRange: '',
+  title: '',
+};
+
 export default function ProviderProfileScreen() {
   const router = useRouter();
   const { getValidAccessToken, refreshSession, status, useDemoSession } = useAuth();
@@ -52,6 +129,21 @@ export default function ProviderProfileScreen() {
   const [isSavingTasker, setIsSavingTasker] = useState(false);
   const [taskerNotice, setTaskerNotice] = useState<string | null>(null);
   const [taskerErrorMessage, setTaskerErrorMessage] = useState<string | null>(null);
+  const [proProfile, setProProfile] = useState<ProviderProProfile | null>(null);
+  const [proDraft, setProDraft] = useState<ProDraft>(emptyProDraft);
+  const [proFieldErrors, setProFieldErrors] = useState<ProFieldErrors>({});
+  const [isEditingPro, setIsEditingPro] = useState(false);
+  const [isSavingPro, setIsSavingPro] = useState(false);
+  const [proNotice, setProNotice] = useState<string | null>(null);
+  const [proErrorMessage, setProErrorMessage] = useState<string | null>(null);
+  const [portfolioProjects, setPortfolioProjects] = useState<ProviderProPortfolioProject[]>([]);
+  const [projectDraft, setProjectDraft] = useState<ProProjectDraft>(emptyProProjectDraft);
+  const [projectFieldErrors, setProjectFieldErrors] = useState<ProProjectFieldErrors>({});
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [isSavingProject, setIsSavingProject] = useState(false);
+  const [isDeletingProjectId, setIsDeletingProjectId] = useState<string | null>(null);
+  const [projectErrorMessage, setProjectErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -71,17 +163,45 @@ export default function ProviderProfileScreen() {
       normalizeListText(taskerDraft.toolsText) !== normalizeListText(current.toolsText)
     );
   }, [taskerDraft, taskerProfile]);
+  const hasProChanges = useMemo(() => {
+    if (!proProfile) return false;
+    const current = toProDraft(proProfile);
+
+    return (
+      proDraft.displayName.trim() !== current.displayName ||
+      proDraft.tradeName.trim() !== current.tradeName ||
+      proDraft.bio.trim() !== current.bio ||
+      proDraft.businessType.trim() !== current.businessType ||
+      proDraft.yearsExperience.trim() !== current.yearsExperience ||
+      proDraft.teamSize.trim() !== current.teamSize ||
+      proDraft.invoiceAvailable !== current.invoiceAvailable ||
+      proDraft.siteVisitPreference.trim() !== current.siteVisitPreference ||
+      proDraft.quotePreference.trim() !== current.quotePreference ||
+      proDraft.warrantyNote.trim() !== current.warrantyNote ||
+      proDraft.internalPhone.trim() !== current.internalPhone ||
+      proDraft.internalEmail.trim() !== current.internalEmail ||
+      proDraft.profileImageUrl.trim() !== current.profileImageUrl ||
+      normalizeListText(proDraft.languagesText) !== normalizeListText(current.languagesText)
+    );
+  }, [proDraft, proProfile]);
 
   const loadProfile = useCallback(async () => {
     setErrorMessage(null);
     setIsUnauthorized(false);
     setTaskerErrorMessage(null);
+    setProErrorMessage(null);
+    setProjectErrorMessage(null);
 
     if (status === 'demo') {
       setData(getMockProviderProfileResponse());
       setTaskerProfile(null);
       setTaskerDraft(emptyTaskerDraft);
       setIsEditingTasker(false);
+      setProProfile(null);
+      setProDraft(emptyProDraft);
+      setPortfolioProjects([]);
+      setIsEditingPro(false);
+      setIsProjectFormOpen(false);
       setIsLoading(false);
       return;
     }
@@ -91,6 +211,11 @@ export default function ProviderProfileScreen() {
       setTaskerProfile(null);
       setTaskerDraft(emptyTaskerDraft);
       setIsEditingTasker(false);
+      setProProfile(null);
+      setProDraft(emptyProDraft);
+      setPortfolioProjects([]);
+      setIsEditingPro(false);
+      setIsProjectFormOpen(false);
       setIsUnauthorized(status === 'unauthenticated');
       setIsLoading(false);
       return;
@@ -102,14 +227,18 @@ export default function ProviderProfileScreen() {
     if (!authToken) {
       setData(null);
       setTaskerProfile(null);
+      setProProfile(null);
+      setPortfolioProjects([]);
       setIsUnauthorized(true);
       setIsLoading(false);
       return;
     }
 
-    const [result, taskerResult] = await Promise.all([
+    const [result, taskerResult, proResult, portfolioResult] = await Promise.all([
       getProviderProfile(authToken),
       getProviderTaskerProfile(authToken),
+      getProviderProProfile(authToken),
+      getProviderProPortfolio(authToken),
     ]);
 
     if (result.ok) {
@@ -136,6 +265,36 @@ export default function ProviderProfileScreen() {
           taskerResult.status === 401 || taskerResult.status === 403
             ? t('providerProfileNeedsAccess')
             : t('couldNotLoadTaskerProfile'),
+        );
+      }
+    }
+
+    if (proResult.ok) {
+      setProProfile(proResult.data.profile);
+      setProDraft(toProDraft(proResult.data.profile));
+      setProFieldErrors({});
+    } else {
+      setProProfile(null);
+      setProDraft(emptyProDraft);
+      if (proResult.status !== 404) {
+        setProErrorMessage(
+          proResult.status === 401 || proResult.status === 403
+            ? t('providerProfileNeedsAccess')
+            : t('couldNotLoadProProfile'),
+        );
+      }
+    }
+
+    if (portfolioResult.ok) {
+      setPortfolioProjects(portfolioResult.data.projects);
+      setProjectFieldErrors({});
+    } else {
+      setPortfolioProjects([]);
+      if (portfolioResult.status !== 404) {
+        setProjectErrorMessage(
+          portfolioResult.status === 401 || portfolioResult.status === 403
+            ? t('providerProfileNeedsAccess')
+            : t('couldNotLoadProPortfolio'),
         );
       }
     }
@@ -216,6 +375,175 @@ export default function ProviderProfileScreen() {
     setTaskerNotice(t('taskerProfileSaved'));
     await refreshSession();
     await loadProfile();
+  }
+
+  function beginProEdit() {
+    if (!proProfile) return;
+    setProDraft(toProDraft(proProfile));
+    setProFieldErrors({});
+    setProNotice(null);
+    setProErrorMessage(null);
+    setIsEditingPro(true);
+  }
+
+  function cancelProEdit() {
+    if (proProfile) {
+      setProDraft(toProDraft(proProfile));
+    }
+    setProFieldErrors({});
+    setProNotice(null);
+    setProErrorMessage(null);
+    setIsEditingPro(false);
+  }
+
+  async function handleSavePro() {
+    const validation = validateProDraft(proDraft);
+    setProFieldErrors(validation);
+    setProNotice(null);
+    setProErrorMessage(null);
+
+    if (Object.keys(validation).length > 0 || !hasProChanges) {
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsSavingPro(true);
+    const result = await updateProviderProProfile(
+      {
+        bio: proDraft.bio.trim(),
+        businessType: proDraft.businessType.trim(),
+        displayName: proDraft.displayName.trim(),
+        internalEmail: proDraft.internalEmail.trim(),
+        internalPhone: proDraft.internalPhone.trim(),
+        invoiceAvailable: proDraft.invoiceAvailable,
+        languages: parseListText(proDraft.languagesText),
+        profileImageUrl: proDraft.profileImageUrl.trim(),
+        quotePreference: proDraft.quotePreference.trim(),
+        siteVisitPreference: proDraft.siteVisitPreference.trim(),
+        teamSize: proDraft.teamSize.trim(),
+        tradeName: proDraft.tradeName.trim(),
+        warrantyNote: proDraft.warrantyNote.trim(),
+        yearsExperience: proDraft.yearsExperience.trim(),
+      },
+      authToken,
+    );
+    setIsSavingPro(false);
+
+    if (!result.ok) {
+      setProFieldErrors(getProFieldErrorsFromApiError(result.error));
+      setProErrorMessage(t('couldNotSaveProProfile'));
+      return;
+    }
+
+    setProProfile(result.data.profile);
+    setProDraft(toProDraft(result.data.profile));
+    setProFieldErrors({});
+    setIsEditingPro(false);
+    setProNotice(t('proProfileSaved'));
+    await loadProfile();
+  }
+
+  function beginCreateProject() {
+    setEditingProjectId(null);
+    setProjectDraft(emptyProProjectDraft);
+    setProjectFieldErrors({});
+    setProjectErrorMessage(null);
+    setIsProjectFormOpen(true);
+  }
+
+  function beginEditProject(project: ProviderProPortfolioProject) {
+    setEditingProjectId(project.id);
+    setProjectDraft(toProjectDraft(project));
+    setProjectFieldErrors({});
+    setProjectErrorMessage(null);
+    setIsProjectFormOpen(true);
+  }
+
+  function cancelProjectEdit() {
+    setEditingProjectId(null);
+    setProjectDraft(emptyProProjectDraft);
+    setProjectFieldErrors({});
+    setProjectErrorMessage(null);
+    setIsProjectFormOpen(false);
+  }
+
+  async function handleSaveProject() {
+    const validation = validateProjectDraft(projectDraft);
+    setProjectFieldErrors(validation);
+    setProjectErrorMessage(null);
+
+    if (Object.keys(validation).length > 0) {
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProjectErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    const payload = {
+      approximateDuration: projectDraft.approximateDuration.trim(),
+      categoryName: projectDraft.categoryName.trim(),
+      cityName: projectDraft.cityName.trim(),
+      customerPermissionConfirmed: projectDraft.customerPermissionConfirmed,
+      description: projectDraft.description.trim(),
+      imageType: projectDraft.imageType,
+      imageUrls: parseLineListText(projectDraft.imageUrlsText),
+      optionalPriceRange: projectDraft.optionalPriceRange.trim(),
+      title: projectDraft.title.trim(),
+    };
+
+    setIsSavingProject(true);
+    const result = editingProjectId
+      ? await updateProviderProPortfolioProject(editingProjectId, payload, authToken)
+      : await createProviderProPortfolioProject(payload, authToken);
+    setIsSavingProject(false);
+
+    if (!result.ok) {
+      setProjectFieldErrors(getProjectFieldErrorsFromApiError(result.error));
+      setProjectErrorMessage(t('couldNotSaveProPortfolioProject'));
+      return;
+    }
+
+    setPortfolioProjects((current) => {
+      const next = current.filter((project) => project.id !== result.data.project.id);
+      return [result.data.project, ...next];
+    });
+    setProjectDraft(emptyProProjectDraft);
+    setEditingProjectId(null);
+    setIsProjectFormOpen(false);
+    setProjectFieldErrors({});
+    setProNotice(t('proPortfolioProjectSaved'));
+  }
+
+  async function handleDeleteProject(projectId: string) {
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProjectErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsDeletingProjectId(projectId);
+    setProjectErrorMessage(null);
+    const result = await deleteProviderProPortfolioProject(projectId, authToken);
+    setIsDeletingProjectId(null);
+
+    if (!result.ok) {
+      setProjectErrorMessage(t('couldNotDeleteProPortfolioProject'));
+      return;
+    }
+
+    setPortfolioProjects((current) => current.filter((project) => project.id !== projectId));
+    if (editingProjectId === projectId) {
+      cancelProjectEdit();
+    }
+    setProNotice(t('proPortfolioProjectDeleted'));
   }
 
   return (
@@ -382,8 +710,17 @@ export default function ProviderProfileScreen() {
       </AppCard>
 
       <AppCard accentColor={colors.proOrange600}>
-        <ModeBadge mode="providerPro" />
-        <AppText variant="sectionTitle">{t('proProfessionalProfile')}</AppText>
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionTitleBlock}>
+            <ModeBadge mode="providerPro" />
+            <AppText variant="sectionTitle">{t('proProfessionalProfile')}</AppText>
+          </View>
+          {!isEditingPro && proProfile && status === 'authenticated' ? (
+            <AppButton onPress={beginProEdit} style={styles.headerButton} tone="pro" variant="outline">
+              {t('edit')}
+            </AppButton>
+          ) : null}
+        </View>
         <AppText color={colors.slate700}>
           {profile ? getProStatusLabel(profile.proStatus) : t('proProfileContactProtected')}
         </AppText>
@@ -399,7 +736,280 @@ export default function ProviderProfileScreen() {
             ))}
           </View>
         ) : null}
-        {profile ? <AppText color={colors.slate500}>Portfolio projects: {profile.portfolioProjectsCount}</AppText> : null}
+        {profile ? <AppText color={colors.slate500}>{t('portfolioProjectsCount')}: {profile.portfolioProjectsCount}</AppText> : null}
+
+        {proErrorMessage ? <InlineMessage message={proErrorMessage} tone="error" /> : null}
+        {projectErrorMessage ? <InlineMessage message={projectErrorMessage} tone="error" /> : null}
+        {proNotice ? <InlineMessage message={proNotice} tone="success" /> : null}
+        {status === 'demo' ? <InlineMessage message={t('proProfileEditUnavailableDemo')} tone="neutral" /> : null}
+
+        {proProfile ? (
+          <View style={styles.form}>
+            <FormField
+              autoCapitalize="words"
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.displayName}
+              label={t('proDisplayName')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, displayName: value }))}
+              value={proDraft.displayName}
+            />
+            <FormField
+              autoCapitalize="words"
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.tradeName}
+              label={t('proTradeName')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, tradeName: value }))}
+              value={proDraft.tradeName}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.bio}
+              label={t('proBio')}
+              multiline
+              onChangeText={(value) => setProDraft((current) => ({ ...current, bio: value }))}
+              value={proDraft.bio}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.businessType}
+              label={t('businessType')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, businessType: value }))}
+              value={proDraft.businessType}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.yearsExperience}
+              keyboardType="number-pad"
+              label={t('yearsExperience')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, yearsExperience: value }))}
+              value={proDraft.yearsExperience}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.teamSize}
+              keyboardType="number-pad"
+              label={t('teamSize')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, teamSize: value }))}
+              value={proDraft.teamSize}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              label={t('siteVisitPreference')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, siteVisitPreference: value }))}
+              value={proDraft.siteVisitPreference}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              label={t('quotePreference')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, quotePreference: value }))}
+              value={proDraft.quotePreference}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              label={t('warrantyNote')}
+              multiline
+              onChangeText={(value) => setProDraft((current) => ({ ...current, warrantyNote: value }))}
+              value={proDraft.warrantyNote}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              helperText={t('commaSeparatedHelper')}
+              label={t('languagesSpoken')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, languagesText: value }))}
+              value={proDraft.languagesText}
+            />
+            <FormField
+              editable={isEditingPro && !isSavingPro}
+              errorText={proFieldErrors.profileImageUrl}
+              label={t('profileImageUrl')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, profileImageUrl: value }))}
+              value={proDraft.profileImageUrl}
+            />
+            <FormField
+              autoComplete="tel"
+              editable={isEditingPro && !isSavingPro}
+              label={t('internalPhone')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, internalPhone: value }))}
+              value={proDraft.internalPhone}
+            />
+            <FormField
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={isEditingPro && !isSavingPro}
+              keyboardType="email-address"
+              label={t('internalEmail')}
+              onChangeText={(value) => setProDraft((current) => ({ ...current, internalEmail: value }))}
+              value={proDraft.internalEmail}
+            />
+            <View style={styles.toggleBlock}>
+              <AppText variant="bodyStrong">{t('invoiceAvailable')}</AppText>
+              <View style={styles.toggleRow}>
+                <ToggleChip disabled={!isEditingPro || isSavingPro} label={t('yes')} onPress={() => setProDraft((current) => ({ ...current, invoiceAvailable: true }))} selected={proDraft.invoiceAvailable} />
+                <ToggleChip disabled={!isEditingPro || isSavingPro} label={t('no')} onPress={() => setProDraft((current) => ({ ...current, invoiceAvailable: false }))} selected={!proDraft.invoiceAvailable} />
+              </View>
+            </View>
+            <InfoRow label={t('proStatus')} value={proProfile.status} />
+            {proProfile.cityLabels.length ? <InfoRow label={t('city')} value={proProfile.cityLabels.join(', ')} /> : null}
+            {proProfile.categories.length ? <InfoRow label={t('category')} value={proProfile.categories.map((category) => `${category.label}: ${category.status}`).join(', ')} /> : null}
+            <AppText color={colors.slate500} variant="small">
+              {t('proProfileReadonlyNote')}
+            </AppText>
+
+            {isEditingPro ? (
+              <View style={styles.actionRow}>
+                <AppButton disabled={isSavingPro} onPress={cancelProEdit} style={styles.actionButton} tone="neutral" variant="outline">
+                  {t('cancel')}
+                </AppButton>
+                {hasProChanges ? (
+                  <AppButton disabled={isSavingPro} loading={isSavingPro} onPress={handleSavePro} style={styles.actionButton} tone="pro">
+                    {isSavingPro ? t('savingChanges') : t('saveChanges')}
+                  </AppButton>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        ) : (
+          <AppText color={colors.slate500}>{t('proProfileMissing')}</AppText>
+        )}
+
+        {proProfile ? (
+          <View style={styles.portfolioBlock}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleBlock}>
+                <AppText variant="sectionTitle">{t('portfolio')}</AppText>
+                <AppText color={colors.slate700} variant="small">
+                  {t('proPortfolioHelper')}
+                </AppText>
+              </View>
+              {status === 'authenticated' && !isProjectFormOpen ? (
+                <AppButton onPress={beginCreateProject} style={styles.headerButton} tone="pro">
+                  {t('addProject')}
+                </AppButton>
+              ) : null}
+            </View>
+
+            {isProjectFormOpen ? (
+              <View style={styles.projectForm}>
+                <AppText variant="bodyStrong">
+                  {editingProjectId ? t('editProject') : t('addProject')}
+                </AppText>
+                <FormField
+                  autoCapitalize="words"
+                  editable={!isSavingProject}
+                  errorText={projectFieldErrors.title}
+                  label={t('portfolioProjectTitle')}
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, title: value }))}
+                  value={projectDraft.title}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  label={t('category')}
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, categoryName: value }))}
+                  value={projectDraft.categoryName}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  label={t('city')}
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, cityName: value }))}
+                  value={projectDraft.cityName}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  label={t('description')}
+                  multiline
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, description: value }))}
+                  value={projectDraft.description}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  label={t('approximateDuration')}
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, approximateDuration: value }))}
+                  value={projectDraft.approximateDuration}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  label={t('optionalPriceRange')}
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, optionalPriceRange: value }))}
+                  value={projectDraft.optionalPriceRange}
+                />
+                <FormField
+                  editable={!isSavingProject}
+                  helperText={t('imageUrlsHelper')}
+                  label={t('projectImageUrls')}
+                  multiline
+                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, imageUrlsText: value }))}
+                  value={projectDraft.imageUrlsText}
+                />
+                <View style={styles.toggleBlock}>
+                  <AppText variant="bodyStrong">{t('projectImageType')}</AppText>
+                  <View style={styles.toggleRow}>
+                    {(['GENERAL', 'BEFORE', 'AFTER'] as ProviderProPortfolioImageType[]).map((imageType) => (
+                      <ToggleChip
+                        key={imageType}
+                        disabled={isSavingProject}
+                        label={t(imageType === 'GENERAL' ? 'imageTypeGeneral' : imageType === 'BEFORE' ? 'imageTypeBefore' : 'imageTypeAfter')}
+                        onPress={() => setProjectDraft((current) => ({ ...current, imageType }))}
+                        selected={projectDraft.imageType === imageType}
+                      />
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.toggleBlock}>
+                  <AppText variant="bodyStrong">{t('customerPermissionConfirmed')}</AppText>
+                  <View style={styles.toggleRow}>
+                    <ToggleChip disabled={isSavingProject} label={t('yes')} onPress={() => setProjectDraft((current) => ({ ...current, customerPermissionConfirmed: true }))} selected={projectDraft.customerPermissionConfirmed} />
+                    <ToggleChip disabled={isSavingProject} label={t('no')} onPress={() => setProjectDraft((current) => ({ ...current, customerPermissionConfirmed: false }))} selected={!projectDraft.customerPermissionConfirmed} />
+                  </View>
+                </View>
+                <View style={styles.actionRow}>
+                  <AppButton disabled={isSavingProject} onPress={cancelProjectEdit} style={styles.actionButton} tone="neutral" variant="outline">
+                    {t('cancel')}
+                  </AppButton>
+                  <AppButton disabled={isSavingProject} loading={isSavingProject} onPress={handleSaveProject} style={styles.actionButton} tone="pro">
+                    {isSavingProject ? t('savingChanges') : t('saveProject')}
+                  </AppButton>
+                </View>
+              </View>
+            ) : null}
+
+            {portfolioProjects.length ? (
+              <View style={styles.projectList}>
+                {portfolioProjects.map((project) => (
+                  <View key={project.id} style={styles.projectCard}>
+                    <AppText variant="bodyStrong">{project.title}</AppText>
+                    {project.categoryName || project.cityName ? (
+                      <AppText color={colors.slate500} variant="small">
+                        {[project.categoryName, project.cityName].filter(Boolean).join(' / ')}
+                      </AppText>
+                    ) : null}
+                    {project.description ? <AppText color={colors.slate700}>{project.description}</AppText> : null}
+                    {project.images.length ? (
+                      <AppText color={colors.slate500} variant="small">
+                        {t('projectPhotos')}: {project.images.length}
+                      </AppText>
+                    ) : null}
+                    <View style={styles.actionRow}>
+                      <AppButton onPress={() => beginEditProject(project)} style={styles.actionButton} tone="pro" variant="outline">
+                        {t('edit')}
+                      </AppButton>
+                      <AppButton
+                        disabled={isDeletingProjectId === project.id}
+                        loading={isDeletingProjectId === project.id}
+                        onPress={() => handleDeleteProject(project.id)}
+                        style={styles.actionButton}
+                        tone="neutral"
+                        variant="outline">
+                        {t('remove')}
+                      </AppButton>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <InlineMessage message={t('proPortfolioEmpty')} tone="neutral" />
+            )}
+          </View>
+        ) : null}
       </AppCard>
 
       <AppCard>
@@ -439,6 +1049,39 @@ function toTaskerDraft(profile: ProviderTaskerProfile): TaskerDraft {
   };
 }
 
+function toProDraft(profile: ProviderProProfile): ProDraft {
+  return {
+    bio: profile.bio,
+    businessType: profile.businessType,
+    displayName: profile.displayName,
+    internalEmail: profile.internalEmail,
+    internalPhone: profile.internalPhone,
+    invoiceAvailable: profile.invoiceAvailable,
+    languagesText: profile.languages.join(', '),
+    profileImageUrl: profile.profileImageUrl || '',
+    quotePreference: profile.quotePreference,
+    siteVisitPreference: profile.siteVisitPreference,
+    teamSize: profile.teamSize,
+    tradeName: profile.tradeName,
+    warrantyNote: profile.warrantyNote,
+    yearsExperience: profile.yearsExperience,
+  };
+}
+
+function toProjectDraft(project: ProviderProPortfolioProject): ProProjectDraft {
+  return {
+    approximateDuration: project.approximateDuration,
+    categoryName: project.categoryName,
+    cityName: project.cityName,
+    customerPermissionConfirmed: project.customerPermissionConfirmed,
+    description: project.description,
+    imageType: project.images[0]?.type ?? 'GENERAL',
+    imageUrlsText: project.images.map((image) => image.url).join('\n'),
+    optionalPriceRange: project.optionalPriceRange,
+    title: project.title,
+  };
+}
+
 function parseListText(value: string) {
   const seen = new Set<string>();
   return value
@@ -450,6 +1093,19 @@ function parseListText(value: string) {
       return true;
     })
     .slice(0, 20);
+}
+
+function parseLineListText(value: string) {
+  const seen = new Set<string>();
+  return value
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter((item) => {
+      if (!item || seen.has(item.toLowerCase())) return false;
+      seen.add(item.toLowerCase());
+      return true;
+    })
+    .slice(0, 10);
 }
 
 function normalizeListText(value: string) {
@@ -480,6 +1136,42 @@ function validateTaskerDraft(draft: TaskerDraft): TaskerFieldErrors {
   return errors;
 }
 
+function validateProDraft(draft: ProDraft): ProFieldErrors {
+  const errors: ProFieldErrors = {};
+  const displayName = draft.displayName.trim();
+  const bio = draft.bio.trim();
+  const warrantyNote = draft.warrantyNote.trim();
+  const yearsExperience = draft.yearsExperience.trim();
+  const teamSize = draft.teamSize.trim();
+  const yearsExperienceNumber = yearsExperience ? Number(yearsExperience.replace(',', '.')) : null;
+  const teamSizeNumber = teamSize ? Number(teamSize.replace(',', '.')) : null;
+
+  if (!displayName) errors.displayName = t('proDisplayNameRequired');
+  if (displayName.length > 160) errors.displayName = t('proDisplayNameTooLong');
+  if (bio.length > 2000) errors.bio = t('proBioTooLong');
+  if (warrantyNote.length > 2000) errors.warrantyNote = t('proWarrantyNoteTooLong');
+  if (yearsExperience && (!Number.isFinite(yearsExperienceNumber) || Number(yearsExperienceNumber) < 0)) {
+    errors.yearsExperience = t('numberFieldInvalid');
+  }
+  if (teamSize && (!Number.isFinite(teamSizeNumber) || Number(teamSizeNumber) < 0)) {
+    errors.teamSize = t('numberFieldInvalid');
+  }
+
+  return errors;
+}
+
+function validateProjectDraft(draft: ProProjectDraft): ProProjectFieldErrors {
+  const errors: ProProjectFieldErrors = {};
+  const title = draft.title.trim();
+  const description = draft.description.trim();
+
+  if (!title) errors.title = t('projectTitleRequired');
+  if (title.length > 191) errors.title = t('projectTitleTooLong');
+  if (description.length > 2000) errors.description = t('projectDescriptionTooLong');
+
+  return errors;
+}
+
 function getTaskerFieldErrorsFromApiError(error: ApiError): TaskerFieldErrors {
   const details = error.details;
   if (!details || typeof details !== 'object' || !('fields' in details)) {
@@ -499,6 +1191,47 @@ function getTaskerFieldErrorsFromApiError(error: ApiError): TaskerFieldErrors {
   if (record.bio) fieldErrors.bio = t('taskerBioTooLong');
   if (record.serviceArea) fieldErrors.serviceArea = t('serviceAreaTooLong');
   if (record.hourlyRate) fieldErrors.hourlyRate = t('hourlyRateInvalid');
+
+  return fieldErrors;
+}
+
+function getProFieldErrorsFromApiError(error: ApiError): ProFieldErrors {
+  const details = error.details;
+  if (!details || typeof details !== 'object' || !('fields' in details)) {
+    return {};
+  }
+
+  const fields = (details as { fields?: unknown }).fields;
+  if (!fields || typeof fields !== 'object') {
+    return {};
+  }
+
+  const fieldErrors: ProFieldErrors = {};
+  const record = fields as Record<string, unknown>;
+  if (record.displayName) fieldErrors.displayName = t('proDisplayNameRequired');
+  if (record.bio) fieldErrors.bio = t('proBioTooLong');
+  if (record.yearsExperience) fieldErrors.yearsExperience = t('numberFieldInvalid');
+  if (record.teamSize) fieldErrors.teamSize = t('numberFieldInvalid');
+  if (record.profileImageUrl) fieldErrors.profileImageUrl = t('profileImageUrlInvalid');
+
+  return fieldErrors;
+}
+
+function getProjectFieldErrorsFromApiError(error: ApiError): ProProjectFieldErrors {
+  const details = error.details;
+  if (!details || typeof details !== 'object' || !('fields' in details)) {
+    return {};
+  }
+
+  const fields = (details as { fields?: unknown }).fields;
+  if (!fields || typeof fields !== 'object') {
+    return {};
+  }
+
+  const fieldErrors: ProProjectFieldErrors = {};
+  const record = fields as Record<string, unknown>;
+  if (record.title) fieldErrors.title = t('projectTitleRequired');
+  if (record.description) fieldErrors.description = t('projectDescriptionTooLong');
 
   return fieldErrors;
 }
@@ -598,6 +1331,32 @@ const styles = StyleSheet.create({
   neutralMessage: {
     backgroundColor: colors.slate50,
     borderColor: colors.border,
+  },
+  portfolioBlock: {
+    borderTopColor: colors.proOrangeBorder,
+    borderTopWidth: 1,
+    gap: spacing.md,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  projectCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  projectForm: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  projectList: {
+    gap: spacing.md,
   },
   sectionHeader: {
     alignItems: 'flex-start',
