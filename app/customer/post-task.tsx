@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
-import { TasklyLogoText } from '@/src/components/taskly';
+import { TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { createCustomerTask } from '@/src/lib/api/customer';
 import { getCities, getCoreCategories, getPostingRules } from '@/src/lib/api/catalog';
@@ -399,6 +399,7 @@ export default function CustomerPostTaskScreen() {
   const router = useRouter();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const handleCustomerScroll = useCustomerCreateBarScrollHandler();
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -2911,7 +2912,11 @@ export default function CustomerPostTaskScreen() {
           </ScrollView>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          onScroll={handleCustomerScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.stepCard}>
             <View style={styles.stepIntro}>
               <AppText color={colors.tasklyBlue600} style={styles.stepTitle}>

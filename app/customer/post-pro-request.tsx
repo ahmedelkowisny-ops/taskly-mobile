@@ -14,7 +14,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { ImagePickerPlaceholder, TasklyLogoText } from '@/src/components/taskly';
+import { ImagePickerPlaceholder, TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCities, getPostingRules, getProCategories } from '@/src/lib/api/catalog';
 import { createCustomerProRequest } from '@/src/lib/api/customer';
@@ -216,6 +216,7 @@ export default function CustomerPostProRequestScreen() {
   const router = useRouter();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const handleCustomerScroll = useCustomerCreateBarScrollHandler();
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -1037,7 +1038,11 @@ export default function CustomerPostProRequestScreen() {
             </View>
           ) : null}
 
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            onScroll={handleCustomerScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}>
             {renderStep()}
 
             {isUploadingImages ? (

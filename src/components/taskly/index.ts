@@ -1,5 +1,10 @@
 export { AssistantGuideCard } from './AssistantGuideCard';
 export { CustomerTopBar } from './CustomerTopBar';
+export {
+  CustomerCreateBarVisibilityProvider,
+  useCustomerCreateBarScrollHandler,
+  useCustomerCreateBarVisibility,
+} from './CustomerCreateBarVisibility';
 export { EmptyStateCard } from './EmptyStateCard';
 export { FormField } from './FormField';
 export { FormSection } from './FormSection';
