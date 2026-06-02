@@ -690,7 +690,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
       {task ? (
         <>
-          <AppCard accentColor={colors.tasklyBlue600}>
+          <AppCard backgroundColor={colors.white}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
               <StatusBadge label={t('tasklyTask')} tone="core" />
               <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
@@ -756,7 +756,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
+    <AppCard backgroundColor={colors.white}>
       <StatusBadge label={label} tone="core" />
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -850,7 +850,7 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
 
 function Timeline({ items }: { items: { description: string; id: string; label: string; status: string }[] }) {
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
+    <AppCard backgroundColor={colors.white}>
       <AppText variant="sectionTitle">{t('timeline')}</AppText>
       {items.map((item) => (
         <View key={item.id} style={styles.timelineItem}>
@@ -876,7 +876,7 @@ function ProviderStatusCard({ task }: { task: ProviderCoreTaskDetail }) {
   if (!messages.length) return null;
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
+    <AppCard backgroundColor={colors.white}>
       <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
       <AppText variant="sectionTitle">{t('tasklyTaskStatus')}</AppText>
       {messages.map((item, index) => (
@@ -993,10 +993,9 @@ function ProviderActions({
 }) {
   const primaryAction = getPrimaryProviderAction(task);
   const blockedReason = getProviderBlockedReasonText(task);
-  const hasPrimaryAction = primaryAction !== 'none';
 
   return (
-    <AppCard accentColor={hasPrimaryAction ? colors.tasklyBlue600 : undefined}>
+    <AppCard backgroundColor={colors.white}>
       <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
       {primaryAction === 'express_interest' ? (
         <>

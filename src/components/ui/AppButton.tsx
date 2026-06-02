@@ -20,6 +20,7 @@ type ButtonVariant = 'filled' | 'outline' | 'ghost';
 type AppButtonProps = {
   children: ReactNode;
   disabled?: boolean;
+  labelColor?: string;
   loading?: boolean;
   onPress?: (event: GestureResponderEvent) => void;
   style?: StyleProp<ViewStyle>;
@@ -42,6 +43,7 @@ const toneBorderColor: Record<ButtonTone, string> = {
 export function AppButton({
   children,
   disabled = false,
+  labelColor,
   loading = false,
   onPress,
   style,
@@ -73,7 +75,7 @@ export function AppButton({
       {loading ? (
         <ActivityIndicator color={filled ? colors.white : accent} />
       ) : (
-        <AppText color={filled ? colors.white : accent} style={styles.label} variant="button">
+        <AppText color={labelColor ?? (filled ? colors.white : accent)} style={styles.label} variant="button">
           {children}
         </AppText>
       )}

@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard, ModeBadge } from '@/src/components/taskly';
+import { AssistantGuideCard, EmptyStateCard, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderProRequestsResponse } from '@/src/lib/api/domain';
 import { getMockProviderProRequestsResponse } from '@/src/lib/api/mockApi';
@@ -75,6 +75,8 @@ export default function ProviderProRequestsScreen() {
 
   return (
     <Screen>
+      <ProviderTopBar />
+
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerPro" />
         <AppText variant="screenTitle">{t('proRequests')}</AppText>

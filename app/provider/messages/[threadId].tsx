@@ -1,10 +1,11 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { FormField, ModeBadge } from '@/src/components/taskly';
+import { FormField, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageAttachment, MessageItem, MessageThreadDetailResponse, MessageThreadMeta } from '@/src/lib/api/domain';
 import { getMessageThread, sendMessage, sendMessageImage } from '@/src/lib/api/messages';
@@ -256,12 +257,9 @@ export default function ProviderMessageThreadScreen() {
 
   return (
     <Screen>
+      <ProviderTopBar />
       <View style={styles.header}>
-        <View style={styles.modeRow}>
-          <ModeBadge mode="providerCore" />
-          <ModeBadge mode="providerPro" />
-        </View>
-        <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">{t('backToTaskly')}</AppButton>
+        <AppButton onPress={() => router.push('/provider/messages' as Href)} tone="neutral" variant="ghost">{t('backToTaskly')}</AppButton>
       </View>
 
       {isLoading ? <StateCard label="Loading" message={t('conversation')} /> : null}
@@ -582,11 +580,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   messageList: { gap: spacing.md },
-  modeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
   myMessage: {
     alignSelf: 'flex-end',
     backgroundColor: colors.tasklyBlue600,

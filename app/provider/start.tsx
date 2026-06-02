@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { LanguageToggle, ModeBadge, ProviderStatusCard } from '@/src/components/taskly';
+import { ModeBadge, ProviderStatusCard, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -17,6 +19,12 @@ export default function ProviderStartScreen() {
   const session = authSession ?? mockAuth.currentSession;
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
   const hasProviderAccess = canAccessProviderWorkspace(session);
+
+  useEffect(() => {
+    if (status !== 'loading' && hasProviderAccess) {
+      router.replace('/provider/dashboard' as Href);
+    }
+  }, [hasProviderAccess, router, status]);
   const mainTitle = hasProviderAccess ? t('providerReadyTitle') : t('providerProfileReviewing');
   const mainBody = hasProviderAccess ? t('providerReadyHelper') : t('providerReviewHelper');
   const primaryActionLabel = hasProviderAccess ? t('openProviderArea') : t('reviewProviderSetup');
@@ -25,10 +33,7 @@ export default function ProviderStartScreen() {
 
   return (
     <Screen>
-      <View style={styles.topBar}>
-        <StatusBadge label={t('providerArea')} tone="neutral" />
-        <LanguageToggle />
-      </View>
+      <ProviderTopBar />
 
       <View style={styles.header}>
         <AppText style={styles.screenTitle} variant="screenTitle">

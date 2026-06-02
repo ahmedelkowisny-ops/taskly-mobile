@@ -2,15 +2,21 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 
 import { WorkspaceGuard } from '@/src/components/taskly';
+import { hasApprovedProMode, hasCoreTaskerMode } from '@/src/lib/auth/workspaceAccess';
+import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 
 export default function ProviderLayout() {
   useI18n();
+  const { session, status } = useAuth();
+  const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
+  const showPro = status === 'demo' || hasApprovedProMode(session);
 
   return (
     <WorkspaceGuard workspace="provider">
       <Tabs
+        tabBar={() => null}
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarActiveTintColor:
@@ -31,6 +37,7 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="core-tasks"
           options={{
+            href: showCoreTasker ? undefined : null,
             title: t('tabTasks'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="briefcase-outline" size={size} />,
           }}
@@ -44,6 +51,7 @@ export default function ProviderLayout() {
         <Tabs.Screen
           name="pro-requests"
           options={{
+            href: showPro ? undefined : null,
             title: t('tabPro'),
             tabBarIcon: ({ color, size }) => <Ionicons color={color} name="star-outline" size={size} />,
           }}

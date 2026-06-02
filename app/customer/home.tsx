@@ -28,7 +28,7 @@ export default function CustomerHomeScreen() {
 
       <View style={styles.greeting}>
         <AppText style={styles.greetingTitle} variant="screenTitle">
-          {t('welcomeName').replace('{name}', displayName)}
+          {t('welcomeName').replace('{{name}}', displayName)}
         </AppText>
         <AppText color={colors.slate700} style={styles.greetingBody}>
           {t('customerHomePromise')}

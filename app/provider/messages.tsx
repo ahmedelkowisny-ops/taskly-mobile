@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EmptyStateCard, ModeBadge } from '@/src/components/taskly';
+import { EmptyStateCard, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageThreadSummary, MessageThreadsResponse } from '@/src/lib/api/domain';
 import { getMessageThreads } from '@/src/lib/api/messages';
@@ -20,6 +20,7 @@ export default function ProviderMessagesScreen() {
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'tasks' | 'support'>('tasks');
 
   const loadThreads = useCallback(async () => {
     setMessage(null);
@@ -63,17 +64,36 @@ export default function ProviderMessagesScreen() {
     }, [loadThreads]),
   );
 
-  const threads = data?.threads ?? [];
+  const allThreads = data?.threads ?? [];
+  const taskThreads = allThreads.filter((th) => th.contextType === 'CORE_TASK' || th.contextType === 'PRO_REQUEST');
+  const supportThreads = allThreads.filter((th) => th.contextType === 'SUPPORT' || th.id.startsWith('admin:') || th.id.startsWith('support:'));
+  const threads = activeTab === 'tasks' ? taskThreads : supportThreads;
 
   return (
     <Screen>
+      <ProviderTopBar />
+
       <View style={styles.header}>
-        <View style={styles.modeRow}>
-          <ModeBadge mode="providerCore" />
-          <ModeBadge mode="providerPro" />
-        </View>
         <AppText variant="screenTitle">{t('messages')}</AppText>
-        <AppText color={colors.slate700}>{t('yourConversationsAppearHere')}</AppText>
+      </View>
+
+      <View style={styles.tabs}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setActiveTab('tasks')}
+          style={[styles.tab, activeTab === 'tasks' ? styles.tabActive : null]}>
+          <AppText color={activeTab === 'tasks' ? colors.tasklyBlue700 : colors.slate500} variant="bodyStrong">
+            {t('tasksTab')}
+          </AppText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setActiveTab('support')}
+          style={[styles.tab, activeTab === 'support' ? styles.tabActive : null]}>
+          <AppText color={activeTab === 'support' ? colors.tasklyBlue700 : colors.slate500} variant="bodyStrong">
+            {t('supportTab')}
+          </AppText>
+        </Pressable>
       </View>
 
       {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
@@ -90,7 +110,10 @@ export default function ProviderMessagesScreen() {
       ) : null}
 
       {!isLoading && !message && threads.length === 0 ? (
-        <EmptyStateCard body={t('yourConversationsAppearHere')} title={t('noMessagesYet')} />
+        <EmptyStateCard
+          body={activeTab === 'tasks' ? t('noTaskConversationsYetBody') : t('noSupportMessagesBody')}
+          title={activeTab === 'tasks' ? t('noTaskConversationsYet') : t('noSupportMessagesYet')}
+        />
       ) : null}
 
       {threads.map((thread) => (
@@ -146,10 +169,20 @@ function getContextLabel(contextType: MessageThreadSummary['contextType']) {
 const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
   header: { gap: spacing.sm },
-  modeRow: {
+  tab: {
+    alignItems: 'center',
+    borderBottomColor: 'transparent',
+    borderBottomWidth: 2,
+    flex: 1,
+    paddingVertical: spacing.sm,
+  },
+  tabActive: {
+    borderBottomColor: colors.tasklyBlue600,
+  },
+  tabs: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
   },
   threadHeader: {
     flexDirection: 'row',

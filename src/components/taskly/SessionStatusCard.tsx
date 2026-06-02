@@ -26,7 +26,7 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
     return {
       badge: t('signedInReady'),
       body: t('workspacePermissionsHelper'),
-      title: name ? t('welcomeName').replace('{name}', name) : t('tasklyAccount'),
+      title: name ? t('welcomeName').replace('{{name}}', name) : t('tasklyAccount'),
       tone: 'success' as const,
     };
   }
@@ -35,7 +35,7 @@ function getStatusCopy(status: ReturnType<typeof useAuth>['status'], name?: stri
     return {
       badge: t('demoPreview'),
       body: t('demoModeNoRealPayments'),
-      title: name ? t('welcomeName').replace('{name}', name) : t('demoPreview'),
+      title: name ? t('welcomeName').replace('{{name}}', name) : t('demoPreview'),
       tone: 'warning' as const,
     };
   }

@@ -13,11 +13,20 @@ export { LanguageToggle } from './LanguageToggle';
 export { ModeBadge } from './ModeBadge';
 export { NotificationBell } from './NotificationBell';
 export { NotificationSettingsCard } from './NotificationSettingsCard';
+export { ProviderDrawer } from './ProviderDrawer';
+export {
+  getProviderPrimaryAction,
+  isActiveProviderCoreTask,
+  isAvailableProviderCoreTask,
+  isHistoryProviderCoreTask,
+  ProviderCoreTaskCard,
+} from './ProviderCoreTaskCard';
+export type { ProviderCoreTaskPrimaryAction } from './ProviderCoreTaskCard';
 export { ProviderStatusCard } from './ProviderStatusCard';
+export { ProviderTopBar } from './ProviderTopBar';
 export { PublicTopBar } from './PublicTopBar';
 export { SelectOptionCard } from './SelectOptionCard';
 export { SessionStatusCard } from './SessionStatusCard';
 export { TasklyLogoText } from './TasklyLogoText';
-export { WorkspaceSwitchHint } from './WorkspaceSwitchHint';
 export { WorkspaceAccessCard } from './WorkspaceAccessCard';
 export { WorkspaceGuard } from './WorkspaceGuard';

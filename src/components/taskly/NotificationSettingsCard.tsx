@@ -12,6 +12,7 @@ import {
   requestAndRegisterNotifications,
   unregisterStoredNotificationToken,
 } from '@/src/lib/notifications/mobileNotifications';
+import { isTaskerOnlyProvider } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -48,12 +49,17 @@ const preferenceRows: { keyName: PreferenceKey; labelKey: Parameters<typeof t>[0
 ];
 
 export function NotificationSettingsCard({ workspace }: NotificationSettingsCardProps) {
-  const { getValidAccessToken, isDemoMode, status } = useAuth();
+  const { getValidAccessToken, isDemoMode, session, status } = useAuth();
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const hideProPreferences = workspace === 'provider' && status !== 'demo' && isTaskerOnlyProvider(session);
+  const visiblePreferenceRows = preferenceRows.filter((row) => {
+    if (!hideProPreferences) return true;
+    return row.keyName !== 'proAlertsEnabled' && row.keyName !== 'siteVisitAlertsEnabled';
+  });
 
   const loadPreferences = useCallback(async () => {
     if (status === 'demo') {
@@ -102,11 +108,16 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       }
 
       setIsSaving(true);
-      const result = await updateNotificationPreferences(patch, authToken);
+      const safePatch = hideProPreferences
+        ? Object.fromEntries(
+            Object.entries(patch).filter(([key]) => key !== 'proAlertsEnabled' && key !== 'siteVisitAlertsEnabled'),
+          )
+        : patch;
+      const result = await updateNotificationPreferences(safePatch, authToken);
       setIsSaving(false);
 
       if (!result.ok) {
-        setError(t('couldNotSaveNotificationSettings'));
+        setError(result.error.message || t('couldNotSaveNotificationSettings'));
         return false;
       }
 
@@ -114,7 +125,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       setNotice(t('alertsSaved'));
       return true;
     },
-    [getValidAccessToken, isDemoMode],
+    [getValidAccessToken, hideProPreferences, isDemoMode],
   );
 
   const enableNotifications = useCallback(async () => {
@@ -137,7 +148,11 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
     const result = await requestAndRegisterNotifications({
       authToken,
       isDemoMode,
-      preferences: { ...preferences, pushEnabled: true },
+        preferences: {
+          ...preferences,
+          ...(hideProPreferences ? { proAlertsEnabled: false, siteVisitAlertsEnabled: false } : null),
+          pushEnabled: true,
+        },
       workspace,
     });
 
@@ -154,14 +169,19 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
         return;
       }
 
-      setError(t('couldNotSaveNotificationSettings'));
+      if (result.code === 'PROJECT_ID_MISSING' || result.code === 'REGISTRATION_FAILED' || result.code === 'UNSUPPORTED_PLATFORM') {
+        setError(t('pushNotificationsUnavailable'));
+        return;
+      }
+
+      setError(result.message || t('couldNotSaveNotificationSettings'));
       return;
     }
 
     await savePreferences({ pushEnabled: true });
     setIsSaving(false);
     setNotice(t('alertsSaved'));
-  }, [getValidAccessToken, isDemoMode, preferences, savePreferences, workspace]);
+  }, [getValidAccessToken, hideProPreferences, isDemoMode, preferences, savePreferences, workspace]);
 
   const disableNotifications = useCallback(async () => {
     if (isDemoMode) {
@@ -219,7 +239,11 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
           <AppButton loading={isSaving} onPress={enableNotifications}>
             {t('enableAlerts')}
           </AppButton>
-          <AppButton disabled={isSaving} onPress={() => setNotice(t('notificationsDisabled'))} variant="ghost">
+          <AppButton
+            disabled={isSaving}
+            labelColor={colors.slate500}
+            onPress={() => setNotice(t('notificationsDisabled'))}
+            variant="ghost">
             {t('notNow')}
           </AppButton>
         </View>
@@ -233,7 +257,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       )}
 
       <View style={styles.preferenceStack}>
-        {preferenceRows.map((row) => (
+        {visiblePreferenceRows.map((row) => (
           <PreferenceRow
             disabled={isSaving}
             key={row.keyName}

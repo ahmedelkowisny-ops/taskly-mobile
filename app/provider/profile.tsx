@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, FormField, ModeBadge, WorkspaceSwitchHint } from '@/src/components/taskly';
+import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import type {
   ProviderProPortfolioProject,
@@ -26,7 +26,7 @@ import {
   updateProviderTaskerProfile,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { getCoreTaskerStatusLabel, getProStatusLabel } from '@/src/lib/auth/workspaceAccess';
+import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode, isTaskerOnlyProvider } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
@@ -120,7 +120,7 @@ const emptyProProjectDraft: ProProjectDraft = {
 
 export default function ProviderProfileScreen() {
   const router = useRouter();
-  const { getValidAccessToken, refreshSession, status, useDemoSession } = useAuth();
+  const { getValidAccessToken, refreshSession, session: authSession, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProfileResponse | null>(null);
   const [taskerProfile, setTaskerProfile] = useState<ProviderTaskerProfile | null>(null);
   const [taskerDraft, setTaskerDraft] = useState<TaskerDraft>(emptyTaskerDraft);
@@ -309,6 +309,13 @@ export default function ProviderProfileScreen() {
   );
 
   const profile = data?.profile;
+  const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
+  const taskerOnly =
+    status !== 'demo' &&
+    (authSession
+      ? isTaskerOnlyProvider(authSession)
+      : (profile?.coreTaskerStatus === 'approved' || profile?.coreTaskerStatus === 'needsStripe') &&
+        profile?.proStatus !== 'approved');
 
   function beginTaskerEdit() {
     if (!taskerProfile) return;
@@ -548,6 +555,8 @@ export default function ProviderProfileScreen() {
 
   return (
     <Screen>
+      <ProviderTopBar />
+
       <View style={{ gap: spacing.sm }}>
         <StatusBadge label="Provider" tone="neutral" />
         <AppText variant="screenTitle">{t('profile')}</AppText>
@@ -709,6 +718,7 @@ export default function ProviderProfileScreen() {
         ) : null}
       </AppCard>
 
+      {showProProfileTools ? (
       <AppCard accentColor={colors.proOrange600}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
@@ -1011,6 +1021,7 @@ export default function ProviderProfileScreen() {
           </View>
         ) : null}
       </AppCard>
+      ) : null}
 
       <AppCard>
         <StatusBadge label="Settings" tone="neutral" />
@@ -1019,18 +1030,8 @@ export default function ProviderProfileScreen() {
         <AppButton onPress={() => router.push('/provider/account')} variant="outline">
           {t('openAccount')}
         </AppButton>
-        <AppButton onPress={() => router.push('/provider/start')} tone="pro" variant="outline">
-          {t('startProviderWorkspace')}
-        </AppButton>
       </AppCard>
 
-      <AssistantGuideCard
-        body={t('providerProfileReadinessBody')}
-        title={t('profileReadiness')}
-        tone="pro"
-      />
-
-      <WorkspaceSwitchHint />
     </Screen>
   );
 }

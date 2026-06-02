@@ -27,11 +27,23 @@ export function canAccessProviderWorkspace(session: WorkspaceSession | null | un
   return Boolean(session?.workspaceAccess.provider);
 }
 
-export function hasApprovedProviderMode(session: WorkspaceSession | null | undefined) {
+export function hasCoreTaskerMode(session: WorkspaceSession | null | undefined) {
   if (!session) return false;
 
-  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
-  return coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe' || proStatus === 'approved';
+  const { coreTaskerStatus } = session.providerCapabilities;
+  return coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe';
+}
+
+export function hasApprovedProMode(session: WorkspaceSession | null | undefined) {
+  return session?.providerCapabilities.proStatus === 'approved';
+}
+
+export function hasApprovedProviderMode(session: WorkspaceSession | null | undefined) {
+  return hasCoreTaskerMode(session) || hasApprovedProMode(session);
+}
+
+export function isTaskerOnlyProvider(session: WorkspaceSession | null | undefined) {
+  return hasCoreTaskerMode(session) && !hasApprovedProMode(session);
 }
 
 export function hasPendingProviderMode(session: WorkspaceSession | null | undefined) {
