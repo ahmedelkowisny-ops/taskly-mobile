@@ -182,7 +182,7 @@ export function getWorkspaceEntryState(
 
   if (authStatus === 'demo') {
     return {
-      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Enter Provider Workspace',
+      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Open Taskly work',
       description: 'Demo workspace mode is active.',
       state: 'demo',
     };
@@ -200,7 +200,7 @@ export function getWorkspaceEntryState(
 
   if (allowed) {
     return {
-      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Enter Provider Workspace',
+      actionLabel: workspace === 'customer' ? 'Enter Customer Workspace' : 'Open Taskly work',
       description: workspace === 'customer' ? getCustomerWorkspaceSummary(session) : getProviderModeSummary(session),
       state: 'available',
     };

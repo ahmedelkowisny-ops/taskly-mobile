@@ -16,6 +16,7 @@ export { NotificationSettingsCard } from './NotificationSettingsCard';
 export { ProviderDrawer } from './ProviderDrawer';
 export {
   getProviderPrimaryAction,
+  formatCustomerPreviewLabel,
   isActiveProviderCoreTask,
   isAvailableProviderCoreTask,
   isHistoryProviderCoreTask,

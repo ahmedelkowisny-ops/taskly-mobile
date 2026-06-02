@@ -4,7 +4,7 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
-import { FormField, ModeBadge } from '@/src/components/taskly';
+import { FormField, formatCustomerPreviewLabel, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   CoreCancellationState,
@@ -682,7 +682,7 @@ export default function ProviderCoreTaskDetailScreen() {
           <StatusBadge label={stateLabel || 'Notice'} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
-            <AppButton onPress={loadDetail} variant="outline">Retry</AppButton>
+            <AppButton onPress={loadDetail} variant="outline">{t('retry')}</AppButton>
             <AppButton onPress={useDemoSession} tone="neutral" variant="outline">{t('continueDemoMode')}</AppButton>
           </View>
         </AppCard>
@@ -704,7 +704,7 @@ export default function ProviderCoreTaskDetailScreen() {
           <AppCard>
             <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
             <AppText variant="sectionTitle">{t('taskDetails')}</AppText>
-            <Info label={t('customer')} value={task.customerPreviewLabel} />
+            <Info label={t('customer')} value={formatCustomerPreviewLabel(task.customerPreviewLabel)} />
             <Info label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             {task.hasScheduleConflict ? <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText> : null}
             <Info label={t('address')} value={task.addressPreviewLabel || t('addressSharedAfterSelection')} />

@@ -1,7 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EmptyStateCard, ProviderTopBar } from '@/src/components/taskly';
@@ -16,11 +16,18 @@ import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderMessagesScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ context?: string }>();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tasks' | 'support'>('tasks');
+
+  useEffect(() => {
+    if (params.context === 'support') {
+      setActiveTab('support');
+    }
+  }, [params.context]);
 
   const loadThreads = useCallback(async () => {
     setMessage(null);

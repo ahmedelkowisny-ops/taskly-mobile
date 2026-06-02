@@ -26,7 +26,7 @@ import {
   updateProviderTaskerProfile,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode, isTaskerOnlyProvider } from '@/src/lib/auth/workspaceAccess';
+import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
@@ -310,12 +310,6 @@ export default function ProviderProfileScreen() {
 
   const profile = data?.profile;
   const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
-  const taskerOnly =
-    status !== 'demo' &&
-    (authSession
-      ? isTaskerOnlyProvider(authSession)
-      : (profile?.coreTaskerStatus === 'approved' || profile?.coreTaskerStatus === 'needsStripe') &&
-        profile?.proStatus !== 'approved');
 
   function beginTaskerEdit() {
     if (!taskerProfile) return;

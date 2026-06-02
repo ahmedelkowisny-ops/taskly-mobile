@@ -2,13 +2,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { EmptyStateCard, ProviderTopBar } from '@/src/components/taskly';
+import { EmptyStateCard, isHistoryProviderCoreTask, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import { getProviderCoreTasks } from '@/src/lib/api/provider';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { isHistoryProviderCoreTask } from '@/src/components/taskly';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';

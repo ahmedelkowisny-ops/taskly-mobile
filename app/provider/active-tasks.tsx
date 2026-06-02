@@ -1,7 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import type { ComponentProps } from 'react';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 

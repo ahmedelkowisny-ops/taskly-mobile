@@ -11,7 +11,7 @@ import { getMockCustomerHomeResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { radius, spacing } from '@/src/theme/spacing';
+import { spacing } from '@/src/theme/spacing';
 
 export default function CustomerDashboardScreen() {
   useI18n();

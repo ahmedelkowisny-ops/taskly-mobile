@@ -229,7 +229,7 @@ function isPaymentProtected(label: string) {
   return label === 'Payment protected' || label === t('paymentProtected');
 }
 
-function formatCustomerPreviewLabel(label: string) {
+export function formatCustomerPreviewLabel(label: string) {
   return label.replace(/^customer:\s*/i, '').trim() || label;
 }
 

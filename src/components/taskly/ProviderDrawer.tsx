@@ -16,8 +16,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  hasCoreTaskerMode,
   hasApprovedProMode,
+  hasCoreTaskerMode,
 } from '@/src/lib/auth/workspaceAccess';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
@@ -62,11 +62,10 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
   const supportMessagesActive = pathname === '/provider/messages' && params.context === 'support';
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
-  const proStatus = session?.providerCapabilities?.proStatus;
-  const proRoute: Href = (hasApprovedProMode(session)
+  const showApprovedPro = status === 'demo' || hasApprovedProMode(session);
+  const showProUpsell = showCoreTasker && !showApprovedPro;
+  const proRoute: Href = (showApprovedPro
     ? '/provider/pro-requests'
-    : proStatus === 'draft' || proStatus === 'pending'
-    ? '/provider/start'
     : '/provider/pro-upsell') as Href;
 
   useEffect(() => {
@@ -135,20 +134,24 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
         },
       ],
     },
-    {
-      label: t('drawerGroupTasklyPro'),
-      items: [
-        {
-          icon: 'ribbon-outline',
-          isActive: (current) =>
-            current === '/provider/pro-requests' ||
-            current === '/provider/pro-upsell',
-          label: t('tasklyPro'),
-          route: proRoute,
-          tone: 'pro' as const,
-        },
-      ],
-    },
+    ...(showApprovedPro || showProUpsell
+      ? [
+          {
+            label: t('drawerGroupTasklyPro'),
+            items: [
+              {
+                icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
+                isActive: (current: string) =>
+                  current === '/provider/pro-requests' ||
+                  current === '/provider/pro-upsell',
+                label: showApprovedPro ? t('tasklyPro') : t('applyForTasklyPro'),
+                route: proRoute,
+                tone: 'pro' as const,
+              },
+            ],
+          },
+        ]
+      : []),
     {
       label: t('drawerGroupCommunication'),
       items: [

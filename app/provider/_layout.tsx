@@ -12,6 +12,7 @@ export default function ProviderLayout() {
   const { session, status } = useAuth();
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
   const showPro = status === 'demo' || hasApprovedProMode(session);
+  const showProUpsell = showCoreTasker && !showPro;
 
   return (
     <WorkspaceGuard workspace="provider">
@@ -35,6 +36,12 @@ export default function ProviderLayout() {
           }}
         />
         <Tabs.Screen
+          name="active-tasks"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="core-tasks"
           options={{
             href: showCoreTasker ? undefined : null,
@@ -44,6 +51,24 @@ export default function ProviderLayout() {
         />
         <Tabs.Screen
           name="core-tasks/[taskId]"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="interests"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="task-history"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="payouts"
           options={{
             href: null,
           }}
@@ -60,6 +85,12 @@ export default function ProviderLayout() {
           name="pro-requests/[proRequestId]"
           options={{
             href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="pro-upsell"
+          options={{
+            href: showProUpsell ? undefined : null,
           }}
         />
         <Tabs.Screen

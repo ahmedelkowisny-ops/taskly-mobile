@@ -37,7 +37,7 @@ export default function ProviderDashboardScreen() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
-  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+  const { coreTaskerStatus } = session.providerCapabilities;
   const summary = data?.summary;
   const displayName = summary?.displayName ?? authSession?.user.displayName ?? mockAuth.currentSession.displayName;
   const greetingName = getFriendlyName(authSession?.user ?? summary ?? mockAuth.currentSession, displayName);
@@ -53,7 +53,6 @@ export default function ProviderDashboardScreen() {
     : session;
   const hasCoreAccess = status === 'demo' || hasCoreTaskerMode(dashboardSession);
   const hasApprovedPro = status === 'demo' || hasApprovedProMode(dashboardSession);
-  const hasPendingOrDraftPro = !hasApprovedPro && (proStatus === 'draft' || proStatus === 'pending');
   const coreStatusLabel = (summary?.coreTaskerStatus ?? coreTaskerStatus) === 'approved' ? t('available') : t('providerProfileReviewing');
   const coreTasks = coreTasksData?.tasks ?? [];
   const activeTasks = coreTasks.filter(isActiveProviderCoreTask);
