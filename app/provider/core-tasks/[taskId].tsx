@@ -2,7 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, StyleSheet, View } from 'react-native';
+import { Alert, Image, Linking, StyleSheet, View } from 'react-native';
 
 import { FormField, formatCustomerPreviewLabel, ModeBadge } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -668,6 +668,11 @@ export default function ProviderCoreTaskDetailScreen() {
     router.push('/provider/messages' as Href);
   }, [router, task?.messageThreadId]);
 
+  const handleOpenMaps = useCallback(async () => {
+    if (!task || !canOpenMapsForTask(task)) return;
+    await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.addressPreviewLabel.trim())}`);
+  }, [task]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -708,6 +713,11 @@ export default function ProviderCoreTaskDetailScreen() {
             <Info label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             {task.hasScheduleConflict ? <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText> : null}
             <Info label={t('address')} value={task.addressPreviewLabel || t('addressSharedAfterSelection')} />
+            {canOpenMapsForTask(task) ? (
+              <AppButton onPress={handleOpenMaps} variant="outline">
+                {t('openInMaps')}
+              </AppButton>
+            ) : null}
           </AppCard>
 
           <ProviderPaymentBreakdownCard task={task} />
@@ -1074,9 +1084,6 @@ function ProviderActions({
         <View style={styles.stack}>
           <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="neutral" />
           <AppText color={colors.slate700}>{blockedReason}</AppText>
-          <AppButton disabled variant="outline">
-            {task.nextActions.primary?.label || t('notAvailable')}
-          </AppButton>
         </View>
       )}
     </AppCard>
@@ -1268,6 +1275,24 @@ function getProviderBlockedReasonText(task: ProviderCoreTaskDetail) {
     default:
       return task.nextActions.blockedReason || t('waitingForCustomer');
   }
+}
+
+function canOpenMapsForTask(task: ProviderCoreTaskDetail) {
+  const label = String(task.addressPreviewLabel || '').trim();
+  if (!label) return false;
+
+  const normalized = label.toLocaleLowerCase();
+  const hiddenLabels = [
+    t('addressSharedAfterSelection'),
+    'Address shared after selection',
+    'Address not set',
+  ].map((value) => value.trim().toLocaleLowerCase());
+
+  if (hiddenLabels.includes(normalized)) return false;
+  if (normalized.includes('shared after selection')) return false;
+  if (normalized.includes('address not set')) return false;
+
+  return true;
 }
 
 function getPaymentStatusLabel(label: string) {

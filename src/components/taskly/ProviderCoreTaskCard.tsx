@@ -44,7 +44,7 @@ export function ProviderCoreTaskCard({
   const statusChips = getUniqueStatusChips(task);
 
   return (
-    <AppCard backgroundColor={colors.white} style={compact ? styles.compactCard : undefined}>
+    <AppCard backgroundColor={compact ? colors.tasklyBlue50 : colors.white} style={compact ? styles.compactCard : undefined}>
       <View style={styles.badges}>
         {statusChips.map((chip) => (
           <StatusBadge key={chip.label} label={chip.label} tone={chip.tone} />
@@ -103,7 +103,7 @@ export function ProviderCoreTaskCard({
           </AppButton>
         ) : null}
         <AppButton onPress={() => onOpenDetail(task.id)} style={styles.actionButton} variant="outline">
-          {t('viewDetails')}
+          {getDetailActionLabel(task)}
         </AppButton>
       </View>
     </AppCard>
@@ -203,6 +203,12 @@ function getPrimaryActionLabel(action: ProviderCoreTaskPrimaryAction) {
   if (action === 'request_completion') return t('requestCompletion');
   if (action === 'open_chat') return t('openConversation');
   return t('notAvailable');
+}
+
+function getDetailActionLabel(task: ProviderCoreTaskSummary) {
+  if (isActiveProviderCoreTask(task)) return t('continueTask');
+  if (isAvailableProviderCoreTask(task)) return t('checkTask');
+  return t('viewDetails');
 }
 
 function getProviderBlockedReason(task: ProviderCoreTaskSummary) {

@@ -16,9 +16,10 @@ import {
   ProviderTopBar,
 } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTaskSummary, ProviderCoreTasksResponse, ProviderDashboardResponse } from '@/src/lib/api/domain';
+import { MessageThreadSummary, MessageThreadsResponse, ProviderCoreTaskSummary, ProviderCoreTasksResponse, ProviderDashboardResponse } from '@/src/lib/api/domain';
+import { getMessageThreads } from '@/src/lib/api/messages';
 import { getProviderCoreTasks, getProviderDashboard, markProviderCoreTaskOnTheWay, requestProviderCoreTaskCompletion, startProviderCoreTask, expressInterestInCoreTask } from '@/src/lib/api/provider';
-import { getMockProviderCoreTasksResponse, getMockProviderDashboardResponse } from '@/src/lib/api/mockApi';
+import { getMockMessageThreadsResponse, getMockProviderCoreTasksResponse, getMockProviderDashboardResponse } from '@/src/lib/api/mockApi';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { hasApprovedProMode, hasCoreTaskerMode } from '@/src/lib/auth/workspaceAccess';
@@ -33,6 +34,7 @@ export default function ProviderDashboardScreen() {
   const session = authSession ?? mockAuth.currentSession;
   const [data, setData] = useState<ProviderDashboardResponse | null>(null);
   const [coreTasksData, setCoreTasksData] = useState<ProviderCoreTasksResponse | null>(null);
+  const [messagesData, setMessagesData] = useState<MessageThreadsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export default function ProviderDashboardScreen() {
   const activeTasks = coreTasks.filter(isActiveProviderCoreTask);
   const availableTasks = coreTasks.filter(isAvailableProviderCoreTask);
   const historyTasks = coreTasks.filter(isHistoryProviderCoreTask);
+  const customerMessageThreads = (messagesData?.threads ?? []).filter((thread) => thread.contextType === 'CORE_TASK');
 
   const loadDashboard = useCallback(async () => {
     setErrorMessage(null);
@@ -66,6 +69,7 @@ export default function ProviderDashboardScreen() {
     if (status === 'demo') {
       setData(getMockProviderDashboardResponse());
       setCoreTasksData(getMockProviderCoreTasksResponse());
+      setMessagesData(getMockMessageThreadsResponse());
       setIsLoading(false);
       return;
     }
@@ -73,6 +77,7 @@ export default function ProviderDashboardScreen() {
     if (status !== 'authenticated') {
       setData(null);
       setCoreTasksData(null);
+      setMessagesData(null);
       setIsUnauthorized(status === 'unauthenticated');
       setIsLoading(false);
       return;
@@ -84,14 +89,16 @@ export default function ProviderDashboardScreen() {
     if (!authToken) {
       setData(null);
       setCoreTasksData(null);
+      setMessagesData(null);
       setIsUnauthorized(true);
       setIsLoading(false);
       return;
     }
 
-    const [result, coreTasksResult] = await Promise.all([
+    const [result, coreTasksResult, messagesResult] = await Promise.all([
       getProviderDashboard(authToken),
       getProviderCoreTasks(authToken),
+      getMessageThreads(authToken),
     ]);
 
     if (result.ok) {
@@ -107,6 +114,7 @@ export default function ProviderDashboardScreen() {
     }
 
     setCoreTasksData(coreTasksResult.ok ? coreTasksResult.data : null);
+    setMessagesData(messagesResult.ok ? messagesResult.data : null);
     setIsLoading(false);
   }, [getValidAccessToken, status]);
 
@@ -212,7 +220,7 @@ export default function ProviderDashboardScreen() {
             <Metric label={t('activeTasks')} tone="blue" value={activeTasks.length || summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
             <Metric label={t('availableTasks')} tone="blue" value={availableTasks.length || summary.availableCoreTasksCount} />
             <Metric label={t('taskHistory')} tone="slate" value={historyTasks.length} />
-            <Metric label={t('interestsSent')} tone="slate" value={summary.submittedProResponsesCount} />
+            <Metric label={t('customerMessages')} tone="slate" value={customerMessageThreads.length} />
           </View>
         </AppCard>
       ) : null}
@@ -227,6 +235,8 @@ export default function ProviderDashboardScreen() {
         onOpenDetail={openTaskDetail}
         onPrimaryAction={handlePrimaryTaskAction}
         actionLoadingId={actionLoadingId}
+        sectionActionLabel={t('viewActiveTasks')}
+        onSectionAction={() => router.push('/provider/active-tasks')}
       />
 
       <TaskSection
@@ -239,23 +249,37 @@ export default function ProviderDashboardScreen() {
         onOpenDetail={openTaskDetail}
         onPrimaryAction={handlePrimaryTaskAction}
         actionLoadingId={actionLoadingId}
+        sectionActionLabel={t('checkTasks')}
+        onSectionAction={() => router.push('/provider/core-tasks')}
       />
 
-      <View style={styles.quickActions}>
-        {hasCoreAccess ? (
-          <AppButton onPress={() => router.push('/provider/core-tasks')} tone="core">
-            {t('checkAvailableTasks')}
-          </AppButton>
-        ) : (
-          <AppCard backgroundColor={colors.white}>
-            <StatusBadge label={coreStatusLabel} tone="warning" />
-            <AppText color={colors.slate700}>{t('providerTasklyTaskerReadiness')}</AppText>
-          </AppCard>
-        )}
-        <AppButton onPress={() => router.push('/provider/payouts')} tone="neutral" variant="outline">
-          {t('myPayouts')}
-        </AppButton>
-      </View>
+      <TaskSection
+        compact
+        emptyBody={t('taskHistoryEmptyBody')}
+        emptyIcon="time-outline"
+        emptyTitle={t('taskHistoryEmpty')}
+        title={t('taskHistory')}
+        tasks={historyTasks.slice(0, 2)}
+        onOpenChat={openThread}
+        onOpenDetail={openTaskDetail}
+        onPrimaryAction={handlePrimaryTaskAction}
+        actionLoadingId={actionLoadingId}
+        sectionActionLabel={t('viewHistory')}
+        onSectionAction={() => router.push('/provider/task-history')}
+      />
+
+      <MessagePreviewSection
+        threads={customerMessageThreads.slice(0, 2)}
+        onOpenMessages={() => router.push('/provider/messages' as Href)}
+        onOpenThread={openThread}
+      />
+
+      {!hasCoreAccess ? (
+        <AppCard backgroundColor={colors.white}>
+          <StatusBadge label={coreStatusLabel} tone="warning" />
+          <AppText color={colors.slate700}>{t('providerTasklyTaskerReadiness')}</AppText>
+        </AppCard>
+      ) : null}
 
       {hasApprovedPro ? (
         <AppCard backgroundColor={colors.proOrange50}>
@@ -328,6 +352,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  messageCard: {
+    gap: spacing.sm,
+  },
   productChip: {
     backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
@@ -367,6 +394,8 @@ function TaskSection({
   onOpenChat,
   onOpenDetail,
   onPrimaryAction,
+  onSectionAction,
+  sectionActionLabel,
   tasks,
   title,
 }: {
@@ -378,6 +407,8 @@ function TaskSection({
   onOpenChat: (threadId: string) => void;
   onOpenDetail: (taskId: string) => void;
   onPrimaryAction: (task: ProviderCoreTaskSummary, action: ProviderCoreTaskPrimaryAction) => void;
+  onSectionAction?: () => void;
+  sectionActionLabel?: string;
   tasks: ProviderCoreTaskSummary[];
   title: string;
 }) {
@@ -399,6 +430,49 @@ function TaskSection({
       ) : (
         <EmptyStateCard body={emptyBody} clean icon={emptyIcon} title={emptyTitle} />
       )}
+      {sectionActionLabel && onSectionAction ? (
+        <AppButton onPress={onSectionAction} tone="neutral" variant="outline">
+          {sectionActionLabel}
+        </AppButton>
+      ) : null}
+    </View>
+  );
+}
+
+function MessagePreviewSection({
+  onOpenMessages,
+  onOpenThread,
+  threads,
+}: {
+  onOpenMessages: () => void;
+  onOpenThread: (threadId: string) => void;
+  threads: MessageThreadSummary[];
+}) {
+  return (
+    <View style={styles.section}>
+      <AppText variant="sectionTitle">{t('customerMessages')}</AppText>
+      {threads.length ? (
+        threads.map((thread) => (
+          <AppCard backgroundColor={colors.white} key={thread.id} style={styles.messageCard}>
+            <View style={styles.badges}>
+              <StatusBadge label={t('customerMessages')} tone="core" />
+              {thread.unreadCount ? (
+                <StatusBadge label={t('unreadMessagesCount').replace('{count}', String(thread.unreadCount))} tone="warning" />
+              ) : null}
+            </View>
+            <AppText variant="bodyStrong">{thread.title}</AppText>
+            {thread.lastMessagePreview ? <AppText color={colors.slate700}>{thread.lastMessagePreview}</AppText> : null}
+            <AppButton onPress={() => onOpenThread(thread.id)} variant="outline">
+              {t('openConversation')}
+            </AppButton>
+          </AppCard>
+        ))
+      ) : (
+        <EmptyStateCard body={t('customerMessagesEmptyBody')} clean icon="chatbubbles-outline" title={t('customerMessagesEmpty')} />
+      )}
+      <AppButton onPress={onOpenMessages} tone="neutral" variant="outline">
+        {t('openMessages')}
+      </AppButton>
     </View>
   );
 }
