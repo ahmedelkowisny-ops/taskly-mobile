@@ -380,6 +380,48 @@ export type CustomerProfileResponse = {
   session?: UserSession;
 };
 
+export type CustomerSupportIssueType = 'account' | 'other' | 'payment' | 'pro_access' | 'task' | 'technical';
+
+export type CustomerSupportRequestPayload = {
+  details: string;
+  issueType: CustomerSupportIssueType;
+  subject: string;
+};
+
+export type CustomerSupportRequestResponse = {
+  message: string;
+  request: {
+    createdAt: string;
+    id: string;
+    messageType: string;
+    subject: string;
+  };
+  supportMessagesRoute?: string;
+};
+
+export type CustomerPaymentsUnlocksItem = {
+  amountLabel: string;
+  createdAt: string;
+  detailRoute: string;
+  id: string;
+  kind: 'pro_access' | 'task_payment';
+  refundStatusLabel: string | null;
+  status: string;
+  statusLabel: string;
+  title: string;
+  updatedAt: string;
+};
+
+export type CustomerPaymentsUnlocksResponse = {
+  emptyState: EmptyStateContent;
+  items: CustomerPaymentsUnlocksItem[];
+  summary: {
+    proAccessCount: number;
+    taskPaymentCount: number;
+    totalCount: number;
+  };
+};
+
 export type UpdateCustomerProfilePayload = {
   firstName: string;
   lastName: string;

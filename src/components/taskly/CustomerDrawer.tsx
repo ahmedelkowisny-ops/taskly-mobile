@@ -140,11 +140,23 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
           label: t('drawerSupportMessages'),
           route: '/customer/messages?context=support' as Href,
         },
+        {
+          icon: 'help-circle-outline',
+          isActive: (current) => current === '/customer/support',
+          label: t('drawerContactSupport'),
+          route: '/customer/support' as Href,
+        },
       ],
     },
     {
       label: t('drawerGroupAccount'),
       items: [
+        {
+          icon: 'card-outline',
+          isActive: (current) => current === '/customer/payments-unlocks',
+          label: t('drawerPaymentsUnlocks'),
+          route: '/customer/payments-unlocks' as Href,
+        },
         {
           icon: 'person-outline',
           isActive: (current) => current === '/customer/profile' || current === '/customer/account',

@@ -8,6 +8,7 @@ export {
   createCustomerProRequest,
   createCustomerTask,
   finalizeCustomerTaskPayment,
+  getCustomerPaymentsUnlocks,
   getCustomerHomeSummary,
   getCustomerProfile,
   getCustomerProRequestDetail,
@@ -18,6 +19,7 @@ export {
   requestCustomerTaskSupport,
   selectCustomerTasker,
   setupCustomerTaskPayment,
+  submitCustomerSupportRequest,
   updateCustomerProfile,
 } from './customer';
 export { endpoints } from './endpoints';
@@ -82,11 +84,16 @@ export type { ApiClientConfig, TasklyApiClient } from './client';
 export type {
   CustomerHighlight,
   CustomerHomeSummary,
+  CustomerPaymentsUnlocksItem,
+  CustomerPaymentsUnlocksResponse,
   CustomerImageUploadResponse,
   CustomerHomeResponse,
   CustomerNextAction,
   CustomerProfile,
   CustomerProfileResponse,
+  CustomerSupportIssueType,
+  CustomerSupportRequestPayload,
+  CustomerSupportRequestResponse,
   ApproveCustomerTaskCompletionResponse,
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,

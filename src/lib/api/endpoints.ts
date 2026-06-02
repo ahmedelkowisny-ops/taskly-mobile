@@ -19,6 +19,7 @@ export const endpoints = {
     home: '/api/mobile/customer/home',
     homeSummary: '/api/mobile/customer/home',
     messages: '/api/mobile/customer/messages',
+    paymentsUnlocks: '/api/mobile/customer/payments-unlocks',
     profile: '/api/mobile/customer/profile',
     proRequestAccessCheckout: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/checkout`,
     proRequestAccessSupportRequest: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/support-request`,
@@ -39,6 +40,7 @@ export const endpoints = {
     taskSelectTasker: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/select-tasker`,
     taskSupportRequest: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/support-request`,
     tasks: '/api/mobile/customer/tasks',
+    support: '/api/mobile/customer/support',
   },
   messages: {
     sendMessage: (threadId: string) => `/api/mobile/messages/threads/${encodeURIComponent(threadId)}/messages`,

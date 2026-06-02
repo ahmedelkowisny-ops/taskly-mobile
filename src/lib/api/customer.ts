@@ -16,11 +16,14 @@ import {
   CreateCustomerTaskPayload,
   CreateCustomerTaskResponse,
   CustomerHomeResponse,
+  CustomerPaymentsUnlocksResponse,
   CustomerProfileResponse,
   CustomerProRequestDetailResponse,
   CustomerProRequestsResponse,
   CustomerTaskPaymentFinalizeResponse,
   CustomerTaskPaymentSetupResponse,
+  CustomerSupportRequestPayload,
+  CustomerSupportRequestResponse,
   FinalizeCustomerTaskPaymentPayload,
   CustomerTaskDetailResponse,
   CustomerTasksResponse,
@@ -60,6 +63,28 @@ export function updateCustomerProfile(
       phone: payload.phone ?? '',
     },
     method: 'PATCH',
+  });
+}
+
+export function submitCustomerSupportRequest(
+  payload: CustomerSupportRequestPayload,
+  authToken: string,
+): Promise<ApiResult<CustomerSupportRequestResponse>> {
+  return apiRequest<CustomerSupportRequestResponse>(endpoints.customer.support, {
+    authToken,
+    body: {
+      details: payload.details,
+      issueType: payload.issueType,
+      subject: payload.subject,
+    },
+    method: 'POST',
+  });
+}
+
+export function getCustomerPaymentsUnlocks(authToken: string): Promise<ApiResult<CustomerPaymentsUnlocksResponse>> {
+  return apiRequest<CustomerPaymentsUnlocksResponse>(endpoints.customer.paymentsUnlocks, {
+    authToken,
+    method: 'GET',
   });
 }
 
