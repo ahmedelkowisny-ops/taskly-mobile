@@ -7,7 +7,7 @@ import { ModeBadge, ProviderStatusCard, ProviderTopBar } from '@/src/components/
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { mockAuth } from '@/src/lib/auth/mockAuth';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { canAccessProviderWorkspace } from '@/src/lib/auth/workspaceAccess';
+import { canAccessProviderWorkspace, hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -19,6 +19,7 @@ export default function ProviderStartScreen() {
   const session = authSession ?? mockAuth.currentSession;
   const { coreTaskerStatus, proStatus } = session.providerCapabilities;
   const hasProviderAccess = canAccessProviderWorkspace(session);
+  const showProReadiness = status === 'demo' || hasApprovedProMode(session);
 
   useEffect(() => {
     if (status !== 'loading' && hasProviderAccess) {
@@ -55,22 +56,24 @@ export default function ProviderStartScreen() {
         title={t('coreTasker')}
       />
 
-      <ProviderStatusCard
-        accent="pro"
-        description={t('tasklyProProviderBody')}
-        statusLabel={proStatusLabel}
-        title={t('tasklyPro')}
-      />
+      {showProReadiness ? (
+        <ProviderStatusCard
+          accent="pro"
+          description={t('tasklyProProviderBody')}
+          statusLabel={proStatusLabel}
+          title={t('tasklyPro')}
+        />
+      ) : null}
 
       <AppCard>
         <View style={styles.modeRow}>
           <ModeBadge mode="providerCore" />
-          <ModeBadge mode="providerPro" />
+          {showProReadiness ? <ModeBadge mode="providerPro" /> : null}
         </View>
-        <AppText color={colors.slate700}>{t('providerWorkspaceDescription')}</AppText>
+        <AppText color={colors.slate700}>{t(showProReadiness ? 'providerWorkspaceDescription' : 'taskerStartBody')}</AppText>
       </AppCard>
 
-      <AppButton onPress={() => router.push('/provider/dashboard')} tone="pro">
+      <AppButton onPress={() => router.push('/provider/dashboard')} tone={showProReadiness ? 'pro' : 'core'}>
         {primaryActionLabel}
       </AppButton>
     </Screen>

@@ -1,7 +1,8 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -310,6 +311,7 @@ export default function ProviderProfileScreen() {
 
   const profile = data?.profile;
   const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
+  const readinessItems = buildTaskerReadinessItems(taskerProfile, profile);
 
   function beginTaskerEdit() {
     if (!taskerProfile) return;
@@ -552,14 +554,14 @@ export default function ProviderProfileScreen() {
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
-        <StatusBadge label="Provider" tone="neutral" />
+        <StatusBadge label={t('tasklyTaskerWorkspace')} tone="core" />
         <AppText variant="screenTitle">{t('profile')}</AppText>
         <AppText color={colors.slate700}>{t('providerProfileIntro')}</AppText>
       </View>
 
       {isLoading ? (
         <AppCard accentColor={colors.navy900}>
-          <StatusBadge label="Loading" tone="neutral" />
+          <StatusBadge label={t('loading')} tone="neutral" />
           <AppText variant="sectionTitle">{t('loadingProviderProfile')}</AppText>
           <AppText color={colors.slate700}>{t('loadingProviderProfileBody')}</AppText>
         </AppCard>
@@ -585,14 +587,19 @@ export default function ProviderProfileScreen() {
         </AppCard>
       ) : null}
 
+      {taskerProfile ? (
+        <ProfilePhotoCard profile={taskerProfile} />
+      ) : null}
+
       {profile ? (
-        <AppCard>
+        <AppCard backgroundColor={colors.tasklyBlue50}>
           <StatusBadge label={status === 'demo' ? t('demoMode') : t('liveProfile')} tone={status === 'demo' ? 'neutral' : 'success'} />
           <AppText variant="sectionTitle">{profile.displayName}</AppText>
           <AppText color={colors.slate700}>{profile.profileStrengthLabel}</AppText>
-          <AppText color={colors.slate700}>{profile.stripeStatusLabel}</AppText>
         </AppCard>
       ) : null}
+
+      <TaskerReadinessCard items={readinessItems} stripeStatusLabel={profile?.stripeStatusLabel ?? null} />
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <View style={styles.sectionHeader}>
@@ -690,8 +697,9 @@ export default function ProviderProfileScreen() {
 
             <InfoRow label={t('accountEmail')} value={taskerProfile.email || t('emailNotAvailable')} />
             <InfoRow label={t('taskerStatus')} value={taskerProfile.taskerStatus} />
-            {taskerProfile.cityLabel ? <InfoRow label={t('city')} value={taskerProfile.cityLabel} /> : null}
-            {taskerProfile.serviceCategories.length ? <InfoRow label={t('category')} value={taskerProfile.serviceCategories.join(', ')} /> : null}
+            <InfoRow label={t('cityCoverage')} value={taskerProfile.cityLabel || t('needsAttention')} />
+            <InfoRow label={t('serviceCategoriesLabel')} value={taskerProfile.serviceCategories.length ? taskerProfile.serviceCategories.join(', ') : t('needsAttention')} />
+            <InfoRow label={t('skillsAndTools')} value={formatProfileList([...taskerProfile.toolsEquipment, ...taskerProfile.languagesSpoken])} />
             <AppText color={colors.slate500} variant="small">
               {t('taskerProfileReadonlyNote')}
             </AppText>
@@ -1018,7 +1026,7 @@ export default function ProviderProfileScreen() {
       ) : null}
 
       <AppCard>
-        <StatusBadge label="Settings" tone="neutral" />
+        <StatusBadge label={t('drawerSettings')} tone="neutral" />
         <AppText variant="sectionTitle">{t('providerAccount')}</AppText>
         <AppText color={colors.slate700}>{t('providerAccountHelper')}</AppText>
         <AppButton onPress={() => router.push('/provider/account')} variant="outline">
@@ -1103,8 +1111,141 @@ function parseLineListText(value: string) {
     .slice(0, 10);
 }
 
+type ReadinessItem = {
+  body: string;
+  complete: boolean;
+  label: string;
+};
+
+function buildTaskerReadinessItems(
+  taskerProfile: ProviderTaskerProfile | null,
+  profile: ProviderProfileResponse['profile'] | undefined,
+): ReadinessItem[] {
+  const hasProfileBasics = Boolean(
+    taskerProfile?.firstName.trim() &&
+      taskerProfile.lastName.trim() &&
+      taskerProfile.phone.trim() &&
+      taskerProfile.bio.trim(),
+  );
+  const hasCity = Boolean(taskerProfile?.cityLabel.trim() || profile?.coreCities.length);
+  const hasCategories = Boolean(taskerProfile?.serviceCategories.length || profile?.coreCategories.length);
+  const hasSkillsAndTools = Boolean(taskerProfile?.toolsEquipment.length || taskerProfile?.languagesSpoken.length);
+  const stripeLabel = String(profile?.stripeStatusLabel || '').toLocaleLowerCase();
+  const payoutReady = Boolean(stripeLabel && (stripeLabel.includes('complete') || stripeLabel.includes('ready') || stripeLabel.includes('verified')));
+
+  return [
+    {
+      body: hasProfileBasics ? t('readyToReceiveTasks') : t('completeYourProfile'),
+      complete: hasProfileBasics,
+      label: t('completeYourProfile'),
+    },
+    {
+      body: hasCity ? taskerProfile?.cityLabel || profile?.coreCities.join(', ') || t('readyToReceiveTasks') : t('cityCoverageMissing'),
+      complete: hasCity,
+      label: t('cityCoverage'),
+    },
+    {
+      body: hasCategories ? (taskerProfile?.serviceCategories.join(', ') || profile?.coreCategories.join(', ') || t('readyToReceiveTasks')) : t('serviceCategoriesMissing'),
+      complete: hasCategories,
+      label: t('serviceCategoriesLabel'),
+    },
+    {
+      body: hasSkillsAndTools ? formatProfileList([...(taskerProfile?.toolsEquipment ?? []), ...(taskerProfile?.languagesSpoken ?? [])]) : t('skillsAndToolsMissing'),
+      complete: hasSkillsAndTools,
+      label: t('skillsAndTools'),
+    },
+    {
+      body: profile?.stripeStatusLabel || t('payoutSetupUnavailable'),
+      complete: payoutReady,
+      label: t('payoutSetup'),
+    },
+  ];
+}
+
+function ProfilePhotoCard({ profile }: { profile: ProviderTaskerProfile }) {
+  const initials = getInitials(profile);
+
+  return (
+    <AppCard backgroundColor={colors.tasklyBlue50}>
+      <View style={styles.photoRow}>
+        <View style={styles.avatar}>
+          {profile.profilePhotoUrl ? (
+            <Image source={{ uri: profile.profilePhotoUrl }} style={styles.avatarImage} />
+          ) : initials ? (
+            <AppText color={colors.tasklyBlue700} style={styles.avatarInitials}>
+              {initials}
+            </AppText>
+          ) : (
+            <Ionicons color={colors.tasklyBlue700} name="person-outline" size={30} />
+          )}
+        </View>
+        <View style={styles.photoText}>
+          <StatusBadge label={t('profilePhoto')} tone="core" />
+          <AppText variant="sectionTitle">{profile.displayName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || t('tasklyTasker')}</AppText>
+          <AppText color={colors.slate700}>
+            {profile.profilePhotoUrl ? t('profilePhotoReady') : t('profilePhotoPlaceholderBody')}
+          </AppText>
+          <AppText color={colors.slate500} variant="small">
+            {t('profilePhotoDisplayOnly')}
+          </AppText>
+        </View>
+      </View>
+    </AppCard>
+  );
+}
+
+function TaskerReadinessCard({ items, stripeStatusLabel }: { items: ReadinessItem[]; stripeStatusLabel: string | null }) {
+  return (
+    <AppCard backgroundColor={colors.white}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleBlock}>
+          <StatusBadge label={t('profileReadiness')} tone="core" />
+          <AppText variant="sectionTitle">{t('readyToReceiveTasks')}</AppText>
+        </View>
+      </View>
+      <AppText color={colors.slate700}>{t('taskerProfileReadinessIntro')}</AppText>
+      <View style={styles.readinessList}>
+        {items.map((item) => (
+          <View key={item.label} style={styles.readinessRow}>
+            <View style={[styles.readinessIcon, item.complete ? styles.readinessIconComplete : styles.readinessIconAttention]}>
+              <Ionicons color={item.complete ? colors.tasklyBlue700 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
+            </View>
+            <View style={styles.readinessText}>
+              <AppText variant="bodyStrong">{item.label}</AppText>
+              <AppText color={colors.slate700} variant="small">{item.body}</AppText>
+            </View>
+            <StatusBadge label={item.complete ? t('ready') : t('needsAttention')} tone={item.complete ? 'success' : 'warning'} />
+          </View>
+        ))}
+      </View>
+      {stripeStatusLabel ? (
+        <View style={styles.payoutBox}>
+          <AppText variant="bodyStrong">{t('payoutSetup')}</AppText>
+          <AppText color={colors.slate700}>{stripeStatusLabel}</AppText>
+        </View>
+      ) : null}
+    </AppCard>
+  );
+}
+
 function normalizeListText(value: string) {
   return parseListText(value).join(', ');
+}
+
+function getInitials(profile: ProviderTaskerProfile) {
+  const source = [profile.firstName, profile.lastName].filter(Boolean);
+  if (source.length) return source.map((value) => value.trim().slice(0, 1).toUpperCase()).join('').slice(0, 2);
+  return profile.displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((value) => value.slice(0, 1).toUpperCase())
+    .join('')
+    .slice(0, 2);
+}
+
+function formatProfileList(values: string[]) {
+  const cleaned = values.map((value) => value.trim()).filter(Boolean);
+  return cleaned.length ? cleaned.join(', ') : t('needsAttention');
 }
 
 function validateTaskerDraft(draft: TaskerDraft): TaskerFieldErrors {
@@ -1293,6 +1434,25 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  avatar: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: 42,
+    borderWidth: 1,
+    height: 84,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 84,
+  },
+  avatarImage: {
+    height: '100%',
+    width: '100%',
+  },
+  avatarInitials: {
+    fontSize: 26,
+    fontWeight: '800',
+  },
   errorMessage: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
@@ -1327,6 +1487,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.slate50,
     borderColor: colors.border,
   },
+  payoutBox: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  photoRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  photoText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   portfolioBlock: {
     borderTopColor: colors.proOrangeBorder,
     borderTopWidth: 1,
@@ -1352,6 +1529,36 @@ const styles = StyleSheet.create({
   },
   projectList: {
     gap: spacing.md,
+  },
+  readinessIcon: {
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  readinessIconAttention: {
+    backgroundColor: colors.proOrange50,
+  },
+  readinessIconComplete: {
+    backgroundColor: colors.tasklyBlue50,
+  },
+  readinessList: {
+    gap: spacing.sm,
+  },
+  readinessRow: {
+    alignItems: 'center',
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  readinessText: {
+    flex: 1,
+    gap: 2,
   },
   sectionHeader: {
     alignItems: 'flex-start',
