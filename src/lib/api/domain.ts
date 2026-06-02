@@ -1724,6 +1724,7 @@ export type MessageThreadSummary = {
   roleLabel?: string;
   statusLabel?: string;
   subtitle?: string;
+  supportStatus?: string;
   title: string;
   unreadCount?: number;
 };
@@ -1738,7 +1739,10 @@ export type MessageThreadMeta = {
   contextId?: string;
   contextType: MessageContextType;
   id: string;
+  resolutionRequestedAt?: string | null;
+  resolvedAt?: string | null;
   subtitle?: string;
+  supportStatus?: string;
   title: string;
 };
 
@@ -1748,9 +1752,14 @@ export type MessageItem = {
   createdAt: string;
   id: string;
   isMine: boolean;
+  messageKind?: string | null;
   senderId: string;
   senderName: string;
   senderRole?: MessageSenderRole;
+};
+
+export type SupportResolutionResponse = {
+  decision: 'accepted' | 'refused';
 };
 
 export type MessageThreadDetailResponse = {

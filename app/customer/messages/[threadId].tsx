@@ -7,7 +7,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { FormField } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageAttachment, MessageItem, MessageThreadDetailResponse, MessageThreadMeta } from '@/src/lib/api/domain';
-import { getMessageThread, sendMessage, sendMessageImage } from '@/src/lib/api/messages';
+import { getMessageThread, respondToSupportResolution, sendMessage, sendMessageImage } from '@/src/lib/api/messages';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockMessageThreadResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -33,8 +33,10 @@ export default function CustomerMessageThreadScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSendingImage, setIsSendingImage] = useState(false);
+  const [isResolvingIssue, setIsResolvingIssue] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
 
   const loadThread = useCallback(async () => {
     setMessage(null);
@@ -248,6 +250,49 @@ export default function CustomerMessageThreadScreen() {
     }
   }, [data, getValidAccessToken, status, threadId]);
 
+  const handleResolution = useCallback(
+    async (decision: 'accepted' | 'refused') => {
+      if (!data?.thread?.contextId) return;
+
+      setResolutionError(null);
+
+      if (status === 'demo') {
+        setData((current) =>
+          current
+            ? {
+                ...current,
+                thread: { ...current.thread, supportStatus: decision === 'accepted' ? 'RESOLVED' : 'OPEN' },
+              }
+            : current,
+        );
+        return;
+      }
+
+      if (status !== 'authenticated') {
+        setResolutionError(t('loginRequired'));
+        return;
+      }
+
+      setIsResolvingIssue(true);
+      const authToken = await getValidAccessToken();
+      if (!authToken) {
+        setResolutionError(t('loginRequired'));
+        setIsResolvingIssue(false);
+        return;
+      }
+
+      const result = await respondToSupportResolution(data.thread.contextId, { decision }, authToken);
+      setIsResolvingIssue(false);
+
+      if (result.ok) {
+        setData(result.data);
+      } else {
+        setResolutionError(t('couldNotRespondToResolution'));
+      }
+    },
+    [data, getValidAccessToken, status],
+  );
+
   useFocusEffect(
     useCallback(() => {
       void loadThread();
@@ -280,6 +325,14 @@ export default function CustomerMessageThreadScreen() {
         <>
           <ThreadHeader thread={thread} />
           <Messages accent={thread.accent} messages={data.messages ?? []} />
+          {thread.supportStatus === 'RESOLUTION_REQUESTED' ? (
+            <ResolutionCard
+              isLoading={isResolvingIssue}
+              error={resolutionError}
+              onAccept={() => void handleResolution('accepted')}
+              onRefuse={() => void handleResolution('refused')}
+            />
+          ) : null}
           <MessageComposer
             draftMessage={draftMessage}
             isSendingImage={isSendingImage}
@@ -319,6 +372,35 @@ function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
   );
 }
 
+const RESOLUTION_KIND_LABEL: Record<string, string> = {
+  RESOLUTION_REQUEST: 'supportResolutionEventRequested',
+  RESOLUTION_ACCEPTED: 'supportResolutionEventAccepted',
+  RESOLUTION_DECLINED: 'supportResolutionEventDeclined',
+};
+
+function ResolutionEventMessage({ message }: { message: MessageItem }) {
+  const labelKey = message.messageKind ? RESOLUTION_KIND_LABEL[message.messageKind] : null;
+  const label = labelKey ? t(labelKey as Parameters<typeof t>[0]) : message.body;
+  const isAccepted = message.messageKind === 'RESOLUTION_ACCEPTED';
+  const isDeclined = message.messageKind === 'RESOLUTION_DECLINED';
+
+  return (
+    <View style={[
+      styles.resolutionEvent,
+      isAccepted ? styles.resolutionEventAccepted : isDeclined ? styles.resolutionEventDeclined : styles.resolutionEventRequested,
+    ]}>
+      <AppText
+        color={isAccepted ? colors.success600 : isDeclined ? colors.danger600 : colors.warning600}
+        variant="small"
+        style={styles.resolutionEventText}
+      >
+        {label}
+      </AppText>
+      <AppText color={colors.slate500} variant="small">{formatDate(message.createdAt)}</AppText>
+    </View>
+  );
+}
+
 function Messages({ accent, messages }: { accent: MessageThreadMeta['accent']; messages: MessageItem[] }) {
   const mineColor = getThreadAccentColor(accent);
 
@@ -332,22 +414,27 @@ function Messages({ accent, messages }: { accent: MessageThreadMeta['accent']; m
 
   return (
     <View style={styles.messageList}>
-      {messages.map((message) => (
-        <View
-          key={message.id}
-          style={[styles.messageBubble, message.isMine ? { ...styles.myMessage, backgroundColor: mineColor } : styles.otherMessage]}>
-          <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
-            {message.isMine ? t('you') : message.senderName}
-          </AppText>
-          {message.attachments?.length ? <MessageAttachments attachments={message.attachments} /> : null}
-          {message.body ? (
-            <AppText color={message.isMine ? colors.white : colors.navy900}>{message.body}</AppText>
-          ) : null}
-          <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
-            {formatDate(message.createdAt)}
-          </AppText>
-        </View>
-      ))}
+      {messages.map((message) => {
+        if (message.messageKind && RESOLUTION_KIND_LABEL[message.messageKind]) {
+          return <ResolutionEventMessage key={message.id} message={message} />;
+        }
+        return (
+          <View
+            key={message.id}
+            style={[styles.messageBubble, message.isMine ? { ...styles.myMessage, backgroundColor: mineColor } : styles.otherMessage]}>
+            <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
+              {message.isMine ? t('you') : message.senderName}
+            </AppText>
+            {message.attachments?.length ? <MessageAttachments attachments={message.attachments} /> : null}
+            {message.body ? (
+              <AppText color={message.isMine ? colors.white : colors.navy900}>{message.body}</AppText>
+            ) : null}
+            <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
+              {formatDate(message.createdAt)}
+            </AppText>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -452,6 +539,39 @@ function MessageAttachmentImage({ attachment }: { attachment: MessageAttachment 
   return <Image onError={() => setHasError(true)} source={{ uri }} style={styles.attachmentImage} />;
 }
 
+function ResolutionCard({
+  isLoading,
+  error,
+  onAccept,
+  onRefuse,
+}: {
+  isLoading: boolean;
+  error: string | null;
+  onAccept: () => void;
+  onRefuse: () => void;
+}) {
+  return (
+    <AppCard accentColor={colors.warning600}>
+      <StatusBadge label={t('supportThreadResolutionRequested')} tone="warning" />
+      <AppText variant="bodyStrong">{t('supportResolutionCardTitle')}</AppText>
+      <AppText color={colors.slate700}>{t('supportResolutionCardBody')}</AppText>
+      {error ? <AppText color={colors.danger600}>{error}</AppText> : null}
+      {isLoading ? (
+        <AppText color={colors.slate700}>{t('resolvingIssue')}</AppText>
+      ) : (
+        <View style={styles.resolutionActions}>
+          <AppButton disabled={isLoading} onPress={onAccept} style={styles.resolutionBtn}>
+            {t('yesIssueResolved')}
+          </AppButton>
+          <AppButton disabled={isLoading} onPress={onRefuse} tone="neutral" variant="outline" style={styles.resolutionBtn}>
+            {t('noNotResolved')}
+          </AppButton>
+        </View>
+      )}
+    </AppCard>
+  );
+}
+
 function getContextLabel(contextType: MessageThreadMeta['contextType']) {
   if (contextType === 'CORE_TASK') return t('coreTask');
   if (contextType === 'PRO_REQUEST') return t('proRequest');
@@ -474,7 +594,9 @@ function getSafeThread(thread?: MessageThreadMeta | null): MessageThreadMeta {
     contextId: thread?.contextId,
     contextType,
     id: thread?.id || 'unknown-thread',
+    resolvedAt: thread?.resolvedAt,
     subtitle: thread?.subtitle,
+    supportStatus: thread?.supportStatus,
     title: thread?.title || t('conversation'),
   };
 }
@@ -521,7 +643,7 @@ function canSendTextInThread(thread: MessageThreadMeta) {
 }
 
 function canSendAttachmentsInThread(thread: MessageThreadMeta) {
-  return thread.capabilities.canSendText && thread.capabilities.canSendAttachments && (thread.contextType === 'CORE_TASK' || thread.contextType === 'PRO_REQUEST');
+  return thread.capabilities.canSendText && thread.capabilities.canSendAttachments && (thread.contextType === 'CORE_TASK' || thread.contextType === 'PRO_REQUEST' || thread.contextType === 'SUPPORT');
 }
 
 function getSendErrorMessage(code: string) {
@@ -544,6 +666,7 @@ function appendMessageIfMissing(messages: MessageItem[], nextMessage: MessageIte
 }
 
 function getReadOnlyReason(thread: MessageThreadMeta) {
+  if (thread.capabilities.readOnlyReason === 'THREAD_CLOSED') return t('supportIssueResolvedHistory');
   if (thread.capabilities.readOnlyReason === 'SUPPORT_READ_ONLY') return t('mobileConversationReadOnly');
   if (thread.capabilities.readOnlyReason === 'PRO_CHAT_NOT_AVAILABLE') return t('proChatConnectedLater');
   if (thread.capabilities.readOnlyReason === 'UNSUPPORTED_THREAD_TYPE') return t('unsupportedConversationType');
@@ -576,6 +699,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   messageList: { gap: spacing.md },
+  resolutionActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  resolutionBtn: { flex: 1, minWidth: 120 },
+  resolutionEvent: {
+    alignSelf: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: spacing.xs,
+    maxWidth: '90%',
+    padding: spacing.sm,
+  },
+  resolutionEventAccepted: {
+    backgroundColor: colors.success50,
+    borderColor: colors.success600,
+  },
+  resolutionEventDeclined: {
+    backgroundColor: '#FEF2F2',
+    borderColor: colors.danger600,
+  },
+  resolutionEventRequested: {
+    backgroundColor: '#FFFBEB',
+    borderColor: colors.warning600,
+  },
+  resolutionEventText: { fontWeight: '700' },
   myMessage: {
     alignSelf: 'flex-end',
     backgroundColor: colors.tasklyBlue600,

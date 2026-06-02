@@ -41,6 +41,7 @@ export const endpoints = {
     taskSupportRequest: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/support-request`,
     tasks: '/api/mobile/customer/tasks',
     support: '/api/mobile/customer/support',
+    supportResolution: (supportRequestId: string) => `/api/mobile/customer/support/${supportRequestId}/resolution`,
   },
   messages: {
     sendMessage: (threadId: string) => `/api/mobile/messages/threads/${encodeURIComponent(threadId)}/messages`,

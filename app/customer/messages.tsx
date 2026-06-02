@@ -70,8 +70,8 @@ export default function CustomerMessagesScreen() {
   const supportOnly = params.context === 'support';
   const allThreads = data?.threads ?? [];
   const threads = supportOnly
-    ? allThreads.filter((thread) => thread.contextType === 'SUPPORT' || thread.id.startsWith('admin:'))
-    : allThreads;
+    ? allThreads.filter((thread) => thread.contextType === 'SUPPORT' || thread.id.startsWith('admin:') || thread.id.startsWith('support:'))
+    : allThreads.filter((thread) => thread.contextType !== 'SUPPORT' && !thread.id.startsWith('admin:') && !thread.id.startsWith('support:'));
 
   return (
     <Screen>
@@ -126,8 +126,15 @@ function StateCard({ label, message }: { label: string; message: string }) {
   );
 }
 
+function getSupportStatusBadge(supportStatus?: string) {
+  if (supportStatus === 'RESOLVED') return { label: t('supportThreadResolved'), tone: 'neutral' as const };
+  if (supportStatus === 'RESOLUTION_REQUESTED') return { label: t('supportThreadResolutionRequested'), tone: 'warning' as const };
+  return null;
+}
+
 function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageThreadSummary }) {
   const tone = thread.accent === 'pro' ? 'pro' : thread.accent === 'core' ? 'core' : 'neutral';
+  const supportBadge = thread.contextType === 'SUPPORT' ? getSupportStatusBadge(thread.supportStatus) : null;
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress}>
@@ -135,7 +142,8 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.unreadCount ? <StatusBadge label={`${thread.unreadCount} ${t('unreadMessages')}`} tone="warning" /> : null}
-          {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
+          {supportBadge ? <StatusBadge label={supportBadge.label} tone={supportBadge.tone} /> : null}
+          {!thread.capabilities.canSendText && !supportBadge ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
         </View>
         <AppText variant="cardTitle">{thread.title}</AppText>
         {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}

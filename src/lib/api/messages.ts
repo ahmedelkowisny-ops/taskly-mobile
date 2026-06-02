@@ -4,6 +4,18 @@ import { endpoints } from './endpoints';
 import { ApiResult } from './types';
 import { LocalSelectedImage } from '@/src/lib/images/types';
 
+export function respondToSupportResolution(
+  supportRequestId: string,
+  payload: { decision: 'accepted' | 'refused'; reason?: string },
+  authToken: string,
+): Promise<ApiResult<MessageThreadDetailResponse>> {
+  return apiRequest<MessageThreadDetailResponse>(endpoints.customer.supportResolution(supportRequestId), {
+    authToken,
+    body: payload,
+    method: 'PATCH',
+  });
+}
+
 const MIME_BY_EXTENSION: Record<string, string> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
