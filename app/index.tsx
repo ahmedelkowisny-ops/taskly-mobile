@@ -4,7 +4,7 @@ import { Animated, Easing, Image, Pressable, StyleSheet, View } from 'react-nati
 
 import { PublicTopBar } from '@/src/components/taskly';
 import { AppButton, AppText, Screen } from '@/src/components/ui';
-import { canAccessCustomerWorkspace, canAccessProviderWorkspace } from '@/src/lib/auth/workspaceAccess';
+import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -13,8 +13,6 @@ import { radius, spacing } from '@/src/theme/spacing';
 const landingImage = require('../assets/branding/landing.png');
 const LANDING_IMAGE_ASPECT_RATIO = 1122 / 1402;
 const CUSTOMER_HOME_ROUTE = '/customer/home' as Href;
-const PROVIDER_DASHBOARD_ROUTE = '/provider/dashboard' as Href;
-const PROVIDER_START_ROUTE = '/provider/start' as Href;
 
 export default function WelcomeScreen() {
   const { locale } = useI18n();
@@ -55,13 +53,9 @@ export default function WelcomeScreen() {
 
     if (status !== 'authenticated') return;
 
-    if (canAccessCustomerWorkspace(session)) {
-      router.replace(CUSTOMER_HOME_ROUTE);
-      return;
-    }
-
-    if (canAccessProviderWorkspace(session)) {
-      router.replace(session?.nextAction.type === 'none' ? PROVIDER_DASHBOARD_ROUTE : PROVIDER_START_ROUTE);
+    const targetRoute = getDefaultAuthenticatedRoute(session);
+    if (targetRoute) {
+      router.replace(targetRoute as Href);
     }
   }, [router, session, status]);
 

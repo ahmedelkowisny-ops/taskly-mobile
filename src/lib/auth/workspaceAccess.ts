@@ -11,6 +11,10 @@ export type WorkspaceEntryState = {
   state: 'available' | 'demo' | 'loginRequired' | 'unavailable';
 };
 
+const CUSTOMER_HOME_ROUTE = '/customer/home';
+const PROVIDER_DASHBOARD_ROUTE = '/provider/dashboard';
+const PROVIDER_START_ROUTE = '/provider/start';
+
 function hasBackendNextAction(session: WorkspaceSession): session is WorkspaceSession & Pick<UserSession, 'nextAction'> {
   return 'nextAction' in session && Boolean(session.nextAction);
 }
@@ -21,6 +25,44 @@ export function canAccessCustomerWorkspace(session: WorkspaceSession | null | un
 
 export function canAccessProviderWorkspace(session: WorkspaceSession | null | undefined) {
   return Boolean(session?.workspaceAccess.provider);
+}
+
+export function hasApprovedProviderMode(session: WorkspaceSession | null | undefined) {
+  if (!session) return false;
+
+  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+  return coreTaskerStatus === 'approved' || coreTaskerStatus === 'needsStripe' || proStatus === 'approved';
+}
+
+export function hasPendingProviderMode(session: WorkspaceSession | null | undefined) {
+  if (!session) return false;
+
+  const { coreTaskerStatus, proStatus } = session.providerCapabilities;
+  return coreTaskerStatus === 'applicant' || proStatus === 'draft' || proStatus === 'pending';
+}
+
+export function getDefaultAuthenticatedRoute(session: WorkspaceSession | null | undefined) {
+  if (!session) return null;
+
+  if (canAccessProviderWorkspace(session) && hasApprovedProviderMode(session)) {
+    return hasBackendNextAction(session) && session.nextAction.type !== 'none'
+      ? PROVIDER_START_ROUTE
+      : PROVIDER_DASHBOARD_ROUTE;
+  }
+
+  if (hasPendingProviderMode(session)) {
+    return PROVIDER_START_ROUTE;
+  }
+
+  if (canAccessCustomerWorkspace(session)) {
+    return CUSTOMER_HOME_ROUTE;
+  }
+
+  if (canAccessProviderWorkspace(session)) {
+    return PROVIDER_START_ROUTE;
+  }
+
+  return null;
 }
 
 export function getCustomerWorkspaceSummary(session: WorkspaceSession | null | undefined) {

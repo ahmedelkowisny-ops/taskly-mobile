@@ -11,6 +11,7 @@ import {
   consumePendingDeepLinkTarget,
   getDeepLinkFallbackRoute,
 } from '@/src/lib/navigation/deepLinks';
+import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -40,7 +41,11 @@ export default function LoginScreen() {
       if (pendingTarget && canOpenDeepLinkTarget({ session: result.data, status: 'authenticated', target: pendingTarget })) {
         router.replace(pendingTarget.href);
       } else {
-        router.replace(pendingTarget ? getDeepLinkFallbackRoute(pendingTarget.workspace) : '/');
+        router.replace(
+          pendingTarget
+            ? getDeepLinkFallbackRoute(pendingTarget.workspace)
+            : ((getDefaultAuthenticatedRoute(result.data) ?? '/') as Href),
+        );
       }
       return;
     }

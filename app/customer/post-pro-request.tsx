@@ -1,12 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   KeyboardTypeOptions,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -73,11 +79,13 @@ type StepMeta = {
 };
 
 const STEP_TOTAL = 6;
-const QUICK_BUDGET_RANGES = [
-  { max: '2500', min: '800' },
-  { max: '7000', min: '2500' },
-  { max: '15000', min: '7000' },
-];
+const DEFAULT_PRO_LOCATION = { lat: 42.6977, lng: 23.3219 };
+const DEFAULT_PRO_ADDRESS = 'Sofia, Bulgaria';
+const TIME_SLOT_START_MINUTES = 6 * 60;
+const TIME_SLOT_END_MINUTES = 24 * 60;
+const TIME_SLOT_STEP_MINUTES = 15;
+const MIN_DURATION_MINUTES = 60;
+type TimePickerTarget = 'start' | 'end' | null;
 
 const PROPERTY_TYPE_KEYS = [
   'proPropertyApartment',
@@ -99,11 +107,171 @@ const SITE_VISIT_EN_LABELS: Record<string, string> = {
   proSiteVisitPhotosEnough: 'No, photos/details are enough',
 };
 
+const PRO_CATEGORY_TAGS: Record<string, { bg: string; en: string; key: string }[]> = {
+  full_home_renovation: [
+    { key: 'electrical_work', en: 'Electrical work', bg: 'Ел. инсталации' },
+    { key: 'plumbing_work', en: 'Plumbing work', bg: 'ВиК' },
+    { key: 'painting', en: 'Painting', bg: 'Боядисване' },
+    { key: 'drywall', en: 'Drywall', bg: 'Гипсокартон' },
+    { key: 'flooring', en: 'Flooring', bg: 'Подови настилки' },
+    { key: 'windows_doors', en: 'Windows/doors', bg: 'Дограма/врати' },
+    { key: 'bathroom', en: 'Bathroom', bg: 'Баня' },
+    { key: 'kitchen', en: 'Kitchen', bg: 'Кухня' },
+  ],
+  bathroom_renovation: [
+    { key: 'full_bathroom_build', en: 'Full bathroom build', bg: 'Цялостно изграждане' },
+    { key: 'demolition', en: 'Demolition', bg: 'Къртене' },
+    { key: 'waterproofing', en: 'Waterproofing', bg: 'Хидроизолация' },
+    { key: 'plumbing_changes', en: 'Plumbing changes', bg: 'ВиК промени' },
+    { key: 'tiling', en: 'Tiling', bg: 'Плочки' },
+    { key: 'sanitary_install', en: 'Sanitary installation', bg: 'Монтаж на санитария' },
+    { key: 'lighting', en: 'Lighting', bg: 'Осветление' },
+  ],
+  kitchen_projects: [
+    { key: 'kitchen_renovation', en: 'Kitchen renovation', bg: 'Ремонт на кухня' },
+    { key: 'custom_kitchen', en: 'Custom kitchen', bg: 'Кухня по поръчка' },
+    { key: 'countertop', en: 'Countertop', bg: 'Плот' },
+    { key: 'appliance_integration', en: 'Appliance integration', bg: 'Монтаж на уреди' },
+    { key: 'plumbing_connection', en: 'Plumbing connection', bg: 'ВиК връзки' },
+    { key: 'lighting', en: 'Lighting', bg: 'Осветление' },
+  ],
+  tiling_cladding: [
+    { key: 'floor_tiles', en: 'Floor tiles', bg: 'Подови плочки' },
+    { key: 'wall_tiles', en: 'Wall tiles', bg: 'Стенни плочки' },
+    { key: 'bathroom_tiles', en: 'Bathroom tiles', bg: 'Плочки за баня' },
+    { key: 'backsplash', en: 'Kitchen backsplash', bg: 'Кухненски гръб' },
+    { key: 'outdoor_tiles', en: 'Outdoor tiles', bg: 'Външни плочки' },
+  ],
+  painting_surface_prep: [
+    { key: 'painting', en: 'Painting', bg: 'Боядисване' },
+    { key: 'skim_coating', en: 'Skim coating / шпакловка', bg: 'Шпакловка' },
+    { key: 'primer', en: 'Primer', bg: 'Грундиране' },
+    { key: 'decorative_plaster', en: 'Decorative plaster', bg: 'Декоративни мазилки' },
+    { key: 'finishing', en: 'Finishing works', bg: 'Довършителни работи' },
+  ],
+  drywall_ceilings: [
+    { key: 'drywall_walls', en: 'Drywall walls', bg: 'Гипсокартон' },
+    { key: 'suspended_ceiling', en: 'Suspended ceiling', bg: 'Окачен таван' },
+    { key: 'partition_walls', en: 'Partition walls', bg: 'Преградни стени' },
+    { key: 'niches', en: 'Niches', bg: 'Ниши' },
+    { key: 'hidden_lighting', en: 'Hidden lighting', bg: 'Скрито осветление' },
+  ],
+  plumbing_drainage: [
+    { key: 'new_plumbing', en: 'New plumbing', bg: 'Нова ВиК инсталация' },
+    { key: 'bathroom_plumbing', en: 'Bathroom plumbing', bg: 'ВиК за баня' },
+    { key: 'kitchen_plumbing', en: 'Kitchen plumbing', bg: 'ВиК за кухня' },
+    { key: 'drainage', en: 'Drainage', bg: 'Канализация' },
+    { key: 'pipe_replacement', en: 'Pipe replacement', bg: 'Смяна на тръби' },
+  ],
+  electrical_installations: [
+    { key: 'new_wiring', en: 'New wiring', bg: 'Нова ел. инсталация' },
+    { key: 'electrical_panel', en: 'Electrical panel', bg: 'Ел. табло' },
+    { key: 'sockets_switches', en: 'Sockets and switches', bg: 'Контакти и ключове' },
+    { key: 'lighting', en: 'Lighting', bg: 'Осветление' },
+    { key: 'measurements_checks', en: 'Measurements/checks', bg: 'Измервания/проверка' },
+  ],
+  roofing_waterproofing: [
+    { key: 'roof_repair', en: 'Roof repair', bg: 'Ремонт на покрив' },
+    { key: 'roof_replacement', en: 'Full roof replacement', bg: 'Нов покрив' },
+    { key: 'flat_roof', en: 'Flat roof', bg: 'Плосък покрив' },
+    { key: 'gutters', en: 'Gutters', bg: 'Улуци' },
+    { key: 'waterproofing', en: 'Waterproofing', bg: 'Хидроизолация' },
+  ],
+  hvac_air_conditioning: [
+    { key: 'ac_install', en: 'AC installation', bg: 'Монтаж на климатик' },
+    { key: 'ac_relocation', en: 'AC relocation', bg: 'Преместване на климатик' },
+    { key: 'multi_split', en: 'Multi-split', bg: 'Мултисплит' },
+    { key: 'ac_service', en: 'Service/repair', bg: 'Сервиз/ремонт' },
+    { key: 'ventilation', en: 'Ventilation', bg: 'Вентилация' },
+  ],
+  windows_doors: [
+    { key: 'pvc_windows', en: 'PVC windows', bg: 'PVC дограма' },
+    { key: 'aluminum_windows', en: 'Aluminum windows', bg: 'Алуминиева дограма' },
+    { key: 'interior_doors', en: 'Interior doors', bg: 'Интериорни врати' },
+    { key: 'exterior_doors', en: 'Exterior doors', bg: 'Входни врати' },
+    { key: 'opening_finishing', en: 'Finishing around openings', bg: 'Обръщане около дограма' },
+  ],
+};
+
 function parseNumberInput(value: string) {
   if (!value.trim()) return null;
 
   const parsed = Number(value.replace(',', '.'));
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function dateToIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayIsoDate() {
+  return dateToIsoDate(new Date());
+}
+
+function parseIsoDate(value: string) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (!parts) return null;
+
+  const year = Number(parts[1]);
+  const month = Number(parts[2]);
+  const day = Number(parts[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+function getDateRelationToToday(value: string): 'invalid' | 'past' | 'today' | 'future' {
+  const date = parseIsoDate(value);
+  if (!date) return 'invalid';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  if (date.getTime() < today.getTime()) return 'past';
+  if (date.getTime() === today.getTime()) return 'today';
+  return 'future';
+}
+
+function parseTimeToMinutes(value: string) {
+  const parts = /^(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!parts) return null;
+
+  const hour = Number(parts[1]);
+  const minute = Number(parts[2]);
+  if (hour < 0 || hour > 24 || minute < 0 || minute > 59 || (hour === 24 && minute !== 0)) return null;
+  if (hour === 0 && minute === 0) return 24 * 60;
+  return hour * 60 + minute;
+}
+
+function minutesToTimeString(totalMinutes: number) {
+  if (totalMinutes === 24 * 60) return '00:00';
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function buildTimeOptions() {
+  const options: string[] = [];
+  for (let minute = TIME_SLOT_START_MINUTES; minute <= TIME_SLOT_END_MINUTES; minute += TIME_SLOT_STEP_MINUTES) {
+    options.push(minutesToTimeString(minute));
+  }
+
+  return options;
+}
+
+const TIME_OPTIONS = buildTimeOptions();
+
+function getDefaultTimesForDate(dateIso: string) {
+  const relation = getDateRelationToToday(dateIso);
+  if (relation === 'invalid' || relation === 'past') return { startTime: '', endTime: '' };
+
+  const startTime = '09:00';
+  const endTime = '12:00';
+  return { startTime, endTime };
 }
 
 function normalizeApiFieldErrors(fieldErrors: Record<string, string>) {
@@ -228,7 +396,7 @@ export default function CustomerPostProRequestScreen() {
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [district, setDistrict] = useState('');
-  const [addressNotes, setAddressNotes] = useState('');
+  const [addressNotes, setAddressNotes] = useState(DEFAULT_PRO_ADDRESS);
   const [locationNotes, setLocationNotes] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [projectSize, setProjectSize] = useState('');
@@ -236,9 +404,16 @@ export default function CustomerPostProRequestScreen() {
   const [siteVisitNeeded, setSiteVisitNeeded] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [timeline, setTimeline] = useState('');
+  const [preferredDate, setPreferredDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [timePickerTarget, setTimePickerTarget] = useState<TimePickerTarget>(null);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [budgetMin, setBudgetMin] = useState('');
   const [budgetMax, setBudgetMax] = useState('');
+  const [selectedTagKeys, setSelectedTagKeys] = useState<string[]>([]);
+  const [selectedLatitude, setSelectedLatitude] = useState(DEFAULT_PRO_LOCATION.lat);
+  const [selectedLongitude, setSelectedLongitude] = useState(DEFAULT_PRO_LOCATION.lng);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
@@ -346,16 +521,66 @@ export default function CustomerPostProRequestScreen() {
   const selectedCity = catalog?.cities.find((city) => city.id === selectedCityId) ?? null;
   const selectedCategoryLabel = selectedCategory ? getLocalizedCategoryName(selectedCategory, locale) : t('notSelectedYet');
   const selectedCityLabel = selectedCity ? getLocalizedCityName(selectedCity, locale) : t('notSelectedYet');
+  const selectedCategoryTags = useMemo(
+    () => (selectedCategoryId ? PRO_CATEGORY_TAGS[selectedCategoryId] ?? [] : []),
+    [selectedCategoryId],
+  );
+  const selectedTagLabels = useMemo(
+    () =>
+      selectedCategoryTags
+        .filter((tag) => selectedTagKeys.includes(tag.key))
+        .map((tag) => tag.en),
+    [selectedCategoryTags, selectedTagKeys],
+  );
+  const selectedDateValue = useMemo(() => parseIsoDate(preferredDate) ?? new Date(), [preferredDate]);
+  const timeline = useMemo(() => {
+    if (!preferredDate || !startTime || !endTime) return '';
+    return `Preferred start time: ${preferredDate}, ${startTime} - ${endTime}`;
+  }, [endTime, preferredDate, startTime]);
+  const protectedLocationDetails = useMemo(() => {
+    const parts = [
+      `Map pin: ${selectedLatitude.toFixed(6)},${selectedLongitude.toFixed(6)}`,
+      locationNotes.trim() ? `Notes: ${locationNotes.trim()}` : null,
+    ].filter(Boolean);
+
+    return parts.join(' | ');
+  }, [locationNotes, selectedLatitude, selectedLongitude]);
+  const formattedPreferredDate = useMemo(() => {
+    if (!preferredDate) return '';
+    return selectedDateValue.toLocaleDateString(locale === 'bg' ? 'bg-BG' : 'en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }, [locale, preferredDate, selectedDateValue]);
+  const selectedDateRelation = useMemo(() => getDateRelationToToday(preferredDate), [preferredDate]);
+  const availableStartTimes = useMemo(() => {
+    if (!preferredDate || selectedDateRelation === 'invalid' || selectedDateRelation === 'past') return [];
+    return TIME_OPTIONS.filter((option) => {
+      const minutes = parseTimeToMinutes(option);
+      return minutes !== null && minutes >= TIME_SLOT_START_MINUTES && minutes <= TIME_SLOT_END_MINUTES - MIN_DURATION_MINUTES;
+    });
+  }, [preferredDate, selectedDateRelation]);
+  const availableEndTimes = useMemo(() => {
+    const startMinutes = parseTimeToMinutes(startTime);
+    if (startMinutes === null) return [];
+
+    return TIME_OPTIONS.filter((option) => {
+      const minutes = parseTimeToMinutes(option);
+      return minutes !== null && minutes >= startMinutes + MIN_DURATION_MINUTES && minutes <= TIME_SLOT_END_MINUTES;
+    });
+  }, [startTime]);
   const combinedDescription = useMemo(() => {
     const extras = [
       propertyType ? `${t('propertyType')}: ${propertyType}` : null,
       projectSize ? `${t('projectSize')}: ${projectSize}` : null,
+      selectedTagLabels.length ? `${t('includedSpecialties')}: ${selectedTagLabels.join(', ')}` : null,
       specialtyNotes ? `${t('specialtyDetails')}: ${specialtyNotes}` : null,
       siteVisitNeeded ? `Site visit needed: ${SITE_VISIT_EN_LABELS[siteVisitNeeded] ?? siteVisitNeeded}` : null,
     ].filter(Boolean);
 
     return [description.trim(), ...extras].filter(Boolean).join('\n\n');
-  }, [description, projectSize, propertyType, siteVisitNeeded, specialtyNotes]);
+  }, [description, projectSize, propertyType, selectedTagLabels, siteVisitNeeded, specialtyNotes]);
 
   const clearFieldError = useCallback((key: ValidationFieldKey) => {
     setSubmitError(null);
@@ -391,7 +616,31 @@ export default function CustomerPostProRequestScreen() {
       addIssue('description', t('projectDescription'), t('descriptionTooLongForProRequest'), 3);
     }
 
-    if (!timeline.trim()) addIssue('timeline', t('preferredStartDate'), t('missingTimeline'), 4);
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
+    const dateRelation = getDateRelationToToday(preferredDate);
+
+    if (!preferredDate.trim()) {
+      addIssue('timeline', t('preferredStartDate'), t('scheduleDateRequired'), 4);
+    } else if (dateRelation === 'invalid') {
+      addIssue('timeline', t('preferredStartDate'), t('invalidDate'), 4);
+    } else if (dateRelation === 'past') {
+      addIssue('timeline', t('preferredStartDate'), t('scheduleDatePast'), 4);
+    }
+
+    if (!startTime.trim()) {
+      addIssue('timeline', t('startTime'), t('startTimeRequired'), 4);
+    } else if (startMinutes === null) {
+      addIssue('timeline', t('startTime'), t('invalidTime'), 4);
+    }
+
+    if (!endTime.trim()) {
+      addIssue('timeline', t('endTime'), t('endTimeRequired'), 4);
+    } else if (endMinutes === null) {
+      addIssue('timeline', t('endTime'), t('invalidTime'), 4);
+    } else if (startMinutes !== null && endMinutes <= startMinutes) {
+      addIssue('timeline', t('endTime'), t('endTimeAfterStart'), 4);
+    }
 
     if (!budgetMin.trim()) {
       addIssue('budgetMinEur', t('budgetRange'), t('missingBudget'), 4);
@@ -431,9 +680,11 @@ export default function CustomerPostProRequestScreen() {
     combinedDescription,
     description,
     district,
+    endTime,
+    preferredDate,
     selectedCategoryId,
     selectedCityId,
-    timeline,
+    startTime,
     title,
   ]);
 
@@ -516,6 +767,71 @@ export default function CustomerPostProRequestScreen() {
     setCurrentStep((step) => (step - 1) as WizardStep);
   }, [currentStep, router]);
 
+  const handleScheduleDateChange = useCallback(
+    (event: DateTimePickerEvent, selectedDate?: Date) => {
+      setShowDatePicker(false);
+      if (event.type === 'dismissed' || !selectedDate) return;
+
+      const nextDate = dateToIsoDate(selectedDate);
+      const defaults = getDefaultTimesForDate(nextDate);
+      setPreferredDate(nextDate);
+      setStartTime(defaults.startTime);
+      setEndTime(defaults.endTime);
+      clearFieldError('timeline');
+    },
+    [clearFieldError],
+  );
+
+  const handleStartTimeSelect = useCallback(
+    (nextStartTime: string) => {
+      const startMinutes = parseTimeToMinutes(nextStartTime);
+      const currentEndMinutes = parseTimeToMinutes(endTime);
+      const nextEndTime =
+        startMinutes !== null && currentEndMinutes !== null && currentEndMinutes > startMinutes
+          ? endTime
+          : '';
+
+      setStartTime(nextStartTime);
+      setEndTime(nextEndTime);
+      setTimePickerTarget(null);
+      clearFieldError('timeline');
+    },
+    [clearFieldError, endTime],
+  );
+
+  const handleEndTimeSelect = useCallback(
+    (nextEndTime: string) => {
+      setEndTime(nextEndTime);
+      setTimePickerTarget(null);
+      clearFieldError('timeline');
+    },
+    [clearFieldError],
+  );
+
+  const handleMapPress = useCallback(
+    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      const { latitude, longitude } = event.nativeEvent.coordinate;
+      setSelectedLatitude(latitude);
+      setSelectedLongitude(longitude);
+
+      const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      try {
+        const results = await Location.reverseGeocodeAsync({ latitude, longitude });
+        if (results.length > 0) {
+          const r = results[0];
+          const streetPart = [r.streetNumber, r.street].filter(Boolean).join(' ');
+          const resolved = [streetPart, r.district, r.city].filter(Boolean).join(', ') || fallback;
+          setAddressNotes(resolved);
+        } else {
+          setAddressNotes(fallback);
+        }
+      } catch {
+        setAddressNotes(fallback);
+      }
+    },
+    [],
+  );
+
   const handleSubmit = useCallback(async () => {
     setHasSubmittedOnce(true);
     setSubmitMessage(null);
@@ -564,7 +880,7 @@ export default function CustomerPostProRequestScreen() {
         timeline: timeline.trim(),
         title: title.trim(),
         ...(addressNotes.trim() && { locationAddress: addressNotes.trim() }),
-        ...(locationNotes.trim() && { internalLocationDetails: locationNotes.trim() }),
+        ...(protectedLocationDetails.trim() && { internalLocationDetails: protectedLocationDetails.trim() }),
       },
       authToken,
     );
@@ -641,7 +957,7 @@ export default function CustomerPostProRequestScreen() {
     formValidation,
     getValidAccessToken,
     images,
-    locationNotes,
+    protectedLocationDetails,
     router,
     selectedCategoryId,
     selectedCityId,
@@ -666,6 +982,7 @@ export default function CustomerPostProRequestScreen() {
                     key={category.id}
                     onPress={() => {
                       setSelectedCategoryId(category.id);
+                      setSelectedTagKeys([]);
                       clearFieldError('categoryKey');
                     }}
                     style={({ pressed }) => [
@@ -711,6 +1028,43 @@ export default function CustomerPostProRequestScreen() {
                 />
               ))}
             </View>
+            {selectedCategory ? (
+              <View style={styles.tagPanel}>
+                <AppText color={colors.proOrangeTextDark} style={styles.tagPanelTitle} variant="small">
+                  {t('projectIncludes')}
+                </AppText>
+                <View style={styles.tagWrap}>
+                  {selectedCategoryTags.map((tag) => {
+                    const selected = selectedTagKeys.includes(tag.key);
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        key={tag.key}
+                        onPress={() => {
+                          setSelectedTagKeys((current) =>
+                            current.includes(tag.key)
+                              ? current.filter((item) => item !== tag.key)
+                              : [...current, tag.key],
+                          );
+                        }}
+                        style={({ pressed }) => [
+                          styles.specialtyTag,
+                          selected ? styles.specialtyTagSelected : null,
+                          pressed ? styles.pressed : null,
+                        ]}>
+                        <AppText
+                          color={selected ? colors.white : colors.proOrangeTextDark}
+                          style={styles.specialtyTagText}
+                          variant="small">
+                          {locale === 'bg' ? tag.bg : tag.en}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
       );
@@ -797,22 +1151,33 @@ export default function CustomerPostProRequestScreen() {
 
           <View style={styles.sectionCard}>
             <Field
-              errorText={getFieldError('district')}
-              label={t('areaOrDistrict')}
-              onChangeText={(value) => {
-                setDistrict(value);
-                clearFieldError('district');
-              }}
-              placeholder={t('proRequestDistrictPlaceholder')}
-              value={district}
-            />
-            <Field
-              helperText={t('proLocationPrivacyHelper')}
-              label={t('locationAddress')}
-              onChangeText={setAddressNotes}
+              label={t('address')}
+              onChangeText={(value) => setAddressNotes(value)}
               placeholder={t('proLocationAddressPlaceholder')}
               value={addressNotes}
             />
+            <View style={styles.privacyNoteCard}>
+              <Ionicons color={colors.proOrange600} name="lock-closed-outline" size={18} />
+              <AppText color={colors.proOrangeTextDark} style={styles.privacyNoteText} variant="small">
+                {t('proExactAddressPrivacyNote')}
+              </AppText>
+            </View>
+            <View style={styles.mapCard}>
+              <MapView
+                initialRegion={{
+                  latitude: DEFAULT_PRO_LOCATION.lat,
+                  longitude: DEFAULT_PRO_LOCATION.lng,
+                  latitudeDelta: 0.04,
+                  longitudeDelta: 0.04,
+                }}
+                onPress={handleMapPress}
+                style={styles.mapView}>
+                <Marker coordinate={{ latitude: selectedLatitude, longitude: selectedLongitude }} />
+              </MapView>
+            </View>
+            <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
+              {t('mapPinHelper')}
+            </AppText>
             <Field
               helperText={t('proLocationNotesHelper')}
               label={t('locationNotes')}
@@ -820,6 +1185,20 @@ export default function CustomerPostProRequestScreen() {
               onChangeText={setLocationNotes}
               placeholder={t('locationNotesPlaceholder')}
               value={locationNotes}
+            />
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Field
+              errorText={getFieldError('district')}
+              helperText={t('proDistrictSharedHelper')}
+              label={t('district')}
+              onChangeText={(value) => {
+                setDistrict(value);
+                clearFieldError('district');
+              }}
+              placeholder={t('proRequestDistrictPlaceholder')}
+              value={district}
             />
           </View>
         </View>
@@ -883,21 +1262,6 @@ export default function CustomerPostProRequestScreen() {
           <View style={styles.sectionCard}>
             <AppText style={styles.sectionTitle}>{activeStep.title}</AppText>
             <AppText color={colors.slate700}>{activeStep.body}</AppText>
-            <View style={styles.quickBudgetRow}>
-              {QUICK_BUDGET_RANGES.map((range) => (
-                <ChoiceChip
-                  key={`${range.min}-${range.max}`}
-                  label={`€${range.min} - €${range.max}`}
-                  onPress={() => {
-                    setBudgetMin(range.min);
-                    setBudgetMax(range.max);
-                    clearFieldError('budgetMinEur');
-                    clearFieldError('budgetMaxEur');
-                  }}
-                  selected={budgetMin === range.min && budgetMax === range.max}
-                />
-              ))}
-            </View>
             <View style={styles.twoColumn}>
               <Field
                 errorText={getFieldError('budgetMinEur')}
@@ -924,17 +1288,77 @@ export default function CustomerPostProRequestScreen() {
                 value={budgetMax}
               />
             </View>
-            <Field
-              errorText={getFieldError('timeline')}
-              helperText={t('proPreferredStartHelper')}
-              label={t('preferredStartDate')}
-              onChangeText={(value) => {
-                setTimeline(value);
-                clearFieldError('timeline');
-              }}
-              placeholder={t('proRequestTimelinePlaceholder')}
-              value={timeline}
-            />
+            <View style={styles.scheduleSection}>
+              <AppText style={styles.fieldLabel}>{t('preferredStartDate')}</AppText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setShowDatePicker(true)}
+                style={({ pressed }) => [
+                  styles.scheduleDateButton,
+                  getFieldError('timeline') ? styles.inputError : null,
+                  pressed ? styles.pressed : null,
+                ]}>
+                <Ionicons color={colors.proOrange600} name="calendar-outline" size={18} />
+                <AppText color={preferredDate ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
+                  {preferredDate ? formattedPreferredDate : t('scheduleDate')}
+                </AppText>
+              </Pressable>
+              {showDatePicker ? (
+                <DateTimePicker
+                  minimumDate={parseIsoDate(getTodayIsoDate()) ?? new Date()}
+                  mode="date"
+                  onChange={handleScheduleDateChange}
+                  value={selectedDateValue}
+                />
+              ) : null}
+            </View>
+            <View style={styles.twoColumn}>
+              <View style={styles.scheduleSection}>
+                <AppText style={styles.fieldLabel}>{t('startTime')}</AppText>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!preferredDate}
+                  onPress={() => setTimePickerTarget('start')}
+                  style={({ pressed }) => [
+                    styles.scheduleDateButton,
+                    !preferredDate ? styles.scheduleSectionDisabled : null,
+                    getFieldError('timeline') ? styles.inputError : null,
+                    pressed ? styles.pressed : null,
+                  ]}>
+                  <Ionicons color={colors.proOrange600} name="time-outline" size={18} />
+                  <AppText color={startTime ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
+                    {startTime || t('startTime')}
+                  </AppText>
+                </Pressable>
+              </View>
+              <View style={styles.scheduleSection}>
+                <AppText style={styles.fieldLabel}>{t('endTime')}</AppText>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!startTime}
+                  onPress={() => setTimePickerTarget('end')}
+                  style={({ pressed }) => [
+                    styles.scheduleDateButton,
+                    !startTime ? styles.scheduleSectionDisabled : null,
+                    getFieldError('timeline') ? styles.inputError : null,
+                    pressed ? styles.pressed : null,
+                  ]}>
+                  <Ionicons color={colors.proOrange600} name="time-outline" size={18} />
+                  <AppText color={endTime ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
+                    {endTime || t('endTime')}
+                  </AppText>
+                </Pressable>
+              </View>
+            </View>
+            {getFieldError('timeline') ? (
+              <AppText color={colors.danger600} variant="small">
+                {getFieldError('timeline')}
+              </AppText>
+            ) : (
+              <AppText color={colors.slate500} variant="small">
+                {t('proPreferredStartHelper')}
+              </AppText>
+            )}
           </View>
 
           <View style={styles.sectionCard}>
@@ -1089,45 +1513,113 @@ export default function CustomerPostProRequestScreen() {
             </View>
           ) : null}
 
-          <ScrollView
-            contentContainerStyle={styles.content}
-            onScroll={handleCustomerScroll}
-            scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}>
-            {renderStep()}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, spacing.lg) : 0}
+            style={styles.keyboardAvoider}>
+            <ScrollView
+              contentContainerStyle={[
+                styles.content,
+                { paddingBottom: Math.max(insets.bottom + 112, 132) },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              onScroll={handleCustomerScroll}
+              scrollEventThrottle={16}
+              showsVerticalScrollIndicator={false}>
+              {renderStep()}
 
-            {isUploadingImages ? (
-              <AppCard accentColor={colors.proOrange600}>
-                <StatusBadge label={t('uploadingPhotos')} tone="pro" />
-                <AppText color={colors.slate700}>
-                  {uploadProgressTotal > 0
-                    ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
-                    : t('proRequestCreatedUploadingPhotos')}
-                </AppText>
-              </AppCard>
-            ) : null}
+              {isUploadingImages ? (
+                <AppCard accentColor={colors.proOrange600}>
+                  <StatusBadge label={t('uploadingPhotos')} tone="pro" />
+                  <AppText color={colors.slate700}>
+                    {uploadProgressTotal > 0
+                      ? formatUploadProgress(uploadProgressCurrent, uploadProgressTotal)
+                      : t('proRequestCreatedUploadingPhotos')}
+                  </AppText>
+                </AppCard>
+              ) : null}
 
-            {uploadWarning ? (
-              <AppCard accentColor={colors.warning600}>
-                <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
-                <AppText color={colors.slate700}>{uploadWarning}</AppText>
-              </AppCard>
-            ) : null}
+              {uploadWarning ? (
+                <AppCard accentColor={colors.warning600}>
+                  <StatusBadge label={t('somePhotosSkipped')} tone="warning" />
+                  <AppText color={colors.slate700}>{uploadWarning}</AppText>
+                </AppCard>
+              ) : null}
 
-            {submitMessage ? (
-              <AppCard accentColor={colors.success600}>
-                <StatusBadge label={t('proRequestCreated')} tone="success" />
-                <AppText color={colors.slate700}>{submitMessage}</AppText>
-              </AppCard>
-            ) : null}
+              {submitMessage ? (
+                <AppCard accentColor={colors.success600}>
+                  <StatusBadge label={t('proRequestCreated')} tone="success" />
+                  <AppText color={colors.slate700}>{submitMessage}</AppText>
+                </AppCard>
+              ) : null}
 
-            {submitError ? (
-              <AppCard accentColor={colors.danger600}>
-                <StatusBadge label={t('couldNotCreateProRequest')} tone="danger" />
-                <AppText color={colors.slate700}>{submitError}</AppText>
-              </AppCard>
-            ) : null}
-          </ScrollView>
+              {submitError ? (
+                <AppCard accentColor={colors.danger600}>
+                  <StatusBadge label={t('couldNotCreateProRequest')} tone="danger" />
+                  <AppText color={colors.slate700}>{submitError}</AppText>
+                </AppCard>
+              ) : null}
+            </ScrollView>
+          </KeyboardAvoidingView>
+
+          <Modal
+            animationType="slide"
+            onRequestClose={() => setTimePickerTarget(null)}
+            transparent
+            visible={timePickerTarget !== null}>
+            <Pressable style={styles.pickerBackdrop} onPress={() => setTimePickerTarget(null)}>
+              <Pressable style={[styles.timePickerSheet, { marginBottom: Math.max(insets.bottom, spacing.sm) }]}>
+                <View style={styles.pickerHeader}>
+                  <AppText style={styles.sectionTitle}>
+                    {timePickerTarget === 'start' ? t('startTime') : t('endTime')}
+                  </AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setTimePickerTarget(null)}
+                    style={styles.pickerClose}>
+                    <Ionicons color={colors.proOrangeTextDark} name="close" size={18} />
+                  </Pressable>
+                </View>
+                <ScrollView
+                  contentContainerStyle={[
+                    styles.pickerList,
+                    { paddingBottom: Math.max(insets.bottom + spacing.xxl, spacing.xxl) },
+                  ]}
+                  keyboardShouldPersistTaps="handled"
+                  style={styles.pickerScroll}>
+                  {(timePickerTarget === 'start' ? availableStartTimes : availableEndTimes).map((option) => {
+                    const selected = timePickerTarget === 'start' ? startTime === option : endTime === option;
+
+                    return (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        key={option}
+                        onPress={() => {
+                          if (timePickerTarget === 'start') {
+                            handleStartTimeSelect(option);
+                            return;
+                          }
+
+                          handleEndTimeSelect(option);
+                        }}
+                        style={[
+                          styles.pickerOption,
+                          selected ? styles.pickerOptionSelected : null,
+                        ]}>
+                        <AppText
+                          color={selected ? colors.proOrange600 : colors.navy900}
+                          style={styles.pickerOptionText}>
+                          {option}
+                        </AppText>
+                        {selected ? <Ionicons color={colors.proOrange600} name="checkmark-circle" size={18} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </Pressable>
+            </Pressable>
+          </Modal>
 
           <View style={styles.footer}>
             <View style={styles.footerButtons}>
@@ -1282,6 +1774,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.proOrange600,
     borderColor: colors.proOrange600,
   },
+  fieldLabel: {
+    color: colors.proOrangeTextDark,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
   input: {
     backgroundColor: colors.white,
     borderColor: colors.border,
@@ -1295,6 +1793,22 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: colors.danger600,
+  },
+  keyboardAvoider: {
+    flex: 1,
+  },
+  mapCard: {
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    height: 190,
+    overflow: 'hidden',
+  },
+  mapHelper: {
+    marginTop: -spacing.xs,
+  },
+  mapView: {
+    flex: 1,
   },
   modalCard: {
     backgroundColor: colors.white,
@@ -1412,10 +1926,42 @@ const styles = StyleSheet.create({
     height: 5,
     overflow: 'hidden',
   },
-  quickBudgetRow: {
+  privacyNoteCard: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.sm,
+    padding: spacing.md,
+  },
+  privacyNoteText: {
+    flex: 1,
+    lineHeight: 18,
+  },
+  scheduleDateButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  scheduleDateValue: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  scheduleSection: {
+    gap: spacing.xs,
+  },
+  scheduleSectionDisabled: {
+    opacity: 0.55,
   },
   sectionCard: {
     backgroundColor: colors.white,
@@ -1529,8 +2075,50 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     padding: spacing.md,
   },
+  specialtyTag: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  specialtyTagSelected: {
+    backgroundColor: colors.proOrange600,
+    borderColor: colors.proOrange600,
+  },
+  specialtyTagText: {
+    fontWeight: '800',
+  },
+  tagPanel: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  tagPanelTitle: {
+    fontWeight: '800',
+  },
+  tagWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   textArea: {
     minHeight: 112,
+  },
+  timePickerSheet: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginHorizontal: spacing.sm,
+    maxHeight: '68%',
+    padding: spacing.md,
   },
   twoColumn: {
     gap: spacing.md,
