@@ -9,6 +9,7 @@ export {
   createCustomerTask,
   finalizeCustomerTaskPayment,
   getCustomerHomeSummary,
+  getCustomerProfile,
   getCustomerProRequestDetail,
   getCustomerProRequests,
   getCustomerTaskDetail,
@@ -17,6 +18,7 @@ export {
   requestCustomerTaskSupport,
   selectCustomerTasker,
   setupCustomerTaskPayment,
+  updateCustomerProfile,
 } from './customer';
 export { endpoints } from './endpoints';
 export { uploadCustomerProRequestImage, uploadCustomerTaskImage } from './imageUploads';
@@ -75,6 +77,8 @@ export type {
   CustomerImageUploadResponse,
   CustomerHomeResponse,
   CustomerNextAction,
+  CustomerProfile,
+  CustomerProfileResponse,
   ApproveCustomerTaskCompletionResponse,
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,
@@ -173,6 +177,7 @@ export type {
   ProRequestPostingRules,
   TaskDetail,
   TaskSummary,
+  UpdateCustomerProfilePayload,
 } from './domain';
 export type {
   ApiError,

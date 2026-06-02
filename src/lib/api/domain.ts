@@ -1,4 +1,4 @@
-import { ProviderCapabilities } from './types';
+import type { ProviderCapabilities, UserSession } from './types';
 
 export type NextAction = {
   href?: string;
@@ -365,6 +365,25 @@ export type CustomerHomeResponse = {
   highlights: CustomerHighlight[];
   nextActions: CustomerNextAction[];
   summary: CustomerHomeSummary;
+};
+
+export type CustomerProfile = {
+  displayName: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+export type CustomerProfileResponse = {
+  profile: CustomerProfile;
+  session?: UserSession;
+};
+
+export type UpdateCustomerProfilePayload = {
+  firstName: string;
+  lastName: string;
+  phone?: string;
 };
 
 export type CustomerTaskSummary = {

@@ -19,6 +19,7 @@ export const endpoints = {
     home: '/api/mobile/customer/home',
     homeSummary: '/api/mobile/customer/home',
     messages: '/api/mobile/customer/messages',
+    profile: '/api/mobile/customer/profile',
     proRequestAccessCheckout: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/checkout`,
     proRequestAccessSupportRequest: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/support-request`,
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,

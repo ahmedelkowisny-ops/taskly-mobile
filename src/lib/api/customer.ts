@@ -16,6 +16,7 @@ import {
   CreateCustomerTaskPayload,
   CreateCustomerTaskResponse,
   CustomerHomeResponse,
+  CustomerProfileResponse,
   CustomerProRequestDetailResponse,
   CustomerProRequestsResponse,
   CustomerTaskPaymentFinalizeResponse,
@@ -29,6 +30,7 @@ import {
   RejectCustomerTaskCompletionResponse,
   SelectCustomerTaskerPayload,
   SelectCustomerTaskerResponse,
+  UpdateCustomerProfilePayload,
 } from './domain';
 import { ApiResult } from './types';
 
@@ -36,6 +38,28 @@ export function getCustomerHomeSummary(authToken: string): Promise<ApiResult<Cus
   return apiRequest<CustomerHomeResponse>(endpoints.customer.home, {
     authToken,
     method: 'GET',
+  });
+}
+
+export function getCustomerProfile(authToken: string): Promise<ApiResult<CustomerProfileResponse>> {
+  return apiRequest<CustomerProfileResponse>(endpoints.customer.profile, {
+    authToken,
+    method: 'GET',
+  });
+}
+
+export function updateCustomerProfile(
+  payload: UpdateCustomerProfilePayload,
+  authToken: string,
+): Promise<ApiResult<CustomerProfileResponse>> {
+  return apiRequest<CustomerProfileResponse>(endpoints.customer.profile, {
+    authToken,
+    body: {
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      phone: payload.phone ?? '',
+    },
+    method: 'PATCH',
   });
 }
 
