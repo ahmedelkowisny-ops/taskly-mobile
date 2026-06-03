@@ -1,6 +1,9 @@
 // Centralized mobile API routes. Screens should use wrappers instead of hardcoding these paths.
 
 export const endpoints = {
+  account: {
+    changePassword: '/api/mobile/account/change-password',
+  },
   auth: {
     currentSession: '/api/mobile/auth/session',
     forgotPassword: '/api/mobile/auth/forgot-password',

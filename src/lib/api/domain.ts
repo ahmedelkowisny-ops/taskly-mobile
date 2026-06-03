@@ -1892,3 +1892,19 @@ export type NotificationPreferenceSummary = {
   coreAlertsEnabled: boolean;
   proAlertsEnabled: boolean;
 };
+
+export type ChangePasswordRequest = {
+  confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type ChangePasswordResponse = {
+  session: UserSession;
+  tokens: {
+    accessToken: string;
+    accessTokenExpiresIn: number;
+    refreshToken: string;
+    refreshTokenExpiresAt: string;
+  };
+};
