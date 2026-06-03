@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import type { Dispatch, SetStateAction } from 'react';
+import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -38,7 +38,7 @@ import {
 } from '@/src/lib/api/provider';
 import { canUploadSelectedImage, uploadProviderTaskerProfilePhoto } from '@/src/lib/api/imageUploads';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
+import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode, hasCoreTaskerMode } from '@/src/lib/auth/workspaceAccess';
 import {
   compressSelectedImage,
   defaultAcceptedImageTypes,
@@ -67,6 +67,8 @@ type TaskerDraft = {
 
 type TaskerFieldErrors = Partial<Record<keyof TaskerDraft, string>>;
 type TaskerEditor = 'availability' | 'basics' | 'coverage' | 'skills';
+type ProfileMode = 'tasker' | 'pro';
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 const emptyTaskerDraft: TaskerDraft = {
   availability: createDefaultAvailability(),
@@ -178,6 +180,7 @@ export default function ProviderProfileScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [activeProfileMode, setActiveProfileMode] = useState<ProfileMode>('tasker');
   const hasTaskerChanges = useMemo(() => {
     if (!taskerProfile) return false;
     const current = toTaskerDraft(taskerProfile);
@@ -353,7 +356,12 @@ export default function ProviderProfileScreen() {
 
   const profile = data?.profile;
   const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
+  const showTaskerProfileTools = Boolean(taskerProfile) || status === 'demo' || hasCoreTaskerMode(authSession) || profile?.coreTaskerStatus === 'approved' || profile?.coreTaskerStatus === 'needsStripe';
+  const effectiveProfileMode: ProfileMode = showProProfileTools && !showTaskerProfileTools ? 'pro' : activeProfileMode;
+  const showTaskerProfileSection = showTaskerProfileTools && effectiveProfileMode === 'tasker';
+  const showProProfileSection = showProProfileTools && effectiveProfileMode === 'pro';
   const readinessItems = buildTaskerReadinessItems(taskerProfile, profile);
+  const proReadinessItems = buildProReadinessItems(proProfile, profile, portfolioProjects);
 
   function beginTaskerEdit(editor: TaskerEditor) {
     if (!taskerProfile) return;
@@ -763,7 +771,11 @@ export default function ProviderProfileScreen() {
         </AppCard>
       ) : null}
 
-      {taskerProfile ? (
+      {showTaskerProfileTools && showProProfileTools ? (
+        <ProfileModeSwitcher activeMode={effectiveProfileMode} onChange={setActiveProfileMode} />
+      ) : null}
+
+      {showTaskerProfileSection && taskerProfile ? (
         <ProfilePhotoCard
           canChangePhoto={status === 'authenticated'}
           isUploading={isUploadingTaskerPhoto}
@@ -773,16 +785,19 @@ export default function ProviderProfileScreen() {
         />
       ) : null}
 
-      <TaskerReadinessCard
-        isRefreshing={isRefreshingPayoutStatus}
-        isStarting={isStartingPayoutSetup}
-        items={readinessItems}
-        onRefresh={handleRefreshPayoutStatus}
-        onStart={handleStartPayoutSetup}
-        payoutStatus={profile?.payoutStatus ?? null}
-        stripeStatusLabel={profile?.stripeStatusLabel ?? null}
-      />
+      {showTaskerProfileSection ? (
+        <TaskerReadinessCard
+          isRefreshing={isRefreshingPayoutStatus}
+          isStarting={isStartingPayoutSetup}
+          items={readinessItems}
+          onRefresh={handleRefreshPayoutStatus}
+          onStart={handleStartPayoutSetup}
+          payoutStatus={profile?.payoutStatus ?? null}
+          stripeStatusLabel={profile?.stripeStatusLabel ?? null}
+        />
+      ) : null}
 
+      {showTaskerProfileSection ? (
       <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
@@ -807,8 +822,9 @@ export default function ProviderProfileScreen() {
           <AppText color={colors.slate500}>{t('taskerProfileEmptyHelper')}</AppText>
         )}
       </AppCard>
+      ) : null}
 
-      {taskerProfile ? (
+      {showTaskerProfileSection && taskerProfile ? (
         <TaskerEditModal
           activeEditor={activeTaskerEditor}
           cityOptions={cityOptions}
@@ -823,7 +839,7 @@ export default function ProviderProfileScreen() {
         />
       ) : null}
 
-      {showProProfileTools ? (
+      {showProProfileSection ? (
       <AppCard accentColor={colors.proOrange600}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
@@ -836,22 +852,7 @@ export default function ProviderProfileScreen() {
             </AppButton>
           ) : null}
         </View>
-        <AppText color={colors.slate700}>
-          {profile ? getProStatusLabel(profile.proStatus) : t('proProfileContactProtected')}
-        </AppText>
-        {profile?.proCities.length ? <AppText color={colors.slate500}>Cities: {profile.proCities.join(', ')}</AppText> : null}
-        {profile?.proCategories.length ? (
-          <View style={{ gap: spacing.xs }}>
-            {profile.proCategories.map((category) => (
-              <StatusBadge
-                key={`${category.label}-${category.status}`}
-                label={`${category.label}: ${category.status}`}
-                tone={category.status === 'approved' ? 'success' : category.status === 'rejected' ? 'danger' : 'warning'}
-              />
-            ))}
-          </View>
-        ) : null}
-        {profile ? <AppText color={colors.slate500}>{t('portfolioProjectsCount')}: {profile.portfolioProjectsCount}</AppText> : null}
+        <AppText color={colors.slate700}>{t('proProfileWorkspaceBody')}</AppText>
 
         {proErrorMessage ? <InlineMessage message={proErrorMessage} tone="error" /> : null}
         {projectErrorMessage ? <InlineMessage message={projectErrorMessage} tone="error" /> : null}
@@ -860,6 +861,9 @@ export default function ProviderProfileScreen() {
 
         {proProfile ? (
           <View style={styles.form}>
+            <ProProfileHero profile={proProfile} summary={profile ?? null} projectCount={portfolioProjects.length} />
+            <ProReadinessCard items={proReadinessItems} />
+            <ProApprovalSummary profile={proProfile} summary={profile ?? null} />
             <FormField
               autoCapitalize="words"
               editable={isEditingPro && !isSavingPro}
@@ -963,9 +967,6 @@ export default function ProviderProfileScreen() {
                 <ToggleChip disabled={!isEditingPro || isSavingPro} label={t('no')} onPress={() => setProDraft((current) => ({ ...current, invoiceAvailable: false }))} selected={!proDraft.invoiceAvailable} />
               </View>
             </View>
-            <InfoRow label={t('proStatus')} value={proProfile.status} />
-            {proProfile.cityLabels.length ? <InfoRow label={t('city')} value={proProfile.cityLabels.join(', ')} /> : null}
-            {proProfile.categories.length ? <InfoRow label={t('category')} value={proProfile.categories.map((category) => `${category.label}: ${category.status}`).join(', ')} /> : null}
             <AppText color={colors.slate500} variant="small">
               {t('proProfileReadonlyNote')}
             </AppText>
@@ -994,6 +995,9 @@ export default function ProviderProfileScreen() {
                 <AppText variant="sectionTitle">{t('portfolio')}</AppText>
                 <AppText color={colors.slate700} variant="small">
                   {t('proPortfolioHelper')}
+                </AppText>
+                <AppText color={colors.slate500} variant="small">
+                  {t('portfolioPhotoUploadGap')}
                 </AppText>
               </View>
               {status === 'authenticated' && !isProjectFormOpen ? (
@@ -1090,34 +1094,14 @@ export default function ProviderProfileScreen() {
             {portfolioProjects.length ? (
               <View style={styles.projectList}>
                 {portfolioProjects.map((project) => (
-                  <View key={project.id} style={styles.projectCard}>
-                    <AppText variant="bodyStrong">{project.title}</AppText>
-                    {project.categoryName || project.cityName ? (
-                      <AppText color={colors.slate500} variant="small">
-                        {[project.categoryName, project.cityName].filter(Boolean).join(' / ')}
-                      </AppText>
-                    ) : null}
-                    {project.description ? <AppText color={colors.slate700}>{project.description}</AppText> : null}
-                    {project.images.length ? (
-                      <AppText color={colors.slate500} variant="small">
-                        {t('projectPhotos')}: {project.images.length}
-                      </AppText>
-                    ) : null}
-                    <View style={styles.actionRow}>
-                      <AppButton onPress={() => beginEditProject(project)} style={styles.actionButton} tone="pro" variant="outline">
-                        {t('edit')}
-                      </AppButton>
-                      <AppButton
-                        disabled={isDeletingProjectId === project.id}
-                        loading={isDeletingProjectId === project.id}
-                        onPress={() => handleDeleteProject(project.id)}
-                        style={styles.actionButton}
-                        tone="neutral"
-                        variant="outline">
-                        {t('remove')}
-                      </AppButton>
-                    </View>
-                  </View>
+                  <PortfolioProjectCard
+                    canEdit={status === 'authenticated'}
+                    isDeleting={isDeletingProjectId === project.id}
+                    key={project.id}
+                    onDelete={() => handleDeleteProject(project.id)}
+                    onEdit={() => beginEditProject(project)}
+                    project={project}
+                  />
                 ))}
               </View>
             ) : (
@@ -1851,6 +1835,283 @@ function buildTaskerReadinessItems(
   ];
 }
 
+function buildProReadinessItems(
+  proProfile: ProviderProProfile | null,
+  profile: ProviderProfileResponse['profile'] | undefined,
+  projects: ProviderProPortfolioProject[],
+): ReadinessItem[] {
+  const approvedCategories = proProfile?.categories.filter((category) => category.status === 'approved') ?? profile?.proCategories.filter((category) => category.status === 'approved') ?? [];
+  const approvedCities = proProfile?.cityLabels ?? profile?.proCities ?? [];
+  const photoCount = projects.reduce((total, project) => total + project.images.length, 0);
+  const hasPublicBasics = Boolean(proProfile?.displayName.trim() && proProfile.bio.trim());
+  const hasContactDetails = Boolean(proProfile?.internalPhone.trim() || proProfile?.internalEmail.trim());
+  const hasResponsePreferences = Boolean(proProfile?.siteVisitPreference.trim() || proProfile?.quotePreference.trim() || proProfile?.warrantyNote.trim());
+
+  return [
+    {
+      body: hasPublicBasics ? [proProfile?.displayName, proProfile?.tradeName].filter(Boolean).join(' / ') : t('proReadinessPublicBasicsMissing'),
+      complete: hasPublicBasics,
+      label: t('proReadinessPublicBasics'),
+    },
+    {
+      body: approvedCategories.length ? approvedCategories.map((category) => category.label).join(', ') : t('proReadinessApprovedCategoriesMissing'),
+      complete: approvedCategories.length > 0,
+      label: t('proReadinessApprovedCategories'),
+    },
+    {
+      body: approvedCities.length ? approvedCities.join(', ') : t('proReadinessCityCoverageMissing'),
+      complete: approvedCities.length > 0,
+      label: t('proReadinessCityCoverage'),
+    },
+    {
+      body: projects.length ? `${t('portfolioProjectsCount')}: ${projects.length} / ${t('projectPhotos')}: ${photoCount}` : t('proPortfolioEmpty'),
+      complete: projects.length > 0,
+      label: t('proReadinessPortfolio'),
+    },
+    {
+      body: hasResponsePreferences ? formatProfileList([proProfile?.siteVisitPreference ?? '', proProfile?.quotePreference ?? '']) : t('proReadinessResponsePreferencesMissing'),
+      complete: hasResponsePreferences,
+      label: t('proReadinessResponsePreferences'),
+    },
+    {
+      body: hasContactDetails ? t('proInternalContactReady') : t('proReadinessContactDetailsMissing'),
+      complete: hasContactDetails,
+      label: t('proReadinessContactDetails'),
+    },
+  ];
+}
+
+function ProfileModeSwitcher({
+  activeMode,
+  onChange,
+}: {
+  activeMode: ProfileMode;
+  onChange: (mode: ProfileMode) => void;
+}) {
+  const options: { icon: IoniconName; label: string; mode: ProfileMode; tone: 'core' | 'pro' }[] = [
+    { icon: 'briefcase-outline', label: t('tasklyProfile'), mode: 'tasker', tone: 'core' },
+    { icon: 'ribbon-outline', label: t('tasklyProProfile'), mode: 'pro', tone: 'pro' },
+  ];
+
+  return (
+    <AppCard backgroundColor={colors.white}>
+      <View style={styles.profileModeHeader}>
+        <StatusBadge label={t('dualProviderWorkspace')} tone="neutral" />
+        <AppText color={colors.slate700} variant="small">
+          {t('proProfileModeHelper')}
+        </AppText>
+      </View>
+      <View style={styles.profileModeSwitch}>
+        {options.map((option) => {
+          const selected = activeMode === option.mode;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={option.mode}
+              onPress={() => onChange(option.mode)}
+              style={({ pressed }) => [
+                styles.profileModeOption,
+                selected ? (option.mode === 'pro' ? styles.profileModeOptionProSelected : styles.profileModeOptionCoreSelected) : null,
+                { opacity: pressed ? 0.84 : 1 },
+              ]}>
+              <Ionicons color={selected && option.mode === 'pro' ? colors.proOrangeTextDark : colors.tasklyBlue700} name={option.icon} size={20} />
+              <View style={styles.profileModeText}>
+                <StatusBadge label={option.tone === 'pro' ? t('tasklyPro') : t('tasklyTasks')} tone={option.tone} />
+                <AppText color={colors.navy900} numberOfLines={2} variant="bodyStrong">
+                  {option.label}
+                </AppText>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+    </AppCard>
+  );
+}
+
+function ProProfileHero({
+  profile,
+  projectCount,
+  summary,
+}: {
+  profile: ProviderProProfile;
+  projectCount: number;
+  summary: ProviderProfileResponse['profile'] | null;
+}) {
+  const imageUrl = resolveApiMediaUrl(profile.profileImageUrl || '');
+  const displayName = profile.displayName || profile.tradeName || t('proProfessionalProfile');
+  const languages = profile.languages.length ? profile.languages.join(', ') : t('needsAttention');
+  const approvedCategories = profile.categories.filter((category) => category.status === 'approved').length;
+
+  return (
+    <View style={styles.proHero}>
+      <View style={styles.proHeroPhoto}>
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.avatarImage} />
+        ) : (
+          <AppText color={colors.proOrangeTextDark} style={styles.avatarInitials}>
+            {getNameInitials(displayName)}
+          </AppText>
+        )}
+      </View>
+      <View style={styles.proHeroBody}>
+        <View style={styles.profileHeaderBadges}>
+          <StatusBadge label={summary ? getProStatusLabel(summary.proStatus) : profile.status} tone="pro" />
+          <StatusBadge label={t('customerContactProtected')} tone="warning" />
+        </View>
+        <AppText variant="sectionTitle">{displayName}</AppText>
+        {profile.tradeName ? <AppText color={colors.slate700}>{profile.tradeName}</AppText> : null}
+        <View style={styles.proMetricsGrid}>
+          <InfoRow label={t('yearsExperience')} value={profile.yearsExperience || t('needsAttention')} />
+          <InfoRow label={t('teamSize')} value={profile.teamSize || t('needsAttention')} />
+          <InfoRow label={t('portfolioProjectsCount')} value={String(projectCount)} />
+          <InfoRow label={t('approvedCategories')} value={String(approvedCategories)} />
+        </View>
+        <AppText color={colors.slate500} variant="small">
+          {t('languagesSpoken')}: {languages}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+function ProReadinessCard({ items }: { items: ReadinessItem[] }) {
+  const completeCount = items.filter((item) => item.complete).length;
+  const percent = items.length ? Math.round((completeCount / items.length) * 100) : 0;
+
+  return (
+    <View style={styles.proReadinessPanel}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleBlock}>
+          <StatusBadge label={t('proAccountReadiness')} tone="pro" />
+          <AppText variant="sectionTitle">{percent}%</AppText>
+        </View>
+      </View>
+      <AppText color={colors.slate700}>{t('proProfileReadinessIntro')}</AppText>
+      <View style={styles.readinessList}>
+        {items.map((item) => (
+          <View key={item.label} style={styles.readinessRow}>
+            <View style={[styles.readinessIcon, item.complete ? styles.readinessIconComplete : styles.readinessIconAttention]}>
+              <Ionicons color={item.complete ? colors.tasklyBlue700 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
+            </View>
+            <View style={styles.readinessText}>
+              <AppText variant="bodyStrong">{item.label}</AppText>
+              <AppText color={colors.slate700} variant="small">{item.body}</AppText>
+            </View>
+            <StatusBadge label={item.complete ? t('ready') : t('needsAttention')} tone={item.complete ? 'success' : 'warning'} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function ProApprovalSummary({
+  profile,
+  summary,
+}: {
+  profile: ProviderProProfile;
+  summary: ProviderProfileResponse['profile'] | null;
+}) {
+  const cities = profile.cityLabels.length ? profile.cityLabels : summary?.proCities ?? [];
+  const categories = profile.categories.length ? profile.categories : summary?.proCategories ?? [];
+
+  return (
+    <View style={styles.proApprovalPanel}>
+      <View style={styles.sectionTitleBlock}>
+        <AppText variant="bodyStrong">{t('approvedCategoriesCities')}</AppText>
+        <AppText color={colors.slate500} variant="small">
+          {t('proReadonlyApprovals')}
+        </AppText>
+      </View>
+      {cities.length ? (
+        <View style={styles.chipGrid}>
+          {cities.map((city) => (
+            <StatusBadge key={city} label={city} tone="success" />
+          ))}
+        </View>
+      ) : (
+        <InlineMessage message={t('proReadinessCityCoverageMissing')} tone="neutral" />
+      )}
+      {categories.length ? (
+        <View style={styles.chipGrid}>
+          {categories.map((category) => (
+            <StatusBadge
+              key={`${category.label}-${category.status}`}
+              label={`${category.label}: ${category.status}`}
+              tone={category.status === 'approved' ? 'success' : category.status === 'rejected' ? 'danger' : 'warning'}
+            />
+          ))}
+        </View>
+      ) : (
+        <InlineMessage message={t('proReadinessApprovedCategoriesMissing')} tone="neutral" />
+      )}
+    </View>
+  );
+}
+
+function PortfolioProjectCard({
+  canEdit,
+  isDeleting,
+  onDelete,
+  onEdit,
+  project,
+}: {
+  canEdit: boolean;
+  isDeleting: boolean;
+  onDelete: () => void;
+  onEdit: () => void;
+  project: ProviderProPortfolioProject;
+}) {
+  const primaryImage = project.images[0] ? resolveApiMediaUrl(project.images[0].url) : '';
+
+  return (
+    <View style={styles.projectCard}>
+      {primaryImage ? (
+        <Image source={{ uri: primaryImage }} style={styles.projectPreviewImage} />
+      ) : (
+        <View style={styles.projectPreviewPlaceholder}>
+          <Ionicons color={colors.proOrangeTextDark} name="images-outline" size={24} />
+          <AppText color={colors.proOrangeTextDark} variant="small">{t('portfolioPreview')}</AppText>
+        </View>
+      )}
+      <View style={styles.projectCardBody}>
+        <View style={styles.projectCardTitleRow}>
+          <AppText style={styles.projectTitle} variant="bodyStrong">{project.title}</AppText>
+          {project.customerPermissionConfirmed ? <StatusBadge label={t('customerPermissionConfirmed')} tone="success" /> : null}
+        </View>
+        {project.categoryName || project.cityName ? (
+          <AppText color={colors.slate500} variant="small">
+            {[project.categoryName, project.cityName].filter(Boolean).join(' / ')}
+          </AppText>
+        ) : null}
+        {project.description ? <AppText color={colors.slate700}>{project.description}</AppText> : null}
+        <View style={styles.projectMetaRow}>
+          {project.approximateDuration ? <StatusBadge label={project.approximateDuration} tone="neutral" /> : null}
+          {project.optionalPriceRange ? <StatusBadge label={project.optionalPriceRange} tone="neutral" /> : null}
+          <StatusBadge label={`${t('projectPhotos')}: ${project.images.length}`} tone={project.images.length ? 'pro' : 'warning'} />
+        </View>
+        {canEdit ? (
+          <View style={styles.actionRow}>
+            <AppButton onPress={onEdit} style={styles.actionButton} tone="pro" variant="outline">
+              {t('edit')}
+            </AppButton>
+            <AppButton
+              disabled={isDeleting}
+              loading={isDeleting}
+              onPress={onDelete}
+              style={styles.actionButton}
+              tone="neutral"
+              variant="outline">
+              {t('remove')}
+            </AppButton>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
 function ProfilePhotoCard({
   canChangePhoto,
   isUploading,
@@ -2007,6 +2268,15 @@ function getInitials(profile: ProviderTaskerProfile) {
     .split(/\s+/)
     .filter(Boolean)
     .map((value) => value.slice(0, 1).toUpperCase())
+    .join('')
+    .slice(0, 2);
+}
+
+function getNameInitials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.slice(0, 1).toUpperCase())
     .join('')
     .slice(0, 2);
 }
@@ -2437,6 +2707,39 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
+  profileModeHeader: {
+    gap: spacing.sm,
+  },
+  profileModeOption: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 78,
+    minWidth: 132,
+    padding: spacing.md,
+  },
+  profileModeOptionCoreSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  profileModeOptionProSelected: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrange600,
+  },
+  profileModeSwitch: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  profileModeText: {
+    flex: 1,
+    gap: spacing.xs,
+    minWidth: 0,
+  },
   profileSectionCard: {
     backgroundColor: colors.white,
     borderColor: colors.tasklyBlueBorder,
@@ -2505,13 +2808,70 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     paddingTop: spacing.lg,
   },
+  proApprovalPanel: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  proHero: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  proHeroBody: {
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0,
+  },
+  proHeroPhoto: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 82,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    width: 82,
+  },
+  proMetricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  proReadinessPanel: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
   projectCard: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
+    overflow: 'hidden',
+  },
+  projectCardBody: {
+    gap: spacing.sm,
     padding: spacing.md,
+  },
+  projectCardTitleRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
   },
   projectForm: {
     backgroundColor: colors.proOrange50,
@@ -2523,6 +2883,28 @@ const styles = StyleSheet.create({
   },
   projectList: {
     gap: spacing.md,
+  },
+  projectMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  projectPreviewImage: {
+    aspectRatio: 1.8,
+    backgroundColor: colors.proOrange50,
+    width: '100%',
+  },
+  projectPreviewPlaceholder: {
+    alignItems: 'center',
+    aspectRatio: 1.8,
+    backgroundColor: colors.proOrange50,
+    gap: spacing.xs,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  projectTitle: {
+    flex: 1,
+    minWidth: 120,
   },
   readinessIcon: {
     alignItems: 'center',
