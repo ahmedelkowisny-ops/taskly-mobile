@@ -33,8 +33,6 @@ export default function CustomerHomeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showAllTasks, setShowAllTasks] = useState(false);
-  const [showAllProRequests, setShowAllProRequests] = useState(false);
 
   const displayName = data?.home.summary.displayName || session.user.displayName;
   const firstName = getFirstName(displayName);
@@ -42,8 +40,8 @@ export default function CustomerHomeScreen() {
   const activeTasks = (data?.tasks.tasks ?? []).filter((task) => !['COMPLETED', 'CANCELLED', 'CANCELLED_FREE', 'CANCELLED_LATE'].includes(task.status.toUpperCase()));
   const proRequests = data?.proRequests.proRequests ?? [];
   const proResponsesCount = data?.home.summary.proResponsesAvailableCount ?? proRequests.reduce((total, request) => total + request.responsesCount, 0);
-  const visibleTasks = showAllTasks ? activeTasks : activeTasks.slice(0, 2);
-  const visibleProRequests = showAllProRequests ? proRequests : proRequests.slice(0, 2);
+  const visibleTasks = activeTasks.slice(0, 2);
+  const visibleProRequests = proRequests.slice(0, 2);
 
   const loadHome = useCallback(async () => {
     setErrorMessage(null);
@@ -167,7 +165,7 @@ export default function CustomerHomeScreen() {
           <View style={styles.section}>
             <SectionHeader
               linkColor={colors.tasklyBlue600}
-              onPress={() => (activeTasks.length > 2 ? setShowAllTasks((current) => !current) : router.push('/customer/tasks' as Href))}
+              onPress={() => router.push('/customer/tasks' as Href)}
               title={t('activeTasksTitle')}
             />
             {visibleTasks.length ? (
@@ -184,7 +182,7 @@ export default function CustomerHomeScreen() {
           <View style={styles.section}>
             <SectionHeader
               linkColor={colors.proOrange600}
-              onPress={() => (proRequests.length > 2 ? setShowAllProRequests((current) => !current) : router.push('/customer/pro-requests' as Href))}
+              onPress={() => router.push('/customer/pro-requests' as Href)}
               title={t('proRequestsTitle')}
               titleColor={colors.proOrangeTextDark}
             />
