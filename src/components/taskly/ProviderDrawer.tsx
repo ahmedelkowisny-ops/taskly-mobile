@@ -35,7 +35,7 @@ type ProviderDrawerProps = {
 type DrawerItem = {
   action?: () => void;
   icon: keyof typeof Ionicons.glyphMap;
-  isActive: (pathname: string, supportMessagesActive: boolean) => boolean;
+  isActive: (pathname: string, supportMessagesActive: boolean, proMessagesActive: boolean) => boolean;
   label: string;
   route?: Href;
   tone?: 'taskly' | 'pro';
@@ -60,6 +60,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
   const drawerBottomPadding = spacing.lg;
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
   const supportMessagesActive = pathname === '/provider/messages' && params.context === 'support';
+  const proMessagesActive = pathname === '/provider/messages' && params.context === 'pro';
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
   const showApprovedPro = status === 'demo' || hasApprovedProMode(session);
   const showProUpsell = showCoreTasker && !showApprovedPro;
@@ -162,6 +163,13 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
                       route: '/provider/profile' as Href,
                       tone: 'pro' as const,
                     },
+                    {
+                      icon: 'chatbubbles-outline' as keyof typeof Ionicons.glyphMap,
+                      isActive: (_current: string, _isSupport: boolean, isPro: boolean) => isPro,
+                      label: t('proMessagesDrawer'),
+                      route: '/provider/messages?context=pro' as Href,
+                      tone: 'pro' as const,
+                    },
                   ]
                 : [
                     {
@@ -181,7 +189,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
       items: [
         {
           icon: 'chatbubbles-outline',
-          isActive: (current, isSupport) => current.startsWith('/provider/messages') && !isSupport,
+          isActive: (current, isSupport, isPro) => current.startsWith('/provider/messages') && !isSupport && !isPro,
           label: t('drawerMessages'),
           route: '/provider/messages' as Href,
         },
@@ -274,7 +282,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
                   <View style={styles.groupItems}>
                     {group.items.map((item) => (
                       <DrawerNavItem
-                        active={item.isActive(pathname, supportMessagesActive)}
+                        active={item.isActive(pathname, supportMessagesActive, proMessagesActive)}
                         icon={item.icon}
                         key={`${group.label}-${item.label}`}
                         label={item.label}

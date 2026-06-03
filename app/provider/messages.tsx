@@ -10,6 +10,7 @@ import { MessageThreadSummary, MessageThreadsResponse } from '@/src/lib/api/doma
 import { getMessageThreads } from '@/src/lib/api/messages';
 import { getMockMessageThreadsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -17,15 +18,18 @@ import { spacing } from '@/src/theme/spacing';
 export default function ProviderMessagesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ context?: string }>();
-  const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const { getValidAccessToken, session, status, useDemoSession } = useAuth();
   const [data, setData] = useState<MessageThreadsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'support'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'pro' | 'support'>('tasks');
+  const showProTab = status === 'demo' || hasApprovedProMode(session);
 
   useEffect(() => {
     if (params.context === 'support') {
       setActiveTab('support');
+    } else if (params.context === 'pro') {
+      setActiveTab('pro');
     }
   }, [params.context]);
 
@@ -72,9 +76,13 @@ export default function ProviderMessagesScreen() {
   );
 
   const allThreads = data?.threads ?? [];
-  const taskThreads = allThreads.filter((th) => th.contextType === 'CORE_TASK' || th.contextType === 'PRO_REQUEST');
+  const taskThreads = allThreads.filter((th) => th.contextType === 'CORE_TASK');
+  const proThreads = allThreads.filter((th) => th.contextType === 'PRO_REQUEST');
   const supportThreads = allThreads.filter((th) => th.contextType === 'SUPPORT' || th.id.startsWith('admin:') || th.id.startsWith('support:'));
-  const threads = activeTab === 'tasks' ? taskThreads : supportThreads;
+  const threads =
+    activeTab === 'pro' ? proThreads :
+    activeTab === 'support' ? supportThreads :
+    showProTab ? taskThreads : allThreads.filter((th) => th.contextType === 'CORE_TASK' || th.contextType === 'PRO_REQUEST');
 
   return (
     <Screen>
@@ -93,6 +101,16 @@ export default function ProviderMessagesScreen() {
             {t('tasksTab')}
           </AppText>
         </Pressable>
+        {showProTab ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setActiveTab('pro')}
+            style={[styles.tab, activeTab === 'pro' ? styles.tabActivePro : null]}>
+            <AppText color={activeTab === 'pro' ? colors.proOrangeTextDark : colors.slate500} variant="bodyStrong">
+              {t('proTab')}
+            </AppText>
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={() => setActiveTab('support')}
@@ -118,8 +136,22 @@ export default function ProviderMessagesScreen() {
 
       {!isLoading && !message && threads.length === 0 ? (
         <EmptyStateCard
-          body={activeTab === 'tasks' ? t('noTaskConversationsYetBody') : t('noSupportMessagesBody')}
-          title={activeTab === 'tasks' ? t('noTaskConversationsYet') : t('noSupportMessagesYet')}
+          accent={activeTab === 'pro' ? 'pro' : undefined}
+          body={
+            activeTab === 'pro'
+              ? t('noProConversationsYetBody')
+              : activeTab === 'support'
+              ? t('noSupportMessagesBody')
+              : t('noTaskConversationsYetBody')
+          }
+          icon={activeTab === 'pro' ? 'ribbon-outline' : undefined}
+          title={
+            activeTab === 'pro'
+              ? t('noProConversationsYet')
+              : activeTab === 'support'
+              ? t('noSupportMessagesYet')
+              : t('noTaskConversationsYet')
+          }
         />
       ) : null}
 
@@ -185,6 +217,9 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomColor: colors.tasklyBlue600,
+  },
+  tabActivePro: {
+    borderBottomColor: colors.proOrange600,
   },
   tabs: {
     borderBottomColor: colors.border,

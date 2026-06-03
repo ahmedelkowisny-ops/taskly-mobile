@@ -311,13 +311,26 @@ function StateCard({ label, message }: { label: string; message: string }) {
 
 function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
   const visual = getThreadVisual(thread);
+  const isProRequest = thread.contextType === 'PRO_REQUEST';
 
   return (
     <AppCard accentColor={visual.accentColor}>
-      <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
-      {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
+      <View style={styles.threadBadgeRow}>
+        <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
+        {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
+      </View>
       <AppText variant="screenTitle">{thread.title}</AppText>
       {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
+      {isProRequest ? (
+        <View style={styles.proContextNote}>
+          <AppText color={colors.proOrangeTextDark} variant="small">
+            {t('proRequestConversationLinked')}
+          </AppText>
+          <AppText color={colors.proOrangeTextDark} variant="small">
+            {t('contactDetailsProtected')}
+          </AppText>
+        </View>
+      ) : null}
       {!thread.capabilities.canSendText ? <AppText color={colors.slate700}>{getReadOnlyReason(thread)}</AppText> : null}
     </AppCard>
   );
@@ -558,6 +571,19 @@ function getReadOnlyReason(thread: MessageThreadMeta) {
 
 const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
+  proContextNote: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+    padding: spacing.sm,
+  },
+  threadBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
   attachmentImage: {
     aspectRatio: 4 / 3,
     backgroundColor: colors.slate100,

@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ProviderTopBar } from '@/src/components/taskly';
-import { AppButton, AppText, Screen } from '@/src/components/ui';
+import { AppButton, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
   getNotifications,
   markAllNotificationsAsRead,
@@ -22,6 +22,14 @@ import {
 } from '@/src/lib/navigation/deepLinks';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
+
+function getNotificationContext(notification: MobileNotificationItem) {
+  const entityType = notification.routeData?.entityType;
+  if (entityType === 'pro_request') return { label: t('proRequest'), tone: 'pro' as const };
+  if (entityType === 'core_task') return { label: t('coreTask'), tone: 'core' as const };
+  if (entityType === 'message_thread') return { label: t('messages'), tone: 'neutral' as const };
+  return null;
+}
 
 function formatNotificationTime(value: string, locale: 'bg' | 'en') {
   const date = new Date(value);
@@ -186,6 +194,8 @@ export default function ProviderNotificationsScreen() {
       <View style={styles.list}>
         {notifications.map((notification) => {
           const timeLabel = formatNotificationTime(notification.createdAt, locale);
+          const context = getNotificationContext(notification);
+          const isProNotification = notification.routeData?.entityType === 'pro_request';
           return (
             <Pressable
               accessibilityRole="button"
@@ -194,19 +204,23 @@ export default function ProviderNotificationsScreen() {
               style={({ pressed }) => [
                 styles.notificationItem,
                 !notification.read ? styles.notificationItemUnread : null,
+                isProNotification && !notification.read ? styles.notificationItemUnreadPro : null,
                 pressed ? styles.pressed : null,
               ]}>
               <View style={styles.notificationHeader}>
                 <AppText style={styles.notificationTitle} variant="bodyStrong">
                   {notification.title}
                 </AppText>
-                {!notification.read ? (
-                  <View style={styles.unreadChip}>
-                    <AppText color={colors.tasklyBlue700} style={styles.unreadChipText}>
-                      {t('notificationUnread')}
-                    </AppText>
-                  </View>
-                ) : null}
+                <View style={styles.notificationBadges}>
+                  {context ? <StatusBadge label={context.label} tone={context.tone} /> : null}
+                  {!notification.read ? (
+                    <View style={styles.unreadChip}>
+                      <AppText color={isProNotification ? colors.proOrangeTextDark : colors.tasklyBlue700} style={styles.unreadChipText}>
+                        {t('notificationUnread')}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
               </View>
               <AppText color={colors.slate700} style={styles.notificationMessage}>
                 {notification.message}
@@ -290,6 +304,14 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.sm,
   },
+  notificationBadges: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 0,
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'flex-end',
+  },
   notificationHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
@@ -307,6 +329,10 @@ const styles = StyleSheet.create({
   notificationItemUnread: {
     backgroundColor: '#F7FBFF',
     borderColor: colors.tasklyBlueBorder,
+  },
+  notificationItemUnreadPro: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
   },
   notificationMessage: {
     fontSize: 13,
