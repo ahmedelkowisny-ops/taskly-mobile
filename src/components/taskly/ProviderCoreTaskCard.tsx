@@ -78,6 +78,26 @@ export function ProviderCoreTaskCard({
         </View>
       ) : null}
 
+      {isHistoryProviderCoreTask(task) && task.aftercare ? (
+        <View style={styles.payoutBox}>
+          {task.aftercare.completedAt ? (
+            <AppText color={colors.tasklyBlue700} variant="bodyStrong">
+              {t('completedOn')}: {formatDate(task.aftercare.completedAt)}
+            </AppText>
+          ) : null}
+          {task.aftercare.customerReview ? (
+            <AppText color={colors.slate700}>
+              {t('customerReview')}: {t('ratingOutOfFive').replace('{rating}', String(task.aftercare.customerReview.rating))}
+            </AppText>
+          ) : null}
+          {task.aftercare.invoice ? (
+            <AppText color={colors.slate700}>
+              {t('invoice')}: {task.aftercare.invoice.invoiceNumber}
+            </AppText>
+          ) : null}
+        </View>
+      ) : null}
+
       {blockedReason ? <AppText color={colors.slate700}>{blockedReason}</AppText> : null}
       {getProviderSupportSummary(task) ? <AppText color={colors.slate700}>{getProviderSupportSummary(task)}</AppText> : null}
 
@@ -208,6 +228,7 @@ function getPrimaryActionLabel(action: ProviderCoreTaskPrimaryAction) {
 function getDetailActionLabel(task: ProviderCoreTaskSummary) {
   if (isActiveProviderCoreTask(task)) return t('continueTask');
   if (isAvailableProviderCoreTask(task)) return t('checkTask');
+  if (task.status.toUpperCase() === 'COMPLETED') return t('viewCompletedTask');
   return t('viewDetails');
 }
 
@@ -244,6 +265,12 @@ function formatSchedule(start: string | null, end: string | null) {
   const startLabel = new Date(start).toLocaleString();
   const endLabel = end ? new Date(end).toLocaleTimeString() : '';
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString();
 }
 
 function Meta({ label, value }: { label: string; value: string }) {

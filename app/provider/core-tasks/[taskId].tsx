@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -106,6 +107,7 @@ export default function ProviderCoreTaskDetailScreen() {
   );
 
   const task = data?.task;
+  const isAftercareTask = task ? isProviderAftercareStatus(task.status) : false;
 
   const markDemoInterestSent = useCallback(() => {
     setData((current) => {
@@ -673,6 +675,12 @@ export default function ProviderCoreTaskDetailScreen() {
     await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(task.addressPreviewLabel.trim())}`);
   }, [task]);
 
+  const handleOpenInvoicePdf = useCallback(async () => {
+    const pdfUrl = task?.aftercare?.invoice?.pdfUrl;
+    if (!pdfUrl) return;
+    await WebBrowser.openBrowserAsync(pdfUrl);
+  }, [task?.aftercare?.invoice?.pdfUrl]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -721,43 +729,48 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <ProviderPaymentBreakdownCard task={task} />
+          {isAftercareTask ? <ProviderAftercareCard onOpenInvoicePdf={handleOpenInvoicePdf} task={task} /> : null}
           <ProviderStatusCard task={task} />
           <ScopeChecklistCard task={task} />
           <Images images={task.images} />
           <ProviderIssueSupportCard task={task} />
           <ProviderCancellationSupportCard task={task} />
           <Timeline items={task.timeline} />
-          <ProviderActions
-            actionError={actionError}
-            actionMessage={actionMessage}
-            isExpressingInterest={isExpressingInterest}
-            isMarkingOnTheWay={isMarkingOnTheWay}
-            isRequestingCompletion={isRequestingCompletion}
-            isStartingTask={isStartingTask}
-            needsToolsConfirmation={needsToolsConfirmation}
-            onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
-            onExpressInterest={() => handleExpressInterest()}
-            onMarkOnTheWay={handleMarkOnTheWay}
-            onOpenChat={handleOpenChat}
-            onRequestCompletion={confirmRequestCompletion}
-            onStartTask={confirmStartTask}
-            task={task}
-          />
-          <ProviderIssueActions
-            details={providerIssueDetails}
-            errorMessage={providerIssueError}
-            mode={providerIssueMode}
-            onCancel={resetProviderIssueForm}
-            onDetailsChange={setProviderIssueDetails}
-            onModeChange={setProviderIssueMode}
-            onReasonChange={setProviderIssueReason}
-            onSubmit={confirmProviderIssueAction}
-            reason={providerIssueReason}
-            reasonError={providerIssueReasonError}
-            submittingKind={providerIssueSubmittingKind}
-            successMessage={providerIssueSuccess}
-            task={task}
-          />
+          {isAftercareTask ? null : (
+            <>
+              <ProviderActions
+                actionError={actionError}
+                actionMessage={actionMessage}
+                isExpressingInterest={isExpressingInterest}
+                isMarkingOnTheWay={isMarkingOnTheWay}
+                isRequestingCompletion={isRequestingCompletion}
+                isStartingTask={isStartingTask}
+                needsToolsConfirmation={needsToolsConfirmation}
+                onConfirmTools={() => handleExpressInterest({ toolsConfirmed: true })}
+                onExpressInterest={() => handleExpressInterest()}
+                onMarkOnTheWay={handleMarkOnTheWay}
+                onOpenChat={handleOpenChat}
+                onRequestCompletion={confirmRequestCompletion}
+                onStartTask={confirmStartTask}
+                task={task}
+              />
+              <ProviderIssueActions
+                details={providerIssueDetails}
+                errorMessage={providerIssueError}
+                mode={providerIssueMode}
+                onCancel={resetProviderIssueForm}
+                onDetailsChange={setProviderIssueDetails}
+                onModeChange={setProviderIssueMode}
+                onReasonChange={setProviderIssueReason}
+                onSubmit={confirmProviderIssueAction}
+                reason={providerIssueReason}
+                reasonError={providerIssueReasonError}
+                submittingKind={providerIssueSubmittingKind}
+                successMessage={providerIssueSuccess}
+                task={task}
+              />
+            </>
+          )}
         </>
       ) : null}
     </Screen>
@@ -813,6 +826,73 @@ function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }
           {breakdown.lateCancellationPlatformShareLabel ? <Info label={t('lateCancellationPlatformShare')} value={breakdown.lateCancellationPlatformShareLabel} /> : null}
         </View>
       ) : null}
+    </AppCard>
+  );
+}
+
+function ProviderAftercareCard({
+  onOpenInvoicePdf,
+  task,
+}: {
+  onOpenInvoicePdf: () => void;
+  task: ProviderCoreTaskDetail;
+}) {
+  const aftercare = task.aftercare;
+  const review = aftercare?.customerReview;
+  const invoice = aftercare?.invoice;
+
+  if (!aftercare && !isProviderAftercareStatus(task.status)) return null;
+
+  return (
+    <AppCard accentColor={colors.tasklyBlue600}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <StatusBadge label={task.status.toUpperCase().includes('CANCELLED') ? t('cancelled') : t('completed')} tone="success" />
+        <StatusBadge label={t('readOnly')} tone="neutral" />
+      </View>
+      <AppText variant="sectionTitle">{t('completedTaskAftercare')}</AppText>
+      <AppText color={colors.slate500}>{t('completedTaskReadonly')}</AppText>
+      {aftercare?.completedAt ? <Info label={t('completedOn')} value={formatDateTime(aftercare.completedAt)} /> : null}
+      {aftercare?.closedAt ? <Info label={t('closedOn')} value={formatDateTime(aftercare.closedAt)} /> : null}
+      {aftercare?.reviewStatus ? <Info label={t('reviewStatus')} value={formatBackendLabel(aftercare.reviewStatus)} /> : null}
+
+      <View style={styles.aftercareSection}>
+        <AppText variant="bodyStrong">{t('customerReview')}</AppText>
+        {review ? (
+          <>
+            <Info label={t('rating')} value={t('ratingOutOfFive').replace('{rating}', String(review.rating))} />
+            {review.comment ? <AppText color={colors.slate700}>{review.comment}</AppText> : null}
+            {review.publishedAt || review.createdAt ? (
+              <AppText color={colors.slate500} variant="small">
+                {formatDateTime(review.publishedAt || review.createdAt)}
+              </AppText>
+            ) : null}
+          </>
+        ) : (
+          <AppText color={colors.slate500}>{t('noCustomerReviewYet')}</AppText>
+        )}
+      </View>
+
+      <View style={styles.aftercareSection}>
+        <AppText variant="bodyStrong">{t('invoice')}</AppText>
+        {invoice ? (
+          <>
+            <Info label={t('invoiceNumber')} value={invoice.invoiceNumber} />
+            <Info label={t('invoiceTotal')} value={invoice.totalLabel} />
+            {invoice.vatEnabled ? <Info label={t('vat')} value={invoice.vatAmountLabel} /> : null}
+            <Info label={t('invoiceDate')} value={formatDateTime(invoice.createdAt)} />
+            <Info label={t('sent')} value={invoice.isSent ? t('yes') : t('notSent')} />
+            {invoice.canOpenPdf && invoice.pdfUrl ? (
+              <AppButton onPress={onOpenInvoicePdf} variant="outline">
+                {t('openInvoicePdf')}
+              </AppButton>
+            ) : (
+              <AppText color={colors.slate500}>{t('invoicePdfUnavailable')}</AppText>
+            )}
+          </>
+        ) : (
+          <AppText color={colors.slate500}>{t('noInvoiceYet')}</AppText>
+        )}
+      </View>
     </AppCard>
   );
 }
@@ -1312,6 +1392,22 @@ function formatSchedule(start: string | null, end: string | null) {
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) return t('notAvailable');
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function formatBackendLabel(value: string) {
+  return value.replace(/_/g, ' ').toLocaleLowerCase();
+}
+
+function isProviderAftercareStatus(status: string) {
+  const normalized = status.toUpperCase();
+  return normalized === 'COMPLETED' || normalized.includes('CANCELLED');
+}
+
 function isRelevantProviderCancellationState(state?: CoreCancellationState) {
   return Boolean(state && ['cancelled', 'cancelled_free', 'cancelled_late', 'support_review'].includes(state.status));
 }
@@ -1405,6 +1501,7 @@ function getProviderIssueAccent(states: ProviderCoreIssueState[]) {
 }
 
 const styles = StyleSheet.create({
+  aftercareSection: { gap: spacing.xs },
   header: { gap: spacing.sm },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

@@ -1157,6 +1157,7 @@ export type ProRequestDetail = ProRequestSummary & {
 };
 
 export type ProviderCoreTaskSummary = {
+  aftercare?: ProviderCoreTaskAftercare | null;
   cancellationBlockedReason?: string | null;
   cancellationPolicySummary?: string;
   cancellationState?: CoreCancellationState;
@@ -1233,6 +1234,7 @@ export type ProviderCorePaymentBreakdown = {
 
 export type ProviderCoreTaskDetail = {
   addressPreviewLabel: string;
+  aftercare?: ProviderCoreTaskAftercare | null;
   cancellationBlockedReason?: string | null;
   cancellationPolicySummary?: string;
   cancellationState?: CoreCancellationState;
@@ -1266,6 +1268,36 @@ export type ProviderCoreTaskDetail = {
   supportState?: CoreSupportState;
   timeline: DetailTimelineItem[];
   title: string;
+};
+
+export type ProviderCoreTaskAftercare = {
+  closedAt: string | null;
+  completedAt: string | null;
+  customerReview: ProviderCoreTaskCustomerReview | null;
+  invoice: ProviderCoreTaskInvoiceSummary | null;
+  reviewStatus: string | null;
+};
+
+export type ProviderCoreTaskCustomerReview = {
+  comment: string | null;
+  createdAt: string | null;
+  id: string;
+  publishedAt: string | null;
+  rating: number;
+};
+
+export type ProviderCoreTaskInvoiceSummary = {
+  amountLabel: string;
+  canOpenPdf: boolean;
+  createdAt: string | null;
+  id: string;
+  invoiceNumber: string;
+  isSent: boolean;
+  pdfUrl: string | null;
+  sentAt: string | null;
+  totalLabel: string;
+  vatAmountLabel: string;
+  vatEnabled: boolean;
 };
 
 export type ProviderCoreTaskDetailResponse = {

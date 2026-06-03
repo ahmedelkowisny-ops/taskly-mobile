@@ -1945,6 +1945,31 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
         unreadMessagesCount: 0,
       },
       {
+        aftercare: {
+          closedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          customerReview: {
+            comment: 'Fast, tidy work. Thank you!',
+            createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+            id: 'demo-review-provider',
+            publishedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+            rating: 5,
+          },
+          invoice: {
+            amountLabel: 'EUR 35',
+            canOpenPdf: false,
+            createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+            id: 'demo-invoice-provider',
+            invoiceNumber: 'TLY-DEMO-1001',
+            isSent: false,
+            pdfUrl: null,
+            sentAt: null,
+            totalLabel: 'EUR 35',
+            vatAmountLabel: 'EUR 0',
+            vatEnabled: false,
+          },
+          reviewStatus: 'COMPLETED',
+        },
         categoryLabel: 'Light Electrical',
         cityLabel: 'Sofia',
         customerPreviewLabel: 'Customer preview',
@@ -2166,12 +2191,40 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
     providerSupportState.providerIssueSummary ||
     providerCancellationState.providerIssueSummary ||
     providerDisputeState.providerIssueSummary;
+  const completedAftercare = isCompleted
+    ? {
+        closedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        customerReview: {
+          comment: 'Fast, tidy work. Thank you!',
+          createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+          id: 'demo-review-provider',
+          publishedAt: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+          rating: 5,
+        },
+        invoice: {
+          amountLabel: 'EUR 35',
+          canOpenPdf: false,
+          createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          id: 'demo-invoice-provider',
+          invoiceNumber: 'TLY-DEMO-1001',
+          isSent: false,
+          pdfUrl: null,
+          sentAt: null,
+          totalLabel: 'EUR 35',
+          vatAmountLabel: 'EUR 0',
+          vatEnabled: false,
+        },
+        reviewStatus: 'COMPLETED',
+      }
+    : null;
 
   return {
     task: {
       addressPreviewLabel: isUpcoming || isInProgress || isPendingCompletion || isCompleted || isSupportReview
         ? 'Demo address preview'
         : 'Address shared after selection',
+      aftercare: completedAftercare,
       cancellationBlockedReason: cancellationState.blockedReason,
       cancellationPolicySummary: cancellationState.policySummary,
       cancellationState,
