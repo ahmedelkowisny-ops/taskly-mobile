@@ -35,12 +35,12 @@ function PayoutRow({ task }: { task: ProviderCoreTaskSummary }) {
       </View>
       <AppText variant="bodyStrong">{task.title}</AppText>
       <AppText color={colors.slate700} variant="small">
-        {task.categoryLabel} · {task.cityLabel}
+        {task.categoryLabel} - {task.cityLabel}
       </AppText>
       {dateLabel ? <AppText color={colors.slate500} variant="small">{dateLabel}</AppText> : null}
       {breakdown?.tasklyFeeLabel ? (
         <AppText color={colors.slate500} variant="small">
-          {t('providerPaymentBreakdown')}: {breakdown.grossTaskPriceLabel} → {breakdown.tasklyFeeLabel} fee → {payout}
+          {t('providerPaymentBreakdown')}: {breakdown.grossTaskPriceLabel} - {t('tasklyFee')}: {breakdown.tasklyFeeLabel} - {payout}
         </AppText>
       ) : null}
     </AppCard>

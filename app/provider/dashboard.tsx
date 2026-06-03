@@ -190,7 +190,7 @@ export default function ProviderDashboardScreen() {
       {isLoading ? (
         <AppCard accentColor={colors.navy900}>
           <StatusBadge label={t('loading')} tone="neutral" />
-          <AppText variant="sectionTitle">{t('loadingProviderProDetail')}</AppText>
+          <AppText variant="sectionTitle">{t('loadingProviderDashboard')}</AppText>
         </AppCard>
       ) : null}
 

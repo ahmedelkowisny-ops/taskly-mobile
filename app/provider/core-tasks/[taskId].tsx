@@ -697,7 +697,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={stateLabel || 'Notice'} tone="warning" />
+          <StatusBadge label={stateLabel || t('notice')} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={loadDetail} variant="outline">{t('retry')}</AppButton>
@@ -979,7 +979,7 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
               </AppText>
             </View>
             <AppText color={colors.slate700} style={styles.scopeChecklistLabel}>
-              {item.label || item.code || 'Scope item'}
+              {item.label || item.code || t('scopeItem')}
             </AppText>
           </View>
         ))}

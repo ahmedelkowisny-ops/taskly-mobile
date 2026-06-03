@@ -103,7 +103,7 @@ export default function ProviderMessagesScreen() {
         </Pressable>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('messages')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>

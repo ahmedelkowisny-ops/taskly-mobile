@@ -9,6 +9,7 @@ import {
   getRecommendedProviderNextAction,
   getWorkspaceEntryState,
 } from '@/src/lib/auth/workspaceAccess';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '../ui';
@@ -32,8 +33,8 @@ export function WorkspaceGuard({ allowDemo = true, children, workspace }: Worksp
     return (
       <Screen>
         <AppCard>
-          <StatusBadge label="Checking session" tone="neutral" />
-          <AppText variant="sectionTitle">Checking your Taskly session...</AppText>
+          <StatusBadge label={t('checkingSession')} tone="neutral" />
+          <AppText variant="sectionTitle">{t('checkingTasklySession')}</AppText>
         </AppCard>
       </Screen>
     );
@@ -55,19 +56,19 @@ export function WorkspaceGuard({ allowDemo = true, children, workspace }: Worksp
     return (
       <Screen>
         <AppCard>
-          <StatusBadge label="Login required" tone="neutral" />
-          <AppText variant="sectionTitle">Login required</AppText>
+          <StatusBadge label={t('loginRequired')} tone="neutral" />
+          <AppText variant="sectionTitle">{t('loginRequired')}</AppText>
           <AppText color={colors.slate700}>
-            Login to use this workspace with your Taskly account, or continue in demo mode.
+            {t('loginToUseWorkspace')}
           </AppText>
-          <AppButton onPress={() => router.push(LOGIN_ROUTE)}>Login</AppButton>
+          <AppButton onPress={() => router.push(LOGIN_ROUTE)}>{t('loginTitle')}</AppButton>
           {allowDemo ? (
-            <AppButton onPress={useDemoSession} tone="pro" variant="outline">
-              Continue in demo mode
+            <AppButton onPress={useDemoSession} tone="neutral" variant="outline">
+              {t('continueDemoMode')}
             </AppButton>
           ) : null}
           <AppButton onPress={() => router.push(HOME_ROUTE)} tone="neutral" variant="ghost">
-            Back to Taskly
+            {t('backToTaskly')}
           </AppButton>
         </AppCard>
       </Screen>
@@ -79,20 +80,20 @@ export function WorkspaceGuard({ allowDemo = true, children, workspace }: Worksp
   return (
     <Screen>
       <AppCard>
-        <StatusBadge label="Workspace not available yet" tone="warning" />
-        <AppText variant="sectionTitle">Workspace not available yet</AppText>
+        <StatusBadge label={t('workspaceNotAvailable')} tone="warning" />
+        <AppText variant="sectionTitle">{t('workspaceNotAvailable')}</AppText>
         <AppText color={colors.slate700}>
           {workspace === 'provider' ? getRecommendedProviderNextAction(session) : entryState.description}
         </AppText>
         <View>
           {workspace === 'provider' ? (
-            <AppButton onPress={() => router.push(PROVIDER_START_ROUTE)} tone="pro" variant="outline">
-              Start provider setup
+            <AppButton onPress={() => router.push(PROVIDER_START_ROUTE)} variant="outline">
+              {t('startProviderSetup')}
             </AppButton>
           ) : null}
         </View>
         <AppButton onPress={() => router.push(HOME_ROUTE)} tone="neutral" variant="ghost">
-          Back to Taskly
+          {t('backToTaskly')}
         </AppButton>
       </AppCard>
     </Screen>

@@ -262,7 +262,7 @@ export default function ProviderMessageThreadScreen() {
         <AppButton onPress={() => router.push('/provider/messages' as Href)} tone="neutral" variant="ghost">{t('backToTaskly')}</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message={t('conversation')} /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('conversation')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600}>
