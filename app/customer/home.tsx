@@ -1,263 +1,580 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
 import { CustomerTopBar } from '@/src/components/taskly';
-import { AppButton, AppText, Screen } from '@/src/components/ui';
-import { getMockUserSession } from '@/src/lib/api/mockApi';
+import { AppButton, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { getCustomerHomeSummary, getCustomerProRequests, getCustomerTasks } from '@/src/lib/api/customer';
+import type { CustomerHomeResponse, CustomerProRequestSummary, CustomerTasksResponse, CustomerTaskSummary, CustomerProRequestsResponse } from '@/src/lib/api/domain';
+import { getMockCustomerHomeResponse, getMockCustomerProRequestsResponse, getMockCustomerTasksResponse, getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
+type HomeData = {
+  home: CustomerHomeResponse;
+  proRequests: CustomerProRequestsResponse;
+  tasks: CustomerTasksResponse;
+};
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
 export default function CustomerHomeScreen() {
   useI18n();
   const router = useRouter();
-  const { session: authSession } = useAuth();
+  const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
   const session = authSession ?? getMockUserSession();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [data, setData] = useState<HomeData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showAllProRequests, setShowAllProRequests] = useState(false);
 
-  const displayName = session.user.displayName;
+  const displayName = data?.home.summary.displayName || session.user.displayName;
+  const firstName = getFirstName(displayName);
+  const greeting = useMemo(() => getTimeGreeting(), []);
+  const activeTasks = (data?.tasks.tasks ?? []).filter((task) => !['COMPLETED', 'CANCELLED', 'CANCELLED_FREE', 'CANCELLED_LATE'].includes(task.status.toUpperCase()));
+  const proRequests = data?.proRequests.proRequests ?? [];
+  const proResponsesCount = data?.home.summary.proResponsesAvailableCount ?? proRequests.reduce((total, request) => total + request.responsesCount, 0);
+  const visibleTasks = showAllTasks ? activeTasks : activeTasks.slice(0, 2);
+  const visibleProRequests = showAllProRequests ? proRequests : proRequests.slice(0, 2);
+
+  const loadHome = useCallback(async () => {
+    setErrorMessage(null);
+    setIsUnauthorized(false);
+
+    if (status === 'demo') {
+      setData({
+        home: getMockCustomerHomeResponse(),
+        proRequests: getMockCustomerProRequestsResponse(),
+        tasks: getMockCustomerTasksResponse(),
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setData(null);
+      setIsUnauthorized(status === 'unauthenticated');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const authToken = await getValidAccessToken();
+
+    if (!authToken) {
+      setData(null);
+      setIsUnauthorized(true);
+      setIsLoading(false);
+      return;
+    }
+
+    const [homeResult, tasksResult, proResult] = await Promise.all([
+      getCustomerHomeSummary(authToken),
+      getCustomerTasks(authToken),
+      getCustomerProRequests(authToken),
+    ]);
+
+    setIsLoading(false);
+
+    if (homeResult.ok && tasksResult.ok && proResult.ok) {
+      setData({
+        home: homeResult.data,
+        proRequests: proResult.data,
+        tasks: tasksResult.data,
+      });
+      return;
+    }
+
+    const unauthorized =
+      (!homeResult.ok && (homeResult.status === 401 || homeResult.status === 403)) ||
+      (!tasksResult.ok && (tasksResult.status === 401 || tasksResult.status === 403)) ||
+      (!proResult.ok && (proResult.status === 401 || proResult.status === 403));
+
+    setData(null);
+    setIsUnauthorized(unauthorized);
+    setErrorMessage(unauthorized ? t('signInToLoadCustomerArea') : t('couldNotLoadCustomerArea'));
+  }, [getValidAccessToken, status]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadHome();
+    }, [loadHome]),
+  );
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.greeting}>
-        <AppText style={styles.greetingTitle} variant="screenTitle">
-          {t('welcomeName').replace('{{name}}', displayName)}
+        <AppText color={colors.slate500} variant="small">
+          {greeting}
         </AppText>
-        <AppText color={colors.slate700} style={styles.greetingBody}>
-          {t('customerHomePromise')}
-        </AppText>
+        <AppText variant="screenTitle">{t('customerHomeHello').replace('{{name}}', firstName)}</AppText>
       </View>
 
-      <View style={styles.actionCards}>
-        <HomeActionCard
-          accent="core"
-          chips={[t('mountTv'), t('furniture'), t('fixSink'), t('smallRepairs')]}
-          cta={t('postTaskShort')}
-          icon="add-circle-outline"
+      <View style={styles.quickGrid}>
+        <QuickActionCard
+          icon="construct-outline"
           onPress={() => router.push('/customer/post-task' as Href)}
-          subtitle={t('forQuickSmallJobs')}
-          title="Taskly"
+          subtitle={t('smallHomeTasks')}
+          title={t('postTaskShort')}
+          tone="core"
         />
-        <HomeActionCard
-          accent="pro"
-          chips={[t('bathroom'), t('electrical'), t('kitchen'), t('renovation')]}
-          cta={t('postProRequestShort')}
-          icon="sparkles-outline"
+        <QuickActionCard
+          icon="ribbon-outline"
           onPress={() => router.push('/customer/post-pro-request' as Href)}
-          subtitle={t('forBiggerQuoteProjects')}
-          title="Taskly Pro"
+          subtitle={t('biggerProjects')}
+          title={t('postProRequestShort')}
+          tone="pro"
         />
       </View>
 
-      <View style={styles.trustCard}>
-        <AppText variant="cardTitle">{t('customerHomeTrustTitle')}</AppText>
-        <View style={styles.trustChips}>
-          <TrustChip icon="shield-checkmark-outline" label={t('paymentProtectedChip')} tone="core" />
-          <TrustChip icon="ribbon-outline" label={t('approvedProsChip')} tone="pro" />
-          <TrustChip icon="help-circle-outline" label={t('supportWhenNeededChip')} tone="neutral" />
+      {isLoading ? (
+        <StateCard icon="timer-outline" title={t('loadingCustomerArea')} />
+      ) : null}
+
+      {errorMessage || isUnauthorized ? (
+        <View style={styles.stateCard}>
+          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
+          <AppText variant="cardTitle">{isUnauthorized ? t('signInToViewCustomerActivity') : t('couldNotRefreshCustomerActivity')}</AppText>
+          <AppText color={colors.slate500}>{errorMessage || t('retryOrContinueDemoBackendUnavailable')}</AppText>
+          <View style={styles.buttonStack}>
+            <AppButton onPress={loadHome} style={styles.secondaryButton} variant="outline">
+              {t('retry')}
+            </AppButton>
+            <AppButton onPress={useDemoSession} style={styles.secondaryButton} tone="neutral" variant="outline">
+              {t('continueDemoMode')}
+            </AppButton>
+          </View>
         </View>
-      </View>
+      ) : null}
+
+      {data ? (
+        <>
+          <View style={styles.statsGrid}>
+            <StatCard label={t('inProgress')} value={activeTasks.length} />
+            <StatCard label={proResponsesCount > 0 ? t('unlockNow') : t('noResponsesYet')} pro value={proResponsesCount} />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader
+              linkColor={colors.tasklyBlue600}
+              onPress={() => (activeTasks.length > 2 ? setShowAllTasks((current) => !current) : router.push('/customer/tasks' as Href))}
+              title={t('activeTasksTitle')}
+            />
+            {visibleTasks.length ? (
+              <View style={styles.cardStack}>
+                {visibleTasks.map((task) => (
+                  <TaskPreviewCard key={task.id} onPress={() => router.push(`/customer/tasks/${task.id}` as Href)} task={task} />
+                ))}
+              </View>
+            ) : (
+              <MiniEmptyState icon="checkmark-circle-outline" title={t('noActiveTasksRightNow')} />
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader
+              linkColor={colors.proOrange600}
+              onPress={() => (proRequests.length > 2 ? setShowAllProRequests((current) => !current) : router.push('/customer/pro-requests' as Href))}
+              title={t('proRequestsTitle')}
+              titleColor={colors.proOrangeTextDark}
+            />
+            {visibleProRequests.length ? (
+              <View style={styles.cardStack}>
+                {visibleProRequests.map((request) => (
+                  <ProRequestPreviewCard key={request.id} onPress={() => router.push(`/customer/pro-requests/${request.id}` as Href)} request={request} />
+                ))}
+              </View>
+            ) : (
+              <MiniEmptyState icon="ribbon-outline" title={t('noProRequestsYetShort')} pro />
+            )}
+          </View>
+
+          <View style={styles.trustCard}>
+            <View style={styles.trustIconBox}>
+              <Ionicons color={colors.tasklyBlue600} name="shield-checkmark-outline" size={22} />
+            </View>
+            <View style={styles.trustCopy}>
+              <AppText variant="cardTitle">{t('paymentProtected')}</AppText>
+              <AppText color={colors.slate500}>{t('customerHomeTrustBody')}</AppText>
+            </View>
+          </View>
+        </>
+      ) : !isLoading && !errorMessage && !isUnauthorized ? (
+        <MiniEmptyState icon="home-outline" title={t('customerHomeEmpty')} />
+      ) : null}
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }
 
+function QuickActionCard({ icon, onPress, subtitle, title, tone }: { icon: IoniconName; onPress: () => void; subtitle: string; title: string; tone: 'core' | 'pro' }) {
+  const isPro = tone === 'pro';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.quickCard, isPro ? styles.quickCardPro : styles.quickCardCore, pressed ? styles.pressedScale : null]}>
+      <View style={styles.quickIconBox}>
+        <Ionicons color={colors.white} name={icon} size={22} />
+      </View>
+      <AppText color={colors.white} variant="cardTitle">{title}</AppText>
+      <AppText color={colors.white} style={styles.mutedWhite} variant="small">{subtitle}</AppText>
+    </Pressable>
+  );
+}
+
+function StatCard({ label, pro = false, value }: { label: string; pro?: boolean; value: number }) {
+  return (
+    <View style={styles.statCard}>
+      <AppText color={pro ? colors.proOrangeTextDark : colors.navy900} style={styles.statValue} variant="sectionTitle">
+        {value}
+      </AppText>
+      <View style={[styles.statBadge, pro ? styles.statBadgePro : styles.statBadgeCore]}>
+        <AppText color={pro ? colors.proOrangeText : colors.tasklyBlue600} variant="small">
+          {label}
+        </AppText>
+      </View>
+    </View>
+  );
+}
+
+function SectionHeader({ linkColor, onPress, title, titleColor = colors.slate500 }: { linkColor: string; onPress: () => void; title: string; titleColor?: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <AppText color={titleColor} style={styles.upperTitle}>
+        {title}
+      </AppText>
+      <Pressable onPress={onPress} style={({ pressed }) => [pressed ? styles.pressedSoft : null]}>
+        <AppText color={linkColor} style={styles.seeAllText}>
+          {t('seeAll')}
+        </AppText>
+      </Pressable>
+    </View>
+  );
+}
+
+function TaskPreviewCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSummary }) {
+  return (
+    <View style={styles.taskCard}>
+      <View style={styles.cardTitleRow}>
+        <AppText style={styles.cardTitleText} variant="cardTitle">{task.title}</AppText>
+        <StatusBadge label={task.statusLabel} tone="core" />
+      </View>
+      <View style={styles.metaRow}>
+        <Ionicons color={colors.slate500} name="location-outline" size={15} />
+        <AppText color={colors.slate500} style={styles.metaText}>
+          {task.cityLabel} · {formatScheduleSummary(task.scheduledStartAt, task.scheduledEndAt)}
+        </AppText>
+      </View>
+      <View style={styles.cardFooter}>
+        <AppText variant="cardTitle">{task.priceLabel}</AppText>
+        <Pressable onPress={onPress} style={({ pressed }) => [pressed ? styles.pressedSoft : null]}>
+          <AppText color={colors.tasklyBlue600} style={styles.detailsLink}>{t('viewDetailsArrow')}</AppText>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function ProRequestPreviewCard({ onPress, request }: { onPress: () => void; request: CustomerProRequestSummary }) {
+  const responseCount = request.meaningfulResponseCount ?? request.responsesCount;
+  return (
+    <View style={styles.proCard}>
+      <View style={styles.cardTitleRow}>
+        <View style={styles.proBadge}>
+          <Ionicons color={colors.proOrange600} name="ribbon-outline" size={14} />
+          <AppText color={colors.proOrangeTextDark} variant="small">{t('tasklyPro')}</AppText>
+        </View>
+        <View style={styles.responseChip}>
+          <AppText color={colors.proOrangeTextDark} variant="small">
+            {responseCount} {t('responsesReceived')}
+          </AppText>
+        </View>
+      </View>
+      <AppText color={colors.navy900} variant="cardTitle">{request.title}</AppText>
+      <View style={styles.metaRow}>
+        <Ionicons color={colors.proOrange600} name="location-outline" size={15} />
+        <AppText color={colors.slate500} style={styles.metaText}>
+          {request.cityLabel} · {request.timelineLabel}
+        </AppText>
+      </View>
+      <View style={styles.cardFooter}>
+        <AppText color={colors.proOrangeText} variant="small">
+          {request.proAccessSummary || t('unlockForPrice')}
+        </AppText>
+        <AppButton onPress={onPress} style={styles.compareButton} tone="pro">
+          {t('comparePros')}
+        </AppButton>
+      </View>
+    </View>
+  );
+}
+
+function StateCard({ icon, title }: { icon: IoniconName; title: string }) {
+  return (
+    <View style={styles.stateCard}>
+      <Ionicons color={colors.tasklyBlue600} name={icon} size={22} />
+      <AppText variant="cardTitle">{title}</AppText>
+    </View>
+  );
+}
+
+function MiniEmptyState({ icon, pro = false, title }: { icon: IoniconName; pro?: boolean; title: string }) {
+  return (
+    <View style={styles.emptyState}>
+      <Ionicons color={pro ? colors.proOrange600 : colors.tasklyBlue600} name={icon} size={26} />
+      <AppText color={colors.slate500} style={styles.emptyText}>{title}</AppText>
+    </View>
+  );
+}
+
+function getFirstName(displayName: string) {
+  return displayName.trim().split(/\s+/)[0] || t('customer');
+}
+
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return t('goodMorning');
+  if (hour < 18) return t('goodAfternoon');
+  return t('goodEvening');
+}
+
+function formatScheduleSummary(start: string | null, end: string | null) {
+  if (!start) return t('noScheduleSet');
+  const startDate = new Date(start);
+  const dateLabel = startDate.toLocaleDateString([], { day: '2-digit', month: 'short' });
+  const startTime = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const endTime = end ? new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return endTime ? `${dateLabel}, ${startTime}-${endTime}` : `${dateLabel}, ${startTime}`;
+}
+
 const styles = StyleSheet.create({
-  actionCard: {
-    borderRadius: radius.card,
-    borderWidth: 1,
-    elevation: 2,
-    gap: spacing.md,
-    padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
+  buttonStack: {
+    gap: spacing.sm,
   },
-  actionCards: {
-    gap: spacing.md,
-  },
-  actionCardCore: {
-    backgroundColor: '#F8FBFF',
-    borderColor: '#D7E7FF',
-  },
-  actionCardPro: {
-    backgroundColor: colors.proOrange50,
-    borderColor: '#F3D6AF',
-  },
-  actionHeader: {
+  cardFooter: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
+    justifyContent: 'space-between',
   },
-  actionIcon: {
-    alignItems: 'center',
-    borderRadius: 14,
-    height: 42,
-    justifyContent: 'center',
-    width: 42,
+  cardStack: {
+    gap: spacing.md,
   },
-  actionTitleWrap: {
+  cardTitleRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  cardTitleText: {
     flex: 1,
-    gap: 4,
   },
-  chip: {
-    alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-  },
-  chipCore: {
-    backgroundColor: colors.white,
-    borderColor: '#BFDBFE',
-  },
-  chipPro: {
-    backgroundColor: colors.white,
-    borderColor: '#FCD9A8',
-  },
-  chipNeutral: {
-    backgroundColor: colors.slate50,
-    borderColor: '#E6EBF0',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
+  compareButton: {
+    borderRadius: radius.pill,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
   },
   content: {
     gap: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  detailsLink: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  emptyState: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.xl,
+  },
+  emptyText: {
+    textAlign: 'center',
   },
   greeting: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    gap: spacing.xs,
   },
-  greetingBody: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  greetingTitle: {
-    fontSize: 21,
-    fontWeight: '700',
-    lineHeight: 27,
-  },
-  headerActions: {
+  metaRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  proActionButton: {
-    backgroundColor: colors.proOrange600,
-    borderColor: colors.proOrange600,
+  metaText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
   },
-  screen: {
-    backgroundColor: '#F7F9FB',
+  mutedWhite: {
+    opacity: 0.84,
   },
-  trustCard: {
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: spacing.md,
-    marginTop: spacing.md,
-    padding: spacing.lg,
+  pressedScale: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
   },
-  trustChip: {
+  pressedSoft: {
+    opacity: 0.74,
+  },
+  proBadge: {
     alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
+    backgroundColor: colors.proOrange50,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: spacing.xs,
   },
-  trustChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  proCard: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  quickCard: {
+    borderRadius: radius.card,
+    flex: 1,
     gap: spacing.sm,
+    minHeight: 132,
+    minWidth: 142,
+    padding: spacing.lg,
+  },
+  quickCardCore: {
+    backgroundColor: colors.tasklyBlue600,
+  },
+  quickCardPro: {
+    backgroundColor: colors.proAmber500,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  quickIconBox: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: radius.lg,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  responseChip: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  secondaryButton: {
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    minHeight: 48,
+  },
+  section: {
+    gap: spacing.md,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  statBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  statBadgeCore: {
+    backgroundColor: colors.tasklyBlue50,
+  },
+  statBadgePro: {
+    backgroundColor: colors.proOrange50,
+  },
+  statCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 142,
+    padding: spacing.md,
+  },
+  statValue: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  stateCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  taskCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  trustCard: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  trustCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  trustIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: radius.lg,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  upperTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    lineHeight: 15,
+    textTransform: 'uppercase',
   },
 });
-
-function HomeActionCard({
-  accent,
-  chips,
-  cta,
-  icon,
-  onPress,
-  subtitle,
-  title,
-}: {
-  accent: 'core' | 'pro';
-  chips: string[];
-  cta: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  subtitle: string;
-  title: string;
-}) {
-  const isPro = accent === 'pro';
-  const accentColor = isPro ? colors.proOrange600 : colors.tasklyBlue600;
-
-  return (
-    <View style={[styles.actionCard, isPro ? styles.actionCardPro : styles.actionCardCore]}>
-      <View style={styles.actionHeader}>
-        <View style={[styles.actionIcon, { backgroundColor: isPro ? colors.proOrange50 : colors.tasklyBlue50 }]}>
-          <Ionicons color={accentColor} name={icon} size={22} />
-        </View>
-        <View style={styles.actionTitleWrap}>
-          <AppText color={accentColor} variant="small">
-            {title}
-          </AppText>
-          <AppText variant="cardTitle">{subtitle}</AppText>
-        </View>
-      </View>
-      <View style={styles.chipRow}>
-        {chips.map((chip) => (
-          <View key={`${title}-${chip}`} style={[styles.chip, isPro ? styles.chipPro : styles.chipCore]}>
-            <AppText color={isPro ? '#92400E' : colors.tasklyBlue700} variant="caption">
-              {chip}
-            </AppText>
-          </View>
-        ))}
-      </View>
-      <AppButton onPress={onPress} style={isPro ? styles.proActionButton : null} tone={isPro ? 'pro' : 'core'}>
-        {cta}
-      </AppButton>
-    </View>
-  );
-}
-
-function TrustChip({
-  icon,
-  label,
-  tone,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  tone: 'core' | 'neutral' | 'pro';
-}) {
-  const color = tone === 'pro' ? colors.proOrange600 : tone === 'core' ? colors.tasklyBlue600 : colors.slate700;
-  return (
-    <View style={[styles.trustChip, tone === 'pro' ? styles.chipPro : tone === 'core' ? styles.chipCore : styles.chipNeutral]}>
-      <Ionicons color={color} name={icon} size={14} />
-      <AppText color={color} variant="small">
-        {label}
-      </AppText>
-    </View>
-  );
-}
-

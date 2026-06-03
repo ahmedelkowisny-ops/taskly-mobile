@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   brandMark: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#DCEBFA',
+    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     elevation: 1,

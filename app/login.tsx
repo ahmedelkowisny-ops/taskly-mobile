@@ -1,18 +1,20 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Href, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { PublicTopBar } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
+import { AppButton, AppText, Screen } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
 import {
   canOpenDeepLinkTarget,
   consumePendingDeepLinkTarget,
   getDeepLinkFallbackRoute,
 } from '@/src/lib/navigation/deepLinks';
-import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 export default function LoginScreen() {
@@ -21,6 +23,7 @@ export default function LoginScreen() {
   const { login, status } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const loading = status === 'loading';
 
@@ -54,40 +57,40 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen contentStyle={styles.content}>
+    <Screen contentStyle={styles.content} style={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
         <PublicTopBar />
 
-        <View style={styles.mainContent}>
-          <View style={styles.hero}>
-            <AppText style={styles.title} variant="screenTitle">
-              {t('loginTitle')}
+        <View style={styles.hero}>
+          <AppText variant="screenTitle">{t('loginHeroTitle')}</AppText>
+          <AppText color={colors.slate500}>{t('loginHeroSubtitle')}</AppText>
+        </View>
+
+        <View style={styles.formCard}>
+          <View style={styles.field}>
+            <AppText color={colors.slate500} style={styles.fieldLabel}>
+              {t('emailLabelUpper')}
             </AppText>
-            <AppText color={colors.slate700} style={styles.subtitle}>
-              {t('loginIntro')}
-            </AppText>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={!loading}
+              inputMode="email"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.slate500}
+              style={styles.input}
+              textContentType="emailAddress"
+              value={email}
+            />
           </View>
 
-          <AppCard>
-            <View style={styles.field}>
-              <AppText variant="bodyStrong">{t('emailLabel')}</AppText>
-              <TextInput
-                autoCapitalize="none"
-                autoComplete="email"
-                editable={!loading}
-                inputMode="email"
-                keyboardType="email-address"
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.slate500}
-                style={styles.input}
-                textContentType="emailAddress"
-                value={email}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <AppText variant="bodyStrong">{t('passwordLabel')}</AppText>
+          <View style={styles.field}>
+            <AppText color={colors.slate500} style={styles.fieldLabel}>
+              {t('passwordLabelUpper')}
+            </AppText>
+            <View style={styles.passwordWrap}>
               <TextInput
                 autoCapitalize="none"
                 autoComplete="password"
@@ -98,45 +101,77 @@ export default function LoginScreen() {
                 }}
                 placeholder={t('passwordLabel')}
                 placeholderTextColor={colors.slate500}
-                secureTextEntry
-                style={styles.input}
+                secureTextEntry={!passwordVisible}
+                style={styles.passwordInput}
                 textContentType="password"
                 value={password}
               />
+              <Pressable
+                accessibilityLabel={passwordVisible ? t('hidePassword') : t('showPassword')}
+                accessibilityRole="button"
+                onPress={() => setPasswordVisible((current) => !current)}
+                style={({ pressed }) => [styles.eyeButton, pressed ? styles.pressed : null]}>
+                <Ionicons color={colors.slate500} name={passwordVisible ? 'eye-off-outline' : 'eye-outline'} size={19} />
+              </Pressable>
             </View>
-
             <Pressable
               accessibilityRole="link"
               onPress={() => router.push('/forgot-password' as Href)}
               style={({ pressed }) => [styles.forgotRow, pressed ? styles.pressed : null]}>
-              <AppText color={colors.slate500} style={styles.forgotText} variant="caption">
+              <AppText color={colors.slate500} style={styles.forgotText}>
                 {t('forgotPassword')}
               </AppText>
             </Pressable>
+          </View>
 
-            {error ? (
-              <AppText color={colors.danger600} variant="caption">
+          {error ? (
+            <View style={styles.errorBox}>
+              <AppText color={colors.danger600} variant="small">
                 {error}
               </AppText>
-            ) : null}
+            </View>
+          ) : null}
 
-            <AppButton
-              loading={loading}
-              onPress={() => {
-                void onSubmit();
-              }}>
-              {t('loginTitle')}
-            </AppButton>
+          <Pressable
+            accessibilityRole="button"
+            disabled={loading}
+            onPress={() => {
+              void onSubmit();
+            }}
+            style={({ pressed }) => [styles.primaryButton, loading ? styles.disabled : pressed ? styles.pressedButton : null]}>
+            <Ionicons color={colors.white} name="log-in-outline" size={18} />
+            <AppText color={colors.white} variant="button">
+              {loading ? t('loading') : t('loginTitle')}
+            </AppText>
+          </Pressable>
 
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => router.push('/')}
-              style={({ pressed }) => [styles.backLink, pressed ? styles.pressed : null]}>
-              <AppText color={colors.slate500} style={styles.backLinkText} variant="caption">
-                {t('backToTaskly')}
-              </AppText>
-            </Pressable>
-          </AppCard>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <AppText color={colors.slate500} style={styles.dividerText}>
+              {t('or')}
+            </AppText>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <AppButton
+            labelColor={colors.slate500}
+            onPress={() => router.push('/' as Href)}
+            style={styles.secondaryButton}
+            tone="neutral"
+            variant="outline">
+            {t('backToTaskly')}
+          </AppButton>
+        </View>
+
+        <View style={styles.bottomPrompt}>
+          <AppText color={colors.slate500} style={styles.promptText}>
+            {t('newToTasklyQuestion')}
+          </AppText>
+          <Pressable onPress={() => router.push('/register' as Href)} style={({ pressed }) => [pressed ? styles.pressed : null]}>
+            <AppText color={colors.tasklyBlue600} style={styles.promptLink}>
+              {t('createFreeAccount')}
+            </AppText>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </Screen>
@@ -144,61 +179,144 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  backLink: {
+  bottomPrompt: {
     alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  backLinkText: {
-    textAlign: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'center',
   },
   content: {
     justifyContent: 'flex-start',
     paddingBottom: spacing.xl,
-    paddingTop: spacing.lg,
+  },
+  dividerLine: {
+    backgroundColor: colors.border,
+    flex: 1,
+    height: 1,
+  },
+  dividerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+  errorBox: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  eyeButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   field: {
     gap: spacing.sm,
   },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    lineHeight: 15,
+  },
   forgotRow: {
     alignItems: 'flex-end',
-    marginTop: -spacing.xs,
   },
   forgotText: {
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
     textAlign: 'right',
   },
+  formCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
   hero: {
-    alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
   },
   input: {
-    backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
     color: colors.navy900,
-    fontSize: 16,
-    minHeight: 48,
+    fontSize: 14,
+    height: 48,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   keyboard: {
     flex: 1,
     gap: spacing.xl,
   },
-  mainContent: {
-    gap: spacing.lg,
-    paddingTop: spacing.sm,
+  passwordInput: {
+    color: colors.navy900,
+    flex: 1,
+    fontSize: 14,
+    height: 48,
+    paddingLeft: spacing.md,
+  },
+  passwordWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
   },
   pressed: {
-    opacity: 0.72,
+    opacity: 0.74,
   },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
+  pressedButton: {
+    opacity: 0.86,
+    transform: [{ scale: 0.985 }],
   },
-  title: {
-    fontSize: 24,
-    textAlign: 'center',
+  primaryButton: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    ...designTokens.shadows.buttonBlue,
+  },
+  promptLink: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  promptText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  secondaryButton: {
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    minHeight: 52,
   },
 });

@@ -3,71 +3,61 @@ import { Href, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
+import { AppButton, AppText, Screen } from '@/src/components/ui';
 import { RegisterRole } from '@/src/lib/api/types';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, TranslationKey, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { PublicTopBar } from './PublicTopBar';
 
+type IoniconName = keyof typeof Ionicons.glyphMap;
+type FieldErrors = Partial<Record<'email' | 'firstName' | 'lastName' | 'password' | 'phone' | 'terms', string>>;
+
 type RegisterOption = {
   body: TranslationKey;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IoniconName;
   route: Href;
   title: TranslationKey;
   tone: RegisterRole;
 };
 
-type FieldErrors = Partial<Record<'confirmPassword' | 'email' | 'firstName' | 'lastName' | 'password' | 'phone', string>>;
-
 const registerOptions: RegisterOption[] = [
   {
-    body: 'registerCustomerHelper',
-    icon: 'person-add-outline',
+    body: 'registerCustomerCardSubtitle',
+    icon: 'home-outline',
     route: '/register/customer',
-    title: 'createCustomerAccount',
+    title: 'registerCustomerCardTitle',
     tone: 'customer',
   },
   {
-    body: 'registerTaskerHelper',
+    body: 'registerTaskerCardSubtitle',
     icon: 'construct-outline',
     route: '/register/tasker',
-    title: 'registerAsTasker',
+    title: 'registerTaskerCardTitle',
     tone: 'tasker',
   },
   {
-    body: 'registerProTaskerHelper',
-    icon: 'medal-outline',
+    body: 'registerProCardSubtitle',
+    icon: 'ribbon-outline',
     route: '/register/pro',
-    title: 'applyAsProTasker',
+    title: 'registerProCardTitle',
     tone: 'pro',
   },
 ];
 
 const roleTitle: Record<RegisterRole, TranslationKey> = {
-  customer: 'registrationCustomerTitle',
-  pro: 'registrationProTitle',
-  tasker: 'registrationTaskerTitle',
-};
-
-const roleBody: Record<RegisterRole, TranslationKey> = {
-  customer: 'registrationCustomerBody',
-  pro: 'registrationProBody',
-  tasker: 'registrationTaskerBody',
+  customer: 'registrationCustomerHeroTitle',
+  pro: 'registrationProHeroTitle',
+  tasker: 'registrationTaskerHeroTitle',
 };
 
 const roleButton: Record<RegisterRole, TranslationKey> = {
-  customer: 'registrationCustomerButton',
-  pro: 'registrationProButton',
-  tasker: 'registrationTaskerButton',
-};
-
-const roleIcon: Record<RegisterRole, keyof typeof Ionicons.glyphMap> = {
-  customer: 'person-add-outline',
-  pro: 'medal-outline',
-  tasker: 'construct-outline',
+  customer: 'createMyAccount',
+  pro: 'applyForTasklyProArrow',
+  tasker: 'createMyAccount',
 };
 
 export function RegisterChoiceScreen() {
@@ -78,16 +68,12 @@ export function RegisterChoiceScreen() {
     <Screen contentStyle={styles.content} style={styles.screen}>
       <PublicTopBar />
 
-      <View style={styles.header}>
-        <AppText style={styles.title} variant="screenTitle">
-          {t('registerPanelTitle')}
-        </AppText>
-        <AppText color={colors.slate700} style={styles.subtitle}>
-          {t('registerPanelSubtitle')}
-        </AppText>
+      <View style={styles.hero}>
+        <AppText variant="screenTitle">{t('registerHeroTitle')}</AppText>
+        <AppText color={colors.slate500}>{t('registerHeroSubtitle')}</AppText>
       </View>
 
-      <View style={styles.actionStack}>
+      <View style={styles.optionStack}>
         {registerOptions.map((option) => (
           <RegisterOptionCard
             key={option.tone}
@@ -99,17 +85,19 @@ export function RegisterChoiceScreen() {
         ))}
       </View>
 
-      <Pressable
-        accessibilityRole="link"
-        onPress={() => router.push('/login')}
-        style={({ pressed }) => [styles.signInRow, pressed ? styles.pressedSoft : null]}>
-        <AppText color={colors.slate500} style={styles.backText} variant="caption">
+      <View style={styles.inlineLinkRow}>
+        <AppText color={colors.slate500} style={styles.inlineText}>
           {t('alreadyHaveAccount')}
         </AppText>
-        <AppText color={colors.tasklyBlue600} style={styles.signInText} variant="caption">
-          {t('signIn')}
-        </AppText>
-      </Pressable>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => router.push('/login' as Href)}
+          style={({ pressed }) => [pressed ? styles.pressedSoft : null]}>
+          <AppText color={colors.tasklyBlue600} style={styles.inlineLink}>
+            {t('signIn')}
+          </AppText>
+        </Pressable>
+      </View>
     </Screen>
   );
 }
@@ -123,11 +111,13 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
-  const accent = getAccent(role);
+  const isPro = role === 'pro';
+  const accent = isPro ? colors.proAmber500 : colors.tasklyBlue600;
 
   const passwordHelper = useMemo(() => t('registrationPasswordHelper'), []);
 
@@ -139,7 +129,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
     if (!phone.trim()) errors.phone = t('requiredField');
     if (!password) errors.password = t('requiredField');
     if (password && password.length < 12) errors.password = t('registrationPasswordTooShort');
-    if (password !== confirmPassword) errors.confirmPassword = t('passwordsDoNotMatch');
+    if (!termsAccepted) errors.terms = t('termsRequired');
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -151,7 +141,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
     setError(null);
 
     const result = await register({
-      confirmPassword,
+      confirmPassword: password,
       email: email.trim(),
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -180,33 +170,27 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
       <PublicTopBar />
+      <ProgressDots activeColor={accent} />
 
-      <View style={styles.header}>
-        <View style={[styles.formIcon, { backgroundColor: role === 'pro' ? colors.proOrange50 : colors.tasklyBlue50 }]}>
-          <Ionicons color={accent} name={roleIcon[role]} size={24} />
-        </View>
-        <AppText style={styles.title} variant="screenTitle">
-          {t(roleTitle[role])}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/register' as Href)}
+        style={({ pressed }) => [styles.backButton, pressed ? styles.pressedSoft : null]}>
+        <Ionicons color={colors.slate500} name="arrow-back" size={18} />
+        <AppText color={colors.slate500} variant="small">
+          {t('back')}
         </AppText>
-        <AppText color={colors.slate700} style={styles.subtitle}>
-          {t(roleBody[role])}
-        </AppText>
+      </Pressable>
+
+      <View style={styles.hero}>
+        <AppText variant="screenTitle">{t(roleTitle[role])}</AppText>
+        <AppText color={colors.slate500}>{t('registrationSharedSubtitle')}</AppText>
       </View>
 
-      <AppCard>
+      <View style={styles.formCard}>
         <View style={styles.nameRow}>
-          <FormField
-            error={fieldErrors.firstName}
-            label={t('firstNameLabel')}
-            onChangeText={setFirstName}
-            value={firstName}
-          />
-          <FormField
-            error={fieldErrors.lastName}
-            label={t('lastNameLabel')}
-            onChangeText={setLastName}
-            value={lastName}
-          />
+          <FormField error={fieldErrors.firstName} label={t('firstNameLabel')} onChangeText={setFirstName} value={firstName} />
+          <FormField error={fieldErrors.lastName} label={t('lastNameLabel')} onChangeText={setLastName} value={lastName} />
         </View>
 
         <FormField
@@ -225,43 +209,74 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
         <FormField
           autoComplete="tel"
           error={fieldErrors.phone}
+          helper={t('phonePrefixHint')}
           inputMode="tel"
           keyboardType="phone-pad"
           label={t('phoneLabel')}
           onChangeText={setPhone}
+          placeholder="+359"
           textContentType="telephoneNumber"
           value={phone}
         />
 
-        <FormField
-          autoComplete="new-password"
-          error={fieldErrors.password}
-          helper={passwordHelper}
-          label={t('passwordLabel')}
-          onChangeText={setPassword}
-          secureTextEntry
-          textContentType="newPassword"
-          value={password}
-        />
+        <View style={styles.field}>
+          <AppText color={colors.slate500} style={styles.fieldLabel}>
+            {t('passwordLabelUpper')}
+          </AppText>
+          <View style={[styles.passwordWrap, fieldErrors.password ? styles.inputError : null]}>
+            <TextInput
+              autoCapitalize="none"
+              autoComplete="new-password"
+              onChangeText={setPassword}
+              placeholder={t('passwordLabel')}
+              placeholderTextColor={colors.slate500}
+              secureTextEntry={!passwordVisible}
+              style={styles.passwordInput}
+              textContentType="newPassword"
+              value={password}
+            />
+            <Pressable
+              accessibilityLabel={passwordVisible ? t('hidePassword') : t('showPassword')}
+              accessibilityRole="button"
+              onPress={() => setPasswordVisible((current) => !current)}
+              style={({ pressed }) => [styles.eyeButton, pressed ? styles.pressedSoft : null]}>
+              <Ionicons color={colors.slate500} name={passwordVisible ? 'eye-off-outline' : 'eye-outline'} size={19} />
+            </Pressable>
+          </View>
+          <AppText color={fieldErrors.password ? colors.danger600 : colors.slate500} variant="small">
+            {fieldErrors.password ?? passwordHelper}
+          </AppText>
+        </View>
 
-        <FormField
-          autoComplete="new-password"
-          error={fieldErrors.confirmPassword}
-          label={t('confirmPasswordLabel')}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          textContentType="newPassword"
-          value={confirmPassword}
-        />
-
-        <AppText color={colors.slate700} style={styles.note}>
-          {role === 'customer' ? t('registrationCustomerNote') : role === 'tasker' ? t('registrationTaskerNote') : t('registrationProNote')}
-        </AppText>
+        <View style={styles.termsBlock}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: termsAccepted }}
+            onPress={() => setTermsAccepted((current) => !current)}
+            style={({ pressed }) => [styles.checkbox, termsAccepted ? styles.checkboxChecked : null, pressed ? styles.pressedSoft : null]}>
+            {termsAccepted ? <Ionicons color={colors.white} name="checkmark" size={14} /> : null}
+          </Pressable>
+          <View style={styles.termsTextWrap}>
+            <AppText color={colors.slate500} variant="small">
+              {t('termsAgreementPrefix')}
+              <AppText color={colors.tasklyBlue600} variant="small">{t('termsOfService')}</AppText>
+              {t('termsAgreementMiddle')}
+              <AppText color={colors.tasklyBlue600} variant="small">{t('privacyPolicy')}</AppText>
+            </AppText>
+            {fieldErrors.terms ? (
+              <AppText color={colors.danger600} variant="small">
+                {fieldErrors.terms}
+              </AppText>
+            ) : null}
+          </View>
+        </View>
 
         {error ? (
-          <AppText color={colors.danger600} variant="caption">
-            {error}
-          </AppText>
+          <View style={styles.errorBox}>
+            <AppText color={colors.danger600} variant="small">
+              {error}
+            </AppText>
+          </View>
         ) : null}
 
         <AppButton
@@ -269,27 +284,19 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
           onPress={() => {
             void onSubmit();
           }}
-          tone={role === 'pro' ? 'pro' : 'core'}>
+          style={[styles.primaryButton, isPro ? styles.proPrimaryButton : null]}
+          tone={isPro ? 'pro' : 'core'}>
           {t(roleButton[role])}
         </AppButton>
-
-        <Pressable
-          accessibilityRole="link"
-          onPress={() => router.push('/register' as Href)}
-          style={({ pressed }) => [styles.backLink, pressed ? styles.pressedSoft : null]}>
-          <AppText color={colors.slate500} style={styles.backText} variant="caption">
-            {t('backToRegisterOptions')}
-          </AppText>
-        </Pressable>
-      </AppCard>
+      </View>
     </Screen>
   );
 }
 
 function RegisterOptionCard({ option, onPress }: { option: RegisterOption; onPress: () => void }) {
   const visual = getRegisterRoleVisual(option.tone);
-  const foreground = option.tone === 'customer' ? colors.white : colors.slate700;
-  const iconColor = option.tone === 'customer' ? colors.white : visual.accent;
+  const isCustomer = option.tone === 'customer';
+  const isPro = option.tone === 'pro';
 
   return (
     <Pressable
@@ -299,23 +306,35 @@ function RegisterOptionCard({ option, onPress }: { option: RegisterOption; onPre
         styles.optionCard,
         {
           backgroundColor: visual.background,
-          borderColor: pressed ? visual.accent : visual.border,
+          borderColor: visual.border,
         },
-        pressed ? styles.pressed : null,
+        pressed ? styles.pressedScale : null,
       ]}>
-      <View style={[styles.optionIcon, { backgroundColor: visual.iconBackground, borderColor: visual.border }]}>
-        <Ionicons color={iconColor} name={option.icon} size={19} />
+      <View style={[styles.optionIcon, { backgroundColor: visual.iconBackground }]}>
+        <Ionicons color={visual.iconColor} name={option.icon} size={22} />
       </View>
       <View style={styles.optionText}>
-        <AppText color={visual.titleColor} style={styles.optionTitle}>
+        <AppText color={visual.titleColor} variant="cardTitle">
           {t(option.title)}
         </AppText>
-        <AppText color={foreground} style={styles.optionBody}>
+        <AppText color={visual.bodyColor} variant="small">
           {t(option.body)}
         </AppText>
       </View>
-      <Ionicons color={iconColor} name="chevron-forward" size={18} />
+      <View style={[styles.optionArrow, isCustomer ? styles.optionArrowFilled : isPro ? styles.optionArrowPro : styles.optionArrowCore]}>
+        <Ionicons color={visual.arrowColor} name="arrow-forward" size={18} />
+      </View>
     </Pressable>
+  );
+}
+
+function ProgressDots({ activeColor }: { activeColor: string }) {
+  return (
+    <View style={styles.progressDots}>
+      <View style={[styles.progressDotActive, { backgroundColor: activeColor }]} />
+      <View style={styles.progressDot} />
+      <View style={styles.progressDot} />
+    </View>
   );
 }
 
@@ -326,7 +345,7 @@ function FormField({
   ...inputProps
 }: {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  autoComplete?: 'email' | 'new-password' | 'tel';
+  autoComplete?: 'email' | 'tel';
   error?: string;
   helper?: string;
   inputMode?: 'email' | 'tel' | 'text';
@@ -334,25 +353,26 @@ function FormField({
   label: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
-  secureTextEntry?: boolean;
-  textContentType?: 'emailAddress' | 'newPassword' | 'telephoneNumber';
+  textContentType?: 'emailAddress' | 'telephoneNumber';
   value: string;
 }) {
   return (
     <View style={styles.field}>
-      <AppText variant="bodyStrong">{label}</AppText>
+      <AppText color={colors.slate500} style={styles.fieldLabel}>
+        {label.toLocaleUpperCase()}
+      </AppText>
       <TextInput
         placeholderTextColor={colors.slate500}
         style={[styles.input, error ? styles.inputError : null]}
         {...inputProps}
       />
       {helper && !error ? (
-        <AppText color={colors.slate500} variant="caption">
+        <AppText color={colors.slate500} variant="small">
           {helper}
         </AppText>
       ) : null}
       {error ? (
-        <AppText color={colors.danger600} variant="caption">
+        <AppText color={colors.danger600} variant="small">
           {error}
         </AppText>
       ) : null}
@@ -360,38 +380,38 @@ function FormField({
   );
 }
 
-function getAccent(role: RegisterRole) {
-  if (role === 'pro') return colors.proOrange600;
-  if (role === 'tasker') return colors.tasklyBlue700;
-  return colors.tasklyBlue600;
-}
-
 function getRegisterRoleVisual(role: RegisterRole) {
   if (role === 'pro') {
     return {
-      accent: colors.proOrange600,
+      arrowColor: colors.proOrange600,
       background: colors.proOrange50,
+      bodyColor: colors.proOrangeText,
       border: colors.proOrangeBorder,
-      iconBackground: colors.white,
+      iconBackground: colors.proOrange50,
+      iconColor: colors.proOrange600,
       titleColor: colors.proOrangeTextDark,
     };
   }
 
   if (role === 'tasker') {
     return {
-      accent: colors.tasklyBlue700,
+      arrowColor: colors.tasklyBlue600,
       background: colors.white,
-      border: colors.slate100,
+      bodyColor: colors.slate500,
+      border: colors.border,
       iconBackground: colors.tasklyBlue50,
+      iconColor: colors.tasklyBlue600,
       titleColor: colors.navy900,
     };
   }
 
   return {
-    accent: colors.tasklyBlue600,
+    arrowColor: colors.white,
     background: colors.tasklyBlue600,
+    bodyColor: colors.white,
     border: colors.tasklyBlue600,
-    iconBackground: 'rgba(255,255,255,0.16)',
+    iconBackground: 'rgba(255,255,255,0.2)',
+    iconColor: colors.white,
     titleColor: colors.white,
   };
 }
@@ -406,47 +426,93 @@ function getFriendlyRegistrationError(code: string) {
 }
 
 const styles = StyleSheet.create({
-  actionStack: {
-    gap: spacing.sm,
-  },
-  backLink: {
+  backButton: {
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
-  backText: {
-    textAlign: 'center',
+  checkbox: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlue600,
   },
   content: {
     gap: spacing.lg,
     justifyContent: 'flex-start',
-    paddingBottom: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  errorBox: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  eyeButton: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   field: {
     flex: 1,
     gap: spacing.sm,
+    minWidth: 0,
   },
-  formIcon: {
-    alignItems: 'center',
-    borderRadius: radius.lg,
-    height: 52,
-    justifyContent: 'center',
-    width: 52,
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    lineHeight: 15,
   },
-  header: {
-    alignItems: 'center',
+  formCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  hero: {
     gap: spacing.sm,
   },
+  inlineLink: {
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  inlineLinkRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'center',
+  },
+  inlineText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
   input: {
-    backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
     color: colors.navy900,
-    fontSize: 16,
+    fontSize: 14,
     height: 48,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
   },
   inputError: {
     borderColor: colors.danger600,
@@ -455,76 +521,103 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  note: {
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
+  optionArrow: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
-  optionBody: {
-    fontSize: 13,
-    lineHeight: 18,
+  optionArrowCore: {
+    backgroundColor: colors.tasklyBlue50,
+  },
+  optionArrowFilled: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  optionArrowPro: {
+    backgroundColor: colors.proOrange50,
   },
   optionCard: {
     alignItems: 'center',
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
-    minHeight: 64,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    elevation: 1,
+    minHeight: 92,
+    padding: spacing.lg,
   },
   optionIcon: {
     alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    height: 38,
+    borderRadius: radius.lg,
+    height: 44,
     justifyContent: 'center',
-    width: 38,
+    width: 44,
+  },
+  optionStack: {
+    gap: spacing.md,
   },
   optionText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xs,
+    minWidth: 0,
   },
-  optionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    lineHeight: 20,
+  passwordInput: {
+    color: colors.navy900,
+    flex: 1,
+    fontSize: 14,
+    height: 48,
+    paddingLeft: spacing.md,
   },
-  pressed: {
-    opacity: 0.88,
+  passwordWrap: {
+    alignItems: 'center',
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+  },
+  pressedScale: {
+    opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
   pressedSoft: {
-    opacity: 0.72,
+    opacity: 0.74,
   },
-  screen: {
-    backgroundColor: '#F6F9FD',
+  primaryButton: {
+    borderRadius: radius.pill,
+    minHeight: 52,
   },
-  signInRow: {
+  proPrimaryButton: {
+    backgroundColor: colors.proAmber500,
+    borderColor: colors.proAmber500,
+  },
+  progressDot: {
+    backgroundColor: colors.border,
+    borderRadius: radius.pill,
+    height: 8,
+    width: 8,
+  },
+  progressDotActive: {
+    borderRadius: radius.pill,
+    height: 8,
+    width: 28,
+  },
+  progressDots: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.sm,
     justifyContent: 'center',
-    paddingVertical: spacing.xs,
   },
-  signInText: {
-    fontWeight: '800',
-    textAlign: 'center',
+  screen: {
+    backgroundColor: colors.slate50,
   },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: 'center',
+  termsBlock: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  title: {
-    fontSize: 24,
-    lineHeight: 30,
-    textAlign: 'center',
+  termsTextWrap: {
+    flex: 1,
+    gap: spacing.xs,
   },
 });

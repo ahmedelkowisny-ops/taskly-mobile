@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
 import { NotificationBell } from './NotificationBell';
@@ -18,7 +18,12 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
 
   return (
     <View style={styles.topBar}>
-      <View style={styles.brandCluster}>
+      <View style={styles.brandMark}>
+        <TasklyLogoText compact iconOnly />
+      </View>
+      <View style={styles.topBarActions}>
+        <NotificationBell compact />
+        <LanguageToggle />
         <Pressable
           accessibilityLabel={t('menu')}
           accessibilityRole="button"
@@ -26,27 +31,32 @@ export function CustomerTopBar({ onMenuPress }: CustomerTopBarProps) {
           style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
           <Ionicons color={colors.navy900} name="menu" size={21} />
         </Pressable>
-        <TasklyLogoText navIcon />
-      </View>
-      <View style={styles.topBarActions}>
-        <NotificationBell compact />
-        <LanguageToggle />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  brandCluster: {
+  brandMark: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    elevation: 1,
+    height: 46,
+    justifyContent: 'center',
+    shadowColor: colors.navy900,
+    shadowOffset: { height: 5, width: 0 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    width: 46,
   },
   menuButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     borderWidth: 1,
     elevation: 1,
     height: 40,
@@ -63,20 +73,9 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 18,
-    borderWidth: 1,
-    elevation: 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 62,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
+    minHeight: 46,
   },
   topBarActions: {
     alignItems: 'center',
