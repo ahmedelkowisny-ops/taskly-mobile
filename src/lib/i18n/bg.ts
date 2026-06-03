@@ -1176,6 +1176,7 @@ export const bg = {
   lateCancellationPlatformShare: '\u0414\u044f\u043b \u043d\u0430 Taskly',
   taskerDashboard: 'Tasker табло',
   tasklyTaskerWorkspace: 'Работно място за Taskly Tasker',
+  tasklyProWorkspace: 'Работно място за Taskly Pro',
   activeTasks: 'Активни задачи',
   availableTasks: 'Налични задачи',
   taskHistory: 'История на задачите',

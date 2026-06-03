@@ -61,6 +61,7 @@ export const en = {
   noSupportMessagesBody: 'Official Taskly support messages will appear here when available.',
   taskerDashboard: 'Tasker dashboard',
   tasklyTaskerWorkspace: 'Taskly Tasker workspace',
+  tasklyProWorkspace: 'Taskly Pro workspace',
   activeTasks: 'Active tasks',
   availableTasks: 'Available tasks',
   taskHistory: 'Task history',

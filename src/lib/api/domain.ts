@@ -1581,6 +1581,7 @@ export type ProviderDashboardSummary = {
 export type ProviderDashboardResponse = {
   cards: ProviderDashboardCard[];
   nextActions: ProviderNextAction[];
+  session?: UserSession;
   summary: ProviderDashboardSummary;
 };
 

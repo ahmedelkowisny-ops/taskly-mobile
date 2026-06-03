@@ -55,7 +55,7 @@ import { spacing } from '@/src/theme/spacing';
 export default function ProviderDashboardScreen() {
   useI18n();
   const router = useRouter();
-  const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
+  const { applySession, getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
   const session = authSession ?? mockAuth.currentSession;
   const [data, setData] = useState<ProviderDashboardResponse | null>(null);
   const [coreTasksData, setCoreTasksData] = useState<ProviderCoreTasksResponse | null>(null);
@@ -148,6 +148,9 @@ export default function ProviderDashboardScreen() {
 
     if (result.ok) {
       setData(result.data);
+      if (result.data.session) {
+        applySession(result.data.session);
+      }
     } else {
       setData(null);
       setIsUnauthorized(result.status === 401 || result.status === 403);
@@ -164,7 +167,7 @@ export default function ProviderDashboardScreen() {
     setProPortfolioData(proPortfolioResult.ok ? proPortfolioResult.data : null);
     setMessagesData(messagesResult.ok ? messagesResult.data : null);
     setIsLoading(false);
-  }, [getValidAccessToken, status]);
+  }, [applySession, getValidAccessToken, status]);
 
   useFocusEffect(
     useCallback(() => {

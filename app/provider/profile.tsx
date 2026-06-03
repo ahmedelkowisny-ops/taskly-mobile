@@ -303,6 +303,9 @@ export default function ProviderProfileScreen() {
       setTaskerProfile(taskerResult.data.profile);
       setTaskerDraft(toTaskerDraft(taskerResult.data.profile));
       setTaskerFieldErrors({});
+      if (taskerResult.data.session) {
+        applySession(taskerResult.data.session);
+      }
     } else {
       setTaskerProfile(null);
       setTaskerDraft(emptyTaskerDraft);
@@ -349,7 +352,7 @@ export default function ProviderProfileScreen() {
     setCoreCategoryOptions(categoriesResult.ok ? categoriesResult.data.categories.filter((category) => category.isActive) : []);
 
     setIsLoading(false);
-  }, [getValidAccessToken, status]);
+  }, [applySession, getValidAccessToken, status]);
 
   useFocusEffect(
     useCallback(() => {
@@ -359,7 +362,7 @@ export default function ProviderProfileScreen() {
 
   const profile = data?.profile;
   const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
-  const showTaskerProfileTools = Boolean(taskerProfile) || status === 'demo' || hasCoreTaskerMode(authSession) || profile?.coreTaskerStatus === 'approved' || profile?.coreTaskerStatus === 'needsStripe';
+  const showTaskerProfileTools = Boolean(taskerProfile) || status === 'demo' || hasCoreTaskerMode(authSession) || (profile?.coreTaskerStatus != null && profile.coreTaskerStatus !== 'none');
   const effectiveProfileMode: ProfileMode = showProProfileTools && !showTaskerProfileTools ? 'pro' : activeProfileMode;
   const showTaskerProfileSection = showTaskerProfileTools && effectiveProfileMode === 'tasker';
   const showProProfileSection = showProProfileTools && effectiveProfileMode === 'pro';
@@ -830,7 +833,10 @@ export default function ProviderProfileScreen() {
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
-        <StatusBadge label={t('tasklyTaskerWorkspace')} tone="core" />
+        <StatusBadge
+          label={showProProfileTools && !showTaskerProfileTools ? t('tasklyProWorkspace') : t('tasklyTaskerWorkspace')}
+          tone={showProProfileTools && !showTaskerProfileTools ? 'pro' : 'core'}
+        />
         <AppText variant="screenTitle">{t('profile')}</AppText>
         <AppText color={colors.slate700}>{t('providerProfileIntro')}</AppText>
       </View>
