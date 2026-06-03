@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -19,6 +21,7 @@ import type {
   ProviderTaskerProfile,
 } from '@/src/lib/api/domain';
 import type { ApiError } from '@/src/lib/api/types';
+import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockProviderProfileResponse } from '@/src/lib/api/mockApi';
 import {
   createProviderProPortfolioProject,
@@ -63,6 +66,7 @@ type TaskerDraft = {
 };
 
 type TaskerFieldErrors = Partial<Record<keyof TaskerDraft, string>>;
+type TaskerEditor = 'availability' | 'basics' | 'coverage' | 'skills';
 
 const emptyTaskerDraft: TaskerDraft = {
   availability: createDefaultAvailability(),
@@ -142,12 +146,12 @@ const emptyProProjectDraft: ProProjectDraft = {
 
 export default function ProviderProfileScreen() {
   const router = useRouter();
-  const { getValidAccessToken, refreshSession, session: authSession, status, useDemoSession } = useAuth();
+  const { applySession, getValidAccessToken, refreshSession, session: authSession, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProfileResponse | null>(null);
   const [taskerProfile, setTaskerProfile] = useState<ProviderTaskerProfile | null>(null);
   const [taskerDraft, setTaskerDraft] = useState<TaskerDraft>(emptyTaskerDraft);
   const [taskerFieldErrors, setTaskerFieldErrors] = useState<TaskerFieldErrors>({});
-  const [isEditingTasker, setIsEditingTasker] = useState(false);
+  const [activeTaskerEditor, setActiveTaskerEditor] = useState<TaskerEditor | null>(null);
   const [isSavingTasker, setIsSavingTasker] = useState(false);
   const [taskerNotice, setTaskerNotice] = useState<string | null>(null);
   const [taskerErrorMessage, setTaskerErrorMessage] = useState<string | null>(null);
@@ -226,7 +230,7 @@ export default function ProviderProfileScreen() {
       setData(getMockProviderProfileResponse());
       setTaskerProfile(null);
       setTaskerDraft(emptyTaskerDraft);
-      setIsEditingTasker(false);
+      setActiveTaskerEditor(null);
       setProProfile(null);
       setProDraft(emptyProDraft);
       setPortfolioProjects([]);
@@ -242,7 +246,7 @@ export default function ProviderProfileScreen() {
       setData(null);
       setTaskerProfile(null);
       setTaskerDraft(emptyTaskerDraft);
-      setIsEditingTasker(false);
+      setActiveTaskerEditor(null);
       setProProfile(null);
       setProDraft(emptyProDraft);
       setPortfolioProjects([]);
@@ -351,13 +355,13 @@ export default function ProviderProfileScreen() {
   const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
   const readinessItems = buildTaskerReadinessItems(taskerProfile, profile);
 
-  function beginTaskerEdit() {
+  function beginTaskerEdit(editor: TaskerEditor) {
     if (!taskerProfile) return;
     setTaskerDraft(toTaskerDraft(taskerProfile));
     setTaskerFieldErrors({});
     setTaskerNotice(null);
     setTaskerErrorMessage(null);
-    setIsEditingTasker(true);
+    setActiveTaskerEditor(editor);
   }
 
   function cancelTaskerEdit() {
@@ -367,7 +371,7 @@ export default function ProviderProfileScreen() {
     setTaskerFieldErrors({});
     setTaskerNotice(null);
     setTaskerErrorMessage(null);
-    setIsEditingTasker(false);
+    setActiveTaskerEditor(null);
   }
 
   async function handleStartPayoutSetup() {
@@ -434,7 +438,7 @@ export default function ProviderProfileScreen() {
     setTaskerNotice(t('payoutStatusRefreshed'));
   }
 
-  async function handleSaveTasker() {
+  async function handleSaveTasker(successKey: 'availabilityUpdated' | 'coverageUpdated' | 'profileUpdated' | 'skillsUpdated' = 'profileUpdated') {
     const validation = validateTaskerDraft(taskerDraft);
     setTaskerFieldErrors(validation);
     setTaskerNotice(null);
@@ -479,9 +483,11 @@ export default function ProviderProfileScreen() {
     setTaskerProfile(result.data.profile);
     setTaskerDraft(toTaskerDraft(result.data.profile));
     setTaskerFieldErrors({});
-    setIsEditingTasker(false);
-    setTaskerNotice(t('taskerProfileSaved'));
-    await refreshSession();
+    setActiveTaskerEditor(null);
+    if (result.data.session) {
+      applySession(result.data.session);
+    }
+    setTaskerNotice(t(successKey));
     await loadProfile();
   }
 
@@ -543,8 +549,10 @@ export default function ProviderProfileScreen() {
 
     setTaskerProfile(result.data.profile);
     setTaskerDraft(toTaskerDraft(result.data.profile));
+    if (result.data.session) {
+      applySession(result.data.session);
+    }
     setTaskerNotice(t('photoUpdated'));
-    await refreshSession();
     await loadProfile();
   }
 
@@ -761,15 +769,8 @@ export default function ProviderProfileScreen() {
           isUploading={isUploadingTaskerPhoto}
           onChangePhoto={handleChangeTaskerPhoto}
           profile={taskerProfile}
+          summary={profile ?? null}
         />
-      ) : null}
-
-      {profile ? (
-        <AppCard backgroundColor={colors.tasklyBlue50}>
-          <StatusBadge label={status === 'demo' ? t('demoMode') : t('liveProfile')} tone={status === 'demo' ? 'neutral' : 'success'} />
-          <AppText variant="sectionTitle">{profile.displayName}</AppText>
-          <AppText color={colors.slate700}>{profile.profileStrengthLabel}</AppText>
-        </AppCard>
       ) : null}
 
       <TaskerReadinessCard
@@ -782,146 +783,45 @@ export default function ProviderProfileScreen() {
         stripeStatusLabel={profile?.stripeStatusLabel ?? null}
       />
 
-      <AppCard accentColor={colors.tasklyBlue600}>
+      <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
             <ModeBadge mode="providerCore" />
-            <AppText variant="sectionTitle">{t('tasklyTaskerProfile')}</AppText>
+            <AppText variant="sectionTitle">{t('profileOverview')}</AppText>
           </View>
-          {!isEditingTasker && taskerProfile && status === 'authenticated' ? (
-            <AppButton onPress={beginTaskerEdit} style={styles.headerButton} variant="outline">
-              {t('editProfile')}
-            </AppButton>
-          ) : null}
         </View>
-        <AppText color={colors.slate700}>
-          {profile ? getCoreTaskerStatusLabel(profile.coreTaskerStatus) : t('taskerProfileEmptyHelper')}
-        </AppText>
-        {profile?.coreCities.length ? <AppText color={colors.slate500}>{t('cities')}: {profile.coreCities.join(', ')}</AppText> : null}
-        {profile?.coreCategories.length ? <AppText color={colors.slate500}>{t('services')}: {profile.coreCategories.join(', ')}</AppText> : null}
+        <AppText color={colors.slate700}>{t('swipeProfileSections')}</AppText>
 
         {taskerErrorMessage ? <InlineMessage message={taskerErrorMessage} tone="error" /> : null}
         {taskerNotice ? <InlineMessage message={taskerNotice} tone="success" /> : null}
         {status === 'demo' ? <InlineMessage message={t('taskerProfileEditUnavailableDemo')} tone="neutral" /> : null}
 
         {taskerProfile ? (
-          <View style={styles.form}>
-            <FormField
-              autoCapitalize="words"
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.firstName}
-              label={t('firstNameLabel')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, firstName: value }))}
-              value={taskerDraft.firstName}
-            />
-            <FormField
-              autoCapitalize="words"
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.lastName}
-              label={t('lastNameLabel')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, lastName: value }))}
-              value={taskerDraft.lastName}
-            />
-            <FormField
-              autoComplete="tel"
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.phone}
-              keyboardType="phone-pad"
-              label={t('phoneLabel')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, phone: value }))}
-              value={taskerDraft.phone}
-            />
-            <FormField
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.bio}
-              label={t('aboutYou')}
-              multiline
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, bio: value }))}
-              value={taskerDraft.bio}
-            />
-            <FormField
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.hourlyRate}
-              keyboardType="decimal-pad"
-              label={t('hourlyRate')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, hourlyRate: value }))}
-              value={taskerDraft.hourlyRate}
-            />
-            <FormField
-              editable={isEditingTasker && !isSavingTasker}
-              errorText={taskerFieldErrors.serviceArea}
-              label={t('serviceArea')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, serviceArea: value }))}
-              value={taskerDraft.serviceArea}
-            />
-            <EditableChipSection
-              disabled={!isEditingTasker || isSavingTasker}
-              helperText={t('selectYourCity')}
-              label={t('editCityCoverage')}
-              options={cityOptions.map((city) => ({ label: getCityLabel(city), value: city.id }))}
-              onToggle={(value) => setTaskerDraft((current) => ({ ...current, cityId: value }))}
-              selectedValues={taskerDraft.cityId ? [taskerDraft.cityId] : []}
-              single
-            />
-            <EditableChipSection
-              disabled={!isEditingTasker || isSavingTasker}
-              helperText={t('chooseServicesYouCanHandle')}
-              label={t('serviceCategoriesLabel')}
-              options={coreCategoryOptions.map((category) => ({ label: getCategoryLabel(category), value: category.slug }))}
-              onToggle={(value) => setTaskerDraft((current) => ({ ...current, serviceCategorySlugs: toggleValue(current.serviceCategorySlugs, value) }))}
-              selectedValues={taskerDraft.serviceCategorySlugs}
-            />
-            <FormField
-              editable={isEditingTasker && !isSavingTasker}
-              helperText={t('commaSeparatedHelper')}
-              label={t('languages')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, languagesText: value }))}
-              value={taskerDraft.languagesText}
-            />
-            <FormField
-              editable={isEditingTasker && !isSavingTasker}
-              helperText={t('commaSeparatedHelper')}
-              label={t('skillsAndTools')}
-              onChangeText={(value) => setTaskerDraft((current) => ({ ...current, toolsText: value }))}
-              value={taskerDraft.toolsText}
-            />
-            <View style={styles.toggleBlock}>
-              <AppText variant="bodyStrong">{t('hasCar')}</AppText>
-              <View style={styles.toggleRow}>
-                <ToggleChip disabled={!isEditingTasker || isSavingTasker} label={t('yes')} onPress={() => setTaskerDraft((current) => ({ ...current, hasCar: true }))} selected={taskerDraft.hasCar} />
-                <ToggleChip disabled={!isEditingTasker || isSavingTasker} label={t('no')} onPress={() => setTaskerDraft((current) => ({ ...current, hasCar: false }))} selected={!taskerDraft.hasCar} />
-              </View>
-            </View>
-            <AvailabilityEditor
-              disabled={!isEditingTasker || isSavingTasker}
-              onChange={(availability) => setTaskerDraft((current) => ({ ...current, availability }))}
-              value={taskerDraft.availability}
-            />
-
-            <InfoRow label={t('accountEmail')} value={taskerProfile.email || t('emailNotAvailable')} />
-            <InfoRow label={t('taskerStatus')} value={taskerProfile.taskerStatus} />
-            <InfoRow label={t('cities')} value={taskerProfile.cityLabel || t('needsAttention')} />
-            <InfoRow label={t('services')} value={taskerProfile.serviceCategories.length ? taskerProfile.serviceCategories.join(', ') : t('needsAttention')} />
-            <InfoRow label={t('skillsAndTools')} value={formatProfileList([...taskerProfile.toolsEquipment, ...taskerProfile.languagesSpoken])} />
-            <AppText color={colors.slate500} variant="small">
-              {t('matchingChangesNote')}
-            </AppText>
-
-            {isEditingTasker ? (
-              <View style={styles.actionRow}>
-                <AppButton disabled={isSavingTasker} onPress={cancelTaskerEdit} style={styles.actionButton} tone="neutral" variant="outline">
-                  {t('cancel')}
-                </AppButton>
-                {hasTaskerChanges ? (
-                  <AppButton disabled={isSavingTasker} loading={isSavingTasker} onPress={handleSaveTasker} style={styles.actionButton}>
-                    {isSavingTasker ? t('savingChanges') : t('saveChanges')}
-                  </AppButton>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+          <TaskerProfileHub
+            canEdit={status === 'authenticated'}
+            onEdit={beginTaskerEdit}
+            profile={taskerProfile}
+            providerProfile={profile ?? null}
+          />
+        ) : (
+          <AppText color={colors.slate500}>{t('taskerProfileEmptyHelper')}</AppText>
+        )}
       </AppCard>
+
+      {taskerProfile ? (
+        <TaskerEditModal
+          activeEditor={activeTaskerEditor}
+          cityOptions={cityOptions}
+          coreCategoryOptions={coreCategoryOptions}
+          draft={taskerDraft}
+          fieldErrors={taskerFieldErrors}
+          hasChanges={hasTaskerChanges}
+          isSaving={isSavingTasker}
+          onCancel={cancelTaskerEdit}
+          onChange={setTaskerDraft}
+          onSave={handleSaveTasker}
+        />
+      ) : null}
 
       {showProProfileTools ? (
       <AppCard accentColor={colors.proOrange600}>
@@ -1374,6 +1274,426 @@ function getCategoryLabel(category: CatalogCategory) {
   return category.nameEn || category.nameBg || category.slug;
 }
 
+function TaskerProfileHub({
+  canEdit,
+  onEdit,
+  profile,
+  providerProfile,
+}: {
+  canEdit: boolean;
+  onEdit: (editor: TaskerEditor) => void;
+  profile: ProviderTaskerProfile;
+  providerProfile: ProviderProfileResponse['profile'] | null;
+}) {
+  const basicsSummary = [
+    profile.displayName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || t('needsAttention'),
+    profile.phone || t('needsAttention'),
+    profile.bio || t('completeYourProfile'),
+  ];
+  const coverageSummary = [
+    profile.cityLabel || providerProfile?.coreCities.join(', ') || t('needsAttention'),
+    profile.serviceCategories.length ? profile.serviceCategories.join(', ') : providerProfile?.coreCategories.join(', ') || t('needsAttention'),
+    profile.serviceArea || t('needsAttention'),
+  ];
+  const skillsSummary = [
+    profile.toolsEquipment.length ? profile.toolsEquipment.join(', ') : t('skillsAndToolsMissing'),
+    profile.languagesSpoken.length ? profile.languagesSpoken.join(', ') : t('languages'),
+    profile.hasCar ? t('hasCar') : t('needsAttention'),
+  ];
+
+  return (
+    <View style={styles.hubBlock}>
+      <ScrollView
+        contentContainerStyle={styles.profileSectionTabs}
+        horizontal
+        showsHorizontalScrollIndicator={false}>
+        {[t('basics'), t('workCoverage'), t('skillsAndTools'), t('availability'), t('payouts')].map((label) => (
+          <View key={label} style={styles.profileSectionTab}>
+            <AppText color={colors.tasklyBlue700} style={styles.profileSectionTabText} variant="small">
+              {label}
+            </AppText>
+          </View>
+        ))}
+      </ScrollView>
+      <ScrollView
+        contentContainerStyle={styles.profileSectionCarousel}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        snapToAlignment="start">
+        <ProfileSectionCard
+          buttonLabel={t('editBasics')}
+          canEdit={canEdit}
+          icon="person-outline"
+          onEdit={() => onEdit('basics')}
+          rows={[
+            { label: t('accountName'), value: basicsSummary[0] },
+            { label: t('phoneLabel'), value: basicsSummary[1] },
+            { label: t('aboutYou'), value: basicsSummary[2] },
+          ]}
+          title={t('basics')}
+        />
+        <ProfileSectionCard
+          buttonLabel={t('editCoverage')}
+          canEdit={canEdit}
+          icon="map-outline"
+          onEdit={() => onEdit('coverage')}
+          rows={[
+            { label: t('city'), value: coverageSummary[0] },
+            { label: t('selectedServices'), value: coverageSummary[1] },
+            { label: t('serviceArea'), value: coverageSummary[2] },
+          ]}
+          title={t('workCoverage')}
+        />
+        <ProfileSectionCard
+          buttonLabel={t('editSkills')}
+          canEdit={canEdit}
+          icon="construct-outline"
+          onEdit={() => onEdit('skills')}
+          rows={[
+            { label: t('toolsEquipment'), value: skillsSummary[0] },
+            { label: t('languages'), value: skillsSummary[1] },
+            { label: t('hasCar'), value: profile.hasCar ? t('yes') : t('no') },
+          ]}
+          title={t('skillsAndTools')}
+        />
+        <ProfileSectionCard
+          buttonLabel={t('editAvailability')}
+          canEdit={canEdit}
+          icon="calendar-outline"
+          onEdit={() => onEdit('availability')}
+          rows={[
+            { label: t('availability'), value: formatAvailabilitySummary(profile.availability) },
+            { label: t('latestUpdate'), value: t('tapSectionToEdit') },
+          ]}
+          title={t('availability')}
+        />
+        <ProfileSectionCard
+          buttonLabel={t('refreshPayoutStatus')}
+          canEdit={false}
+          icon="card-outline"
+          rows={[
+            { label: t('payoutSetup'), value: providerProfile?.stripeStatusLabel || t('payoutSetupUnavailable') },
+            { label: t('currentStatus'), value: providerProfile?.payoutStatus?.isReady ? t('payoutsReady') : t('payoutSetupNeedsAttention') },
+          ]}
+          title={t('payouts')}
+        />
+      </ScrollView>
+      <AppText color={colors.slate500} variant="small">{t('tapSectionToEdit')}</AppText>
+    </View>
+  );
+}
+
+function ProfileSectionCard({
+  buttonLabel,
+  canEdit,
+  icon,
+  onEdit,
+  rows,
+  title,
+}: {
+  buttonLabel: string;
+  canEdit: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  onEdit?: () => void;
+  rows: { label: string; value: string }[];
+  title: string;
+}) {
+  return (
+    <View style={styles.profileSectionCard}>
+      <View style={styles.profileSectionCardHeader}>
+        <View style={styles.profileSectionIcon}>
+          <Ionicons color={colors.tasklyBlue700} name={icon} size={20} />
+        </View>
+        <AppText style={styles.profileSectionTitle} variant="bodyStrong">{title}</AppText>
+      </View>
+      <View style={styles.profileSectionRows}>
+        {rows.map((row) => (
+          <View key={row.label} style={styles.profileSummaryRow}>
+            <AppText color={colors.slate500} variant="small">{row.label}</AppText>
+            <AppText color={colors.navy900} numberOfLines={3} style={styles.profileSummaryValue}>{row.value}</AppText>
+          </View>
+        ))}
+      </View>
+      {canEdit && onEdit ? (
+        <AppButton onPress={onEdit} style={styles.sectionEditButton} variant="outline">
+          {buttonLabel}
+        </AppButton>
+      ) : null}
+    </View>
+  );
+}
+
+function TaskerEditModal({
+  activeEditor,
+  cityOptions,
+  coreCategoryOptions,
+  draft,
+  fieldErrors,
+  hasChanges,
+  isSaving,
+  onCancel,
+  onChange,
+  onSave,
+}: {
+  activeEditor: TaskerEditor | null;
+  cityOptions: CityOption[];
+  coreCategoryOptions: CatalogCategory[];
+  draft: TaskerDraft;
+  fieldErrors: TaskerFieldErrors;
+  hasChanges: boolean;
+  isSaving: boolean;
+  onCancel: () => void;
+  onChange: Dispatch<SetStateAction<TaskerDraft>>;
+  onSave: (successKey?: 'availabilityUpdated' | 'coverageUpdated' | 'profileUpdated' | 'skillsUpdated') => Promise<void>;
+}) {
+  const config = getTaskerEditorConfig(activeEditor);
+  const visible = activeEditor !== null;
+  const insets = useSafeAreaInsets();
+  const canSave = isTaskerEditorSaveEnabled(activeEditor, draft, hasChanges);
+  const footerBottomPadding = Math.max(insets.bottom, spacing.md);
+
+  return (
+    <Modal animationType="slide" onRequestClose={onCancel} transparent visible={visible}>
+      <KeyboardAvoidingView behavior={Platform.select({ android: 'height', ios: 'padding', default: undefined })} style={styles.modalRoot}>
+        <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onCancel} style={styles.modalScrim} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <View style={styles.sectionTitleBlock}>
+              <AppText variant="sectionTitle">{config.title}</AppText>
+            </View>
+            <Pressable accessibilityRole="button" disabled={isSaving} onPress={onCancel} style={styles.modalCloseButton}>
+              <Ionicons color={colors.slate500} name="close" size={22} />
+            </Pressable>
+          </View>
+          {config.helper ? (
+            <View style={styles.modalInfoStrip}>
+              <Ionicons color={colors.tasklyBlue700} name="information-circle-outline" size={18} />
+              <AppText color={colors.tasklyBlue700} style={styles.modalInfoText} variant="small">
+                {config.helper}
+              </AppText>
+            </View>
+          ) : null}
+
+          <ScrollView
+            contentContainerStyle={[styles.modalContent, { paddingBottom: spacing.xl + footerBottomPadding }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            {activeEditor === 'basics' ? (
+              <>
+                <FormField
+                  autoCapitalize="words"
+                  editable={!isSaving}
+                  errorText={fieldErrors.firstName}
+                  label={t('firstNameLabel')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, firstName: value }))}
+                  value={draft.firstName}
+                />
+                <FormField
+                  autoCapitalize="words"
+                  editable={!isSaving}
+                  errorText={fieldErrors.lastName}
+                  label={t('lastNameLabel')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, lastName: value }))}
+                  value={draft.lastName}
+                />
+                <FormField
+                  autoComplete="tel"
+                  editable={!isSaving}
+                  errorText={fieldErrors.phone}
+                  keyboardType="phone-pad"
+                  label={t('phoneLabel')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, phone: value }))}
+                  value={draft.phone}
+                />
+                <FormField
+                  editable={!isSaving}
+                  errorText={fieldErrors.bio}
+                  label={t('aboutYou')}
+                  multiline
+                  onChangeText={(value) => onChange((current) => ({ ...current, bio: value }))}
+                  value={draft.bio}
+                />
+                <FormField
+                  editable={!isSaving}
+                  errorText={fieldErrors.hourlyRate}
+                  keyboardType="decimal-pad"
+                  label={t('hourlyRate')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, hourlyRate: value }))}
+                  value={draft.hourlyRate}
+                />
+              </>
+            ) : null}
+
+            {activeEditor === 'coverage' ? (
+              <>
+                <EditableChipSection
+                  disabled={isSaving}
+                  helperText={t('selectYourCity')}
+                  label={t('chooseCity')}
+                  options={cityOptions.map((city) => ({ label: getCityLabel(city), value: city.id }))}
+                  onToggle={(value) => onChange((current) => ({ ...current, cityId: value }))}
+                  selectedValues={draft.cityId ? [draft.cityId] : []}
+                  single
+                />
+                <EditableChipSection
+                  disabled={isSaving}
+                  helperText={t('chooseServicesYouCanHandle')}
+                  label={t('chooseServices')}
+                  options={coreCategoryOptions.map((category) => ({ label: getCategoryLabel(category), value: category.slug }))}
+                  onToggle={(value) => onChange((current) => ({ ...current, serviceCategorySlugs: toggleValue(current.serviceCategorySlugs, value) }))}
+                  selectedValues={draft.serviceCategorySlugs}
+                />
+                <FormField
+                  editable={!isSaving}
+                  errorText={fieldErrors.serviceArea}
+                  label={t('serviceArea')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, serviceArea: value }))}
+                  value={draft.serviceArea}
+                />
+              </>
+            ) : null}
+
+            {activeEditor === 'skills' ? (
+              <>
+                <FormField
+                  editable={!isSaving}
+                  label={t('languages')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, languagesText: value }))}
+                  placeholder={t('languagesExample')}
+                  value={draft.languagesText}
+                />
+                <FormField
+                  editable={!isSaving}
+                  label={t('skillsAndTools')}
+                  onChangeText={(value) => onChange((current) => ({ ...current, toolsText: value }))}
+                  placeholder={t('toolsExample')}
+                  value={draft.toolsText}
+                />
+                <CarAccessControl
+                  disabled={isSaving}
+                  onChange={(hasCar) => onChange((current) => ({ ...current, hasCar }))}
+                  value={draft.hasCar}
+                />
+              </>
+            ) : null}
+
+            {activeEditor === 'availability' ? (
+              <AvailabilityEditor
+                disabled={isSaving}
+                onChange={(availability) => onChange((current) => ({ ...current, availability }))}
+                value={draft.availability}
+              />
+            ) : null}
+          </ScrollView>
+
+          <View style={[styles.modalActions, { paddingBottom: footerBottomPadding }]}>
+            <AppButton disabled={isSaving} onPress={onCancel} style={styles.actionButton} tone="neutral" variant="outline">
+              {t('cancel')}
+            </AppButton>
+            <AppButton
+              disabled={isSaving || !canSave}
+              loading={isSaving}
+              onPress={() => void onSave(config.successKey)}
+              style={styles.actionButton}>
+              {isSaving ? t('savingChanges') : t('saveChanges')}
+            </AppButton>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function getTaskerEditorConfig(editor: TaskerEditor | null) {
+  switch (editor) {
+    case 'basics':
+      return {
+        helper: t('tapSectionToEdit'),
+        successKey: 'profileUpdated' as const,
+        title: t('editBasics'),
+      };
+    case 'coverage':
+      return {
+        helper: t('matchingChangesNote'),
+        successKey: 'coverageUpdated' as const,
+        title: t('editCoverage'),
+      };
+    case 'skills':
+      return {
+        helper: t('skillsModalHelper'),
+        successKey: 'skillsUpdated' as const,
+        title: t('editSkills'),
+      };
+    case 'availability':
+      return {
+        helper: t('readyToReceiveMatchingTasks'),
+        successKey: 'availabilityUpdated' as const,
+        title: t('editAvailability'),
+      };
+    default:
+      return {
+        helper: '',
+        successKey: 'profileUpdated' as const,
+        title: t('profileOverview'),
+      };
+  }
+}
+
+function isTaskerEditorSaveEnabled(editor: TaskerEditor | null, draft: TaskerDraft, hasChanges: boolean) {
+  if (!hasChanges) return false;
+
+  if (editor === 'coverage') {
+    return Boolean(draft.cityId && draft.serviceCategorySlugs.length > 0);
+  }
+
+  return true;
+}
+
+function CarAccessControl({
+  disabled,
+  onChange,
+  value,
+}: {
+  disabled: boolean;
+  onChange: (value: boolean) => void;
+  value: boolean;
+}) {
+  return (
+    <View style={styles.segmentBlock}>
+      <AppText style={styles.segmentLabel} variant="bodyStrong">{t('hasCar')}</AppText>
+      <View style={styles.segmentControl}>
+        {[
+          { label: t('yes'), value: true },
+          { label: t('no'), value: false },
+        ].map((option) => {
+          const selected = value === option.value;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              disabled={disabled}
+              key={option.label}
+              onPress={() => onChange(option.value)}
+              style={({ pressed }) => [
+                styles.segmentOption,
+                selected ? styles.segmentOptionSelected : null,
+                { opacity: disabled ? 0.6 : pressed ? 0.84 : 1 },
+              ]}>
+              <AppText
+                color={selected ? colors.tasklyBlue700 : colors.slate700}
+                style={styles.segmentOptionText}
+                variant="bodyStrong">
+                {option.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function EditableChipSection({
   disabled,
   helperText,
@@ -1536,20 +1856,25 @@ function ProfilePhotoCard({
   isUploading,
   onChangePhoto,
   profile,
+  summary,
 }: {
   canChangePhoto: boolean;
   isUploading: boolean;
   onChangePhoto: () => void;
   profile: ProviderTaskerProfile;
+  summary: ProviderProfileResponse['profile'] | null;
 }) {
   const initials = getInitials(profile);
+  const photoUrl = resolveApiMediaUrl(profile.profilePhotoUrl || '');
+  const statusLabel = summary ? getCoreTaskerStatusLabel(summary.coreTaskerStatus) : profile.taskerStatus;
+  const payoutReady = summary?.payoutStatus?.isReady ?? isPayoutReadyFromLabel(summary?.stripeStatusLabel);
 
   return (
-    <AppCard backgroundColor={colors.tasklyBlue50}>
+    <AppCard backgroundColor={colors.tasklyBlue50} accentColor={colors.tasklyBlue600}>
       <View style={styles.photoRow}>
         <View style={styles.avatar}>
-          {profile.profilePhotoUrl ? (
-            <Image source={{ uri: profile.profilePhotoUrl }} style={styles.avatarImage} />
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
           ) : initials ? (
             <AppText color={colors.tasklyBlue700} style={styles.avatarInitials}>
               {initials}
@@ -1559,10 +1884,13 @@ function ProfilePhotoCard({
           )}
         </View>
         <View style={styles.photoText}>
-          <StatusBadge label={t('profilePhoto')} tone="core" />
+          <View style={styles.profileHeaderBadges}>
+            <StatusBadge label={statusLabel} tone="core" />
+            <StatusBadge label={payoutReady ? t('payoutsReady') : t('payoutSetupNeedsAttention')} tone={payoutReady ? 'success' : 'warning'} />
+          </View>
           <AppText variant="sectionTitle">{profile.displayName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || t('tasklyTasker')}</AppText>
           <AppText color={colors.slate700}>
-            {profile.profilePhotoUrl ? t('profilePhotoReady') : t('profilePhotoPlaceholderBody')}
+            {photoUrl ? t('profilePhotoReady') : t('profilePhotoPlaceholderBody')}
           </AppText>
           {canChangePhoto ? (
             <AppButton
@@ -1686,6 +2014,22 @@ function getInitials(profile: ProviderTaskerProfile) {
 function formatProfileList(values: string[]) {
   const cleaned = values.map((value) => value.trim()).filter(Boolean);
   return cleaned.length ? cleaned.join(', ') : t('needsAttention');
+}
+
+function formatAvailabilitySummary(value: TaskerAvailability | null | undefined) {
+  const normalized = normalizeTaskerAvailability(value);
+  const enabledDays = availabilityDays.filter((day) => normalized.weekly[day.key].enabled);
+
+  if (!enabledDays.length) {
+    return t('needsAttention');
+  }
+
+  const labels = enabledDays.map((day) => {
+    const window = normalized.weekly[day.key];
+    return `${day.label} ${window.start}-${window.end}`;
+  });
+
+  return labels.join(', ');
 }
 
 function validateTaskerDraft(draft: TaskerDraft): TaskerFieldErrors {
@@ -1851,7 +2195,11 @@ function ToggleChip({
         selected ? styles.toggleChipSelected : null,
         { opacity: disabled ? 0.6 : pressed ? 0.82 : 1 },
       ]}>
-      <AppText color={selected ? colors.tasklyBlue700 : colors.slate500} variant="bodyStrong">
+      <AppText
+        color={selected ? colors.tasklyBlue700 : colors.slate500}
+        numberOfLines={2}
+        style={styles.toggleChipText}
+        variant="bodyStrong">
         {label}
       </AppText>
     </Pressable>
@@ -1896,12 +2244,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   availabilityRow: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.md,
   },
   availabilityTimeField: {
     minWidth: 0,
@@ -1933,13 +2281,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
   },
+  hubBlock: {
+    gap: spacing.md,
+  },
   chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
   editBlock: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     gap: spacing.sm,
+    padding: spacing.md,
   },
   headerButton: {
     minHeight: 40,
@@ -1962,6 +2318,80 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  modalActions: {
+    backgroundColor: colors.white,
+    borderTopColor: colors.tasklyBlueBorder,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginHorizontal: -spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  modalCloseButton: {
+    alignItems: 'center',
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  modalContent: {
+    gap: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    backgroundColor: colors.tasklyBlue600,
+    borderRadius: radius.pill,
+    height: 5,
+    opacity: 0.45,
+    width: 48,
+  },
+  modalHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  modalInfoStrip: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  modalInfoText: {
+    flex: 1,
+    lineHeight: 18,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.38)',
+  },
+  modalSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    gap: spacing.md,
+    maxHeight: '88%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: -8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    elevation: 18,
   },
   neutralMessage: {
     backgroundColor: colors.slate50,
@@ -1989,7 +2419,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
   },
   photoRow: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flexDirection: 'row',
     gap: spacing.md,
   },
@@ -2000,6 +2430,73 @@ const styles = StyleSheet.create({
   photoText: {
     flex: 1,
     gap: spacing.xs,
+  },
+  profileHeaderBadges: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  profileSectionCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    marginRight: spacing.md,
+    minHeight: 300,
+    padding: spacing.md,
+    width: 300,
+  },
+  profileSectionCardHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  profileSectionCarousel: {
+    paddingRight: spacing.md,
+  },
+  profileSectionIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: radius.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  profileSectionRows: {
+    gap: spacing.sm,
+  },
+  profileSectionTab: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  profileSectionTabs: {
+    gap: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  profileSectionTabText: {
+    fontWeight: '800',
+  },
+  profileSectionTitle: {
+    flex: 1,
+  },
+  profileSummaryRow: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: 2,
+    padding: spacing.sm,
+  },
+  profileSummaryValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 19,
   },
   portfolioBlock: {
     borderTopColor: colors.proOrangeBorder,
@@ -2063,6 +2560,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'space-between',
   },
+  sectionEditButton: {
+    marginTop: 'auto',
+    minHeight: 42,
+  },
   sectionTitleBlock: {
     flex: 1,
     gap: spacing.sm,
@@ -2070,6 +2571,45 @@ const styles = StyleSheet.create({
   successMessage: {
     backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
+  },
+  segmentBlock: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  segmentControl: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    padding: 4,
+  },
+  segmentLabel: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  segmentOption: {
+    alignItems: 'center',
+    borderColor: 'transparent',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  segmentOptionSelected: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
+  },
+  segmentOptionText: {
+    textAlign: 'center',
   },
   toggleBlock: {
     gap: spacing.xs,
@@ -2080,11 +2620,19 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 1,
     minHeight: 44,
+    minWidth: 96,
     justifyContent: 'center',
+    maxWidth: '100%',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  toggleChipText: {
+    flexShrink: 1,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   toggleChipSelected: {
     backgroundColor: colors.tasklyBlue50,

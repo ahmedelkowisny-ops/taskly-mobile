@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
 
 import { AppText } from '@/src/components/ui';
@@ -11,14 +12,34 @@ type FormFieldProps = TextInputProps & {
 };
 
 export function FormField({ errorText, helperText, label, multiline, style, ...inputProps }: FormFieldProps) {
+  const [focused, setFocused] = useState(false);
+
+  function handleBlur(event: Parameters<NonNullable<TextInputProps['onBlur']>>[0]) {
+    setFocused(false);
+    inputProps.onBlur?.(event);
+  }
+
+  function handleFocus(event: Parameters<NonNullable<TextInputProps['onFocus']>>[0]) {
+    setFocused(true);
+    inputProps.onFocus?.(event);
+  }
+
   return (
     <View style={styles.wrapper}>
-      <AppText variant="bodyStrong">{label}</AppText>
+      <AppText style={styles.label} variant="bodyStrong">{label}</AppText>
       <TextInput
-        multiline={multiline}
-        placeholderTextColor={colors.slate500}
-        style={[styles.input, errorText ? styles.inputError : null, multiline ? styles.multiline : null, style]}
         {...inputProps}
+        multiline={multiline}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        placeholderTextColor={colors.slate500}
+        style={[
+          styles.input,
+          focused ? styles.inputFocused : null,
+          errorText ? styles.inputError : null,
+          multiline ? styles.multiline : null,
+          style,
+        ]}
       />
       {errorText ? (
         <AppText color={colors.danger600} variant="small">
@@ -37,20 +58,28 @@ export function FormField({ errorText, helperText, label, multiline, style, ...i
 const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
     color: colors.navy900,
     fontSize: 16,
-    minHeight: 48,
+    lineHeight: 22,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 13,
+  },
+  inputFocused: {
+    borderColor: colors.tasklyBlue600,
   },
   inputError: {
     borderColor: colors.danger600,
   },
+  label: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
   multiline: {
-    minHeight: 112,
+    minHeight: 132,
     textAlignVertical: 'top',
   },
   wrapper: {

@@ -21,6 +21,7 @@ import { unregisterStoredNotificationToken } from '@/src/lib/notifications/mobil
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error' | 'demo';
 
 export type AuthContextValue = {
+  applySession: (nextSession: UserSession) => void;
   clearSession: () => void;
   error: ApiError | null;
   getValidAccessToken: () => Promise<string | null>;
@@ -110,7 +111,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    setStatus('loading');
     setError(null);
     setIsDemoMode(false);
 
@@ -145,6 +145,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMemoryAccessToken(null);
     setError(result.error);
     setStatus(isUnauthenticatedError(result.error, result.status) ? 'unauthenticated' : 'error');
+  }, []);
+
+  const applySession = useCallback((nextSession: UserSession) => {
+    setSession(nextSession);
+    setStatus('authenticated');
+    setError(null);
+    setIsDemoMode(false);
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<ApiResult<UserSession>> => {
@@ -322,6 +329,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const value = useMemo(
     () => ({
+      applySession,
       clearSession,
       error,
       getValidAccessToken,
@@ -336,6 +344,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       useDemoSession,
     }),
     [
+      applySession,
       clearSession,
       error,
       getValidAccessToken,
