@@ -13,6 +13,8 @@ import {
   ProviderProPortfolioResponse,
   ProviderProProfileResponse,
   ProviderProfileResponse,
+  ProviderStripeOnboardingLinkResponse,
+  ProviderStripeRefreshStatusResponse,
   ProviderTaskerProfileResponse,
   ProviderProResponseMutationResponse,
   ProviderProResponsePayload,
@@ -226,6 +228,26 @@ export function getProviderProfile(authToken: string): Promise<ApiResult<Provide
     method: 'GET',
   });
 }
+
+export function startPayoutSetup(authToken: string): Promise<ApiResult<ProviderStripeOnboardingLinkResponse>> {
+  return apiRequest<ProviderStripeOnboardingLinkResponse>(endpoints.provider.stripeOnboardingLink, {
+    authToken,
+    body: {},
+    method: 'POST',
+  });
+}
+
+export const getStripeOnboardingLink = startPayoutSetup;
+
+export function refreshPayoutStatus(authToken: string): Promise<ApiResult<ProviderStripeRefreshStatusResponse>> {
+  return apiRequest<ProviderStripeRefreshStatusResponse>(endpoints.provider.stripeRefreshStatus, {
+    authToken,
+    body: {},
+    method: 'POST',
+  });
+}
+
+export const refreshStripeStatus = refreshPayoutStatus;
 
 export function getProviderTaskerProfile(authToken: string): Promise<ApiResult<ProviderTaskerProfileResponse>> {
   return apiRequest<ProviderTaskerProfileResponse>(endpoints.provider.taskerProfile, {

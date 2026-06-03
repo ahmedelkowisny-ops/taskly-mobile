@@ -1548,6 +1548,7 @@ export type ProviderProfileSummary = {
   coreCities: string[];
   coreTaskerStatus: ProviderCapabilities['coreTaskerStatus'];
   displayName: string;
+  payoutStatus?: ProviderPayoutStatus;
   portfolioProjectsCount: number;
   proCategories: ProviderProCategoryStatus[];
   proCities: string[];
@@ -1559,6 +1560,37 @@ export type ProviderProfileSummary = {
 export type ProviderProfileResponse = {
   nextActions: ProviderNextAction[];
   profile: ProviderProfileSummary;
+};
+
+export type ProviderPayoutStatus = {
+  blockedReason: string | null;
+  canOpenOnboarding: boolean;
+  canRefresh: boolean;
+  chargesEnabled: boolean;
+  hasStripeAccount: boolean;
+  isReady: boolean;
+  payoutsEnabled: boolean;
+  requirementsCurrentlyDueCount: number;
+  taskerStatus: string;
+};
+
+export type ProviderStripeOnboardingLinkResponse = {
+  onboardingUrl: string | null;
+  profile: ProviderProfileSummary;
+};
+
+export type ProviderStripeRefreshStatusResponse = {
+  onboarded: boolean;
+  profile: ProviderProfileSummary;
+  session?: UserSession;
+  stripe?: {
+    stripeAccountId: string | null;
+    stripeChargesEnabled: boolean;
+    stripePayoutsEnabled: boolean;
+    stripeRequirementsCurrentlyDueCount: number;
+  };
+  taskerVerificationStatus?: string;
+  verified: boolean;
 };
 
 export type ProviderTaskerProfile = {

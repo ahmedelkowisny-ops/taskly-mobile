@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
@@ -12,6 +12,7 @@ import type {
   CityOption,
   ProviderProPortfolioProject,
   ProviderProPortfolioImageType,
+  ProviderPayoutStatus,
   ProviderProProfile,
   ProviderProfileResponse,
   TaskerAvailability,
@@ -26,6 +27,8 @@ import {
   getProviderProfile,
   getProviderProProfile,
   getProviderTaskerProfile,
+  refreshPayoutStatus,
+  startPayoutSetup,
   updateProviderProPortfolioProject,
   updateProviderProProfile,
   updateProviderTaskerProfile,
@@ -149,6 +152,8 @@ export default function ProviderProfileScreen() {
   const [taskerNotice, setTaskerNotice] = useState<string | null>(null);
   const [taskerErrorMessage, setTaskerErrorMessage] = useState<string | null>(null);
   const [isUploadingTaskerPhoto, setIsUploadingTaskerPhoto] = useState(false);
+  const [isStartingPayoutSetup, setIsStartingPayoutSetup] = useState(false);
+  const [isRefreshingPayoutStatus, setIsRefreshingPayoutStatus] = useState(false);
   const [proProfile, setProProfile] = useState<ProviderProProfile | null>(null);
   const [proDraft, setProDraft] = useState<ProDraft>(emptyProDraft);
   const [proFieldErrors, setProFieldErrors] = useState<ProFieldErrors>({});
@@ -363,6 +368,70 @@ export default function ProviderProfileScreen() {
     setTaskerNotice(null);
     setTaskerErrorMessage(null);
     setIsEditingTasker(false);
+  }
+
+  async function handleStartPayoutSetup() {
+    setTaskerNotice(null);
+    setTaskerErrorMessage(null);
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setTaskerErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsStartingPayoutSetup(true);
+    const result = await startPayoutSetup(authToken);
+    setIsStartingPayoutSetup(false);
+
+    if (!result.ok) {
+      setTaskerErrorMessage(getPayoutActionErrorMessage(result.error));
+      return;
+    }
+
+    setData((current) => (current ? { ...current, profile: result.data.profile } : current));
+
+    if (!result.data.onboardingUrl) {
+      setTaskerErrorMessage(t('couldNotOpenStripeSetup'));
+      return;
+    }
+
+    try {
+      const canOpen = await Linking.canOpenURL(result.data.onboardingUrl);
+      if (!canOpen) {
+        setTaskerErrorMessage(t('couldNotOpenStripeSetup'));
+        return;
+      }
+
+      await Linking.openURL(result.data.onboardingUrl);
+      setTaskerNotice(t('stripeSetupOpened'));
+    } catch {
+      setTaskerErrorMessage(t('couldNotOpenStripeSetup'));
+    }
+  }
+
+  async function handleRefreshPayoutStatus() {
+    setTaskerNotice(null);
+    setTaskerErrorMessage(null);
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setTaskerErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsRefreshingPayoutStatus(true);
+    const result = await refreshPayoutStatus(authToken);
+    setIsRefreshingPayoutStatus(false);
+
+    if (!result.ok) {
+      setTaskerErrorMessage(getPayoutActionErrorMessage(result.error, t('couldNotRefreshPayoutStatus')));
+      return;
+    }
+
+    setData((current) => (current ? { ...current, profile: result.data.profile } : current));
+    await refreshSession();
+    setTaskerNotice(t('payoutStatusRefreshed'));
   }
 
   async function handleSaveTasker() {
@@ -703,7 +772,15 @@ export default function ProviderProfileScreen() {
         </AppCard>
       ) : null}
 
-      <TaskerReadinessCard items={readinessItems} stripeStatusLabel={profile?.stripeStatusLabel ?? null} />
+      <TaskerReadinessCard
+        isRefreshing={isRefreshingPayoutStatus}
+        isStarting={isStartingPayoutSetup}
+        items={readinessItems}
+        onRefresh={handleRefreshPayoutStatus}
+        onStart={handleStartPayoutSetup}
+        payoutStatus={profile?.payoutStatus ?? null}
+        stripeStatusLabel={profile?.stripeStatusLabel ?? null}
+      />
 
       <AppCard accentColor={colors.tasklyBlue600}>
         <View style={styles.sectionHeader}>
@@ -1508,8 +1585,27 @@ function ProfilePhotoCard({
   );
 }
 
-function TaskerReadinessCard({ items, stripeStatusLabel }: { items: ReadinessItem[]; stripeStatusLabel: string | null }) {
-  const payoutReady = isPayoutReadyFromLabel(stripeStatusLabel);
+function TaskerReadinessCard({
+  isRefreshing,
+  isStarting,
+  items,
+  onRefresh,
+  onStart,
+  payoutStatus,
+  stripeStatusLabel,
+}: {
+  isRefreshing: boolean;
+  isStarting: boolean;
+  items: ReadinessItem[];
+  onRefresh: () => void;
+  onStart: () => void;
+  payoutStatus: ProviderPayoutStatus | null;
+  stripeStatusLabel: string | null;
+}) {
+  const payoutReady = payoutStatus?.isReady ?? isPayoutReadyFromLabel(stripeStatusLabel);
+  const taskerProfileVerified = payoutStatus?.taskerStatus === 'VERIFIED';
+  const showOnboardingAction = payoutStatus?.canOpenOnboarding === true;
+  const setupLabel = payoutStatus?.hasStripeAccount ? t('continueStripeSetup') : t('setUpPayouts');
 
   return (
     <AppCard backgroundColor={colors.white}>
@@ -1538,14 +1634,34 @@ function TaskerReadinessCard({ items, stripeStatusLabel }: { items: ReadinessIte
         <View style={styles.payoutBox}>
           <View style={styles.payoutHeader}>
             <AppText variant="bodyStrong">{t('payoutSetup')}</AppText>
-            <StatusBadge label={payoutReady ? t('ready') : t('needsAttention')} tone={payoutReady ? 'success' : 'warning'} />
+            <StatusBadge label={payoutReady ? t('payoutsReady') : t('needsAttention')} tone={payoutReady ? 'success' : 'warning'} />
           </View>
-          <AppText color={colors.slate700}>{stripeStatusLabel}</AppText>
-          {!payoutReady ? (
-            <AppText color={colors.slate500} variant="small">
-              {t('payoutActionsUnavailableMobile')}
+          <AppText color={colors.slate700}>
+            {payoutReady ? t('yourPayoutsAreReady') : t('payoutSetupNeedsAttention')}
+          </AppText>
+          <AppText color={colors.slate500} variant="small">
+            {t('stripePayoutsExplanation')}
+          </AppText>
+          {!taskerProfileVerified && !payoutReady ? (
+            <AppText color={colors.warning600} variant="small">
+              {t('completeTaskerProfileFirst')}
             </AppText>
           ) : null}
+          <View style={styles.payoutActions}>
+            {showOnboardingAction ? (
+              <AppButton disabled={isRefreshing} loading={isStarting} onPress={onStart} style={styles.payoutActionButton}>
+                {setupLabel}
+              </AppButton>
+            ) : null}
+            <AppButton
+              disabled={isStarting || payoutStatus?.canRefresh === false}
+              loading={isRefreshing}
+              onPress={onRefresh}
+              style={styles.payoutActionButton}
+              variant="outline">
+              {t('refreshPayoutStatus')}
+            </AppButton>
+          </View>
         </View>
       ) : null}
     </AppCard>
@@ -1661,6 +1777,16 @@ function getPhotoUploadErrorMessage(error: ApiError) {
   if (error.code === 'MISSING_IMAGE' || error.code === 'INVALID_MULTIPART_BODY') return t('chooseAnotherPhoto');
   if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN') return t('pleaseLoginToContinue');
   return t('couldNotUpdatePhoto');
+}
+
+function getPayoutActionErrorMessage(error: ApiError, fallback = t('couldNotOpenStripeSetup')) {
+  if (error.code === 'TASKER_REVIEW_PENDING' || error.message === 'TASKER_REVIEW_PENDING') {
+    return t('completeTaskerProfileFirst');
+  }
+  if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN') {
+    return t('pleaseLoginToContinue');
+  }
+  return fallback;
 }
 
 function getProFieldErrorsFromApiError(error: ApiError): ProFieldErrors {
@@ -1854,6 +1980,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     justifyContent: 'space-between',
+  },
+  payoutActions: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  payoutActionButton: {
+    minHeight: 42,
   },
   photoRow: {
     alignItems: 'center',
