@@ -1,7 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
@@ -259,7 +258,7 @@ export default function ProviderMessageThreadScreen() {
     <Screen>
       <ProviderTopBar />
       <View style={styles.header}>
-        <AppButton onPress={() => router.push('/provider/messages' as Href)} tone="neutral" variant="ghost">{t('backToTaskly')}</AppButton>
+        <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">{t('back')}</AppButton>
       </View>
 
       {isLoading ? <StateCard label={t('loading')} message={t('conversation')} /> : null}

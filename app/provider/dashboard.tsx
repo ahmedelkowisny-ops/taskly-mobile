@@ -275,7 +275,7 @@ export default function ProviderDashboardScreen() {
           requests={proRequestsData?.proRequests ?? []}
           responsesCount={summary?.submittedProResponsesCount ?? 0}
           unreadMessagesCount={proMessageThreads.reduce((total, thread) => total + (thread.unreadCount ?? 0), 0)}
-          onOpenMessages={() => router.push('/provider/messages' as Href)}
+          onOpenMessages={() => router.push('/provider/messages?context=pro' as Href)}
           onOpenProfile={() => router.push('/provider/profile' as Href)}
           onOpenRequests={() => router.push('/provider/pro-requests' as Href)}
           onOpenSupport={() => router.push('/provider/messages?context=support' as Href)}
