@@ -33,6 +33,7 @@ import { AppText } from '../ui';
 
 type NotificationBellProps = {
   compact?: boolean;
+  route?: Href;
 };
 
 function formatNotificationTime(value: string, locale: 'bg' | 'en') {
@@ -76,7 +77,7 @@ function getAlternateMessageTarget(notification: MobileNotificationItem, current
   } satisfies DeepLinkTarget;
 }
 
-export function NotificationBell({ compact = false }: NotificationBellProps) {
+export function NotificationBell({ compact = false, route }: NotificationBellProps) {
   const { locale } = useI18n();
   const { getValidAccessToken, session, status } = useAuth();
   const router = useRouter();
@@ -126,9 +127,14 @@ export function NotificationBell({ compact = false }: NotificationBellProps) {
   );
 
   const openModal = useCallback(() => {
+    if (route) {
+      router.push(route);
+      return;
+    }
+
     setModalVisible(true);
     void loadNotifications();
-  }, [loadNotifications]);
+  }, [loadNotifications, route, router]);
 
   const closeModal = useCallback(() => {
     setModalVisible(false);

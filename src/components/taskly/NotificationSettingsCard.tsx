@@ -56,6 +56,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const hideProPreferences = workspace === 'provider' && status !== 'demo' && isTaskerOnlyProvider(session);
+  const settingsIntroKey = hideProPreferences ? 'taskerNotificationSettingsIntro' : 'notificationSettingsIntro';
   const visiblePreferenceRows = preferenceRows.filter((row) => {
     if (!hideProPreferences) return true;
     return row.keyName !== 'proAlertsEnabled' && row.keyName !== 'siteVisitAlertsEnabled';
@@ -96,7 +97,11 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       setNotice(null);
 
       if (isDemoMode) {
-        setPreferences((current) => ({ ...current, ...patch }));
+        setPreferences((current) => ({
+          ...current,
+          ...patch,
+          ...(hideProPreferences ? { proAlertsEnabled: false, siteVisitAlertsEnabled: false } : null),
+        }));
         setNotice(t('demoNotificationsNotRegistered'));
         return true;
       }
@@ -113,6 +118,11 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
             Object.entries(patch).filter(([key]) => key !== 'proAlertsEnabled' && key !== 'siteVisitAlertsEnabled'),
           )
         : patch;
+      if (Object.keys(safePatch).length === 0) {
+        setIsSaving(false);
+        setNotice(t('notificationsSaved'));
+        return true;
+      }
       const result = await updateNotificationPreferences(safePatch, authToken);
       setIsSaving(false);
 
@@ -122,7 +132,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       }
 
       setPreferences(result.data.preferences);
-      setNotice(t('alertsSaved'));
+      setNotice(t('notificationsSaved'));
       return true;
     },
     [getValidAccessToken, hideProPreferences, isDemoMode],
@@ -180,7 +190,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
 
     await savePreferences({ pushEnabled: true });
     setIsSaving(false);
-    setNotice(t('alertsSaved'));
+    setNotice(t('notificationsSaved'));
   }, [getValidAccessToken, hideProPreferences, isDemoMode, preferences, savePreferences, workspace]);
 
   const disableNotifications = useCallback(async () => {
@@ -218,7 +228,7 @@ export function NotificationSettingsCard({ workspace }: NotificationSettingsCard
       </View>
       <AppText variant="sectionTitle">{t('enableNotifications')}</AppText>
       <AppText color={colors.slate700}>
-        {t('notificationSettingsIntro')}
+        {t(settingsIntroKey)}
       </AppText>
       <AppText color={colors.slate500} variant="caption">
         {t('changeNotificationsLater')}
