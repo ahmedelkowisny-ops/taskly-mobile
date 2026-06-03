@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -162,6 +161,12 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
           route: '/provider/messages' as Href,
         },
         {
+          icon: 'notifications-outline',
+          isActive: (current) => current === '/provider/notifications',
+          label: t('notifications'),
+          route: '/provider/notifications' as Href,
+        },
+        {
           icon: 'mail-outline',
           isActive: (_current, isSupport) => isSupport,
           label: t('drawerSupportMessages'),
@@ -184,16 +189,10 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
       label: t('drawerSettings'),
       items: [
         {
-          icon: 'notifications-outline',
-          isActive: (current) => current === '/provider/account',
-          label: t('notifications'),
-          route: '/provider/account' as Href,
-        },
-        {
-          action: () => Linking.openSettings(),
           icon: 'settings-outline',
-          isActive: () => false,
-          label: t('drawerAppSettings'),
+          isActive: (current) => current === '/provider/account',
+          label: t('drawerSettings'),
+          route: '/provider/account' as Href,
         },
       ],
     },

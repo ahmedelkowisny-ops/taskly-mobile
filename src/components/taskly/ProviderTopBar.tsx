@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import type { Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -29,7 +30,7 @@ export function ProviderTopBar() {
           <TasklyLogoText navIcon />
         </View>
         <View style={styles.topBarActions}>
-          <NotificationBell compact />
+          <NotificationBell compact route={'/provider/notifications' as Href} />
           <LanguageToggle />
         </View>
       </View>

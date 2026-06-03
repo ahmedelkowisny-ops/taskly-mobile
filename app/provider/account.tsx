@@ -9,14 +9,14 @@ import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
-export default function ProviderNotificationsScreen() {
+export default function ProviderSettingsScreen() {
   return (
     <Screen>
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
-        <AppText variant="screenTitle">{t('notifications')}</AppText>
-        <AppText color={colors.slate700}>{t('notificationsScreenSubtitle')}</AppText>
+        <AppText variant="screenTitle">{t('drawerSettings')}</AppText>
+        <AppText color={colors.slate700}>{t('providerSettingsSubtitle')}</AppText>
       </View>
 
       <NotificationSettingsCard workspace="provider" />
