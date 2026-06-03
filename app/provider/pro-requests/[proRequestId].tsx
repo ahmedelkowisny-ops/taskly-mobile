@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { FormField, ModeBadge } from '@/src/components/taskly';
@@ -151,8 +151,9 @@ const emptySiteVisitFormValues: ProviderSiteVisitFormValues = {
 
 export default function ProviderProRequestDetailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ proRequestId?: string }>();
+  const params = useLocalSearchParams<{ proRequestId?: string; respond?: string }>();
   const proRequestId = String(params.proRequestId || 'demo-provider-pro');
+  const openRespondFromRoute = String(params.respond || '') === '1';
   const { getValidAccessToken, session, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProRequestDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -224,6 +225,10 @@ export default function ProviderProRequestDetailScreen() {
   );
 
   const request = data?.proRequest;
+  const canOpenRouteResponseForm = Boolean(
+    request?.proResponseCapabilities?.canOpenProResponseForm &&
+      (request.proResponseCapabilities.canSubmitResponse || request.proResponseCapabilities.canEditResponse),
+  );
 
   const openResponseForm = useCallback(() => {
     if (!request) return;
@@ -389,6 +394,11 @@ export default function ProviderProRequestDetailScreen() {
     router.push(`/provider/messages/${encodeURIComponent(threadId)}` as Href);
   }, [request?.messageThreadId, request?.proChat, router]);
 
+  useEffect(() => {
+    if (!openRespondFromRoute || !request || isFormOpen || !canOpenRouteResponseForm) return;
+    openResponseForm();
+  }, [canOpenRouteResponseForm, isFormOpen, openRespondFromRoute, openResponseForm, request]);
+
   const canUsePro = status === 'demo' || hasApprovedProMode(session);
 
   if (!canUsePro && status !== 'loading') {
@@ -439,15 +449,48 @@ export default function ProviderProRequestDetailScreen() {
               {request.photoCountLabel ? <StatusBadge label={request.photoCountLabel} tone="neutral" /> : null}
             </View>
             <AppText variant="screenTitle">{request.title}</AppText>
-            <AppText color={colors.slate700}>{request.description}</AppText>
             <AppText color={colors.slate700}>{request.categoryLabel} - {request.cityLabel}</AppText>
+            <View style={styles.heroActions}>
+              {canOpenRouteResponseForm ? (
+                <AppButton onPress={openResponseForm} style={styles.heroAction} tone="pro">
+                  {request.proResponseCapabilities?.canEditResponse ? t('editResponse') : t('respondToRequest')}
+                </AppButton>
+              ) : null}
+              {request.proChat?.capabilities.canRead ? (
+                <AppButton onPress={openProChat} style={styles.heroAction} tone="pro" variant="outline">
+                  {t('openProMessages')}
+                </AppButton>
+              ) : null}
+            </View>
           </AppCard>
 
-          <AppCard>
-            <StatusBadge label={request.eligibility.reasonLabel} tone={request.eligibility.isEligibleToRespond ? 'success' : 'warning'} />
-            <Info label={t('budget')} value={request.budgetLabel} />
-            <Info label={t('timeline')} value={request.timelineLabel} />
-            <Info label={t('created')} value={new Date(request.createdAt).toLocaleDateString()} />
+          <AppCard backgroundColor={colors.white}>
+            <View style={styles.sectionHeading}>
+              <AppText variant="sectionTitle">{t('requestOverview')}</AppText>
+              <StatusBadge label={request.eligibility.reasonLabel} tone={request.eligibility.isEligibleToRespond ? 'success' : 'warning'} />
+            </View>
+            <View style={styles.infoGrid}>
+              <Info label={t('category')} value={request.categoryLabel} />
+              <Info label={t('city')} value={request.cityLabel} />
+              <Info label={t('budget')} value={request.budgetLabel} />
+              <Info label={t('timeline')} value={request.timelineLabel} />
+              <Info label={t('created')} value={formatDateLabel(request.createdAt)} />
+              <Info label={t('photos')} value={request.photoCountLabel || t('noPhotosAttached')} />
+            </View>
+          </AppCard>
+
+          <AppCard backgroundColor={colors.white}>
+            <AppText variant="sectionTitle">{t('projectDetails')}</AppText>
+            <AppText color={colors.slate700} style={styles.descriptionText}>
+              {request.description}
+            </AppText>
+          </AppCard>
+
+          <AppCard backgroundColor={colors.white}>
+            <View style={styles.sectionHeading}>
+              <AppText variant="sectionTitle">{t('customerPrivacyContactState')}</AppText>
+              {request.protectedDetailsLabel ? <StatusBadge label={localizeProviderProLabel(request.protectedDetailsLabel)} tone="neutral" /> : null}
+            </View>
             {request.customerUnlockStatusLabel ? (
               <Info label={t('customerAccess')} value={localizeProviderProLabel(request.customerUnlockStatusLabel)} />
             ) : null}
@@ -460,13 +503,6 @@ export default function ProviderProRequestDetailScreen() {
             {request.chatAvailabilityLabel ? (
               <Info label={t('proChat')} value={localizeProviderProLabel(request.chatAvailabilityLabel)} />
             ) : null}
-          </AppCard>
-
-          <AppCard>
-            <View style={styles.badgeRow}>
-              <StatusBadge label={t('protectedDetails')} tone="pro" />
-              {request.protectedDetailsLabel ? <StatusBadge label={localizeProviderProLabel(request.protectedDetailsLabel)} tone="neutral" /> : null}
-            </View>
             {request.addressVisibilityState ? (
               <>
                 <Info label={t('address')} value={request.addressVisibilityState.stateLabel} />
@@ -487,6 +523,7 @@ export default function ProviderProRequestDetailScreen() {
                 <AppText color={colors.slate700}>{request.contactVisibilityState.helperText}</AppText>
               </>
             ) : null}
+            <AppText color={colors.slate500} variant="small">{t('contactDetailsSharedWhenAllowed')}</AppText>
           </AppCard>
 
           {responseNotice ? (
@@ -510,10 +547,17 @@ export default function ProviderProRequestDetailScreen() {
             />
           ) : null}
 
-          <Images images={request.images} />
+          <Images imageCount={request.imageCount ?? request.images.length} images={request.images} />
 
           <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-            <AppText variant="sectionTitle">{t('yourResponse')}</AppText>
+            <View style={styles.sectionHeading}>
+              <AppText variant="sectionTitle">{t('yourResponse')}</AppText>
+              {request.myResponse ? (
+                <StatusBadge label={t('responseSent')} tone="success" />
+              ) : (
+                <StatusBadge label={t('waitingForYourResponse')} tone="warning" />
+              )}
+            </View>
             {request.myResponse ? (
               <>
                 <View style={styles.badgeRow}>
@@ -534,6 +578,11 @@ export default function ProviderProRequestDetailScreen() {
                 {request.myResponse.visibilityLabel ? (
                   <AppText color={colors.slate700}>{request.myResponse.visibilityLabel}</AppText>
                 ) : null}
+                {canOpenRouteResponseForm ? (
+                  <AppButton onPress={openResponseForm} tone="pro" variant="outline">
+                    {t('editResponse')}
+                  </AppButton>
+                ) : null}
                 {request.proChat?.capabilities.canRead && (request.proChat.messageThreadId || request.messageThreadId) ? (
                   <AppButton onPress={openProChat} tone="pro" variant="outline">
                     {t('openProChat')}
@@ -541,7 +590,14 @@ export default function ProviderProRequestDetailScreen() {
                 ) : null}
               </>
             ) : (
-              <AppText color={colors.slate700}>{t('noProResponseSubmitted')}</AppText>
+              <>
+                <AppText color={colors.slate700}>{t('noProResponseSubmitted')}</AppText>
+                {canOpenRouteResponseForm ? (
+                  <AppButton onPress={openResponseForm} tone="pro">
+                    {t('respondToRequest')}
+                  </AppButton>
+                ) : null}
+              </>
             )}
           </AppCard>
 
@@ -1016,6 +1072,13 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatDateLabel(value: string | null | undefined) {
+  if (!value) return t('notSpecified');
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return t('notSpecified');
+  return parsed.toLocaleDateString();
+}
+
 function getInitialResponseFormValues(request: NonNullable<ProviderProRequestDetailResponse['proRequest']>): ResponseFormValues {
   const defaults = request.responseEditDefaults;
   return {
@@ -1168,11 +1231,25 @@ function getProviderSiteVisitErrorMessages(details: unknown, fallbackMessage: st
   return { form: fallbackMessage || t('couldNotUpdateSiteVisit') };
 }
 
-function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
-  if (!images.length) return null;
+function Images({ imageCount, images }: { imageCount: number; images: { alt: string; id: string; url: string }[] }) {
+  if (!images.length) {
+    return (
+      <AppCard backgroundColor={colors.white}>
+        <View style={styles.sectionHeading}>
+          <AppText variant="sectionTitle">{t('photos')}</AppText>
+          <StatusBadge label={t('noPhotosAttached')} tone="neutral" />
+        </View>
+        <AppText color={colors.slate700}>{t('noPhotosAttached')}</AppText>
+      </AppCard>
+    );
+  }
+
   return (
-    <AppCard>
-      <AppText variant="sectionTitle">{t('images')}</AppText>
+    <AppCard backgroundColor={colors.white}>
+      <View style={styles.sectionHeading}>
+        <AppText variant="sectionTitle">{t('photos')}</AppText>
+        <StatusBadge label={t('photosAttachedCount').replace('{count}', String(imageCount || images.length))} tone="pro" />
+      </View>
       <View style={styles.imageGrid}>
         {images.map((image) => <Image key={image.id} accessibilityLabel={image.alt} source={{ uri: image.url }} style={styles.image} />)}
       </View>
@@ -1193,10 +1270,15 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
 
 const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  descriptionText: { lineHeight: 22 },
   header: { gap: spacing.sm },
+  heroAction: { flex: 1 },
+  heroActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: { gap: spacing.xs },
+  sectionHeading: { alignItems: 'flex-start', flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between' },
   optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   optionPill: {
     backgroundColor: colors.white,

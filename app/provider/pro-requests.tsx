@@ -2,9 +2,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { AssistantGuideCard, EmptyStateCard, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
+import { AssistantGuideCard, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderProRequestsResponse } from '@/src/lib/api/domain';
 import { getMockProviderProRequestsResponse } from '@/src/lib/api/mockApi';
@@ -109,7 +109,7 @@ export default function ProviderProRequestsScreen() {
 
       <View style={{ gap: spacing.sm }}>
         <ModeBadge mode="providerPro" />
-        <AppText variant="screenTitle">{t('proRequests')}</AppText>
+        <AppText variant="screenTitle">{t('matchingProRequests')}</AppText>
         <AppText color={colors.slate700}>
           {t('providerProRequestsIntro')}
         </AppText>
@@ -144,69 +144,97 @@ export default function ProviderProRequestsScreen() {
       ) : null}
 
       {data?.proRequests.length ? (
-        <View style={{ gap: spacing.md }}>
+        <View style={styles.list}>
           {data.proRequests.map((request) => (
-            <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-                <StatusBadge label={t('tasklyProRequest')} tone="pro" />
-                <StatusBadge label={request.statusLabel} tone="pro" />
-                <StatusBadge
-                  label={request.proResponseState?.badgeLabel || request.responseStatusLabel}
-                  tone={getProResponseBadgeTone(request.proResponseState?.status)}
-                />
-                {request.photoCountLabel ? <StatusBadge label={request.photoCountLabel} tone="neutral" /> : null}
+            <AppCard key={request.id} accentColor={colors.proOrange600} backgroundColor={colors.white}>
+              <View style={styles.cardHeader}>
+                <View style={styles.badgeRow}>
+                  <StatusBadge label={t('tasklyProRequest')} tone="pro" />
+                  <StatusBadge label={request.statusLabel} tone="pro" />
+                  <StatusBadge label={getResponseStatusLabel(request)} tone={getProResponseBadgeTone(request.proResponseState?.status)} />
+                </View>
+                <StatusBadge label={formatDateLabel(request.createdAt)} tone="neutral" />
               </View>
-              <AppText variant="sectionTitle">{request.title}</AppText>
-              <AppText color={colors.slate700}>
-                {request.categoryLabel} - {request.cityLabel}
-              </AppText>
-              <AppText color={colors.slate700}>
-                {t('timeline')}: {request.timelineLabel}
-              </AppText>
-              {request.budgetLabel ? (
-                <AppText color={colors.slate700}>
-                  {t('budget')}: {request.budgetLabel}
-                </AppText>
-              ) : null}
-              {request.customerUnlockStatusLabel ? (
-                <AppText color={colors.slate700}>{localizeProviderProLabel(request.customerUnlockStatusLabel)}</AppText>
-              ) : null}
-              {request.siteVisitStatusLabel ? (
-                <AppText color={colors.slate700}>
-                  {t('siteVisit')}: {localizeProviderProLabel(request.siteVisitStatusLabel)}
-                </AppText>
-              ) : null}
-              {request.proResponseSummary?.roughQuoteLabel ? (
-                <AppText color={colors.slate700}>
-                  {t('yourResponse')}: {request.proResponseSummary.roughQuoteLabel}
-                </AppText>
-              ) : null}
-              {request.proResponseBlockedReason ? (
-                <AppText color={colors.warning600}>
-                  {t('blockedReason')}: {request.proResponseBlockedReason}
-                </AppText>
-              ) : null}
-              {request.proResponseState?.helperText ? (
-                <AppText color={colors.slate700}>{request.proResponseState.helperText}</AppText>
-              ) : null}
-              {request.chatAvailabilityLabel && request.proChat?.capabilities.canRead ? (
-                <AppText color={colors.proOrangeText}>{localizeProviderProLabel(request.chatAvailabilityLabel)}</AppText>
-              ) : null}
-              <AppButton
-                onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
-                tone="pro"
-                variant="outline">
-                {t('viewDetails')}
-              </AppButton>
+
+              <View style={styles.titleBlock}>
+                <AppText variant="sectionTitle">{request.title}</AppText>
+                <AppText color={colors.slate700}>{request.categoryLabel} - {request.cityLabel}</AppText>
+              </View>
+
+              <View style={styles.metaGrid}>
+                <MetaPill label={t('timeline')} value={request.timelineLabel} />
+                {request.budgetLabel ? <MetaPill label={t('budget')} value={request.budgetLabel} /> : null}
+                <MetaPill label={t('photos')} value={request.photoCountLabel || t('noPhotosAttached')} />
+                <MetaPill
+                  label={t('siteVisit')}
+                  value={request.siteVisitStatusLabel ? localizeProviderProLabel(request.siteVisitStatusLabel) : t('siteVisitUnavailable')}
+                />
+              </View>
+
+              <View style={styles.statusPanel}>
+                <View style={styles.badgeRow}>
+                  {request.proResponseSummary ? (
+                    <StatusBadge label={t('responseSent')} tone="success" />
+                  ) : (
+                    <StatusBadge label={t('waitingForYourResponse')} tone="warning" />
+                  )}
+                  {request.customerUnlockStatusLabel ? (
+                    <StatusBadge label={localizeProviderProLabel(request.customerUnlockStatusLabel)} tone="neutral" />
+                  ) : null}
+                  {request.chatAvailabilityLabel && request.proChat?.capabilities.canRead ? (
+                    <StatusBadge label={localizeProviderProLabel(request.chatAvailabilityLabel)} tone="pro" />
+                  ) : null}
+                </View>
+                {request.proResponseSummary?.shortMessagePreview ? (
+                  <AppText color={colors.slate700}>{request.proResponseSummary.shortMessagePreview}</AppText>
+                ) : request.proResponseState?.helperText ? (
+                  <AppText color={colors.slate700}>{request.proResponseState.helperText}</AppText>
+                ) : null}
+                {request.proResponseSummary?.roughQuoteLabel ? (
+                  <AppText color={colors.proOrangeText} variant="bodyStrong">
+                    {t('yourResponse')}: {request.proResponseSummary.roughQuoteLabel}
+                  </AppText>
+                ) : null}
+                {request.proResponseSummary?.updatedAt ? (
+                  <AppText color={colors.slate500} variant="small">
+                    {t('responseUpdatedOn')}: {formatDateLabel(request.proResponseSummary.updatedAt)}
+                  </AppText>
+                ) : request.proResponseSummary?.submittedAt ? (
+                  <AppText color={colors.slate500} variant="small">
+                    {t('responseSubmittedOn')}: {formatDateLabel(request.proResponseSummary.submittedAt)}
+                  </AppText>
+                ) : null}
+                {request.proResponseBlockedReason ? (
+                  <AppText color={colors.warning600}>{request.proResponseBlockedReason}</AppText>
+                ) : null}
+              </View>
+
+              <View style={styles.cardActions}>
+                {canOpenResponseCta(request) ? (
+                  <AppButton
+                    onPress={() => router.push(`/provider/pro-requests/${request.id}?respond=1` as Href)}
+                    style={styles.actionButton}
+                    tone="pro">
+                    {request.proResponseCapabilities?.canEditResponse ? t('editResponse') : t('respond')}
+                  </AppButton>
+                ) : null}
+                <AppButton
+                  onPress={() => router.push(`/provider/pro-requests/${request.id}` as Href)}
+                  style={styles.actionButton}
+                  tone="pro"
+                  variant={canOpenResponseCta(request) ? 'outline' : 'filled'}>
+                  {t('viewDetails')}
+                </AppButton>
+              </View>
             </AppCard>
           ))}
         </View>
       ) : data && !isLoading ? (
-        <EmptyStateCard
-          accent="pro"
-          body={data.emptyState.description}
-          title={data.emptyState.title}
-        />
+        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+          <ModeBadge mode="providerPro" />
+          <AppText variant="sectionTitle">{t('noMatchingProRequestsTitle')}</AppText>
+          <AppText color={colors.slate700}>{data.emptyState.description || t('noMatchingProRequestsBody')}</AppText>
+        </AppCard>
       ) : null}
 
       <AppCard accentColor={colors.proAmber500}>
@@ -222,6 +250,35 @@ export default function ProviderProRequestsScreen() {
         tone="pro"
       />
     </Screen>
+  );
+}
+
+type ProRequestCardModel = ProviderProRequestsResponse['proRequests'][number];
+
+function canOpenResponseCta(request: ProRequestCardModel) {
+  const capabilities = request.proResponseCapabilities || request.proResponseState?.capabilities;
+  return Boolean(capabilities?.canOpenProResponseForm && (capabilities.canSubmitResponse || capabilities.canEditResponse));
+}
+
+function getResponseStatusLabel(request: ProRequestCardModel) {
+  if (request.proResponseSummary) return t('responseSent');
+  if (canOpenResponseCta(request)) return t('waitingForYourResponse');
+  return request.proResponseState?.statusLabel || request.responseStatusLabel;
+}
+
+function formatDateLabel(value: string | null | undefined) {
+  if (!value) return t('notSpecified');
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return t('notSpecified');
+  return parsed.toLocaleDateString();
+}
+
+function MetaPill({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metaPill}>
+      <AppText color={colors.slate500} variant="small">{label}</AppText>
+      <AppText color={colors.navy900} style={styles.metaValue} variant="bodyStrong">{value}</AppText>
+    </View>
   );
 }
 
@@ -261,3 +318,58 @@ function localizeProviderProLabel(label: string) {
       return label;
   }
 }
+
+const styles = StyleSheet.create({
+  actionButton: {
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  cardHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  list: {
+    gap: spacing.md,
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  metaPill: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: 8,
+    borderWidth: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
+    gap: spacing.xs,
+    minHeight: 74,
+    padding: spacing.sm,
+  },
+  metaValue: {
+    flexShrink: 1,
+  },
+  statusPanel: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  titleBlock: {
+    gap: spacing.xs,
+  },
+});
