@@ -21,6 +21,7 @@ import {
   submitOrUpdateProviderProResponse,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t, type TranslationKey } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
@@ -152,7 +153,7 @@ export default function ProviderProRequestDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ proRequestId?: string }>();
   const proRequestId = String(params.proRequestId || 'demo-provider-pro');
-  const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const { getValidAccessToken, session, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProRequestDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -185,6 +186,13 @@ export default function ProviderProRequestDetailScreen() {
       return;
     }
 
+    if (!hasApprovedProMode(session)) {
+      setData(null);
+      setStateLabel(t('tasklyPro'));
+      setMessage(t('proAccessNeedsApprovalBody'));
+      return;
+    }
+
     setIsLoading(true);
     const authToken = await getValidAccessToken();
 
@@ -207,7 +215,7 @@ export default function ProviderProRequestDetailScreen() {
     setData(null);
     setStateLabel(result.status === 404 ? t('notFound') : result.status === 401 || result.status === 403 ? t('loginRequired') : t('backendUnavailable'));
     setMessage(result.status === 404 ? t('providerProRequestNotFound') : t('couldNotLoadProviderProRequest'));
-  }, [getValidAccessToken, proRequestId, status]);
+  }, [getValidAccessToken, proRequestId, session, status]);
 
   useFocusEffect(
     useCallback(() => {
@@ -380,6 +388,27 @@ export default function ProviderProRequestDetailScreen() {
     if (!threadId || !request?.proChat?.capabilities.canRead) return;
     router.push(`/provider/messages/${encodeURIComponent(threadId)}` as Href);
   }, [request?.messageThreadId, request?.proChat, router]);
+
+  const canUsePro = status === 'demo' || hasApprovedProMode(session);
+
+  if (!canUsePro && status !== 'loading') {
+    return (
+      <Screen>
+        <View style={styles.header}>
+          <ModeBadge mode="providerPro" />
+          <AppButton onPress={() => router.push('/provider/start' as Href)} variant="ghost">{t('back')}</AppButton>
+        </View>
+        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+          <StatusBadge label={t('tasklyPro')} tone="pro" />
+          <AppText variant="sectionTitle">{t('proAccessNeedsApprovalTitle')}</AppText>
+          <AppText color={colors.slate700}>{t('proAccessNeedsApprovalBody')}</AppText>
+          <AppButton onPress={() => router.push('/provider/pro-upsell' as Href)} tone="pro">
+            {t('applyForTasklyPro')}
+          </AppButton>
+        </AppCard>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>

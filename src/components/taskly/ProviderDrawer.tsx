@@ -63,6 +63,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
   const showApprovedPro = status === 'demo' || hasApprovedProMode(session);
   const showProUpsell = showCoreTasker && !showApprovedPro;
+  const isProOnly = showApprovedPro && !showCoreTasker;
   const proRoute: Href = (showApprovedPro
     ? '/provider/pro-requests'
     : '/provider/pro-upsell') as Href;
@@ -94,59 +95,83 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
         },
       ],
     },
-    {
-      label: t('drawerGroupMyWork'),
-      items: [
-        {
-          icon: 'briefcase-outline',
-          isActive: (current) => current === '/provider/active-tasks',
-          label: t('drawerActiveTasks'),
-          route: '/provider/active-tasks' as Href,
-        },
-        ...(showCoreTasker
-          ? [
+    ...(showCoreTasker
+      ? [
+          {
+            label: t('drawerGroupMyWork'),
+            items: [
+              {
+                icon: 'briefcase-outline' as keyof typeof Ionicons.glyphMap,
+                isActive: (current: string) => current === '/provider/active-tasks',
+                label: t('drawerActiveTasks'),
+                route: '/provider/active-tasks' as Href,
+              },
               {
                 icon: 'search-outline' as keyof typeof Ionicons.glyphMap,
                 isActive: (current: string) => current.startsWith('/provider/core-tasks'),
                 label: t('drawerCheckTasks'),
                 route: '/provider/core-tasks' as Href,
               },
-            ]
-          : []),
-        {
-          icon: 'hand-right-outline',
-          isActive: (current) => current === '/provider/interests',
-          label: t('drawerInterestsSent'),
-          route: '/provider/interests' as Href,
-        },
-        {
-          icon: 'time-outline',
-          isActive: (current) => current === '/provider/task-history',
-          label: t('drawerTaskHistory'),
-          route: '/provider/task-history' as Href,
-        },
-        {
-          icon: 'wallet-outline',
-          isActive: (current) => current === '/provider/payouts',
-          label: t('drawerPayouts'),
-          route: '/provider/payouts' as Href,
-        },
-      ],
-    },
+              {
+                icon: 'hand-right-outline' as keyof typeof Ionicons.glyphMap,
+                isActive: (current: string) => current === '/provider/interests',
+                label: t('drawerInterestsSent'),
+                route: '/provider/interests' as Href,
+              },
+              {
+                icon: 'time-outline' as keyof typeof Ionicons.glyphMap,
+                isActive: (current: string) => current === '/provider/task-history',
+                label: t('drawerTaskHistory'),
+                route: '/provider/task-history' as Href,
+              },
+              {
+                icon: 'wallet-outline' as keyof typeof Ionicons.glyphMap,
+                isActive: (current: string) => current === '/provider/payouts',
+                label: t('drawerPayouts'),
+                route: '/provider/payouts' as Href,
+              },
+            ],
+          },
+        ]
+      : []),
     ...(showApprovedPro || showProUpsell
       ? [
           {
             label: t('drawerGroupTasklyPro'),
             items: [
-              {
-                icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
-                isActive: (current: string) =>
-                  current === '/provider/pro-requests' ||
-                  current === '/provider/pro-upsell',
-                label: showApprovedPro ? t('tasklyPro') : t('applyForTasklyPro'),
-                route: proRoute,
-                tone: 'pro' as const,
-              },
+              ...(showApprovedPro
+                ? [
+                    {
+                      icon: 'grid-outline' as keyof typeof Ionicons.glyphMap,
+                      isActive: (current: string) => current === '/provider/dashboard' || current === '/provider',
+                      label: t('proDashboardTitle'),
+                      route: '/provider/dashboard' as Href,
+                      tone: 'pro' as const,
+                    },
+                    {
+                      icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
+                      isActive: (current: string) => current.startsWith('/provider/pro-requests'),
+                      label: t('drawerTasklyProRequests'),
+                      route: '/provider/pro-requests' as Href,
+                      tone: 'pro' as const,
+                    },
+                    {
+                      icon: 'images-outline' as keyof typeof Ionicons.glyphMap,
+                      isActive: (current: string) => current === '/provider/profile',
+                      label: t('proProfilePortfolio'),
+                      route: '/provider/profile' as Href,
+                      tone: 'pro' as const,
+                    },
+                  ]
+                : [
+                    {
+                      icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
+                      isActive: (current: string) => current === '/provider/pro-upsell',
+                      label: t('applyForTasklyPro'),
+                      route: proRoute,
+                      tone: 'pro' as const,
+                    },
+                  ]),
             ],
           },
         ]
@@ -232,7 +257,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
               <View style={styles.headerIdentity}>
                 <TasklyLogoText compact iconOnly />
                 <AppText color={colors.sidebarMuted} style={styles.areaLabel} variant="small">
-                  {t('drawerTaskerArea')}
+                  {isProOnly ? t('drawerProArea') : t('drawerTaskerArea')}
                 </AppText>
               </View>
               <Pressable accessibilityLabel={t('close')} accessibilityRole="button" onPress={onClose} style={styles.closeButton}>

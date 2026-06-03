@@ -10,13 +10,14 @@ import { ProviderProRequestsResponse } from '@/src/lib/api/domain';
 import { getMockProviderProRequestsResponse } from '@/src/lib/api/mockApi';
 import { getProviderProRequests } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderProRequestsScreen() {
   const router = useRouter();
-  const { getValidAccessToken, status, useDemoSession } = useAuth();
+  const { getValidAccessToken, session, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProRequestsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -35,6 +36,12 @@ export default function ProviderProRequestsScreen() {
     if (status !== 'authenticated') {
       setData(null);
       setIsUnauthorized(status === 'unauthenticated');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!hasApprovedProMode(session)) {
+      setData(null);
       setIsLoading(false);
       return;
     }
@@ -65,13 +72,36 @@ export default function ProviderProRequestsScreen() {
         : t('couldNotLoadProRequestPreviews'),
     );
     setIsLoading(false);
-  }, [getValidAccessToken, status]);
+  }, [getValidAccessToken, session, status]);
 
   useFocusEffect(
     useCallback(() => {
       void loadProRequests();
     }, [loadProRequests]),
   );
+
+  const canUsePro = status === 'demo' || hasApprovedProMode(session);
+
+  if (!canUsePro && status !== 'loading') {
+    return (
+      <Screen>
+        <ProviderTopBar />
+        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+          <StatusBadge label={t('tasklyPro')} tone="pro" />
+          <AppText variant="sectionTitle">{t('proAccessNeedsApprovalTitle')}</AppText>
+          <AppText color={colors.slate700}>{t('proAccessNeedsApprovalBody')}</AppText>
+          <View style={{ gap: spacing.sm }}>
+            <AppButton onPress={() => router.push('/provider/pro-upsell' as Href)} tone="pro">
+              {t('applyForTasklyPro')}
+            </AppButton>
+            <AppButton onPress={() => router.push('/provider/start' as Href)} tone="neutral" variant="outline">
+              {t('reviewProviderSetup')}
+            </AppButton>
+          </View>
+        </AppCard>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
