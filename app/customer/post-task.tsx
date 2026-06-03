@@ -45,6 +45,7 @@ import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelecte
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
 
 type CatalogState = {
   categories: CatalogCategory[];
@@ -488,7 +489,7 @@ export default function CustomerPostTaskScreen() {
       label: t('postTaskStepPhotos'),
       support: t('postTaskPhotosSupport'),
       title: t('postTaskPhotosTitle'),
-      body: t('postTaskPhotosBody'),
+      body: '',
     },
     {
       id: 5,
@@ -535,7 +536,7 @@ export default function CustomerPostTaskScreen() {
     if (!scheduleDate) return '';
 
     const formattedDate = selectedScheduleDate.toLocaleDateString(locale === 'bg' ? 'bg-BG' : 'en-GB', {
-      day: '2-digit',
+      day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
@@ -1481,16 +1482,16 @@ export default function CustomerPostTaskScreen() {
                 ]}>
                 <View style={[styles.iconTile, selected ? styles.iconTileSelected : null]}>
                   <Ionicons
-                    color={selected ? colors.white : colors.slate700}
+                    color={selected ? colors.white : colors.tasklyBlue600}
                     name={getCategoryIcon(category)}
-                    size={17}
+                    size={22}
                   />
                 </View>
                 <View style={styles.cardCopy}>
                   <AppText style={styles.cardTitle}>
                     {getLocalizedCategoryName(category, locale)}
                   </AppText>
-                  <AppText color={colors.slate700} style={styles.cardBody}>
+                  <AppText color={colors.slate700} numberOfLines={2} style={styles.cardBody}>
                     {getLocalizedCategoryDescription(category, locale)}
                   </AppText>
                 </View>
@@ -1515,7 +1516,7 @@ export default function CustomerPostTaskScreen() {
               <>
                 <View style={styles.budgetHeroRow}>
                   <View style={styles.budgetHeroCopy}>
-                    <AppText color={colors.slate700} style={styles.budgetEyebrow} variant="small">
+                    <AppText color={colors.slate500} variant="small">
                       {t('budget')}
                     </AppText>
                     <AppText style={styles.budgetValue}>
@@ -1586,6 +1587,7 @@ export default function CustomerPostTaskScreen() {
           />
           <Field
             errorText={getFieldError('description')}
+            helperRight
             helperText={descriptionHelper}
             label={t('description')}
             maxLength={catalog?.rules.maxDescriptionLength}
@@ -2247,7 +2249,7 @@ export default function CustomerPostTaskScreen() {
                   style={styles.scheduleDateValue}>
                   {scheduleDate
                     ? selectedScheduleDate.toLocaleDateString(locale === 'bg' ? 'bg-BG' : 'en-GB', {
-                        day: '2-digit',
+                        day: 'numeric',
                         month: 'short',
                         year: 'numeric',
                       })
@@ -2315,11 +2317,7 @@ export default function CustomerPostTaskScreen() {
                   </AppText>
                   <Ionicons color={colors.slate500} name="chevron-down" size={18} />
                 </Pressable>
-              ) : (
-                <AppText color={colors.slate500} variant="small">
-                  {scheduleCopy.dateHelper}
-                </AppText>
-              )}
+              ) : null}
               {getFieldError('startTime') ? (
                 <AppText color={colors.danger600} variant="small">
                   {getFieldError('startTime')}
@@ -2440,48 +2438,54 @@ export default function CustomerPostTaskScreen() {
           </View>
         ) : null}
         <View style={styles.summaryCard}>
-          <View style={styles.reviewSummaryRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.slate500} name="construct-outline" size={16} />
-              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-                {t('selectedService')}
+          {selectedCategory ? (
+            <View style={styles.reviewSummaryRow}>
+              <View style={styles.reviewSummaryLabel}>
+                <Ionicons color={colors.slate500} name="construct-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                  {t('selectedService')}
+                </AppText>
+              </View>
+              <AppText style={styles.reviewSummaryValue}>
+                {getLocalizedCategoryName(selectedCategory, locale)}
               </AppText>
             </View>
-            <AppText style={styles.reviewSummaryValue}>
-              {selectedCategory ? getLocalizedCategoryName(selectedCategory, locale) : '-'}
-            </AppText>
-          </View>
-          <View style={styles.reviewSummaryRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.slate500} name="calendar-outline" size={16} />
-              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-                {t('scheduleDate')}
+          ) : null}
+          {reviewScheduleValue ? (
+            <View style={styles.reviewSummaryRow}>
+              <View style={styles.reviewSummaryLabel}>
+                <Ionicons color={colors.slate500} name="calendar-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                  {t('scheduleDate')}
+                </AppText>
+              </View>
+              <AppText style={styles.reviewSummaryValue}>{reviewScheduleValue}</AppText>
+            </View>
+          ) : null}
+          {selectedCity ? (
+            <View style={styles.reviewSummaryRow}>
+              <View style={styles.reviewSummaryLabel}>
+                <Ionicons color={colors.slate500} name="location-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                  {t('city')}
+                </AppText>
+              </View>
+              <AppText style={styles.reviewSummaryValue}>
+                {getLocalizedCityName(selectedCity, locale)}
               </AppText>
             </View>
-            <AppText style={styles.reviewSummaryValue}>
-              {reviewScheduleValue || '-'}
-            </AppText>
-          </View>
-          <View style={styles.reviewSummaryRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.slate500} name="location-outline" size={16} />
-              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-                {t('city')}
-              </AppText>
+          ) : null}
+          {address.trim() ? (
+            <View style={styles.reviewSummaryRow}>
+              <View style={styles.reviewSummaryLabel}>
+                <Ionicons color={colors.slate500} name="navigate-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                  {t('address')}
+                </AppText>
+              </View>
+              <AppText style={styles.reviewSummaryValue}>{address}</AppText>
             </View>
-            <AppText style={styles.reviewSummaryValue}>
-              {selectedCity ? getLocalizedCityName(selectedCity, locale) : '-'}
-            </AppText>
-          </View>
-          <View style={styles.reviewSummaryRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.slate500} name="navigate-outline" size={16} />
-              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-                {t('address')}
-              </AppText>
-            </View>
-            <AppText style={styles.reviewSummaryValue}>{address || '-'}</AppText>
-          </View>
+          ) : null}
           <View style={styles.reviewSummaryRow}>
             <View style={styles.reviewSummaryLabel}>
               <Ionicons color={colors.slate500} name="images-outline" size={16} />
@@ -2493,21 +2497,25 @@ export default function CustomerPostTaskScreen() {
               {images.length ? String(images.length) : t('noPhotosAdded')}
             </AppText>
           </View>
-          <View style={styles.reviewSummaryRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.slate500} name="document-text-outline" size={16} />
-              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-                {t('title')}
-              </AppText>
+          {title.trim() ? (
+            <View style={styles.reviewSummaryRow}>
+              <View style={styles.reviewSummaryLabel}>
+                <Ionicons color={colors.slate500} name="document-text-outline" size={16} />
+                <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                  {t('title')}
+                </AppText>
+              </View>
+              <AppText style={styles.reviewSummaryValue}>{title}</AppText>
             </View>
-            <AppText style={styles.reviewSummaryValue}>{title || '-'}</AppText>
-          </View>
-          <View style={styles.reviewSummaryDetails}>
-            <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
-              {t('description')}
-            </AppText>
-            <AppText style={styles.reviewSummaryDetailsText}>{description || '-'}</AppText>
-          </View>
+          ) : null}
+          {description.trim() ? (
+            <View style={styles.reviewSummaryDetails}>
+              <AppText color={colors.slate700} style={styles.reviewSummaryLabelText}>
+                {t('description')}
+              </AppText>
+              <AppText style={styles.reviewSummaryDetailsText}>{description}</AppText>
+            </View>
+          ) : null}
           {selectedCategory?.slug === 'general_mounting' ? (
             <View style={styles.scopeReviewSection}>
               <AppText style={styles.fieldLabel}>Scope summary</AppText>
@@ -2831,14 +2839,18 @@ export default function CustomerPostTaskScreen() {
               </View>
             </View>
           ) : null}
-          <View style={styles.reviewSummaryDivider} />
-          <View style={styles.reviewTotalRow}>
-            <View style={styles.reviewSummaryLabel}>
-              <Ionicons color={colors.navy900} name="card-outline" size={18} />
-              <AppText style={styles.reviewTotalLabel}>{t('budget')}</AppText>
-            </View>
-            <AppText style={styles.reviewTotalValue}>{budget ? `€${budget}` : '-'}</AppText>
-          </View>
+          {budget ? (
+            <>
+              <View style={styles.reviewSummaryDivider} />
+              <View style={styles.reviewTotalRow}>
+                <View style={styles.reviewSummaryLabel}>
+                  <Ionicons color={colors.navy900} name="card-outline" size={18} />
+                  <AppText style={styles.reviewTotalLabel}>{t('budget')}</AppText>
+                </View>
+                <AppText style={styles.reviewTotalValue}>€{budget}</AppText>
+              </View>
+            </>
+          ) : null}
         </View>
 
         <Pressable
@@ -2914,12 +2926,14 @@ export default function CustomerPostTaskScreen() {
           showsVerticalScrollIndicator={false}>
           <View style={styles.stepCard}>
             <View style={styles.stepIntro}>
-              <AppText color={colors.tasklyBlue600} style={styles.stepTitle}>
+              <AppText color={colors.navy900} style={styles.stepTitle}>
                 {activeStep.title}
               </AppText>
-              <AppText color={colors.slate700} style={styles.stepBody}>
-                {activeStep.body}
-              </AppText>
+              {activeStep.body ? (
+                <AppText color={colors.slate700} style={styles.stepBody}>
+                  {activeStep.body}
+                </AppText>
+              ) : null}
             </View>
             {renderStepContent()}
           </View>
@@ -2959,7 +2973,7 @@ export default function CustomerPostTaskScreen() {
 
         <View style={styles.footer}>
           <View style={styles.footerButtons}>
-            <AppButton disabled={isBusy} onPress={handleBack} style={styles.footerButton} tone="neutral" variant="outline">
+            <AppButton disabled={isBusy} labelColor={colors.slate500} onPress={handleBack} style={[styles.footerButton, styles.footerBackButton]} tone="neutral" variant="outline">
               {currentStep === 1 ? t('cancel') : t('back')}
             </AppButton>
             <AppButton
@@ -2967,7 +2981,7 @@ export default function CustomerPostTaskScreen() {
               loading={isBusy}
               onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinue}
               style={styles.footerButton}>
-              {currentStep === STEP_TOTAL ? t('submitTask') : t('continueAction')}
+              {currentStep === STEP_TOTAL ? t('postTaskButton') : t('continueAction')}
             </AppButton>
           </View>
           <AppText color={colors.slate700} style={styles.footerNote} variant="small">
@@ -2982,6 +2996,7 @@ export default function CustomerPostTaskScreen() {
 type FieldProps = {
   containerStyle?: StyleProp<ViewStyle>;
   errorText?: string;
+  helperRight?: boolean;
   helperText?: string;
   keyboardType?: KeyboardTypeOptions;
   label: string;
@@ -3063,6 +3078,7 @@ function ScopeCheckboxRow({
 function Field({
   containerStyle,
   errorText,
+  helperRight = false,
   helperText,
   keyboardType = 'default',
   label,
@@ -3098,7 +3114,7 @@ function Field({
           {errorText}
         </AppText>
       ) : helperText ? (
-        <AppText color={colors.slate500} variant="small">
+        <AppText color={colors.slate500} style={helperRight ? { textAlign: 'right' } : undefined} variant="small">
           {helperText}
         </AppText>
       ) : null}
@@ -3223,6 +3239,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
+    minHeight: 44,
     padding: spacing.md,
   },
   confirmText: {
@@ -3262,9 +3279,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     paddingTop: spacing.md,
   },
+  footerBackButton: {
+    borderColor: colors.border,
+  },
   footerButton: {
+    borderRadius: radius.lg,
     flex: 1,
-    minHeight: 42,
+    minHeight: 52,
   },
   footerButtons: {
     flexDirection: 'row',
@@ -3282,6 +3303,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   header: {
     backgroundColor: '#FBFDFF',
@@ -3354,6 +3376,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   optionGrid: {
     flexDirection: 'row',
@@ -3367,11 +3390,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   photoEmpty: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.slate100,
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.md,
     borderStyle: 'dashed',
     borderWidth: 1,
@@ -3423,8 +3447,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   recommendedPill: {
-    backgroundColor: colors.white,
-    borderColor: '#9DB8D6',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     borderWidth: 1,
     paddingHorizontal: spacing.sm,
@@ -3528,6 +3552,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   scheduleWarning: {
     alignItems: 'flex-start',
@@ -3620,8 +3645,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF3F8',
   },
   selectedServiceCard: {
-    backgroundColor: '#F1F7FE',
-    borderColor: 'rgba(90, 142, 199, 0.62)',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlue600,
   },
   serviceCard: {
     alignItems: 'flex-start',
@@ -3633,6 +3658,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: 86,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   shell: {
     backgroundColor: '#F5F8FC',
@@ -3654,6 +3680,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   stepIntro: {
     gap: 4,
@@ -3700,6 +3727,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   summaryRow: {
     borderBottomColor: colors.slate100,
@@ -3849,19 +3877,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   scopeCheckboxRow: {
     alignItems: 'flex-start',
-    backgroundColor: colors.white,
-    borderColor: '#DDE6F0',
-    borderRadius: radius.md,
-    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
-    padding: spacing.md,
+    paddingVertical: spacing.xs,
   },
   scopeCheckboxRowError: {
-    borderColor: colors.danger600,
+    opacity: 0.7,
   },
   scopeCheckboxLabel: {
     flex: 1,

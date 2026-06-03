@@ -1,11 +1,12 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
-import { AssistantGuideCard, CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
+import { CustomerTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerProRequests } from '@/src/lib/api/customer';
 import { CustomerProRequestsResponse } from '@/src/lib/api/domain';
@@ -88,6 +89,16 @@ export default function CustomerProRequestsScreen() {
         <AppText color={colors.slate700}>{t('customerProIntro')}</AppText>
       </View>
 
+      {data && !data.proRequests.length && !isLoading && !errorMessage && !isUnauthorized ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/customer/post-pro-request' as Href)}
+          style={({ pressed }) => [styles.ctaButton, pressed ? { opacity: 0.88 } : null]}>
+          <Ionicons color="white" name="ribbon-outline" size={18} />
+          <AppText color="white" variant="bodyStrong">{t('postProRequest')}</AppText>
+        </Pressable>
+      ) : null}
+
       {data?.proRequests.length ? <ProRequestMetrics requests={data.proRequests} /> : null}
 
       {isLoading ? (
@@ -160,20 +171,11 @@ export default function CustomerProRequestsScreen() {
           ))}
         </View>
       ) : data && !isLoading ? (
-        <EmptyStateCard
-          actionLabel={t('postProRequest')}
-          accent="pro"
-          body={data.emptyState.description}
-          onActionPress={() => router.push('/customer/post-pro-request' as Href)}
-          title={data.emptyState.title}
-        />
+        <AppCard backgroundColor={colors.proOrange50} style={styles.emptyCard}>
+          <AppText style={styles.cardTitle}>{data.emptyState.title}</AppText>
+          <AppText color={colors.slate700}>{t('proEmptyStateBody')}</AppText>
+        </AppCard>
       ) : null}
-
-      <AssistantGuideCard
-        body={t('providerContactHiddenUntilUnlock')}
-        title={t('unlockAndComparePros')}
-        tone="pro"
-      />
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
@@ -246,6 +248,20 @@ function getProAccessSupportBadgeTone(request: CustomerProRequestsResponse['proR
 }
 
 const styles = StyleSheet.create({
+  ctaButton: {
+    alignItems: 'center',
+    backgroundColor: colors.proAmber500,
+    borderRadius: radius.lg,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 52,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  emptyCard: {
+    borderColor: colors.proOrangeBorder,
+  },
   accessLine: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,

@@ -13,6 +13,7 @@ type ImagePickerPlaceholderProps = {
   accent?: ImagePickerAccent;
   disabled?: boolean;
   errorMessage?: string | null;
+  helperBodyText?: string;
   helperText?: string;
   images?: LocalSelectedImage[];
   isProcessing?: boolean;
@@ -38,6 +39,7 @@ export function ImagePickerPlaceholder({
   accent,
   disabled = false,
   errorMessage,
+  helperBodyText,
   helperText,
   images = [],
   isProcessing = false,
@@ -105,7 +107,7 @@ export function ImagePickerPlaceholder({
         </View>
       ) : (
         <View style={styles.emptyPreview}>
-          <AppText color={colors.slate700}>{t('imageUploadLater')}</AppText>
+          <AppText color={colors.slate700}>{helperBodyText || t('imageUploadLater')}</AppText>
           <AppText color={colors.slate500} variant="small">
             {t('photosStayLocal')}
           </AppText>

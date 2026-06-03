@@ -58,7 +58,7 @@ export function FormField({ errorText, helperText, label, multiline, style, ...i
 const styles = StyleSheet.create({
   input: {
     backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     color: colors.navy900,
@@ -69,7 +69,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   inputFocused: {
-    borderColor: colors.tasklyBlue600,
+    borderColor: colors.tasklyBlueBorder,
+    borderWidth: 1,
   },
   inputError: {
     borderColor: colors.danger600,

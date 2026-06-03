@@ -3,9 +3,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
-import { CustomerTopBar, EmptyStateCard } from '@/src/components/taskly';
+import { CustomerTopBar } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { MessageThreadSummary, MessageThreadsResponse } from '@/src/lib/api/domain';
 import { getMessageThreads } from '@/src/lib/api/messages';
@@ -13,7 +14,7 @@ import { getMockMessageThreadsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerMessagesScreen() {
   useI18n();
@@ -74,14 +75,11 @@ export default function CustomerMessagesScreen() {
     : allThreads.filter((thread) => thread.contextType !== 'SUPPORT' && !thread.id.startsWith('admin:') && !thread.id.startsWith('support:'));
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.screenContent}>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.header}>
         <AppText variant="screenTitle">{supportOnly ? t('supportMessagesTitle') : t('messages')}</AppText>
-        <AppText color={colors.slate700}>
-          {supportOnly ? t('supportMessagesInboxHelper') : t('yourConversationsAppearHere')}
-        </AppText>
       </View>
 
       {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
@@ -98,10 +96,19 @@ export default function CustomerMessagesScreen() {
       ) : null}
 
       {!isLoading && !message && threads.length === 0 ? (
-        <EmptyStateCard
-          body={supportOnly ? t('noSupportMessagesBody') : t('yourConversationsAppearHere')}
-          title={supportOnly ? t('noSupportMessagesYet') : t('noMessagesYet')}
-        />
+        <View style={styles.emptyStateWrap}>
+          <View style={styles.emptyStateCard}>
+            <View style={styles.emptyIconBox}>
+              <Ionicons color={colors.tasklyBlue600} name="chatbubble-outline" size={28} />
+            </View>
+            <AppText style={styles.emptyTitle} variant="cardTitle">
+              {supportOnly ? t('noSupportMessagesYet') : t('noMessagesYet')}
+            </AppText>
+            <AppText color={colors.slate500} style={styles.emptyBody}>
+              {supportOnly ? t('noSupportMessagesBody') : t('startTaskToBeginConversation')}
+            </AppText>
+          </View>
+        </View>
       ) : null}
 
       {threads.map((thread) => (
@@ -164,7 +171,39 @@ function getContextLabel(contextType: MessageThreadSummary['contextType']) {
 
 const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
+  emptyBody: {
+    textAlign: 'center',
+  },
+  emptyIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: radius.pill,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  emptyStateCard: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.xl,
+    width: '100%',
+  },
+  emptyStateWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 360,
+  },
+  emptyTitle: {
+    textAlign: 'center',
+  },
   header: { gap: spacing.sm },
+  screenContent: {
+    flexGrow: 1,
+  },
   threadHeader: {
     flexDirection: 'row',
     flexWrap: 'wrap',

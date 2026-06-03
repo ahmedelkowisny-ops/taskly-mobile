@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -89,10 +90,7 @@ export default function CustomerTasksScreen() {
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.pageHeader}>
-        <View style={styles.headerCopy}>
-          <AppText variant="screenTitle">{t('myTasks')}</AppText>
-          <AppText color={colors.slate700}>{t('tasklyTasksIntro')}</AppText>
-        </View>
+        <AppText variant="screenTitle">{t('myTasks')}</AppText>
       </View>
 
       {isLoading ? (
@@ -144,12 +142,13 @@ export default function CustomerTasksScreen() {
       ) : null}
 
       <AppCard style={styles.trustCard}>
-        <View style={styles.badgeRow}>
-          <StatusBadge label={t('paymentProtected')} tone="success" />
-          <StatusBadge label={t('supportWhenNeededChip')} tone="core" />
+        <View style={styles.trustIconBox}>
+          <Ionicons color={colors.tasklyBlue600} name="shield-checkmark-outline" size={22} />
         </View>
-        <AppText variant="cardTitle">{t('taskPaymentProtectedTitle')}</AppText>
-        <AppText color={colors.slate700}>{t('paymentProtectedReleasedAfterApproval')}</AppText>
+        <View style={styles.trustCopy}>
+          <AppText variant="cardTitle">{t('taskPaymentProtectedTitle')}</AppText>
+          <AppText color={colors.slate500}>{t('paymentProtectedTrustSubtitle')}</AppText>
+        </View>
       </AppCard>
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
@@ -158,24 +157,19 @@ export default function CustomerTasksScreen() {
 }
 
 function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSummary }) {
-  const cancellationLabel = getCancellationBadgeLabel(task.cancellationState);
-  const supportLabel = getSupportBadgeLabel(task.supportState);
   const policySummary = getCorePolicySummary(task);
+  const primaryBadge = getPrimaryTaskBadge(task);
+  const isCancelled =
+    task.status.toUpperCase().includes('CANCELLED') ||
+    task.cancellationState?.status === 'cancelled' ||
+    task.cancellationState?.status === 'cancelled_free' ||
+    task.cancellationState?.status === 'cancelled_late';
+  const paymentHelperText = isCancelled ? null : getPaymentStateHelperText(task.paymentState);
 
   return (
     <AppCard style={styles.taskCard}>
       <View style={styles.cardHeader}>
-        <View style={styles.badgeRow}>
-          <StatusBadge label={getCustomerTaskPhaseLabel(task)} tone="core" />
-          <StatusBadge label={getPaymentStateLabel(task.paymentState)} tone={getPaymentStateTone(task.paymentState)} />
-          {cancellationLabel ? (
-            <StatusBadge label={cancellationLabel} tone={getCancellationBadgeTone(task.cancellationState)} />
-          ) : null}
-          {supportLabel ? <StatusBadge label={supportLabel} tone="warning" /> : null}
-        </View>
-        {task.unreadMessagesCount > 0 ? (
-          <StatusBadge label={`${task.unreadMessagesCount} ${t('unreadMessagesShort')}`} tone="warning" />
-        ) : null}
+        <StatusBadge label={primaryBadge.label} tone={primaryBadge.tone} />
       </View>
 
       <View style={styles.cardMain}>
@@ -187,10 +181,21 @@ function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSu
         </AppText>
       </View>
 
-      <View style={styles.metaGrid}>
-        <MetaItem label={t('taskCardBudget')} value={task.priceLabel} />
-        <MetaItem label={t('taskCardSchedule')} value={formatScheduleSummary(task.scheduledStartAt, task.scheduledEndAt)} />
-        <MetaItem label={t('taskCardLocation')} value={task.cityLabel} />
+      <View style={styles.metaRow}>
+        <AppText color={colors.slate500} style={styles.metaText} variant="small">
+          {task.priceLabel}
+        </AppText>
+        <AppText color={colors.slate500} style={styles.metaDivider} variant="small">·</AppText>
+        <AppText color={colors.slate500} style={styles.metaText} variant="small">
+          {formatScheduleSummary(task.scheduledStartAt, task.scheduledEndAt)}
+        </AppText>
+        <AppText color={colors.slate500} style={styles.metaDivider} variant="small">·</AppText>
+        <View style={styles.locationMeta}>
+          <Ionicons color={colors.slate500} name="location-outline" size={14} />
+          <AppText color={colors.slate500} style={styles.metaText} variant="small">
+            {task.cityLabel}
+          </AppText>
+        </View>
       </View>
 
       <View style={styles.nextActionCard}>
@@ -207,10 +212,12 @@ function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSu
         </AppButton>
       </View>
 
-      <AppText color={colors.slate700} style={styles.helperText}>
-        {getPaymentStateHelperText(task.paymentState)}
-      </AppText>
-      {policySummary ? (
+      {paymentHelperText ? (
+        <AppText color={colors.slate700} style={styles.helperText}>
+          {paymentHelperText}
+        </AppText>
+      ) : null}
+      {policySummary && !isCancelled ? (
         <AppText color={colors.slate700} style={styles.helperText}>
           {policySummary}
         </AppText>
@@ -219,26 +226,13 @@ function TaskCard({ onPress, task }: { onPress: () => void; task: CustomerTaskSu
   );
 }
 
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metaItem}>
-      <AppText color={colors.slate500} variant="small">
-        {label}
-      </AppText>
-      <AppText color={colors.navy900} style={styles.metaValue} variant="bodyStrong">
-        {value}
-      </AppText>
-    </View>
-  );
-}
-
 function formatScheduleSummary(start: string | null, end: string | null) {
   if (!start) return t('noScheduleSet');
   const startDate = new Date(start);
-  const dateLabel = startDate.toLocaleDateString([], { day: '2-digit', month: 'short' });
-  const startTime = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const endTime = end ? new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-  return endTime ? `${dateLabel}, ${startTime}-${endTime}` : `${dateLabel}, ${startTime}`;
+  const dateLabel = startDate.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  const startTime = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const endTime = end ? new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+  return endTime ? `${dateLabel}, ${startTime} – ${endTime}` : `${dateLabel}, ${startTime}`;
 }
 
 function getTaskNextActionLabel(task: CustomerTaskSummary) {
@@ -302,6 +296,31 @@ function getSupportBadgeLabel(state?: CoreSupportState) {
   if (state.status === 'support_submitted') return t('supportRequestSent');
   if (state.status === 'help_available') return t('supportRequired');
   return null;
+}
+
+function getPrimaryTaskBadge(task: CustomerTaskSummary): { label: string; tone: StatusTone } {
+  const supportLabel = getSupportBadgeLabel(task.supportState);
+  if (supportLabel) return { label: supportLabel, tone: 'warning' };
+
+  const cancellationLabel = getCancellationBadgeLabel(task.cancellationState);
+  if (cancellationLabel) {
+    return {
+      label: cancellationLabel,
+      tone: getCancellationBadgeTone(task.cancellationState),
+    };
+  }
+
+  if (task.paymentState.status === 'failed' || task.paymentState.status === 'disputed') {
+    return {
+      label: getPaymentStateLabel(task.paymentState),
+      tone: getPaymentStateTone(task.paymentState),
+    };
+  }
+
+  return {
+    label: getCustomerTaskPhaseLabel(task),
+    tone: 'core',
+  };
 }
 
 function getCorePolicySummary(task: CustomerTaskSummary) {
@@ -422,33 +441,28 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: spacing.md,
   },
-  headerCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
   helperText: {
     fontSize: 13,
     lineHeight: 19,
   },
-  metaGrid: {
+  locationMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  metaDivider: {
+    fontSize: 13,
+    lineHeight: 17,
+  },
+  metaRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  metaItem: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    flexBasis: '31%',
-    flexGrow: 1,
     gap: spacing.xs,
-    minWidth: 96,
-    padding: spacing.sm,
   },
-  metaValue: {
-    fontSize: 13,
-    lineHeight: 18,
+  metaText: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   nextActionCard: {
     alignItems: 'center',
@@ -466,19 +480,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pageHeader: {
-    alignItems: 'flex-start',
-    backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 1,
+    gap: spacing.xs,
   },
   screenContent: {
     gap: spacing.lg,
@@ -494,6 +496,21 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   trustCard: {
+    alignItems: 'flex-start',
     borderRadius: radius.card,
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  trustCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  trustIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: radius.lg,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
 });

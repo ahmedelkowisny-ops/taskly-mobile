@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Href, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
 import { CustomerTopBar, FormField } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { getCustomerProfile, updateCustomerProfile } from '@/src/lib/api/customer';
 import type { CustomerProfile } from '@/src/lib/api/domain';
 import type { ApiError } from '@/src/lib/api/types';
@@ -30,8 +30,8 @@ const emptyDraft: ProfileDraft = {
 
 export default function CustomerProfileScreen() {
   useI18n();
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const { getValidAccessToken, refreshSession, session: authSession, status } = useAuth();
+  const router = useRouter();
+  const { getValidAccessToken, logout, refreshSession, session: authSession, status } = useAuth();
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [draft, setDraft] = useState<ProfileDraft>(emptyDraft);
   const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({});
@@ -154,9 +154,14 @@ export default function CustomerProfileScreen() {
     await refreshSession();
   }
 
+  async function handleLogout() {
+    await logout();
+    router.replace('/login' as Href);
+  }
+
   return (
     <Screen contentStyle={styles.content}>
-      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
+      <CustomerTopBar />
 
       <View style={styles.header}>
         <AppText style={styles.title} variant="screenTitle">
@@ -174,10 +179,6 @@ export default function CustomerProfileScreen() {
         <View style={styles.profileMeta}>
           <AppText variant="cardTitle">{displayName}</AppText>
           <AppText color={colors.slate500}>{email || t('emailNotAvailable')}</AppText>
-          <View style={styles.badgeRow}>
-            <StatusBadge label={status === 'demo' ? t('demoMode') : t('signedIn')} tone={status === 'demo' ? 'neutral' : 'core'} />
-            <StatusBadge label={t('customer')} tone="core" />
-          </View>
         </View>
       </View>
 
@@ -188,8 +189,6 @@ export default function CustomerProfileScreen() {
         </View>
         <InfoRow label={t('accountName')} value={displayName} />
         <InfoRow label={t('accountEmail')} value={email || t('emailNotAvailable')} />
-        <InfoRow label={t('accountRole')} value={t('customer')} />
-        <InfoRow label={t('customerAccess')} value={session.workspaceAccess.customer ? t('available') : t('notAvailable')} />
       </AppCard>
 
       <AppCard>
@@ -267,7 +266,47 @@ export default function CustomerProfileScreen() {
         ) : null}
       </AppCard>
 
-      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
+      <AccountMenuSection
+        items={[
+          { icon: 'settings-outline', label: t('settings'), onPress: () => router.push('/customer/settings' as Href) },
+          { icon: 'language-outline', label: t('language'), onPress: () => router.push('/customer/settings' as Href) },
+        ]}
+        title={t('customerMenuAccount')}
+      />
+
+      <AccountMenuSection
+        items={[
+          { icon: 'card-outline', label: t('walletAndPayments'), onPress: () => router.push('/customer/payments-unlocks' as Href) },
+          { helper: t('comingSoon'), icon: 'bookmark-outline', label: t('savedPros') },
+        ]}
+        title={t('customerMenuPayments')}
+      />
+
+      <AccountMenuSection
+        items={[
+          { icon: 'list-outline', label: t('myTasks'), onPress: () => router.push('/customer/tasks' as Href) },
+          { icon: 'ribbon-outline', label: t('myProRequests'), onPress: () => router.push('/customer/pro-requests' as Href) },
+          { helper: t('comingSoon'), icon: 'star-outline', label: t('reviews') },
+        ]}
+        title={t('customerMenuActivity')}
+      />
+
+      <AccountMenuSection
+        items={[
+          { icon: 'help-circle-outline', label: t('helpCenter'), onPress: () => router.push('/customer/support' as Href) },
+          { icon: 'chatbubbles-outline', label: t('support'), onPress: () => router.push('/customer/messages' as Href) },
+        ]}
+        title={t('customerMenuHelp')}
+      />
+
+      <AccountMenuSection
+        items={[
+          { helper: t('comingSoon'), icon: 'document-text-outline', label: t('termsAndPrivacy') },
+          { icon: 'log-out-outline', label: t('drawerLogout'), onPress: handleLogout, tone: 'danger' },
+        ]}
+        title={t('customerMenuLegal')}
+      />
+
     </Screen>
   );
 }
@@ -355,6 +394,62 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+type MenuItem = {
+  helper?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress?: () => void | Promise<void>;
+  tone?: 'danger' | 'default';
+};
+
+function AccountMenuSection({ items, title }: { items: MenuItem[]; title: string }) {
+  return (
+    <View style={styles.menuSection}>
+      <AppText color={colors.slate500} style={styles.menuSectionTitle}>
+        {title}
+      </AppText>
+      <View style={styles.menuCard}>
+        {items.map((item, index) => (
+          <MenuRow isLast={index === items.length - 1} item={item} key={`${title}-${item.label}`} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function MenuRow({ isLast, item }: { isLast: boolean; item: MenuItem }) {
+  const isDanger = item.tone === 'danger';
+  const isDisabled = !item.onPress;
+  const content = (
+    <>
+      <View style={[styles.menuIconBox, isDanger ? styles.menuIconBoxDanger : null, isDisabled ? styles.menuIconBoxDisabled : null]}>
+        <Ionicons color={isDanger || isDisabled ? colors.slate500 : colors.tasklyBlue600} name={item.icon} size={20} />
+      </View>
+      <View style={styles.menuRowText}>
+        <AppText color={isDanger || isDisabled ? colors.slate500 : colors.navy900} style={[styles.menuRowLabel, isDisabled ? styles.menuRowLabelDisabled : null]}>
+          {item.label}
+        </AppText>
+        {item.helper ? (
+          <AppText color={colors.slate500} variant="small">
+            {item.helper}
+          </AppText>
+        ) : null}
+      </View>
+      {item.onPress ? <Ionicons color={colors.slate500} name="chevron-forward" size={18} /> : null}
+    </>
+  );
+
+  if (!item.onPress) {
+    return <View style={[styles.menuRow, styles.menuRowDisabled, !isLast ? styles.menuDivider : null]}>{content}</View>;
+  }
+
+  return (
+    <Pressable accessibilityRole="button" onPress={item.onPress} style={({ pressed }) => [styles.menuRow, !isLast ? styles.menuDivider : null, pressed ? styles.pressedSoft : null]}>
+      {content}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   avatarCircle: {
     alignItems: 'center',
@@ -368,12 +463,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     lineHeight: 26,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
   },
   cardHeader: {
     alignItems: 'center',
@@ -457,6 +546,68 @@ const styles = StyleSheet.create({
   profileMeta: {
     flex: 1,
     gap: 2,
+  },
+  menuCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  menuDivider: {
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+  },
+  menuIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderRadius: radius.lg,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  menuIconBoxDanger: {
+    backgroundColor: colors.slate50,
+  },
+  menuIconBoxDisabled: {
+    backgroundColor: colors.slate50,
+  },
+  menuRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    minHeight: 62,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  menuRowLabel: {
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  menuRowLabelDisabled: {
+    fontWeight: '600',
+  },
+  menuRowDisabled: {
+    opacity: 0.5,
+  },
+  menuRowText: {
+    flex: 1,
+    gap: 2,
+  },
+  menuSection: {
+    gap: spacing.sm,
+  },
+  menuSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    lineHeight: 15,
+    paddingHorizontal: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  pressedSoft: {
+    opacity: 0.74,
   },
   successMessage: {
     backgroundColor: colors.tasklyBlue50,

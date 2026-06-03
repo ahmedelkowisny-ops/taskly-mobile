@@ -4,7 +4,6 @@ import type { Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
 import { CustomerTopBar } from '@/src/components/taskly';
 import { AppButton, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCustomerHomeSummary, getCustomerProRequests, getCustomerTasks } from '@/src/lib/api/customer';
@@ -28,7 +27,6 @@ export default function CustomerHomeScreen() {
   const router = useRouter();
   const { getValidAccessToken, session: authSession, status, useDemoSession } = useAuth();
   const session = authSession ?? getMockUserSession();
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [data, setData] = useState<HomeData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -109,7 +107,7 @@ export default function CustomerHomeScreen() {
 
   return (
     <Screen contentStyle={styles.content} style={styles.screen}>
-      <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
+      <CustomerTopBar />
 
       <View style={styles.greeting}>
         <AppText color={colors.slate500} variant="small">
@@ -158,8 +156,13 @@ export default function CustomerHomeScreen() {
       {data ? (
         <>
           <View style={styles.statsGrid}>
-            <StatCard label={t('inProgress')} value={activeTasks.length} />
-            <StatCard label={proResponsesCount > 0 ? t('unlockNow') : t('noResponsesYet')} pro value={proResponsesCount} />
+            <StatCard label={t('inProgress')} onPress={() => router.push('/customer/tasks' as Href)} value={activeTasks.length} />
+            <StatCard
+              label={proResponsesCount > 0 ? t('unlockNow') : t('noResponsesYet')}
+              onPress={() => router.push('/customer/pro-requests' as Href)}
+              pro
+              value={proResponsesCount}
+            />
           </View>
 
           <View style={styles.section}>
@@ -211,7 +214,6 @@ export default function CustomerHomeScreen() {
         <MiniEmptyState icon="home-outline" title={t('customerHomeEmpty')} />
       ) : null}
 
-      <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
     </Screen>
   );
 }
@@ -232,9 +234,9 @@ function QuickActionCard({ icon, onPress, subtitle, title, tone }: { icon: Ionic
   );
 }
 
-function StatCard({ label, pro = false, value }: { label: string; pro?: boolean; value: number }) {
+function StatCard({ label, onPress, pro = false, value }: { label: string; onPress: () => void; pro?: boolean; value: number }) {
   return (
-    <View style={styles.statCard}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.statCard, pressed ? styles.pressedScale : null]}>
       <AppText color={pro ? colors.proOrangeTextDark : colors.navy900} style={styles.statValue} variant="sectionTitle">
         {value}
       </AppText>
@@ -243,7 +245,7 @@ function StatCard({ label, pro = false, value }: { label: string; pro?: boolean;
           {label}
         </AppText>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

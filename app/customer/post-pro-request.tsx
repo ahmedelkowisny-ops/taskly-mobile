@@ -7,7 +7,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   KeyboardTypeOptions,
@@ -356,7 +356,7 @@ function Field({
 }) {
   return (
     <View style={styles.field}>
-      <AppText color={colors.proOrangeTextDark} variant="small">{label}</AppText>
+      <AppText style={styles.fieldLabel}>{label}</AppText>
       <TextInput
         keyboardType={keyboardType}
         multiline={multiline}
@@ -374,10 +374,11 @@ function Field({
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  if (!value || value === '-' || value === t('notSelectedYet')) return null;
   return (
     <View style={styles.summaryRow}>
       <AppText color={colors.slate500} variant="small">{label}</AppText>
-      <AppText color={colors.navy900} variant="bodyStrong">{value || '-'}</AppText>
+      <AppText color={colors.navy900} variant="bodyStrong">{value}</AppText>
     </View>
   );
 }
@@ -427,6 +428,8 @@ export default function CustomerPostProRequestScreen() {
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [attemptedSteps, setAttemptedSteps] = useState<Record<number, boolean>>({});
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
+  const [step1TagsBlocked, setStep1TagsBlocked] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -758,6 +761,15 @@ export default function CustomerPostProRequestScreen() {
     }
   }, [currentStep, stepIssues]);
 
+  const handleContinueStep1 = useCallback(() => {
+    if (currentStep === 1 && selectedCategoryTags.length > 0 && selectedTagKeys.length === 0) {
+      scrollRef.current?.scrollToEnd({ animated: true });
+      setStep1TagsBlocked(true);
+      return;
+    }
+    handleContinue();
+  }, [currentStep, handleContinue, selectedCategoryTags.length, selectedTagKeys.length]);
+
   const handleBack = useCallback(() => {
     if (currentStep === 1) {
       router.back();
@@ -983,6 +995,7 @@ export default function CustomerPostProRequestScreen() {
                     onPress={() => {
                       setSelectedCategoryId(category.id);
                       setSelectedTagKeys([]);
+                      setStep1TagsBlocked(false);
                       clearFieldError('categoryKey');
                     }}
                     style={({ pressed }) => [
@@ -992,7 +1005,7 @@ export default function CustomerPostProRequestScreen() {
                     ]}>
                     <View style={[styles.iconBox, selected ? styles.iconBoxSelected : null]}>
                       <Ionicons
-                        color={selected ? colors.white : colors.proOrangeText}
+                        color={selected ? colors.white : colors.slate500}
                         name={getCategoryIcon(category)}
                         size={20}
                       />
@@ -1002,7 +1015,7 @@ export default function CustomerPostProRequestScreen() {
                         {getLocalizedCategoryName(category, locale)}
                       </AppText>
                       {getLocalizedCategoryDescription(category, locale) ? (
-                        <AppText color={colors.slate700} variant="small">
+                        <AppText color={colors.slate700} numberOfLines={2} variant="small">
                           {getLocalizedCategoryDescription(category, locale)}
                         </AppText>
                       ) : null}
@@ -1015,6 +1028,14 @@ export default function CustomerPostProRequestScreen() {
             </View>
             {getFieldError('categoryKey') ? <AppText color={colors.danger600} variant="small">{getFieldError('categoryKey')}</AppText> : null}
           </View>
+
+          {selectedCategoryId && selectedCategoryTags.length > 0 && selectedTagKeys.length === 0 ? (
+            <View style={styles.tagsHint}>
+              <AppText color={colors.proOrangeText} style={styles.tagsHintText} variant="small">
+                {t('proTagsHint')}
+              </AppText>
+            </View>
+          ) : null}
 
           <View style={styles.sectionCard}>
             <AppText style={styles.sectionTitle}>{t('propertyType')}</AppText>
@@ -1047,6 +1068,7 @@ export default function CustomerPostProRequestScreen() {
                               ? current.filter((item) => item !== tag.key)
                               : [...current, tag.key],
                           );
+                          setStep1TagsBlocked(false);
                         }}
                         style={({ pressed }) => [
                           styles.specialtyTag,
@@ -1063,6 +1085,11 @@ export default function CustomerPostProRequestScreen() {
                     );
                   })}
                 </View>
+                {step1TagsBlocked && selectedTagKeys.length === 0 ? (
+                  <AppText color={colors.danger600} variant="small">
+                    {t('proTagsRequired')}
+                  </AppText>
+                ) : null}
               </View>
             ) : null}
           </View>
@@ -1300,8 +1327,9 @@ export default function CustomerPostProRequestScreen() {
                 ]}>
                 <Ionicons color={colors.proOrange600} name="calendar-outline" size={18} />
                 <AppText color={preferredDate ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
-                  {preferredDate ? formattedPreferredDate : t('scheduleDate')}
+                  {preferredDate ? formattedPreferredDate : t('proChooseDatePlaceholder')}
                 </AppText>
+                <Ionicons color={colors.slate500} name="chevron-down" size={16} />
               </Pressable>
               {showDatePicker ? (
                 <DateTimePicker
@@ -1326,9 +1354,10 @@ export default function CustomerPostProRequestScreen() {
                     pressed ? styles.pressed : null,
                   ]}>
                   <Ionicons color={colors.proOrange600} name="time-outline" size={18} />
-                  <AppText color={startTime ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
-                    {startTime || t('startTime')}
-                  </AppText>
+                  {startTime ? (
+                    <AppText color={colors.navy900} style={styles.scheduleDateValue}>{startTime}</AppText>
+                  ) : null}
+                  <Ionicons color={colors.slate500} name="chevron-down" size={16} />
                 </Pressable>
               </View>
               <View style={styles.scheduleSection}>
@@ -1344,9 +1373,10 @@ export default function CustomerPostProRequestScreen() {
                     pressed ? styles.pressed : null,
                   ]}>
                   <Ionicons color={colors.proOrange600} name="time-outline" size={18} />
-                  <AppText color={endTime ? colors.navy900 : colors.slate500} style={styles.scheduleDateValue}>
-                    {endTime || t('endTime')}
-                  </AppText>
+                  {endTime ? (
+                    <AppText color={colors.navy900} style={styles.scheduleDateValue}>{endTime}</AppText>
+                  ) : null}
+                  <Ionicons color={colors.slate500} name="chevron-down" size={16} />
                 </Pressable>
               </View>
             </View>
@@ -1388,6 +1418,7 @@ export default function CustomerPostProRequestScreen() {
               acceptedImageTypes={catalog?.rules.acceptedImageTypes}
               accent="pro"
               errorMessage={imageErrorMessage}
+              helperBodyText={t('proImageUploadLater')}
               helperText={t('proRequestPhotosHelper')}
               images={images}
               isProcessing={isProcessingImages}
@@ -1433,7 +1464,7 @@ export default function CustomerPostProRequestScreen() {
             <View style={styles.chipRow}>
               {missingFieldLabels.map((label) => (
                 <View key={label} style={styles.validationPill}>
-                  <AppText color={colors.slate700} variant="small">{label}</AppText>
+                  <AppText color={colors.proOrangeTextDark} variant="small">{label}</AppText>
                 </View>
               ))}
             </View>
@@ -1518,9 +1549,10 @@ export default function CustomerPostProRequestScreen() {
             keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, spacing.lg) : 0}
             style={styles.keyboardAvoider}>
             <ScrollView
+              ref={scrollRef}
               contentContainerStyle={[
                 styles.content,
-                { paddingBottom: Math.max(insets.bottom + 112, 132) },
+                { paddingBottom: Math.max(insets.bottom + 160, 180) },
               ]}
               keyboardShouldPersistTaps="handled"
               onScroll={handleCustomerScroll}
@@ -1623,16 +1655,16 @@ export default function CustomerPostProRequestScreen() {
 
           <View style={styles.footer}>
             <View style={styles.footerButtons}>
-              <AppButton disabled={isBusy} onPress={handleBack} style={styles.footerButton} tone="neutral" variant="outline">
+              <AppButton disabled={isBusy} labelColor={colors.slate500} onPress={handleBack} style={[styles.footerButton, styles.footerBackButton]} tone="neutral" variant="outline">
                 {currentStep === 1 ? t('cancel') : t('back')}
               </AppButton>
               <AppButton
                 disabled={isBusy}
                 loading={isBusy}
-                onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinue}
+                onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinueStep1}
                 style={styles.footerButton}
                 tone="pro">
-                {currentStep === STEP_TOTAL ? t('submitRequest') : t('continueAction')}
+                {currentStep === STEP_TOTAL ? t('postProRequestButton') : t('continueAction')}
               </AppButton>
             </View>
           </View>
@@ -1738,8 +1770,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  footerBackButton: {
+    borderColor: colors.border,
+  },
   footerButton: {
+    borderRadius: radius.lg,
     flex: 1,
+    minHeight: 52,
   },
   footerButtons: {
     flexDirection: 'row',
@@ -1762,8 +1799,8 @@ const styles = StyleSheet.create({
   },
   iconBox: {
     alignItems: 'center',
-    backgroundColor: colors.proOrange50,
-    borderColor: colors.proOrangeBorder,
+    backgroundColor: colors.slate100,
+    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     height: 42,
@@ -1775,7 +1812,7 @@ const styles = StyleSheet.create({
     borderColor: colors.proOrange600,
   },
   fieldLabel: {
-    color: colors.proOrangeTextDark,
+    color: colors.navy900,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 16,
@@ -2089,6 +2126,13 @@ const styles = StyleSheet.create({
   },
   specialtyTagText: {
     fontWeight: '800',
+  },
+  tagsHint: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  tagsHintText: {
+    textAlign: 'center',
   },
   tagPanel: {
     backgroundColor: colors.proOrange50,

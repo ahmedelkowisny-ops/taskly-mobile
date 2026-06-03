@@ -4,6 +4,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 
 type TasklyLogoTextProps = {
   compact?: boolean;
+  header?: boolean;
   iconOnly?: boolean;
   navIcon?: boolean;
   showMark?: boolean;
@@ -13,6 +14,7 @@ type TasklyLogoTextProps = {
 
 export function TasklyLogoText({
   compact = false,
+  header = false,
   iconOnly = false,
   navIcon = false,
   showMark = false,
@@ -26,8 +28,21 @@ export function TasklyLogoText({
           accessibilityIgnoresInvertColors
           accessibilityLabel="Taskly"
           resizeMode="contain"
-          source={require('@/assets/branding/taskly-logo-icon.png')}
+          source={require('../../../assets/branding/taskly-logo-icon.png')}
           style={[styles.mark, compact ? styles.markCompact : null, navIcon ? styles.markNav : null]}
+        />
+      </View>
+    );
+  }
+
+  if (header && wordmarkOnly) {
+    return (
+      <View accessibilityLabel="Taskly" style={[styles.headerLogo, style]}>
+        <Image
+          accessibilityIgnoresInvertColors
+          resizeMode="contain"
+          source={require('../../../assets/branding/taskly-header-logo-transparent-720x180.png')}
+          style={styles.headerLogoImage}
         />
       </View>
     );
@@ -40,16 +55,16 @@ export function TasklyLogoText({
           accessibilityIgnoresInvertColors
           accessibilityLabel="Taskly"
           resizeMode="contain"
-          source={require('@/assets/branding/taskly-logo-icon.png')}
-          style={[styles.mark, compact ? styles.markCompact : null]}
+          source={require('../../../assets/branding/taskly-logo-icon.png')}
+          style={[styles.mark, compact ? styles.markCompact : null, header ? styles.markHeader : null]}
         />
       ) : null}
       <Image
         accessibilityIgnoresInvertColors
         accessibilityLabel={wordmarkOnly ? 'Taskly' : undefined}
         resizeMode="contain"
-        source={require('@/assets/branding/taskly-logo.png')}
-        style={[styles.logo, compact ? styles.logoCompact : null]}
+        source={require('../../../assets/branding/taskly-header-logo-transparent-720x180.png')}
+        style={[styles.logo, compact ? styles.logoCompact : null, header ? styles.logoHeader : null]}
       />
     </View>
   );
@@ -69,6 +84,14 @@ const styles = StyleSheet.create({
     height: 38,
     width: 148,
   },
+  headerLogo: {
+    height: 40,
+    width: 160,
+  },
+  headerLogoImage: {
+    height: 40,
+    width: 160,
+  },
   mark: {
     borderRadius: radius.sm,
     height: 44,
@@ -77,6 +100,14 @@ const styles = StyleSheet.create({
   markCompact: {
     height: 34,
     width: 34,
+  },
+  logoHeader: {
+    height: 40,
+    width: 160,
+  },
+  markHeader: {
+    height: 36,
+    width: 36,
   },
   markNav: {
     borderRadius: 14,
