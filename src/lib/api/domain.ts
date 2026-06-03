@@ -1165,6 +1165,7 @@ export type ProviderCoreTaskSummary = {
   cityLabel: string;
   customerPreviewLabel: string;
   disputeState?: CoreDisputeState;
+  edgeCase?: ProviderCoreTaskEdgeCase | null;
   hasScheduleConflict?: boolean;
   id: string;
   messageThreadId?: string | null;
@@ -1243,6 +1244,7 @@ export type ProviderCoreTaskDetail = {
   customerPreviewLabel: string;
   description: string;
   disputeState?: CoreDisputeState;
+  edgeCase?: ProviderCoreTaskEdgeCase | null;
   hasScheduleConflict?: boolean;
   id: string;
   images: DetailImage[];
@@ -1298,6 +1300,18 @@ export type ProviderCoreTaskInvoiceSummary = {
   totalLabel: string;
   vatAmountLabel: string;
   vatEnabled: boolean;
+};
+
+export type ProviderCoreTaskEdgeCase = {
+  cancellationOutcomeLabel: string | null;
+  cancellationReason: string | null;
+  cancellationSource: 'customer' | 'taskly' | null;
+  canceledAt: string | null;
+  disputeReason: string | null;
+  disputeResolvedAt: string | null;
+  disputeResolutionType: string | null;
+  status: 'cancelled' | 'support_review';
+  statusLabel: string;
 };
 
 export type ProviderCoreTaskDetailResponse = {

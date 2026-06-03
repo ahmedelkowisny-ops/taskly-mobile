@@ -107,7 +107,8 @@ export default function ProviderCoreTaskDetailScreen() {
   );
 
   const task = data?.task;
-  const isAftercareTask = task ? isProviderAftercareStatus(task.status) : false;
+  const isCompletedTask = task ? task.status.toUpperCase() === 'COMPLETED' : false;
+  const isLockedEdgeCaseTask = task ? isProviderLockedEdgeCaseStatus(task.status) : false;
 
   const markDemoInterestSent = useCallback(() => {
     setData((current) => {
@@ -681,6 +682,10 @@ export default function ProviderCoreTaskDetailScreen() {
     await WebBrowser.openBrowserAsync(pdfUrl);
   }, [task?.aftercare?.invoice?.pdfUrl]);
 
+  const handleOpenSupportMessages = useCallback(() => {
+    router.push('/provider/messages?context=support' as Href);
+  }, [router]);
+
   return (
     <Screen>
       <View style={styles.header}>
@@ -729,14 +734,15 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <ProviderPaymentBreakdownCard task={task} />
-          {isAftercareTask ? <ProviderAftercareCard onOpenInvoicePdf={handleOpenInvoicePdf} task={task} /> : null}
+          {isLockedEdgeCaseTask ? <ProviderEdgeCaseCard onOpenSupportMessages={handleOpenSupportMessages} task={task} /> : null}
+          {isCompletedTask ? <ProviderAftercareCard onOpenInvoicePdf={handleOpenInvoicePdf} task={task} /> : null}
           <ProviderStatusCard task={task} />
           <ScopeChecklistCard task={task} />
           <Images images={task.images} />
           <ProviderIssueSupportCard task={task} />
           <ProviderCancellationSupportCard task={task} />
           <Timeline items={task.timeline} />
-          {isAftercareTask ? null : (
+          {isLockedEdgeCaseTask ? null : (
             <>
               <ProviderActions
                 actionError={actionError}
@@ -830,6 +836,50 @@ function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }
   );
 }
 
+function ProviderEdgeCaseCard({
+  onOpenSupportMessages,
+  task,
+}: {
+  onOpenSupportMessages: () => void;
+  task: ProviderCoreTaskDetail;
+}) {
+  const status = task.status.toUpperCase();
+  const edgeCase = task.edgeCase;
+  const isCancelled = status.includes('CANCELLED');
+  const isSupportReview = status === 'DISPUTED' || edgeCase?.status === 'support_review';
+
+  if (!isCancelled && !isSupportReview) return null;
+
+  return (
+    <AppCard accentColor={isSupportReview ? colors.warning600 : colors.tasklyBlue600}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        <StatusBadge label={isSupportReview ? t('underSupportReview') : t('taskCancelled')} tone={isSupportReview ? 'warning' : 'neutral'} />
+        <StatusBadge label={t('readOnly')} tone="neutral" />
+      </View>
+      <AppText variant="sectionTitle">{isSupportReview ? t('supportReviewTitle') : t('taskCancelled')}</AppText>
+      <AppText color={colors.slate700}>
+        {isSupportReview ? t('tasklySupportReviewingTask') : t('cancelledTaskReadonly')}
+      </AppText>
+
+      {isCancelled && edgeCase?.canceledAt ? <Info label={t('cancelledOn')} value={formatDateTime(edgeCase.canceledAt)} /> : null}
+      {isCancelled && edgeCase?.cancellationSource ? (
+        <Info label={t('cancellationSource')} value={getCancellationSourceLabel(edgeCase.cancellationSource)} />
+      ) : null}
+      {isCancelled && edgeCase?.cancellationReason ? <Info label={t('cancellationReason')} value={edgeCase.cancellationReason} /> : null}
+      {isCancelled && edgeCase?.cancellationOutcomeLabel ? <Info label={t('cancellationOutcome')} value={edgeCase.cancellationOutcomeLabel} /> : null}
+
+      {isSupportReview && edgeCase?.disputeReason ? <Info label={t('supportReviewReason')} value={edgeCase.disputeReason} /> : null}
+      {isSupportReview && edgeCase?.disputeResolutionType ? <Info label={t('supportResolution')} value={formatBackendLabel(edgeCase.disputeResolutionType)} /> : null}
+      {isSupportReview && edgeCase?.disputeResolvedAt ? <Info label={t('supportResolvedOn')} value={formatDateTime(edgeCase.disputeResolvedAt)} /> : null}
+      {isSupportReview ? (
+        <AppButton onPress={onOpenSupportMessages} tone="neutral" variant="outline">
+          {t('continueInSupportMessages')}
+        </AppButton>
+      ) : null}
+    </AppCard>
+  );
+}
+
 function ProviderAftercareCard({
   onOpenInvoicePdf,
   task,
@@ -841,7 +891,7 @@ function ProviderAftercareCard({
   const review = aftercare?.customerReview;
   const invoice = aftercare?.invoice;
 
-  if (!aftercare && !isProviderAftercareStatus(task.status)) return null;
+  if (!aftercare && task.status.toUpperCase() !== 'COMPLETED') return null;
 
   return (
     <AppCard accentColor={colors.tasklyBlue600}>
@@ -1239,11 +1289,11 @@ function ProviderIssueActions({
           <StatusBadge label={getProviderIssueActionLabel(activeMode)} tone={activeMode === 'cannot_attend' ? 'danger' : 'warning'} />
           <FormField
             errorText={reasonError || undefined}
-            helperText={t('explainWhatHappened')}
+            helperText={t('tellSupportWhatHappened')}
             label={t('supportReason')}
             multiline
             onChangeText={onReasonChange}
-            placeholder={t('explainWhatHappened')}
+            placeholder={t('tellSupportWhatHappened')}
             value={reason}
           />
           <FormField
@@ -1297,7 +1347,7 @@ function getProviderIssueActionLabel(kind: ProviderIssueActionKind) {
 }
 
 function getProviderIssueSubmitLabel(kind: ProviderIssueActionKind) {
-  if (kind === 'support_request') return t('submitSupportRequest');
+  if (kind === 'cannot_attend' || kind === 'support_request') return t('sendRequest');
   return t('submitReport');
 }
 
@@ -1403,9 +1453,14 @@ function formatBackendLabel(value: string) {
   return value.replace(/_/g, ' ').toLocaleLowerCase();
 }
 
-function isProviderAftercareStatus(status: string) {
+function isProviderLockedEdgeCaseStatus(status: string) {
   const normalized = status.toUpperCase();
-  return normalized === 'COMPLETED' || normalized.includes('CANCELLED');
+  return normalized === 'COMPLETED' || normalized === 'DISPUTED' || normalized.includes('CANCELLED');
+}
+
+function getCancellationSourceLabel(source: 'customer' | 'taskly') {
+  if (source === 'customer') return t('cancelledByCustomer');
+  return t('cancelledByTaskly');
 }
 
 function isRelevantProviderCancellationState(state?: CoreCancellationState) {

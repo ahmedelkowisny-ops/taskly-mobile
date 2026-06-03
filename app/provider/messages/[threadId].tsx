@@ -315,8 +315,10 @@ function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
   return (
     <AppCard accentColor={visual.accentColor}>
       <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
+      {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
       <AppText variant="screenTitle">{thread.title}</AppText>
       {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
+      {!thread.capabilities.canSendText ? <AppText color={colors.slate700}>{getReadOnlyReason(thread)}</AppText> : null}
     </AppCard>
   );
 }

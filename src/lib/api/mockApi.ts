@@ -1874,6 +1874,17 @@ export function getMockProviderCoreTasksResponse(): ProviderCoreTasksResponse {
           statusLabel: 'Under support review',
           supportReviewLabel: 'Taskly support is reviewing this task.',
         }),
+        edgeCase: {
+          cancellationOutcomeLabel: null,
+          cancellationReason: null,
+          cancellationSource: null,
+          canceledAt: null,
+          disputeReason: 'Provider cannot attend',
+          disputeResolvedAt: null,
+          disputeResolutionType: null,
+          status: 'support_review',
+          statusLabel: 'Under support review',
+        },
         id: 'demo-provider-support-review',
         nextAction: { accent: 'neutral', href: '/provider/core-tasks', label: 'View task', type: 'view_task' },
         nextActions: createMockProviderCoreTaskNextActions({
@@ -2191,6 +2202,19 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
     providerSupportState.providerIssueSummary ||
     providerCancellationState.providerIssueSummary ||
     providerDisputeState.providerIssueSummary;
+  const edgeCase = isSupportReview
+    ? {
+        cancellationOutcomeLabel: null,
+        cancellationReason: null,
+        cancellationSource: null,
+        canceledAt: null,
+        disputeReason: 'Provider support request',
+        disputeResolvedAt: null,
+        disputeResolutionType: null,
+        status: 'support_review' as const,
+        statusLabel: 'Under support review',
+      }
+    : null;
   const completedAftercare = isCompleted
     ? {
         closedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
@@ -2233,6 +2257,7 @@ export function getMockProviderCoreTaskDetailResponse(taskId = 'demo-provider-ta
       customerPreviewLabel: 'Customer preview',
       description: 'Demo provider Taskly task detail. Actions follow Taskly next actions.',
       disputeState,
+      edgeCase,
       id: taskId,
       images: [],
       nextActions,

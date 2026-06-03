@@ -98,6 +98,24 @@ export function ProviderCoreTaskCard({
         </View>
       ) : null}
 
+      {task.edgeCase ? (
+        <View style={styles.payoutBox}>
+          <AppText color={colors.tasklyBlue700} variant="bodyStrong">
+            {task.edgeCase.statusLabel}
+          </AppText>
+          {task.edgeCase.canceledAt ? (
+            <AppText color={colors.slate700}>
+              {t('cancelledOn')}: {formatDate(task.edgeCase.canceledAt)}
+            </AppText>
+          ) : null}
+          {task.edgeCase.cancellationOutcomeLabel ? (
+            <AppText color={colors.slate700}>
+              {t('cancellationOutcome')}: {task.edgeCase.cancellationOutcomeLabel}
+            </AppText>
+          ) : null}
+        </View>
+      ) : null}
+
       {blockedReason ? <AppText color={colors.slate700}>{blockedReason}</AppText> : null}
       {getProviderSupportSummary(task) ? <AppText color={colors.slate700}>{getProviderSupportSummary(task)}</AppText> : null}
 
