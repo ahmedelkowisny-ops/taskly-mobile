@@ -12,9 +12,8 @@ import { getCities, getCoreCategories } from '@/src/lib/api/catalog';
 import type {
   CatalogCategory,
   CityOption,
-  ProviderProPortfolioProject,
-  ProviderProPortfolioImageType,
   ProviderPayoutStatus,
+  ProviderProPortfolioProject,
   ProviderProProfile,
   ProviderProfileResponse,
   TaskerAvailability,
@@ -31,12 +30,17 @@ import {
   getProviderProProfile,
   getProviderTaskerProfile,
   refreshPayoutStatus,
+  removeProviderPortfolioProjectPhoto,
   startPayoutSetup,
   updateProviderProPortfolioProject,
   updateProviderProProfile,
   updateProviderTaskerProfile,
 } from '@/src/lib/api/provider';
-import { canUploadSelectedImage, uploadProviderTaskerProfilePhoto } from '@/src/lib/api/imageUploads';
+import {
+  canUploadSelectedImage,
+  uploadProviderPortfolioProjectPhoto,
+  uploadProviderTaskerProfilePhoto,
+} from '@/src/lib/api/imageUploads';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { getCoreTaskerStatusLabel, getProStatusLabel, hasApprovedProMode, hasCoreTaskerMode } from '@/src/lib/auth/workspaceAccess';
 import {
@@ -108,14 +112,12 @@ type ProProjectDraft = {
   cityName: string;
   customerPermissionConfirmed: boolean;
   description: string;
-  imageType: ProviderProPortfolioImageType;
-  imageUrlsText: string;
   optionalPriceRange: string;
   title: string;
 };
 
 type ProFieldErrors = Partial<Record<keyof ProDraft, string>>;
-type ProProjectFieldErrors = Partial<Record<keyof ProProjectDraft, string>>;
+type ProProjectFieldErrors = Partial<Record<keyof ProProjectDraft | 'imageUrls', string>>;
 
 const emptyProDraft: ProDraft = {
   bio: '',
@@ -140,8 +142,6 @@ const emptyProProjectDraft: ProProjectDraft = {
   cityName: '',
   customerPermissionConfirmed: false,
   description: '',
-  imageType: 'GENERAL',
-  imageUrlsText: '',
   optionalPriceRange: '',
   title: '',
 };
@@ -177,6 +177,9 @@ export default function ProviderProfileScreen() {
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isDeletingProjectId, setIsDeletingProjectId] = useState<string | null>(null);
   const [projectErrorMessage, setProjectErrorMessage] = useState<string | null>(null);
+  const [isUploadingProjectPhoto, setIsUploadingProjectPhoto] = useState(false);
+  const [projectPhotoErrorMessage, setProjectPhotoErrorMessage] = useState<string | null>(null);
+  const [removingPhotoId, setRemovingPhotoId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -656,6 +659,7 @@ export default function ProviderProfileScreen() {
     setProjectDraft(emptyProProjectDraft);
     setProjectFieldErrors({});
     setProjectErrorMessage(null);
+    setProjectPhotoErrorMessage(null);
     setIsProjectFormOpen(false);
   }
 
@@ -674,14 +678,13 @@ export default function ProviderProfileScreen() {
       return;
     }
 
+    const isCreating = !editingProjectId;
     const payload = {
       approximateDuration: projectDraft.approximateDuration.trim(),
       categoryName: projectDraft.categoryName.trim(),
       cityName: projectDraft.cityName.trim(),
       customerPermissionConfirmed: projectDraft.customerPermissionConfirmed,
       description: projectDraft.description.trim(),
-      imageType: projectDraft.imageType,
-      imageUrls: parseLineListText(projectDraft.imageUrlsText),
       optionalPriceRange: projectDraft.optionalPriceRange.trim(),
       title: projectDraft.title.trim(),
     };
@@ -702,11 +705,18 @@ export default function ProviderProfileScreen() {
       const next = current.filter((project) => project.id !== result.data.project.id);
       return [result.data.project, ...next];
     });
-    setProjectDraft(emptyProProjectDraft);
-    setEditingProjectId(null);
-    setIsProjectFormOpen(false);
     setProjectFieldErrors({});
+    setProjectPhotoErrorMessage(null);
     setProNotice(t('proPortfolioProjectSaved'));
+
+    if (isCreating) {
+      // After creating, stay in edit mode so the user can add photos immediately.
+      setEditingProjectId(result.data.project.id);
+    } else {
+      setProjectDraft(emptyProProjectDraft);
+      setEditingProjectId(null);
+      setIsProjectFormOpen(false);
+    }
   }
 
   async function handleDeleteProject(projectId: string) {
@@ -731,6 +741,88 @@ export default function ProviderProfileScreen() {
       cancelProjectEdit();
     }
     setProNotice(t('proPortfolioProjectDeleted'));
+  }
+
+  async function handleAddPortfolioPhoto() {
+    if (!editingProjectId) return;
+    if (status !== 'authenticated') {
+      setProjectPhotoErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setProjectPhotoErrorMessage(null);
+
+    const permission = await requestImageLibraryPermission();
+    if (!permission.granted) {
+      setProjectPhotoErrorMessage(t('photoPermissionNeeded'));
+      return;
+    }
+
+    const selected = await pickTasklyImages({ maxImages: 1 });
+    if (!selected.length) return;
+
+    const validation = validateSelectedImages(selected, {
+      acceptedImageTypes: defaultAcceptedImageTypes,
+      maxImages: 1,
+    });
+
+    if (!validation.accepted.length) {
+      setProjectPhotoErrorMessage(t('unsupportedImageType'));
+      return;
+    }
+
+    const processedImage = await compressSelectedImage(validation.accepted[0], {
+      compress: 0.78,
+      maxFileSizeBeforeCompression: 900_000,
+      maxWidth: 1600,
+    });
+
+    if (!canUploadSelectedImage(processedImage)) {
+      setProjectPhotoErrorMessage(processedImage.errorMessage || t('couldNotUploadPortfolioPhoto'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProjectPhotoErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setIsUploadingProjectPhoto(true);
+    const result = await uploadProviderPortfolioProjectPhoto(editingProjectId, processedImage, authToken);
+    setIsUploadingProjectPhoto(false);
+
+    if (!result.ok) {
+      setProjectPhotoErrorMessage(getPortfolioPhotoUploadErrorMessage(result.error));
+      return;
+    }
+
+    setPortfolioProjects((current) =>
+      current.map((p) => (p.id === result.data.project.id ? result.data.project : p)),
+    );
+    setProjectPhotoErrorMessage(null);
+  }
+
+  async function handleRemovePortfolioPhoto(projectId: string, imageId: string) {
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setProjectPhotoErrorMessage(t('pleaseLoginToContinue'));
+      return;
+    }
+
+    setRemovingPhotoId(imageId);
+    setProjectPhotoErrorMessage(null);
+    const result = await removeProviderPortfolioProjectPhoto(projectId, imageId, authToken);
+    setRemovingPhotoId(null);
+
+    if (!result.ok) {
+      setProjectPhotoErrorMessage(t('couldNotRemovePortfolioPhoto'));
+      return;
+    }
+
+    setPortfolioProjects((current) =>
+      current.map((p) => (p.id === result.data.project.id ? result.data.project : p)),
+    );
   }
 
   return (
@@ -996,9 +1088,6 @@ export default function ProviderProfileScreen() {
                 <AppText color={colors.slate700} variant="small">
                   {t('proPortfolioHelper')}
                 </AppText>
-                <AppText color={colors.slate500} variant="small">
-                  {t('portfolioPhotoUploadGap')}
-                </AppText>
               </View>
               {status === 'authenticated' && !isProjectFormOpen ? (
                 <AppButton onPress={beginCreateProject} style={styles.headerButton} tone="pro">
@@ -1051,28 +1140,6 @@ export default function ProviderProfileScreen() {
                   onChangeText={(value) => setProjectDraft((current) => ({ ...current, optionalPriceRange: value }))}
                   value={projectDraft.optionalPriceRange}
                 />
-                <FormField
-                  editable={!isSavingProject}
-                  helperText={t('imageUrlsHelper')}
-                  label={t('projectImageUrls')}
-                  multiline
-                  onChangeText={(value) => setProjectDraft((current) => ({ ...current, imageUrlsText: value }))}
-                  value={projectDraft.imageUrlsText}
-                />
-                <View style={styles.toggleBlock}>
-                  <AppText variant="bodyStrong">{t('projectImageType')}</AppText>
-                  <View style={styles.toggleRow}>
-                    {(['GENERAL', 'BEFORE', 'AFTER'] as ProviderProPortfolioImageType[]).map((imageType) => (
-                      <ToggleChip
-                        key={imageType}
-                        disabled={isSavingProject}
-                        label={t(imageType === 'GENERAL' ? 'imageTypeGeneral' : imageType === 'BEFORE' ? 'imageTypeBefore' : 'imageTypeAfter')}
-                        onPress={() => setProjectDraft((current) => ({ ...current, imageType }))}
-                        selected={projectDraft.imageType === imageType}
-                      />
-                    ))}
-                  </View>
-                </View>
                 <View style={styles.toggleBlock}>
                   <AppText variant="bodyStrong">{t('customerPermissionConfirmed')}</AppText>
                   <View style={styles.toggleRow}>
@@ -1080,13 +1147,39 @@ export default function ProviderProfileScreen() {
                     <ToggleChip disabled={isSavingProject} label={t('no')} onPress={() => setProjectDraft((current) => ({ ...current, customerPermissionConfirmed: false }))} selected={!projectDraft.customerPermissionConfirmed} />
                   </View>
                 </View>
+
+                {editingProjectId ? (
+                  <PortfolioPhotoSection
+                    editingProjectId={editingProjectId}
+                    isUploading={isUploadingProjectPhoto}
+                    onAddPhoto={handleAddPortfolioPhoto}
+                    onRemovePhoto={handleRemovePortfolioPhoto}
+                    photoErrorMessage={projectPhotoErrorMessage}
+                    projects={portfolioProjects}
+                    removingPhotoId={removingPhotoId}
+                  />
+                ) : (
+                  <View style={styles.portfolioPhotoHint}>
+                    <Ionicons color={colors.proOrangeTextDark} name="images-outline" size={20} />
+                    <AppText color={colors.proOrangeTextDark} variant="small">
+                      {t('portfolioPhotosSaveFirst')}
+                    </AppText>
+                  </View>
+                )}
+
                 <View style={styles.actionRow}>
-                  <AppButton disabled={isSavingProject} onPress={cancelProjectEdit} style={styles.actionButton} tone="neutral" variant="outline">
-                    {t('cancel')}
+                  <AppButton disabled={isSavingProject || isUploadingProjectPhoto} onPress={cancelProjectEdit} style={styles.actionButton} tone="neutral" variant="outline">
+                    {editingProjectId ? t('done') : t('cancel')}
                   </AppButton>
-                  <AppButton disabled={isSavingProject} loading={isSavingProject} onPress={handleSaveProject} style={styles.actionButton} tone="pro">
-                    {isSavingProject ? t('savingChanges') : t('saveProject')}
-                  </AppButton>
+                  {!editingProjectId ? (
+                    <AppButton disabled={isSavingProject} loading={isSavingProject} onPress={handleSaveProject} style={styles.actionButton} tone="pro">
+                      {isSavingProject ? t('savingChanges') : t('saveProject')}
+                    </AppButton>
+                  ) : (
+                    <AppButton disabled={isSavingProject} loading={isSavingProject} onPress={handleSaveProject} style={styles.actionButton} tone="pro" variant="outline">
+                      {isSavingProject ? t('savingChanges') : t('saveChanges')}
+                    </AppButton>
+                  )}
                 </View>
               </View>
             ) : null}
@@ -1168,8 +1261,6 @@ function toProjectDraft(project: ProviderProPortfolioProject): ProProjectDraft {
     cityName: project.cityName,
     customerPermissionConfirmed: project.customerPermissionConfirmed,
     description: project.description,
-    imageType: project.images[0]?.type ?? 'GENERAL',
-    imageUrlsText: project.images.map((image) => image.url).join('\n'),
     optionalPriceRange: project.optionalPriceRange,
     title: project.title,
   };
@@ -1186,19 +1277,6 @@ function parseListText(value: string) {
       return true;
     })
     .slice(0, 20);
-}
-
-function parseLineListText(value: string) {
-  const seen = new Set<string>();
-  return value
-    .split(/\r?\n|,/)
-    .map((item) => item.trim())
-    .filter((item) => {
-      if (!item || seen.has(item.toLowerCase())) return false;
-      seen.add(item.toLowerCase());
-      return true;
-    })
-    .slice(0, 10);
 }
 
 const availabilityDays = [
@@ -2112,6 +2190,85 @@ function PortfolioProjectCard({
   );
 }
 
+function PortfolioPhotoSection({
+  editingProjectId,
+  isUploading,
+  onAddPhoto,
+  onRemovePhoto,
+  photoErrorMessage,
+  projects,
+  removingPhotoId,
+}: {
+  editingProjectId: string;
+  isUploading: boolean;
+  onAddPhoto: () => void;
+  onRemovePhoto: (projectId: string, imageId: string) => void;
+  photoErrorMessage: string | null;
+  projects: ProviderProPortfolioProject[];
+  removingPhotoId: string | null;
+}) {
+  const project = projects.find((p) => p.id === editingProjectId);
+  const images = project?.images ?? [];
+
+  return (
+    <View style={styles.portfolioPhotoSection}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionTitleBlock}>
+          <AppText variant="bodyStrong">{t('portfolioPhotos')}</AppText>
+          {images.length === 0 ? (
+            <AppText color={colors.slate500} variant="small">{t('addRealProjectPhotos')}</AppText>
+          ) : (
+            <AppText color={colors.slate500} variant="small">
+              {images.length} {t('projectPhotos').toLowerCase()}
+            </AppText>
+          )}
+        </View>
+        <AppButton
+          disabled={isUploading}
+          loading={isUploading}
+          onPress={onAddPhoto}
+          style={styles.headerButton}
+          tone="pro"
+          variant="outline"
+        >
+          {isUploading ? t('uploadingPortfolioPhoto') : t('addPhotos')}
+        </AppButton>
+      </View>
+
+      {photoErrorMessage ? <InlineMessage message={photoErrorMessage} tone="error" /> : null}
+
+      {images.length > 0 ? (
+        <View style={styles.portfolioPhotoGrid}>
+          {images.map((image) => {
+            const resolvedUrl = resolveApiMediaUrl(image.url);
+            const isRemoving = removingPhotoId === image.id;
+            return (
+              <View key={image.id} style={styles.portfolioPhotoThumb}>
+                <Image source={{ uri: resolvedUrl }} style={styles.portfolioThumbImage} />
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isRemoving || isUploading}
+                  onPress={() => onRemovePhoto(editingProjectId, image.id)}
+                  style={[styles.portfolioThumbRemove, (isRemoving || isUploading) ? { opacity: 0.5 } : null]}
+                >
+                  <Ionicons color={colors.white} name={isRemoving ? 'hourglass-outline' : 'close'} size={14} />
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.portfolioPhotoEmpty}>
+          <Ionicons color={colors.proOrangeTextDark} name="images-outline" size={28} />
+          <AppText color={colors.proOrangeTextDark} variant="small" style={{ textAlign: 'center' }}>
+            {t('noPortfolioPhotosYet')}
+          </AppText>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function ProfilePhotoCard({
   canChangePhoto,
   isUploading,
@@ -2391,6 +2548,15 @@ function getPhotoUploadErrorMessage(error: ApiError) {
   if (error.code === 'MISSING_IMAGE' || error.code === 'INVALID_MULTIPART_BODY') return t('chooseAnotherPhoto');
   if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN') return t('pleaseLoginToContinue');
   return t('couldNotUpdatePhoto');
+}
+
+function getPortfolioPhotoUploadErrorMessage(error: ApiError) {
+  if (error.code === 'IMAGE_TOO_LARGE') return t('imageTooLarge10Mb');
+  if (error.code === 'UNSUPPORTED_IMAGE_TYPE') return t('unsupportedImageType');
+  if (error.code === 'MISSING_IMAGE' || error.code === 'INVALID_MULTIPART_BODY') return t('chooseAnotherPhoto');
+  if (error.code === 'MAX_IMAGES_REACHED') return t('maxPortfolioImagesReached');
+  if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN') return t('pleaseLoginToContinue');
+  return t('couldNotUploadPortfolioPhoto');
 }
 
 function getPayoutActionErrorMessage(error: ApiError, fallback = t('couldNotOpenStripeSetup')) {
@@ -2807,6 +2973,65 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.lg,
     paddingTop: spacing.lg,
+  },
+  portfolioPhotoEmpty: {
+    alignItems: 'center',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 88,
+    padding: spacing.md,
+  },
+  portfolioPhotoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  portfolioPhotoHint: {
+    alignItems: 'center',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  portfolioPhotoSection: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  portfolioThumbImage: {
+    height: '100%',
+    width: '100%',
+  },
+  portfolioThumbRemove: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(31, 42, 51, 0.60)',
+    borderRadius: radius.pill,
+    height: 22,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 4,
+    top: 4,
+    width: 22,
+  },
+  portfolioPhotoThumb: {
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 80,
+    overflow: 'hidden',
+    position: 'relative',
+    width: 80,
   },
   proApprovalPanel: {
     backgroundColor: colors.proOrange50,

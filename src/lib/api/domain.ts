@@ -1787,6 +1787,14 @@ export type ProviderProPortfolioProjectResponse = {
   project: ProviderProPortfolioProject;
 };
 
+export type ProviderProPortfolioPhotoUploadResponse = {
+  project: ProviderProPortfolioProject;
+};
+
+export type ProviderProPortfolioPhotoRemoveResponse = {
+  project: ProviderProPortfolioProject;
+};
+
 export type MessageContextType = 'CORE_TASK' | 'OTHER' | 'PRO_REQUEST' | 'SUPPORT';
 export type MessageAccent = 'core' | 'neutral' | 'pro';
 export type MessageSenderRole = 'ADMIN' | 'CUSTOMER' | 'PRO' | 'SUPPORT' | 'SYSTEM' | 'TASKER';

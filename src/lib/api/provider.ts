@@ -9,6 +9,7 @@ import {
   ProviderCoreTasksResponse,
   ProviderCoreTaskDetailResponse,
   ProviderDashboardResponse,
+  ProviderProPortfolioPhotoRemoveResponse,
   ProviderProPortfolioProjectResponse,
   ProviderProPortfolioResponse,
   ProviderProProfileResponse,
@@ -327,10 +328,10 @@ function toPortfolioProjectBody(payload: UpsertProviderProPortfolioProjectPayloa
     cityName: payload.cityName ?? '',
     customerPermissionConfirmed: payload.customerPermissionConfirmed,
     description: payload.description ?? '',
-    imageType: payload.imageType ?? 'GENERAL',
-    imageUrls: payload.imageUrls ?? [],
     optionalPriceRange: payload.optionalPriceRange ?? '',
     title: payload.title,
+    ...(payload.imageType !== undefined ? { imageType: payload.imageType } : null),
+    ...(payload.imageUrls !== undefined ? { imageUrls: payload.imageUrls } : null),
   };
 }
 
@@ -365,6 +366,20 @@ export function deleteProviderProPortfolioProject(
     authToken,
     method: 'DELETE',
   });
+}
+
+export function removeProviderPortfolioProjectPhoto(
+  projectId: string,
+  imageId: string,
+  authToken: string,
+): Promise<ApiResult<ProviderProPortfolioPhotoRemoveResponse>> {
+  return apiRequest<ProviderProPortfolioPhotoRemoveResponse>(
+    endpoints.provider.proProfilePortfolioProjectPhotoRemove(projectId, imageId),
+    {
+      authToken,
+      method: 'DELETE',
+    },
+  );
 }
 
 function toProviderProResponseBody(payload: ProviderProResponsePayload) {
