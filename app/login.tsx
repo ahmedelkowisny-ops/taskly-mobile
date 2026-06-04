@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { PublicTopBar } from '@/src/components/taskly';
-import { AppButton, AppText, Screen } from '@/src/components/ui';
+import { KeyboardAwareFormScreen, PublicTopBar } from '@/src/components/taskly';
+import { AppButton, AppText } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { canAccessProviderWorkspace, getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
@@ -63,8 +63,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen contentStyle={styles.content} style={styles.screen}>
-      <KeyboardAvoidingView behavior={Platform.select({ ios: 'padding', default: undefined })} style={styles.keyboard}>
+    <KeyboardAwareFormScreen contentStyle={styles.content} style={styles.screen}>
         <PublicTopBar />
 
         <View style={styles.hero}>
@@ -179,8 +178,7 @@ export default function LoginScreen() {
             </AppText>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 
@@ -267,10 +265,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     height: 48,
     paddingHorizontal: spacing.md,
-  },
-  keyboard: {
-    flex: 1,
-    gap: spacing.xl,
   },
   passwordInput: {
     color: colors.navy900,

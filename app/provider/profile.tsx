@@ -6,8 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FormField, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { FormField, KeyboardAwareFormScreen, ModeBadge, ProviderTopBar } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import { getCities, getCoreCategories } from '@/src/lib/api/catalog';
 import type {
   CatalogCategory,
@@ -866,7 +866,7 @@ export default function ProviderProfileScreen() {
   }
 
   return (
-    <Screen>
+    <KeyboardAwareFormScreen>
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
@@ -1249,7 +1249,7 @@ export default function ProviderProfileScreen() {
       </AppCard>
       ) : null}
 
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

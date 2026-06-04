@@ -3,8 +3,8 @@ import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { FormField, ModeBadge } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { FormField, KeyboardAwareFormScreen, ModeBadge } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import { ProviderProRequestDetailResponse, ProviderProResponsePayload } from '@/src/lib/api/domain';
 import {
   acceptMockProviderProSiteVisit,
@@ -403,7 +403,7 @@ export default function ProviderProRequestDetailScreen() {
 
   if (!canUsePro && status !== 'loading') {
     return (
-      <Screen>
+      <KeyboardAwareFormScreen>
         <View style={styles.header}>
           <ModeBadge mode="providerPro" />
           <AppButton onPress={() => router.push('/provider/start' as Href)} variant="ghost">{t('back')}</AppButton>
@@ -416,12 +416,12 @@ export default function ProviderProRequestDetailScreen() {
             {t('applyForTasklyPro')}
           </AppButton>
         </AppCard>
-      </Screen>
+      </KeyboardAwareFormScreen>
     );
   }
 
   return (
-    <Screen>
+    <KeyboardAwareFormScreen>
       <View style={styles.header}>
         <ModeBadge mode="providerPro" />
         <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
@@ -625,7 +625,7 @@ export default function ProviderProRequestDetailScreen() {
           <NextActions actions={request.nextActions} />
         </>
       ) : null}
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

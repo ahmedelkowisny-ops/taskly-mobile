@@ -1545,7 +1545,7 @@ export default function CustomerPostProRequestScreen() {
           ) : null}
 
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            behavior={Platform.select({ android: 'height', ios: 'padding', default: undefined })}
             keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, spacing.lg) : 0}
             style={styles.keyboardAvoider}>
             <ScrollView
@@ -1554,6 +1554,7 @@ export default function CustomerPostProRequestScreen() {
                 styles.content,
                 { paddingBottom: Math.max(insets.bottom + 160, 180) },
               ]}
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               keyboardShouldPersistTaps="handled"
               onScroll={handleCustomerScroll}
               scrollEventThrottle={16}
@@ -1592,7 +1593,6 @@ export default function CustomerPostProRequestScreen() {
                 </AppCard>
               ) : null}
             </ScrollView>
-          </KeyboardAvoidingView>
 
           <Modal
             animationType="slide"
@@ -1668,6 +1668,7 @@ export default function CustomerPostProRequestScreen() {
               </AppButton>
             </View>
           </View>
+          </KeyboardAvoidingView>
         </View>
       </View>
     </Screen>

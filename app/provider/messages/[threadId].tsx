@@ -4,8 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { FormField, ProviderTopBar } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { FormField, KeyboardAwareFormScreen, ProviderTopBar } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import { MessageAttachment, MessageItem, MessageThreadDetailResponse, MessageThreadMeta } from '@/src/lib/api/domain';
 import { getMessageThread, sendMessage, sendMessageImage } from '@/src/lib/api/messages';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
@@ -255,7 +255,7 @@ export default function ProviderMessageThreadScreen() {
   );
 
   return (
-    <Screen>
+    <KeyboardAwareFormScreen>
       <ProviderTopBar />
       <View style={styles.header}>
         <AppButton onPress={() => router.back()} tone="neutral" variant="ghost">{t('back')}</AppButton>
@@ -295,7 +295,7 @@ export default function ProviderMessageThreadScreen() {
           );
         })()
       ) : null}
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

@@ -6,7 +6,8 @@ import { useCallback, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { FormField } from '@/src/components/taskly/FormField';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { KeyboardAwareFormScreen } from '@/src/components/taskly/KeyboardAwareFormScreen';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import {
   approveCustomerTaskCompletion,
   cancelCustomerTask,
@@ -924,7 +925,7 @@ export default function CustomerTaskDetailScreen() {
   }, [getValidAccessToken, loadDetail, markDemoCompletionRejected, rejectionReason, status, task?.nextActions.canRejectCompletion, taskId]);
 
   return (
-    <Screen contentStyle={styles.screenContent}>
+    <KeyboardAwareFormScreen contentStyle={styles.screenContent}>
       <View style={styles.header}>
         <AppButton onPress={() => router.back()} variant="ghost">
           {t('back')}
@@ -1010,7 +1011,7 @@ export default function CustomerTaskDetailScreen() {
           />
         </>
       ) : null}
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

@@ -3,8 +3,8 @@ import { Href, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
-import { CustomerTopBar, FormField } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
+import { CustomerTopBar, FormField, KeyboardAwareFormScreen } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText } from '@/src/components/ui';
 import { getCustomerProfile, updateCustomerProfile } from '@/src/lib/api/customer';
 import type { CustomerProfile } from '@/src/lib/api/domain';
 import type { ApiError } from '@/src/lib/api/types';
@@ -160,7 +160,7 @@ export default function CustomerProfileScreen() {
   }
 
   return (
-    <Screen contentStyle={styles.content}>
+    <KeyboardAwareFormScreen contentStyle={styles.content}>
       <CustomerTopBar />
 
       <View style={styles.header}>
@@ -307,7 +307,7 @@ export default function CustomerProfileScreen() {
         title={t('customerMenuLegal')}
       />
 
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

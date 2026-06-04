@@ -10,9 +10,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
   KeyboardTypeOptions,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -2919,8 +2921,14 @@ export default function CustomerPostTaskScreen() {
           </ScrollView>
         </View>
 
+        <KeyboardAvoidingView
+          behavior={Platform.select({ android: 'height', ios: 'padding', default: undefined })}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, spacing.lg) : 0}
+          style={styles.keyboardAvoider}>
         <ScrollView
           contentContainerStyle={styles.content}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardShouldPersistTaps="handled"
           onScroll={handleCustomerScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}>
@@ -2988,6 +2996,7 @@ export default function CustomerPostTaskScreen() {
             {t('postTaskFooterNote')}
           </AppText>
         </View>
+        </KeyboardAvoidingView>
       </View>
     </Screen>
   );
@@ -3304,6 +3313,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     ...designTokens.shadows.card,
+  },
+  keyboardAvoider: {
+    flex: 1,
   },
   header: {
     backgroundColor: '#FBFDFF',

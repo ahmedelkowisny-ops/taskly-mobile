@@ -9,6 +9,7 @@ export { EmptyStateCard } from './EmptyStateCard';
 export { FormField } from './FormField';
 export { FormSection } from './FormSection';
 export { ImagePickerPlaceholder } from './ImagePickerPlaceholder';
+export { KeyboardAwareFormScreen } from './KeyboardAwareFormScreen';
 export { LanguageToggle } from './LanguageToggle';
 export { ModeBadge } from './ModeBadge';
 export { NotificationBell } from './NotificationBell';

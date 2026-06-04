@@ -5,8 +5,8 @@ import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Image, Linking, StyleSheet, View } from 'react-native';
 
-import { FormField, formatCustomerPreviewLabel, ModeBadge } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { FormField, formatCustomerPreviewLabel, KeyboardAwareFormScreen, ModeBadge } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import {
   CoreCancellationState,
   CoreDisputeState,
@@ -687,7 +687,7 @@ export default function ProviderCoreTaskDetailScreen() {
   }, [router]);
 
   return (
-    <Screen>
+    <KeyboardAwareFormScreen>
       <View style={styles.header}>
         <ModeBadge mode="providerCore" />
         <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
@@ -779,7 +779,7 @@ export default function ProviderCoreTaskDetailScreen() {
           )}
         </>
       ) : null}
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { CustomerDrawer } from '@/src/components/taskly/CustomerDrawer';
-import { CustomerTopBar, FormField } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { CustomerTopBar, FormField, KeyboardAwareFormScreen } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import type { CustomerSupportIssueType } from '@/src/lib/api/domain';
 import { submitCustomerSupportRequest } from '@/src/lib/api/customer';
 import { useAuth } from '@/src/lib/auth/useAuth';
@@ -73,7 +73,7 @@ export default function CustomerSupportScreen() {
   }
 
   return (
-    <Screen contentStyle={styles.content}>
+    <KeyboardAwareFormScreen contentStyle={styles.content}>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.header}>
@@ -128,7 +128,7 @@ export default function CustomerSupportScreen() {
       </AppCard>
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

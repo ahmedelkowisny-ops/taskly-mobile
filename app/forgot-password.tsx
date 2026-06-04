@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
+import { KeyboardAwareFormScreen, LanguageToggle, TasklyLogoText } from '@/src/components/taskly';
+import { AppButton, AppCard, AppText } from '@/src/components/ui';
 import { requestMobilePasswordReset } from '@/src/lib/api/auth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
@@ -44,7 +44,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen contentStyle={styles.content} style={styles.screen}>
+    <KeyboardAwareFormScreen contentStyle={styles.content} style={styles.screen}>
       <View style={styles.topRow}>
         <View style={styles.brandMark}>
           <TasklyLogoText compact iconOnly />
@@ -117,7 +117,7 @@ export default function ForgotPasswordScreen() {
           </AppText>
         </Pressable>
       </AppCard>
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 

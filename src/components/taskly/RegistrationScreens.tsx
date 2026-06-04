@@ -12,6 +12,7 @@ import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { PublicTopBar } from './PublicTopBar';
+import { KeyboardAwareFormScreen } from './KeyboardAwareFormScreen';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 type FieldErrors = Partial<Record<'email' | 'firstName' | 'lastName' | 'password' | 'phone' | 'terms', string>>;
@@ -171,7 +172,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
   }
 
   return (
-    <Screen contentStyle={styles.content} style={styles.screen}>
+    <KeyboardAwareFormScreen contentStyle={styles.content} style={styles.screen}>
       <PublicTopBar />
       <ProgressDots activeColor={accent} />
 
@@ -300,7 +301,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
           {t(roleButton[role])}
         </AppButton>
       </View>
-    </Screen>
+    </KeyboardAwareFormScreen>
   );
 }
 
