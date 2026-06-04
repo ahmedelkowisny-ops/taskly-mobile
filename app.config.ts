@@ -25,6 +25,12 @@ export default ({ config }: ConfigContext) => ({
           'Taskly uses your location to confirm the service area for your task.',
       },
     ],
+    [
+      'react-native-maps',
+      {
+        androidGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY,
+      },
+    ],
     '@react-native-community/datetimepicker',
   ],
 });

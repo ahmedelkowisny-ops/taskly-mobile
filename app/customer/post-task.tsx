@@ -3,7 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -463,6 +463,8 @@ export default function CustomerPostTaskScreen() {
   const [selectedLatitude, setSelectedLatitude] = useState(DEFAULT_TASK_LOCATION.lat);
   const [selectedLongitude, setSelectedLongitude] = useState(DEFAULT_TASK_LOCATION.lng);
   const [selectedAddress, setSelectedAddress] = useState(DEFAULT_TASK_ADDRESS);
+  const [isMapReady, setIsMapReady] = useState(Platform.OS !== 'android');
+  const [showMapFallback, setShowMapFallback] = useState(false);
 
   const steps: StepMeta[] = [
     {
@@ -641,6 +643,16 @@ export default function CustomerPostTaskScreen() {
       void loadCatalog();
     }, [loadCatalog]),
   );
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || isMapReady) {
+      setShowMapFallback(false);
+      return;
+    }
+
+    const fallbackTimer = setTimeout(() => setShowMapFallback(true), 6000);
+    return () => clearTimeout(fallbackTimer);
+  }, [isMapReady]);
 
   useEffect(() => {
     if (!selectedCategory) return;
@@ -2174,9 +2186,22 @@ export default function CustomerPostTaskScreen() {
                 longitudeDelta: 0.04,
               }}
               onPress={handleMapPress}
+              onMapReady={() => {
+                setIsMapReady(true);
+                setShowMapFallback(false);
+              }}
+              provider={PROVIDER_GOOGLE}
               style={styles.mapView}>
               <Marker coordinate={{ latitude: selectedLatitude, longitude: selectedLongitude }} />
             </MapView>
+            {showMapFallback ? (
+              <View pointerEvents="none" style={styles.mapFallback}>
+                <Ionicons color={colors.slate700} name="map-outline" size={20} />
+                <AppText color={colors.slate700} style={styles.mapFallbackText} variant="small">
+                  {t('mapLoadFallback')}
+                </AppText>
+              </View>
+            ) : null}
           </View>
           <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
             {t('mapPinHelper')}
@@ -3372,6 +3397,21 @@ const styles = StyleSheet.create({
   mapCard: {
     borderRadius: radius.lg,
     overflow: 'hidden',
+  },
+  mapFallback: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    bottom: 0,
+    gap: spacing.xs,
+    justifyContent: 'center',
+    left: 0,
+    padding: spacing.md,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  mapFallbackText: {
+    textAlign: 'center',
   },
   mapHelper: {
     paddingVertical: spacing.xs,

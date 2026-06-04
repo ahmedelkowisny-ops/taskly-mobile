@@ -757,6 +757,7 @@ export const en = {
   city: 'City',
   address: 'Address',
   mapPinHelper: 'Tap the map to pin your service location.',
+  mapLoadFallback: 'The map is taking longer than expected to load. You can still enter the address manually.',
   districtArea: 'District/area',
   district: 'District',
   title: 'Title',
