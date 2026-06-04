@@ -1,11 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ProviderTopBar } from '@/src/components/taskly';
 import { AppButton, AppText, Screen } from '@/src/components/ui';
-import { t } from '@/src/lib/i18n';
+import { useAuth } from '@/src/lib/auth/useAuth';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -22,7 +24,19 @@ const PRO_CATEGORIES = [
 ] as const;
 
 export default function ProUpsellScreen() {
+  useI18n();
   const router = useRouter();
+  const { logout, status } = useAuth();
+
+  async function handleApplyPress() {
+    try {
+      if (status === 'authenticated' || status === 'demo') {
+        await logout();
+      }
+    } finally {
+      router.replace('/register/pro' as Href);
+    }
+  }
 
   return (
     <Screen>
@@ -61,15 +75,15 @@ export default function ProUpsellScreen() {
       </AppText>
 
       <View style={styles.ctaBlock}>
-        <AppButton onPress={() => router.push('/provider/start')} tone="pro">
+        <AppButton onPress={handleApplyPress} tone="pro">
           {t('applyForTasklyPro')}
         </AppButton>
-        <AppButton
-          labelColor={colors.slate500}
+        <Pressable
+          accessibilityRole="button"
           onPress={() => WebBrowser.openBrowserAsync('https://tasklyco.com')}
-          variant="ghost">
-          {t('proUpsellLearnMore')}
-        </AppButton>
+          style={styles.learnMoreLink}>
+          <AppText color={colors.slate500} variant="small">{t('proUpsellLearnMore')}</AppText>
+        </Pressable>
       </View>
     </Screen>
   );
@@ -95,7 +109,11 @@ const styles = StyleSheet.create({
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  learnMoreLink: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
   ctaBlock: {
     gap: spacing.sm,

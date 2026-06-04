@@ -1,8 +1,11 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
+import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { EmptyStateCard, isHistoryProviderCoreTask, ProviderTopBar } from '@/src/components/taskly';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse, ProviderProfileSummary } from '@/src/lib/api/domain';
 import { getProviderCoreTasks, getProviderProfile, refreshPayoutStatus, startPayoutSetup } from '@/src/lib/api/provider';
@@ -11,7 +14,7 @@ import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { radius, spacing } from '@/src/theme/spacing';
 
 function formatDate(value: string | null | undefined) {
   if (!value) return null;
@@ -59,6 +62,7 @@ function getPayoutActionErrorMessage(error: ApiError, fallback = t('couldNotOpen
 
 export default function ProviderPayoutsScreen() {
   useI18n();
+  const router = useRouter();
   const { getValidAccessToken, refreshSession, session, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderCoreTasksResponse | null>(null);
   const [profile, setProfile] = useState<ProviderProfileSummary | null>(null);
@@ -200,8 +204,7 @@ export default function ProviderPayoutsScreen() {
       </View>
 
       {needsStripe ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={payoutStatus?.isReady ? t('payoutsReady') : t('payoutSetupNeedsAttention')} tone={payoutStatus?.isReady ? 'success' : 'warning'} />
+        <AppCard backgroundColor={colors.white}>
           <AppText variant="bodyStrong">{payoutStatus?.isReady ? t('yourPayoutsAreReady') : t('stripeVerificationNeeded')}</AppText>
           <AppText color={colors.slate700}>{t('stripeVerificationHelper')}</AppText>
           <AppText color={colors.slate500} variant="small">{t('stripePayoutsExplanation')}</AppText>
@@ -228,15 +231,13 @@ export default function ProviderPayoutsScreen() {
       ) : null}
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={t('loading')} tone="neutral" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{t('payouts')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('couldNotRefreshProviderDashboard')} tone="warning" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -246,17 +247,29 @@ export default function ProviderPayoutsScreen() {
       ) : null}
 
       {!isLoading && !errorMessage && completedTasks.length > 0 ? (
-        <AppCard backgroundColor={colors.tasklyBlue50}>
-          <AppText color={colors.slate500} variant="small">{t('totalEarnings')}</AppText>
-          <AppText variant="sectionTitle">{completedTasks.length} {t('taskHistory').toLowerCase()}</AppText>
-          {totalPayoutLabel ? <AppText color={colors.success600} variant="bodyStrong">{totalPayoutLabel}</AppText> : null}
+        <AppCard backgroundColor={colors.tasklyBlue50} style={styles.payoutBreakdownCard}>
+          <View style={styles.payoutBreakdownRow}>
+            <View style={styles.payoutIconBox}>
+              <Ionicons color={colors.tasklyBlue600} name="wallet-outline" size={20} />
+            </View>
+            <View style={styles.payoutBreakdownText}>
+              <AppText color={colors.slate500} variant="small">{t('estimatedPayoutLabel')}</AppText>
+              {totalPayoutLabel ? (
+                <AppText color={colors.navy900} variant="bodyStrong">{totalPayoutLabel}</AppText>
+              ) : (
+                <AppText color={colors.navy900} variant="bodyStrong">{completedTasks.length} {t('taskHistory').toLowerCase()}</AppText>
+              )}
+            </View>
+          </View>
         </AppCard>
       ) : null}
 
       {!isLoading && !errorMessage && completedTasks.length === 0 ? (
         <EmptyStateCard
+          actionLabel={t('browseAvailableTasks')}
           body={t('noPayoutsYetBody')}
           icon="wallet-outline"
+          onActionPress={() => router.push('/provider/core-tasks' as Href)}
           title={t('noPayoutsYet')}
         />
       ) : null}
@@ -271,6 +284,29 @@ export default function ProviderPayoutsScreen() {
 const styles = StyleSheet.create({
   content: { gap: spacing.xl, paddingTop: spacing.lg },
   header: { gap: spacing.sm },
+  payoutBreakdownCard: {
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+  },
+  payoutBreakdownRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  payoutBreakdownText: {
+    flex: 1,
+    gap: 2,
+  },
+  payoutIconBox: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
   rowHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   screen: { backgroundColor: '#F7F9FB' },
   stack: { gap: spacing.sm },

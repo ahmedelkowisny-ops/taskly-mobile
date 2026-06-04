@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   EmptyStateCard,
@@ -17,8 +17,6 @@ import {
 } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import {
-  MessageThreadSummary,
-  MessageThreadsResponse,
   ProviderCoreTaskSummary,
   ProviderCoreTasksResponse,
   ProviderDashboardResponse,
@@ -27,7 +25,6 @@ import {
   ProviderProRequestSummary,
   ProviderProRequestsResponse,
 } from '@/src/lib/api/domain';
-import { getMessageThreads } from '@/src/lib/api/messages';
 import {
   expressInterestInCoreTask,
   getProviderCoreTasks,
@@ -40,7 +37,6 @@ import {
   startProviderCoreTask,
 } from '@/src/lib/api/provider';
 import {
-  getMockMessageThreadsResponse,
   getMockProviderCoreTasksResponse,
   getMockProviderDashboardResponse,
   getMockProviderProRequestsResponse,
@@ -62,7 +58,6 @@ export default function ProviderDashboardScreen() {
   const [proRequestsData, setProRequestsData] = useState<ProviderProRequestsResponse | null>(null);
   const [proProfileData, setProProfileData] = useState<ProviderProProfileResponse | null>(null);
   const [proPortfolioData, setProPortfolioData] = useState<ProviderProPortfolioResponse | null>(null);
-  const [messagesData, setMessagesData] = useState<MessageThreadsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,8 +87,6 @@ export default function ProviderDashboardScreen() {
   const activeTasks = coreTasks.filter(isActiveProviderCoreTask);
   const availableTasks = coreTasks.filter(isAvailableProviderCoreTask);
   const historyTasks = coreTasks.filter(isHistoryProviderCoreTask);
-  const customerMessageThreads = (messagesData?.threads ?? []).filter((thread) => thread.contextType === 'CORE_TASK');
-  const proMessageThreads = (messagesData?.threads ?? []).filter((thread) => thread.contextType === 'PRO_REQUEST');
 
   const loadDashboard = useCallback(async () => {
     setErrorMessage(null);
@@ -105,7 +98,6 @@ export default function ProviderDashboardScreen() {
       setProRequestsData(getMockProviderProRequestsResponse());
       setProProfileData(null);
       setProPortfolioData(null);
-      setMessagesData(getMockMessageThreadsResponse());
       setIsLoading(false);
       return;
     }
@@ -116,7 +108,6 @@ export default function ProviderDashboardScreen() {
       setProRequestsData(null);
       setProProfileData(null);
       setProPortfolioData(null);
-      setMessagesData(null);
       setIsUnauthorized(status === 'unauthenticated');
       setIsLoading(false);
       return;
@@ -131,19 +122,17 @@ export default function ProviderDashboardScreen() {
       setProRequestsData(null);
       setProProfileData(null);
       setProPortfolioData(null);
-      setMessagesData(null);
       setIsUnauthorized(true);
       setIsLoading(false);
       return;
     }
 
-    const [result, coreTasksResult, proRequestsResult, proProfileResult, proPortfolioResult, messagesResult] = await Promise.all([
+    const [result, coreTasksResult, proRequestsResult, proProfileResult, proPortfolioResult] = await Promise.all([
       getProviderDashboard(authToken),
       getProviderCoreTasks(authToken),
       getProviderProRequests(authToken),
       getProviderProProfile(authToken),
       getProviderProPortfolio(authToken),
-      getMessageThreads(authToken),
     ]);
 
     if (result.ok) {
@@ -165,7 +154,6 @@ export default function ProviderDashboardScreen() {
     setProRequestsData(proRequestsResult.ok ? proRequestsResult.data : null);
     setProProfileData(proProfileResult.ok ? proProfileResult.data : null);
     setProPortfolioData(proPortfolioResult.ok ? proPortfolioResult.data : null);
-    setMessagesData(messagesResult.ok ? messagesResult.data : null);
     setIsLoading(false);
   }, [applySession, getValidAccessToken, status]);
 
@@ -235,7 +223,7 @@ export default function ProviderDashboardScreen() {
         <AppText style={styles.screenTitle} variant="screenTitle">
           {showProDashboard ? t('proDashboardTitle') : t('taskerDashboard')}
         </AppText>
-        <AppText color={colors.slate700}>{t('welcomeName').replace('{{name}}', greetingName)}</AppText>
+        <AppText color={colors.slate500}>{t('welcomeName').replace('{{name}}', greetingName)}</AppText>
       </View>
 
       {hasCoreAccess && hasApprovedPro ? (
@@ -243,14 +231,14 @@ export default function ProviderDashboardScreen() {
       ) : null}
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
+        <AppCard backgroundColor={colors.white}>
           <StatusBadge label={t('loading')} tone="neutral" />
           <AppText variant="sectionTitle">{t('loadingProviderDashboard')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
+        <AppCard backgroundColor={isUnauthorized ? colors.white : colors.white}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
             {isUnauthorized ? t('loginOrProviderAccessRequired') : t('couldNotRefreshProviderDashboard')}
@@ -272,31 +260,38 @@ export default function ProviderDashboardScreen() {
       {showProDashboard ? (
         <ProDashboard
           matchingCount={summary?.matchingProRequestsCount ?? proRequestsData?.proRequests.length ?? 0}
-          messages={proMessageThreads}
           portfolioCount={proPortfolioData?.projects.length ?? proProfileData?.profile.portfolioProjectsCount ?? 0}
           profile={proProfileData}
           requests={proRequestsData?.proRequests ?? []}
           responsesCount={summary?.submittedProResponsesCount ?? 0}
-          unreadMessagesCount={proMessageThreads.reduce((total, thread) => total + (thread.unreadCount ?? 0), 0)}
           onOpenMessages={() => router.push('/provider/messages?context=pro' as Href)}
           onOpenProfile={() => router.push('/provider/profile' as Href)}
           onOpenRequests={() => router.push('/provider/pro-requests' as Href)}
           onOpenSupport={() => router.push('/provider/messages?context=support' as Href)}
-          onOpenThread={openThread}
         />
       ) : null}
 
       {showCoreDashboard ? (
         <>
           {summary ? (
-            <AppCard backgroundColor={colors.white}>
-              <View style={styles.metricsGrid}>
-                <Metric label={t('activeTasks')} tone="blue" value={activeTasks.length || summary.activeCoreTasksCount + summary.reservedCoreTasksCount} />
-                <Metric label={t('availableTasks')} tone="blue" value={availableTasks.length || summary.availableCoreTasksCount} />
-                <Metric label={t('taskHistory')} tone="slate" value={historyTasks.length} />
-                <Metric label={t('customerMessages')} tone="slate" value={customerMessageThreads.length} />
-              </View>
-            </AppCard>
+            <View style={styles.metricsGrid}>
+              <Pressable onPress={() => router.push('/provider/active-tasks')} style={[styles.metric, styles.metricBlue]}>
+                <AppText color={colors.slate500} variant="small">{t('activeTasks')}</AppText>
+                <AppText color={colors.navy900} variant="sectionTitle">{activeTasks.length || summary.activeCoreTasksCount + summary.reservedCoreTasksCount}</AppText>
+              </Pressable>
+              <Pressable onPress={() => router.push('/provider/core-tasks')} style={[styles.metric, styles.metricBlue]}>
+                <AppText color={colors.slate500} variant="small">{t('availableTasks')}</AppText>
+                <AppText color={colors.navy900} variant="sectionTitle">{availableTasks.length || summary.availableCoreTasksCount}</AppText>
+              </Pressable>
+              <Pressable onPress={() => router.push('/provider/task-history')} style={[styles.metric, styles.metricSlate]}>
+                <AppText color={colors.slate500} variant="small">{t('taskHistory')}</AppText>
+                <AppText color={colors.navy900} variant="sectionTitle">{historyTasks.length}</AppText>
+              </Pressable>
+              <Pressable onPress={() => router.push('/provider/messages')} style={[styles.metric, styles.metricSlate]}>
+                <AppText color={colors.slate500} variant="small">{t('customerMessages')}</AppText>
+                <AppText color={colors.navy900} variant="sectionTitle">0</AppText>
+              </Pressable>
+            </View>
           ) : null}
 
           <TaskSection
@@ -341,12 +336,6 @@ export default function ProviderDashboardScreen() {
             sectionActionLabel={t('viewHistory')}
             onSectionAction={() => router.push('/provider/task-history')}
           />
-
-          <MessagePreviewSection
-            threads={customerMessageThreads.slice(0, 2)}
-            onOpenMessages={() => router.push('/provider/messages' as Href)}
-            onOpenThread={openThread}
-          />
         </>
       ) : null}
 
@@ -372,14 +361,6 @@ export default function ProviderDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    gap: spacing.lg,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
   content: {
     gap: spacing.xl,
     paddingTop: spacing.lg,
@@ -388,15 +369,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   header: {
-    gap: spacing.sm,
-  },
-  badges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  panel: {
-    minHeight: 142,
+    gap: spacing.xs,
   },
   screenTitle: {
     fontSize: 26,
@@ -404,13 +377,12 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
   },
-  topBar: {
+  sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   metric: {
-    borderColor: colors.border,
     borderRadius: 8,
     borderWidth: 1,
     flexBasis: '47%',
@@ -419,13 +391,11 @@ const styles = StyleSheet.create({
   },
   metricBlue: {
     backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
   },
   metricSlate: {
     backgroundColor: colors.slate50,
-  },
-  metricPro: {
-    backgroundColor: colors.proOrange50,
-    borderColor: colors.proOrangeBorder,
+    borderColor: colors.border,
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -439,24 +409,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  messageCard: {
-    gap: spacing.sm,
-  },
   proDashboard: {
     gap: spacing.xl,
-  },
-  productChip: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
   },
   screen: {
     backgroundColor: '#F7F9FB',
   },
-  proOutlineButton: {
+  sectionActionButton: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+  },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  badges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  messageCard: {
+    gap: spacing.sm,
+  },
+  metricPro: {
+    backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
   },
   quickActions: {
@@ -466,18 +448,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  proOutlineButton: {
+    borderColor: colors.proOrangeBorder,
+  },
 });
-
-function Metric({ label, tone, value }: { label: string; tone: 'blue' | 'slate'; value: number }) {
-  return (
-    <View style={[styles.metric, tone === 'blue' ? styles.metricBlue : styles.metricSlate]}>
-      <AppText color={colors.slate500} variant="small">
-        {label}
-      </AppText>
-      <AppText variant="sectionTitle">{value}</AppText>
-    </View>
-  );
-}
 
 function WorkspaceModeSwitcher({
   activeWorkspace,
@@ -513,30 +487,24 @@ function WorkspaceModeSwitcher({
 
 function ProDashboard({
   matchingCount,
-  messages,
   onOpenMessages,
   onOpenProfile,
   onOpenRequests,
   onOpenSupport,
-  onOpenThread,
   portfolioCount,
   profile,
   requests,
   responsesCount,
-  unreadMessagesCount,
 }: {
   matchingCount: number;
-  messages: MessageThreadSummary[];
   onOpenMessages: () => void;
   onOpenProfile: () => void;
   onOpenRequests: () => void;
   onOpenSupport: () => void;
-  onOpenThread: (threadId: string) => void;
   portfolioCount: number;
   profile: ProviderProProfileResponse | null;
   requests: ProviderProRequestSummary[];
   responsesCount: number;
-  unreadMessagesCount: number;
 }) {
   const proProfile = profile?.profile ?? null;
   const approvedCategories = proProfile?.categories.filter((category) => category.status === 'approved') ?? [];
@@ -544,7 +512,7 @@ function ProDashboard({
 
   return (
     <View style={styles.proDashboard}>
-      <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+      <AppCard backgroundColor={colors.proOrange50}>
         <View style={styles.badges}>
           <ModeBadge mode="providerPro" />
           <StatusBadge label={t('approvedForTasklyPro')} tone="success" />
@@ -565,7 +533,6 @@ function ProDashboard({
         <ProMetric label={t('matchingProRequests')} value={matchingCount} />
         <ProMetric label={t('yourResponses')} value={responsesCount} />
         <ProMetric label={t('portfolioReadiness')} value={`${readiness}%`} />
-        <ProMetric label={t('proUnreadMessages')} value={unreadMessagesCount} />
       </View>
 
       <View style={styles.section}>
@@ -577,7 +544,7 @@ function ProDashboard({
         </View>
         {requests.length ? (
           requests.slice(0, 3).map((request) => (
-            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.white} key={request.id}>
+            <AppCard backgroundColor={colors.white} key={request.id}>
               <View style={styles.badges}>
                 <StatusBadge label={request.statusLabel} tone="pro" />
                 {request.proResponseState?.badgeLabel || request.responseStatusLabel ? (
@@ -642,25 +609,6 @@ function ProDashboard({
             {t('openProMessages')}
           </AppButton>
         </View>
-        {messages.length ? (
-          messages.slice(0, 2).map((thread) => (
-            <AppCard backgroundColor={colors.white} key={thread.id} style={styles.messageCard}>
-              <View style={styles.badges}>
-                <StatusBadge label={t('proRequest')} tone="pro" />
-                {thread.unreadCount ? (
-                  <StatusBadge label={t('unreadMessagesCount').replace('{count}', String(thread.unreadCount))} tone="warning" />
-                ) : null}
-              </View>
-              <AppText variant="bodyStrong">{thread.title}</AppText>
-              {thread.lastMessagePreview ? <AppText color={colors.slate700}>{thread.lastMessagePreview}</AppText> : null}
-              <AppButton onPress={() => onOpenThread(thread.id)} tone="pro" variant="outline">
-                {t('openConversation')}
-              </AppButton>
-            </AppCard>
-          ))
-        ) : (
-          <EmptyStateCard accent="pro" body={t('noProMessagesBody')} icon="chatbubbles-outline" title={t('noProMessagesTitle')} />
-        )}
         <AppButton onPress={onOpenSupport} tone="neutral" variant="outline">
           {t('supportMessagesTitle')}
         </AppButton>
@@ -675,7 +623,7 @@ function ProMetric({ label, value }: { label: string; value: number | string }) 
       <AppText color={colors.proOrangeText} variant="small">
         {label}
       </AppText>
-      <AppText variant="sectionTitle">{value}</AppText>
+      <AppText color={colors.navy900} variant="sectionTitle">{value}</AppText>
     </View>
   );
 }
@@ -686,7 +634,7 @@ function ProInfo({ label, value }: { label: string; value: string }) {
       <AppText color={colors.slate500} variant="small">
         {label}
       </AppText>
-      <AppText variant="bodyStrong">{value}</AppText>
+      <AppText color={colors.navy900} variant="bodyStrong">{value}</AppText>
     </View>
   );
 }
@@ -754,52 +702,17 @@ function TaskSection({
         <EmptyStateCard body={emptyBody} clean icon={emptyIcon} title={emptyTitle} />
       )}
       {sectionActionLabel && onSectionAction ? (
-        <AppButton onPress={onSectionAction} tone="neutral" variant="outline">
+        <AppButton
+          onPress={onSectionAction}
+          style={styles.sectionActionButton}
+          tone="core"
+          variant="outline">
           {sectionActionLabel}
         </AppButton>
       ) : null}
     </View>
   );
 }
-
-function MessagePreviewSection({
-  onOpenMessages,
-  onOpenThread,
-  threads,
-}: {
-  onOpenMessages: () => void;
-  onOpenThread: (threadId: string) => void;
-  threads: MessageThreadSummary[];
-}) {
-  return (
-    <View style={styles.section}>
-      <AppText variant="sectionTitle">{t('customerMessages')}</AppText>
-      {threads.length ? (
-        threads.map((thread) => (
-          <AppCard backgroundColor={colors.white} key={thread.id} style={styles.messageCard}>
-            <View style={styles.badges}>
-              <StatusBadge label={t('customerMessages')} tone="core" />
-              {thread.unreadCount ? (
-                <StatusBadge label={t('unreadMessagesCount').replace('{count}', String(thread.unreadCount))} tone="warning" />
-              ) : null}
-            </View>
-            <AppText variant="bodyStrong">{thread.title}</AppText>
-            {thread.lastMessagePreview ? <AppText color={colors.slate700}>{thread.lastMessagePreview}</AppText> : null}
-            <AppButton onPress={() => onOpenThread(thread.id)} variant="outline">
-              {t('openConversation')}
-            </AppButton>
-          </AppCard>
-        ))
-      ) : (
-        <EmptyStateCard body={t('customerMessagesEmptyBody')} clean icon="chatbubbles-outline" title={t('customerMessagesEmpty')} />
-      )}
-      <AppButton onPress={onOpenMessages} tone="neutral" variant="outline">
-        {t('openMessages')}
-      </AppButton>
-    </View>
-  );
-}
-
 
 function getFriendlyName(source: unknown, fallback: string) {
   const record = source && typeof source === 'object' ? (source as Record<string, unknown>) : {};

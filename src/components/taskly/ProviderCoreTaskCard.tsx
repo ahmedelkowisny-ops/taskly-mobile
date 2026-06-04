@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import type { ProviderCoreTaskSummary } from '@/src/lib/api/domain';
 import { t } from '@/src/lib/i18n';
@@ -47,7 +48,7 @@ export function ProviderCoreTaskCard({
     <AppCard backgroundColor={compact ? colors.tasklyBlue50 : colors.white} style={compact ? styles.compactCard : undefined}>
       <View style={styles.badges}>
         {statusChips.map((chip) => (
-          <StatusBadge key={chip.label} label={chip.label} tone={chip.tone} />
+          <StatusBadge key={chip.label} label={chip.label} tone={chip.tone} style={chip.style} />
         ))}
       </View>
 
@@ -58,12 +59,7 @@ export function ProviderCoreTaskCard({
         </AppText>
       </View>
 
-      <View style={styles.metaGrid}>
-        <Meta label={t('customer')} value={formatCustomerPreviewLabel(task.customerPreviewLabel)} />
-        <Meta label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
-        <Meta label={t('price')} value={task.priceLabel} />
-        <Meta label={t('payment')} value={getPaymentStatusLabel(task.paymentStatusLabel)} />
-      </View>
+      <InfoRow task={task} />
 
       {task.providerPaymentBreakdown?.providerPayoutLabel ? (
         <View style={styles.payoutBox}>
@@ -100,17 +96,9 @@ export function ProviderCoreTaskCard({
 
       {task.edgeCase ? (
         <View style={styles.payoutBox}>
-          <AppText color={colors.tasklyBlue700} variant="bodyStrong">
-            {task.edgeCase.statusLabel}
-          </AppText>
           {task.edgeCase.canceledAt ? (
             <AppText color={colors.slate700}>
               {t('cancelledOn')}: {formatDate(task.edgeCase.canceledAt)}
-            </AppText>
-          ) : null}
-          {task.edgeCase.cancellationOutcomeLabel ? (
-            <AppText color={colors.slate700}>
-              {t('cancellationOutcome')}: {task.edgeCase.cancellationOutcomeLabel}
             </AppText>
           ) : null}
         </View>
@@ -148,13 +136,40 @@ export function ProviderCoreTaskCard({
   );
 }
 
-function getUniqueStatusChips(task: ProviderCoreTaskSummary) {
-  const chips: { label: string; tone: 'core' | 'danger' | 'neutral' | 'success' | 'warning' }[] = [
+function InfoRow({ task }: { task: ProviderCoreTaskSummary }) {
+  const scheduleLabel = formatCompactSchedule(task.scheduledStartAt, task.scheduledEndAt);
+  const parts: string[] = [];
+
+  if (task.priceLabel) parts.push(task.priceLabel);
+  if (scheduleLabel) parts.push(scheduleLabel);
+  if (task.cityLabel) parts.push(task.cityLabel);
+
+  if (!parts.length) return null;
+
+  return (
+    <View style={styles.infoRow}>
+      <Ionicons color={colors.slate500} name="location-outline" size={13} />
+      <AppText color={colors.slate500} variant="small" style={styles.infoText}>
+        {parts.join(' · ')}
+      </AppText>
+    </View>
+  );
+}
+
+type ChipTone = 'core' | 'danger' | 'neutral' | 'success' | 'warning';
+type ChipEntry = { label: string; tone: ChipTone; style?: StyleProp<ViewStyle> };
+
+function getUniqueStatusChips(task: ProviderCoreTaskSummary): ChipEntry[] {
+  const paymentLabel = getPaymentStatusLabel(task.paymentStatusLabel);
+  const isPaymentPreparingChip = paymentLabel === t('paymentPreparing');
+
+  const chips: ChipEntry[] = [
     { label: t('tasklyTask'), tone: 'core' },
     { label: getProviderTaskPhaseLabel(task), tone: 'core' },
     {
-      label: getPaymentStatusLabel(task.paymentStatusLabel),
-      tone: isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral',
+      label: paymentLabel,
+      tone: isPaymentPreparingChip ? 'warning' : (isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'),
+      style: isPaymentPreparingChip ? styles.paymentPreparingChip : undefined,
     },
   ];
 
@@ -278,30 +293,33 @@ export function formatCustomerPreviewLabel(label: string) {
   return label.replace(/^customer:\s*/i, '').trim() || label;
 }
 
-function formatSchedule(start: string | null, end: string | null) {
-  if (!start) return t('noScheduleSet');
-  const startLabel = new Date(start).toLocaleString();
-  const endLabel = end ? new Date(end).toLocaleTimeString() : '';
-  return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
+function formatCompactSchedule(start: string | null, end: string | null) {
+  if (!start) return null;
+  try {
+    const startDate = new Date(start);
+    const month = startDate.toLocaleString('en-US', { month: 'short' });
+    const day = startDate.getDate();
+    const startHour = startDate.getHours().toString().padStart(2, '0');
+    const startMin = startDate.getMinutes().toString().padStart(2, '0');
+    const startTime = `${startHour}:${startMin}`;
+
+    if (end) {
+      const endDate = new Date(end);
+      const endHour = endDate.getHours().toString().padStart(2, '0');
+      const endMin = endDate.getMinutes().toString().padStart(2, '0');
+      return `${month} ${day}, ${startTime} – ${endHour}:${endMin}`;
+    }
+
+    return `${month} ${day}, ${startTime}`;
+  } catch {
+    return null;
+  }
 }
 
 function formatDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metaItem}>
-      <AppText color={colors.slate500} variant="small">
-        {label}
-      </AppText>
-      <AppText color={colors.navy900} style={styles.metaValue}>
-        {value}
-      </AppText>
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -322,25 +340,17 @@ const styles = StyleSheet.create({
   compactCard: {
     padding: spacing.md,
   },
-  metaGrid: {
+  infoRow: {
+    alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
-  metaItem: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
-    gap: 3,
-    padding: spacing.sm,
+  infoText: {
+    flex: 1,
   },
-  metaValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
+  paymentPreparingChip: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
   },
   payoutBox: {
     backgroundColor: colors.white,

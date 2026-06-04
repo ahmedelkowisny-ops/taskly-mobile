@@ -124,8 +124,7 @@ export default function ProviderMessagesScreen() {
       {isLoading ? <StateCard label={t('loading')} message={t('messages')} /> : null}
 
       {message ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('couldNotLoadMessages')} tone="warning" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{message}</AppText>
           <View style={styles.actions}>
             <AppButton onPress={loadThreads} variant="outline">{t('retry')}</AppButton>
@@ -136,21 +135,27 @@ export default function ProviderMessagesScreen() {
 
       {!isLoading && !message && threads.length === 0 ? (
         <EmptyStateCard
-          accent={activeTab === 'pro' ? 'pro' : undefined}
+          accent={activeTab === 'pro' ? 'pro' : 'core'}
           body={
             activeTab === 'pro'
               ? t('noProConversationsYetBody')
               : activeTab === 'support'
-              ? t('noSupportMessagesBody')
-              : t('noTaskConversationsYetBody')
+              ? t('providerNoSupportMessagesBody')
+              : t('providerNoTaskConversationsYetBody')
           }
-          icon={activeTab === 'pro' ? 'ribbon-outline' : undefined}
+          icon={
+            activeTab === 'pro'
+              ? 'ribbon-outline'
+              : activeTab === 'support'
+              ? 'shield-checkmark-outline'
+              : 'chatbubble-outline'
+          }
           title={
             activeTab === 'pro'
               ? t('noProConversationsYet')
               : activeTab === 'support'
-              ? t('noSupportMessagesYet')
-              : t('noTaskConversationsYet')
+              ? t('providerNoSupportMessagesYet')
+              : t('providerNoTaskConversationsYet')
           }
         />
       ) : null}
@@ -168,8 +173,8 @@ export default function ProviderMessagesScreen() {
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard accentColor={colors.navy900}>
-      <StatusBadge label={label} tone="neutral" />
+    <AppCard backgroundColor={colors.white}>
+      <AppText color={colors.slate500} variant="small">{label}</AppText>
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
   );
@@ -181,7 +186,7 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress}>
-      <AppCard accentColor={accentColor}>
+      <AppCard backgroundColor={colors.white}>
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.roleLabel ? <StatusBadge label={thread.roleLabel} tone="neutral" /> : null}

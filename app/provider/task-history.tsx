@@ -11,7 +11,7 @@ import {
   ProviderCoreTaskPrimaryAction,
   ProviderTopBar,
 } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import { getProviderCoreTasks } from '@/src/lib/api/provider';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
@@ -93,19 +93,17 @@ export default function ProviderTaskHistoryScreen() {
 
       <View style={styles.header}>
         <AppText variant="screenTitle">{t('taskHistory')}</AppText>
-        <AppText color={colors.slate700}>{t('taskHistoryIntro')}</AppText>
+        <AppText color={colors.slate500}>{t('taskHistorySubtitle')}</AppText>
       </View>
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={t('loading')} tone="neutral" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{t('taskHistory')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('couldNotRefreshProviderDashboard')} tone="warning" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>

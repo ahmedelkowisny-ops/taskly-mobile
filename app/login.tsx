@@ -1,12 +1,12 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Href, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { PublicTopBar } from '@/src/components/taskly';
 import { AppButton, AppText, Screen } from '@/src/components/ui';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
+import { canAccessProviderWorkspace, getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
 import {
   canOpenDeepLinkTarget,
@@ -20,6 +20,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 export default function LoginScreen() {
   useI18n();
   const router = useRouter();
+  const params = useLocalSearchParams<{ intent?: string }>();
   const { login, status } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +41,11 @@ export default function LoginScreen() {
 
     if (result.ok) {
       setPassword('');
+      if (params.intent === 'pro' && canAccessProviderWorkspace(result.data)) {
+        router.replace('/provider/profile?mode=pro&openApplication=1' as Href);
+        return;
+      }
+
       const pendingTarget = consumePendingDeepLinkTarget();
       if (pendingTarget && canOpenDeepLinkTarget({ session: result.data, status: 'authenticated', target: pendingTarget })) {
         router.replace(pendingTarget.href);

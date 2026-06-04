@@ -1,11 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,13 +20,16 @@ import {
   hasApprovedProMode,
   hasCoreTaskerMode,
 } from '@/src/lib/auth/workspaceAccess';
+import { changePassword } from '@/src/lib/api/account';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import { saveAuthTokens } from '@/src/lib/auth/tokenStorage';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
-import { AppText } from '../ui';
+import { AppButton, AppText } from '../ui';
+import { FormField } from './FormField';
 import { TasklyLogoText } from './TasklyLogoText';
 
 type ProviderDrawerProps = {
@@ -34,8 +39,11 @@ type ProviderDrawerProps = {
 
 type DrawerItem = {
   action?: () => void;
+  highlight?: boolean;
   icon: keyof typeof Ionicons.glyphMap;
-  isActive: (pathname: string, supportMessagesActive: boolean, proMessagesActive: boolean) => boolean;
+  iconColor?: string;
+  isActive: (pathname: string) => boolean;
+  keepOpenOnAction?: boolean;
   label: string;
   route?: Href;
   tone?: 'taskly' | 'pro';
@@ -46,28 +54,46 @@ type DrawerGroup = {
   label: string;
 };
 
+type PasswordDraft = {
+  confirmPassword: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
+type PasswordErrors = Partial<Record<keyof PasswordDraft, string>>;
+
+const emptyPasswordDraft: PasswordDraft = {
+  confirmPassword: '',
+  currentPassword: '',
+  newPassword: '',
+};
+
 export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
   useI18n();
   const router = useRouter();
   const pathname = usePathname();
-  const params = useLocalSearchParams<{ context?: string }>();
-  const { logout, session, status } = useAuth();
+  const { applySession, getValidAccessToken, isDemoMode, logout, session, status } = useAuth();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const drawerWidth = Math.min(width * 0.74, 286);
   const panelTopInset = Math.max(insets.top + spacing.md, spacing.xl);
   const panelBottomInset = Math.max(insets.bottom + spacing.lg, spacing.xxl);
   const drawerBottomPadding = spacing.lg;
+  const proConfirmBottomOffset = Math.max(insets.bottom, 44);
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
-  const supportMessagesActive = pathname === '/provider/messages' && params.context === 'support';
-  const proMessagesActive = pathname === '/provider/messages' && params.context === 'pro';
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
   const showApprovedPro = status === 'demo' || hasApprovedProMode(session);
   const showProUpsell = showCoreTasker && !showApprovedPro;
   const isProOnly = showApprovedPro && !showCoreTasker;
-  const proRoute: Href = (showApprovedPro
-    ? '/provider/pro-requests'
-    : '/provider/pro-upsell') as Href;
+  const [securityExpanded, setSecurityExpanded] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showProApplyConfirm, setShowProApplyConfirm] = useState(false);
+  const [isOpeningProRegister, setIsOpeningProRegister] = useState(false);
+  const [draft, setDraft] = useState<PasswordDraft>(emptyPasswordDraft);
+  const [fieldErrors, setFieldErrors] = useState<PasswordErrors>({});
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [securityNotice, setSecurityNotice] = useState<string | null>(null);
+  const [securityError, setSecurityError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) {
@@ -84,35 +110,105 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
     }).start();
   }, [drawerWidth, translateX, visible]);
 
+  function openPasswordModal() {
+    setDraft(emptyPasswordDraft);
+    setFieldErrors({});
+    setSecurityNotice(null);
+    setSecurityError(null);
+    setShowPasswordModal(true);
+  }
+
+  function closePasswordModal() {
+    setDraft(emptyPasswordDraft);
+    setFieldErrors({});
+    setShowPasswordModal(false);
+  }
+
+  function closeProApplyConfirm() {
+    if (isOpeningProRegister) return;
+    setShowProApplyConfirm(false);
+  }
+
+  async function handleContinueProApplication() {
+    setIsOpeningProRegister(true);
+
+    try {
+      await logout();
+    } finally {
+      setShowProApplyConfirm(false);
+      onClose();
+      router.replace('/register/pro' as Href);
+      setIsOpeningProRegister(false);
+    }
+  }
+
+  async function handleSavePassword() {
+    const errors: PasswordErrors = {};
+    if (!draft.currentPassword) errors.currentPassword = t('currentPasswordRequired');
+    if (!draft.newPassword) errors.newPassword = t('newPasswordRequired');
+    if (draft.newPassword && !draft.confirmPassword) errors.confirmPassword = t('confirmPasswordRequired');
+    if (draft.newPassword && draft.confirmPassword && draft.newPassword !== draft.confirmPassword) {
+      errors.confirmPassword = t('passwordsDoNotMatch');
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    if (isDemoMode) {
+      setFieldErrors({});
+      closePasswordModal();
+      setSecurityNotice(t('passwordUpdated'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setSecurityError(t('loginRequired'));
+      return;
+    }
+
+    setIsSavingPassword(true);
+    const result = await changePassword(
+      {
+        confirmPassword: draft.confirmPassword,
+        currentPassword: draft.currentPassword,
+        newPassword: draft.newPassword,
+      },
+      authToken,
+    );
+    setIsSavingPassword(false);
+
+    if (!result.ok) {
+      const code = result.error?.code;
+      if (code === 'INVALID_CURRENT_PASSWORD') {
+        setFieldErrors({ currentPassword: t('passwordInvalid') });
+      } else if (code === 'PASSWORDS_MISMATCH') {
+        setFieldErrors({ confirmPassword: t('passwordsDoNotMatch') });
+      } else if (code === 'CURRENT_PASSWORD_REQUIRED') {
+        setFieldErrors({ currentPassword: t('currentPasswordRequired') });
+      } else if (code === 'NEW_PASSWORD_REQUIRED') {
+        setFieldErrors({ newPassword: t('newPasswordRequired') });
+      } else {
+        setSecurityError(result.error?.message || t('couldNotUpdatePassword'));
+      }
+      return;
+    }
+
+    await saveAuthTokens(result.data.tokens);
+    applySession(result.data.session);
+
+    closePasswordModal();
+    setSecurityNotice(t('passwordUpdated'));
+  }
+
   const drawerGroups: DrawerGroup[] = [
-    {
-      label: t('drawerGroupMain'),
-      items: [
-        {
-          icon: 'grid-outline',
-          isActive: (current) => current === '/provider/dashboard' || current === '/provider',
-          label: t('drawerMyDashboard'),
-          route: '/provider/dashboard' as Href,
-        },
-      ],
-    },
     ...(showCoreTasker
       ? [
           {
             label: t('drawerGroupMyWork'),
             items: [
-              {
-                icon: 'briefcase-outline' as keyof typeof Ionicons.glyphMap,
-                isActive: (current: string) => current === '/provider/active-tasks',
-                label: t('drawerActiveTasks'),
-                route: '/provider/active-tasks' as Href,
-              },
-              {
-                icon: 'search-outline' as keyof typeof Ionicons.glyphMap,
-                isActive: (current: string) => current.startsWith('/provider/core-tasks'),
-                label: t('drawerCheckTasks'),
-                route: '/provider/core-tasks' as Href,
-              },
               {
                 icon: 'hand-right-outline' as keyof typeof Ionicons.glyphMap,
                 isActive: (current: string) => current === '/provider/interests',
@@ -143,40 +239,21 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
               ...(showApprovedPro
                 ? [
                     {
-                      icon: 'grid-outline' as keyof typeof Ionicons.glyphMap,
-                      isActive: (current: string) => current === '/provider/dashboard' || current === '/provider',
-                      label: t('proDashboardTitle'),
-                      route: '/provider/dashboard' as Href,
-                      tone: 'pro' as const,
-                    },
-                    {
                       icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
                       isActive: (current: string) => current.startsWith('/provider/pro-requests'),
                       label: t('drawerTasklyProRequests'),
                       route: '/provider/pro-requests' as Href,
                       tone: 'pro' as const,
                     },
-                    {
-                      icon: 'images-outline' as keyof typeof Ionicons.glyphMap,
-                      isActive: (current: string) => current === '/provider/profile',
-                      label: t('proProfilePortfolio'),
-                      route: '/provider/profile' as Href,
-                      tone: 'pro' as const,
-                    },
-                    {
-                      icon: 'chatbubbles-outline' as keyof typeof Ionicons.glyphMap,
-                      isActive: (_current: string, _isSupport: boolean, isPro: boolean) => isPro,
-                      label: t('proMessagesDrawer'),
-                      route: '/provider/messages?context=pro' as Href,
-                      tone: 'pro' as const,
-                    },
                   ]
                 : [
                     {
                       icon: 'ribbon-outline' as keyof typeof Ionicons.glyphMap,
-                      isActive: (current: string) => current === '/provider/pro-upsell',
+                      highlight: true,
+                      isActive: () => false,
+                      keepOpenOnAction: true,
                       label: t('applyForTasklyPro'),
-                      route: proRoute,
+                      action: () => setShowProApplyConfirm(true),
                       tone: 'pro' as const,
                     },
                   ]),
@@ -185,57 +262,34 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
         ]
       : []),
     {
-      label: t('drawerGroupCommunication'),
-      items: [
-        {
-          icon: 'chatbubbles-outline',
-          isActive: (current, isSupport, isPro) => current.startsWith('/provider/messages') && !isSupport && !isPro,
-          label: t('drawerMessages'),
-          route: '/provider/messages' as Href,
-        },
-        {
-          icon: 'notifications-outline',
-          isActive: (current) => current === '/provider/notifications',
-          label: t('notifications'),
-          route: '/provider/notifications' as Href,
-        },
-        {
-          icon: 'mail-outline',
-          isActive: (_current, isSupport) => isSupport,
-          label: t('drawerSupportMessages'),
-          route: '/provider/messages?context=support' as Href,
-        },
-      ],
-    },
-    {
-      label: t('drawerGroupAccount'),
-      items: [
-        {
-          icon: 'person-outline',
-          isActive: (current) => current === '/provider/profile',
-          label: t('drawerMyProfile'),
-          route: '/provider/profile' as Href,
-        },
-      ],
-    },
-    {
       label: t('drawerSettings'),
       items: [
         {
-          icon: 'settings-outline',
+          icon: 'notifications-outline',
           isActive: (current) => current === '/provider/account',
-          label: t('drawerSettings'),
+          label: t('notifications'),
           route: '/provider/account' as Href,
+        },
+        {
+          icon: 'lock-closed-outline',
+          iconColor: colors.navy900,
+          isActive: () => securityExpanded,
+          keepOpenOnAction: true,
+          label: t('accountSecurityTitle'),
+          action: () => setSecurityExpanded((current) => !current),
         },
       ],
     },
   ];
 
   const handleNavigate = (item: DrawerItem) => {
-    onClose();
     if (item.action) {
+      if (!item.keepOpenOnAction) {
+        onClose();
+      }
       item.action();
     } else if (item.route) {
+      onClose();
       router.push(item.route);
     }
   };
@@ -264,7 +318,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
             <View style={styles.header}>
               <View style={styles.headerIdentity}>
                 <TasklyLogoText compact iconOnly />
-                <AppText color={colors.sidebarMuted} style={styles.areaLabel} variant="small">
+                <AppText color={colors.slate500} style={styles.areaLabel} variant="small">
                   {isProOnly ? t('drawerProArea') : t('drawerTaskerArea')}
                 </AppText>
               </View>
@@ -276,19 +330,30 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
             <ScrollView contentContainerStyle={styles.navContent} showsVerticalScrollIndicator={false} style={styles.navScroll}>
               {drawerGroups.map((group) => (
                 <View key={group.label} style={styles.group}>
-                  <AppText color={colors.sidebarMuted} style={styles.groupLabel} variant="small">
+                  <AppText color={colors.slate500} style={styles.groupLabel} variant="small">
                     {group.label}
                   </AppText>
                   <View style={styles.groupItems}>
                     {group.items.map((item) => (
-                      <DrawerNavItem
-                        active={item.isActive(pathname, supportMessagesActive, proMessagesActive)}
-                        icon={item.icon}
-                        key={`${group.label}-${item.label}`}
-                        label={item.label}
-                        onPress={() => handleNavigate(item)}
-                        tone={item.tone}
-                      />
+                      <View key={`${group.label}-${item.label}`}>
+                        <DrawerNavItem
+                          active={item.isActive(pathname)}
+                          highlight={item.highlight}
+                          icon={item.icon}
+                          iconColor={item.iconColor}
+                          label={item.label}
+                          onPress={() => handleNavigate(item)}
+                          tone={item.tone}
+                        />
+                        {item.label === t('accountSecurityTitle') && securityExpanded ? (
+                          <AccountSecurityDrawerPanel
+                            email={session?.user?.email ?? ''}
+                            errorMessage={securityError}
+                            notice={securityNotice}
+                            onChangePassword={openPasswordModal}
+                          />
+                        ) : null}
+                      </View>
                     ))}
                   </View>
                 </View>
@@ -308,26 +373,162 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
           </SafeAreaView>
         </Animated.View>
       </View>
+      <Modal animationType="slide" onRequestClose={closePasswordModal} transparent visible={showPasswordModal}>
+        <KeyboardAvoidingView
+          behavior={Platform.select({ android: 'height', ios: 'padding', default: undefined })}
+          style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel={t('cancel')}
+            accessibilityRole="button"
+            onPress={closePasswordModal}
+            style={styles.modalScrim}
+          />
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+            <View style={styles.modalHandle} />
+            <AppText variant="sectionTitle">{t('changePassword')}</AppText>
+
+            <ScrollView
+              contentContainerStyle={styles.modalBody}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              <FormField
+                autoCapitalize="none"
+                autoComplete="current-password"
+                errorText={fieldErrors.currentPassword}
+                label={t('currentPassword')}
+                onChangeText={(value) => {
+                  setDraft((prev) => ({ ...prev, currentPassword: value }));
+                  if (fieldErrors.currentPassword) setFieldErrors((prev) => ({ ...prev, currentPassword: undefined }));
+                }}
+                secureTextEntry
+                textContentType="password"
+                value={draft.currentPassword}
+              />
+              <FormField
+                autoCapitalize="none"
+                autoComplete="new-password"
+                errorText={fieldErrors.newPassword}
+                label={t('newPassword')}
+                onChangeText={(value) => {
+                  setDraft((prev) => ({ ...prev, newPassword: value }));
+                  if (fieldErrors.newPassword) setFieldErrors((prev) => ({ ...prev, newPassword: undefined }));
+                }}
+                secureTextEntry
+                textContentType="newPassword"
+                value={draft.newPassword}
+              />
+              <FormField
+                autoCapitalize="none"
+                autoComplete="new-password"
+                errorText={fieldErrors.confirmPassword}
+                label={t('confirmNewPassword')}
+                onChangeText={(value) => {
+                  setDraft((prev) => ({ ...prev, confirmPassword: value }));
+                  if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                }}
+                secureTextEntry
+                textContentType="newPassword"
+                value={draft.confirmPassword}
+              />
+              {securityError ? (
+                <AppText color={colors.danger600} variant="caption">{securityError}</AppText>
+              ) : null}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <AppButton disabled={isSavingPassword} onPress={closePasswordModal} tone="neutral" variant="outline">
+                {t('cancel')}
+              </AppButton>
+              <AppButton loading={isSavingPassword} onPress={handleSavePassword} style={styles.saveButton} tone="core">
+                {t('saveChanges')}
+              </AppButton>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal animationType="slide" onRequestClose={closeProApplyConfirm} transparent visible={showProApplyConfirm}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel={t('cancel')}
+            accessibilityRole="button"
+            onPress={closeProApplyConfirm}
+            style={styles.modalScrim}
+          />
+          <View style={[styles.proConfirmSafeArea, { paddingBottom: proConfirmBottomOffset }]}>
+            <View style={[styles.modalSheet, styles.proConfirmSheet]}>
+              <View style={styles.modalHandle} />
+              <View style={styles.proConfirmIcon}>
+                <Ionicons color="#EA580C" name="ribbon-outline" size={24} />
+              </View>
+              <View style={styles.proConfirmCopy}>
+                <AppText color={colors.navy900} variant="sectionTitle">{t('applyForTasklyProConfirmTitle')}</AppText>
+                <AppText color={colors.slate700} style={styles.proConfirmBody}>{t('applyForTasklyProConfirmBody')}</AppText>
+              </View>
+              <View style={styles.proConfirmActions}>
+                <AppButton loading={isOpeningProRegister} onPress={handleContinueProApplication} tone="pro">
+                  {t('continueAction')}
+                </AppButton>
+                <AppButton disabled={isOpeningProRegister} onPress={closeProApplyConfirm} tone="neutral" variant="outline">
+                  {t('cancel')}
+                </AppButton>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
+  );
+}
+
+function AccountSecurityDrawerPanel({
+  email,
+  errorMessage,
+  notice,
+  onChangePassword,
+}: {
+  email: string;
+  errorMessage: string | null;
+  notice: string | null;
+  onChangePassword: () => void;
+}) {
+  return (
+    <View style={styles.securityPanel}>
+      <View style={styles.securityField}>
+        <AppText color={colors.slate500} variant="small">{t('loginEmail')}</AppText>
+        <AppText color={colors.navy900} numberOfLines={1} style={styles.securityEmail} variant="bodyStrong">
+          {email}
+        </AppText>
+      </View>
+      <AppText color={colors.slate500} variant="caption">{t('contactSupportEmailChange')}</AppText>
+      <AppButton onPress={onChangePassword} style={styles.securityButton} tone="core" variant="outline">
+        {t('changePassword')}
+      </AppButton>
+      {notice ? <AppText color={colors.success600} variant="caption">{notice}</AppText> : null}
+      {errorMessage ? <AppText color={colors.danger600} variant="caption">{errorMessage}</AppText> : null}
+    </View>
   );
 }
 
 function DrawerNavItem({
   active,
+  highlight = false,
   icon,
+  iconColor: fixedIconColor,
   label,
   onPress,
   tone = 'taskly',
 }: {
   active: boolean;
+  highlight?: boolean;
   icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
   label: string;
   onPress: () => void;
   tone?: 'taskly' | 'pro';
 }) {
   const isPro = tone === 'pro';
   const accent = isPro ? colors.proOrange500 : colors.tasklyBlue600;
-  const iconColor = active ? (isPro ? colors.proOrangeText : colors.tasklyBlue700) : colors.sidebarMuted;
+  const iconColor = fixedIconColor ?? (highlight ? '#EA580C' : active ? (isPro ? colors.proOrangeText : colors.tasklyBlue700) : colors.slate500);
 
   return (
     <Pressable
@@ -335,14 +536,15 @@ function DrawerNavItem({
       onPress={onPress}
       style={({ pressed }) => [
         styles.item,
+        highlight ? styles.itemProHighlight : null,
         active ? styles.itemActive : null,
         pressed && !active ? styles.itemPressed : null,
       ]}>
       {active ? <View style={[styles.activeBar, { backgroundColor: accent }]} /> : null}
-      <View style={[styles.itemIcon, isPro ? styles.itemIconAccent : active ? styles.itemIconActiveTaskly : null]}>
+      <View style={[styles.itemIcon, highlight ? styles.itemIconProHighlight : isPro ? styles.itemIconAccent : active ? styles.itemIconActiveTaskly : null]}>
         <Ionicons color={iconColor} name={icon} size={18} />
       </View>
-      <AppText color={active ? colors.navy900 : colors.sidebarMuted} style={styles.itemText}>
+      <AppText color={highlight ? '#EA580C' : active ? colors.navy900 : colors.slate500} style={styles.itemText}>
         {label}
       </AppText>
     </Pressable>
@@ -377,7 +579,7 @@ const styles = StyleSheet.create({
   closeButton: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: colors.sidebarBorder,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     height: 44,
@@ -385,10 +587,10 @@ const styles = StyleSheet.create({
     width: 44,
   },
   drawer: {
-    backgroundColor: colors.tasklyBlue50,
+    backgroundColor: colors.white,
     borderBottomRightRadius: 28,
     borderBottomWidth: 1,
-    borderColor: colors.tasklyBlueBorder,
+    borderColor: colors.border,
     borderRightWidth: 1,
     borderTopRightRadius: 28,
     borderTopWidth: 1,
@@ -399,8 +601,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   footer: {
-    borderTopColor: colors.tasklyBlueBorder,
-    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    borderTopWidth: StyleSheet.hairlineWidth,
     flexShrink: 0,
     paddingTop: spacing.sm,
   },
@@ -437,19 +639,14 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   itemActive: {
-    backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
     borderWidth: 1,
-    elevation: 2,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
   },
   itemIcon: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     height: designTokens.size.drawerIcon,
@@ -458,14 +655,23 @@ const styles = StyleSheet.create({
   },
   itemIconAccent: {
     backgroundColor: colors.proOrange50,
-    borderColor: '#F0D9B8',
+    borderColor: colors.proOrangeBorder,
   },
   itemIconActiveTaskly: {
     backgroundColor: colors.tasklyBlue50,
-    borderColor: '#BFDBFE',
+    borderColor: colors.tasklyBlueBorder,
+  },
+  itemIconProHighlight: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
   },
   itemPressed: {
-    backgroundColor: '#EEF6FF',
+    backgroundColor: colors.slate50,
+  },
+  itemProHighlight: {
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderWidth: 1,
   },
   itemText: {
     flex: 1,
@@ -475,10 +681,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.md,
-    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 44,
@@ -486,8 +689,8 @@ const styles = StyleSheet.create({
   },
   logoutIcon: {
     alignItems: 'center',
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     height: designTokens.size.drawerIcon,
@@ -499,6 +702,72 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     lineHeight: 16,
+  },
+  modalBody: {
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    backgroundColor: colors.tasklyBlue600,
+    borderRadius: radius.pill,
+    height: 4,
+    marginBottom: spacing.xs,
+    width: 48,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.38)',
+  },
+  modalSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    elevation: 18,
+    gap: spacing.md,
+    maxHeight: '88%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    shadowColor: colors.navy900,
+    shadowOffset: { height: -8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+  },
+  proConfirmActions: {
+    gap: spacing.sm,
+  },
+  proConfirmBody: {
+    lineHeight: 22,
+  },
+  proConfirmCopy: {
+    gap: spacing.xs,
+  },
+  proConfirmIcon: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF7ED',
+    borderColor: '#FED7AA',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  proConfirmSafeArea: {
+    justifyContent: 'flex-end',
+  },
+  proConfirmSheet: {
+    gap: spacing.md,
+    paddingBottom: 20,
   },
   navContent: {
     gap: spacing.sm,
@@ -514,7 +783,31 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.86,
   },
+  saveButton: {
+    flex: 1,
+  },
   scrim: {
     ...StyleSheet.absoluteFillObject,
+  },
+  securityButton: {
+    alignSelf: 'flex-start',
+  },
+  securityEmail: {
+    flexShrink: 1,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  securityField: {
+    gap: 2,
+  },
+  securityPanel: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    marginHorizontal: spacing.sm,
+    marginTop: spacing.xs,
+    padding: spacing.sm,
   },
 });

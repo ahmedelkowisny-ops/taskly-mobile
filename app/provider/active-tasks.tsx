@@ -11,7 +11,7 @@ import {
   ProviderCoreTaskPrimaryAction,
   ProviderTopBar,
 } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import {
   expressInterestInCoreTask,
@@ -123,15 +123,13 @@ export default function ProviderActiveTasksScreen() {
       </View>
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={t('loading')} tone="neutral" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{t('activeTasks')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('couldNotRefreshProviderDashboard')} tone="warning" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -142,8 +140,10 @@ export default function ProviderActiveTasksScreen() {
 
       {!isLoading && !errorMessage && activeTasks.length === 0 ? (
         <EmptyStateCard
+          actionLabel={t('browseAvailableTasks')}
           body={t('noActiveTasksBody')}
           icon="briefcase-outline"
+          onActionPress={() => router.push('/provider/core-tasks')}
           title={t('noActiveTasks')}
         />
       ) : null}

@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { EmptyStateCard, isAvailableProviderCoreTask, ProviderCoreTaskCard, ProviderCoreTaskPrimaryAction, ProviderTopBar } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import { getProviderCoreTasks } from '@/src/lib/api/provider';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
@@ -98,15 +98,13 @@ export default function ProviderInterestsSentScreen() {
       </View>
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={t('loading')} tone="neutral" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{t('interestsSent')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard accentColor={colors.warning600}>
-          <StatusBadge label={t('couldNotRefreshProviderDashboard')} tone="warning" />
+        <AppCard backgroundColor={colors.white}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -117,8 +115,10 @@ export default function ProviderInterestsSentScreen() {
 
       {!isLoading && !errorMessage && interestTasks.length === 0 ? (
         <EmptyStateCard
+          actionLabel={t('browseAvailableTasks')}
           body={t('noInterestsSentYetBody')}
           icon="hand-right-outline"
+          onActionPress={() => router.push('/provider/core-tasks' as Href)}
           title={t('noInterestsSentYet')}
         />
       ) : null}

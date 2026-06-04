@@ -13,6 +13,12 @@ export { LanguageToggle } from './LanguageToggle';
 export { ModeBadge } from './ModeBadge';
 export { NotificationBell } from './NotificationBell';
 export { NotificationSettingsCard } from './NotificationSettingsCard';
+export { ProviderBottomNav } from './ProviderBottomNav';
+export {
+  ProviderBottomNavVisibilityProvider,
+  useProviderBottomNavScrollHandler,
+  useProviderBottomNavVisibility,
+} from './ProviderBottomNavVisibility';
 export { ProviderDrawer } from './ProviderDrawer';
 export {
   getProviderPrimaryAction,

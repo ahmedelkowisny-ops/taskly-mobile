@@ -7,12 +7,11 @@ import { View } from 'react-native';
 import {
   EmptyStateCard,
   isAvailableProviderCoreTask,
-  ModeBadge,
   ProviderCoreTaskCard,
   ProviderCoreTaskPrimaryAction,
   ProviderTopBar,
 } from '@/src/components/taskly';
-import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
+import { AppButton, AppCard, AppText, Screen } from '@/src/components/ui';
 import { ProviderCoreTaskSummary, ProviderCoreTasksResponse } from '@/src/lib/api/domain';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import {
@@ -23,11 +22,12 @@ import {
   startProviderCoreTask,
 } from '@/src/lib/api/provider';
 import { useAuth } from '@/src/lib/auth/useAuth';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
 export default function ProviderCoreTasksScreen() {
+  useI18n();
   const router = useRouter();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderCoreTasksResponse | null>(null);
@@ -146,21 +146,18 @@ export default function ProviderCoreTasksScreen() {
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
-        <ModeBadge mode="providerCore" />
-        <AppText variant="screenTitle">{t('checkTasks')}</AppText>
-        <AppText color={colors.slate700}>{t('checkTasksIntro')}</AppText>
+        <AppText variant="screenTitle">{t('availableTasksScreenTitle')}</AppText>
+        <AppText color={colors.slate500}>{t('availableTasksScreenSubtitle')}</AppText>
       </View>
 
       {isLoading ? (
         <AppCard backgroundColor={colors.white}>
-          <StatusBadge label={t('loading')} tone="core" />
           <AppText variant="sectionTitle">{t('loadingMatchingTasklyTasks')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
+        <AppCard backgroundColor={colors.white}>
           <AppText variant="sectionTitle">
             {isUnauthorized ? t('tasklyTasksNeedProviderAccess') : t('couldNotRefreshTasklyTasks')}
           </AppText>
@@ -193,9 +190,10 @@ export default function ProviderCoreTasksScreen() {
         </View>
       ) : data && !isLoading ? (
         <EmptyStateCard
+          actionLabel={t('updateMyProfile')}
           body={t('noMatchingTasksRightNowBody')}
-          clean
           icon="search-outline"
+          onActionPress={() => router.push('/provider/profile' as Href)}
           title={t('noMatchingTasksRightNow')}
         />
       ) : null}

@@ -23,6 +23,27 @@ import {
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
+function toTitleCase(str: string) {
+  return str
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function normalizeNotificationTitle(title: string) {
+  const lower = title.toLowerCase();
+  if (lower === 'new task available') return t('notificationNewTaskAvailable');
+  if (lower === 'selection expired' || lower.includes('reservation expired')) return t('notificationReservationExpired');
+  return title
+    .replace(/\bâ°\b/g, '')
+    .trim()
+    .replace(/\b[A-Z]/g, (c, i) => (i === 0 ? c : c.toLowerCase()));
+}
+
+function normalizeNotificationMessage(message: string) {
+  return message.replace(/\b[a-z]+_[a-z_]+\b/g, (match) => toTitleCase(match));
+}
+
 function getNotificationContext(notification: MobileNotificationItem) {
   const entityType = notification.routeData?.entityType;
   if (entityType === 'pro_request') return { label: t('proRequest'), tone: 'pro' as const };
@@ -209,7 +230,7 @@ export default function ProviderNotificationsScreen() {
               ]}>
               <View style={styles.notificationHeader}>
                 <AppText style={styles.notificationTitle} variant="bodyStrong">
-                  {notification.title}
+                  {normalizeNotificationTitle(notification.title)}
                 </AppText>
                 <View style={styles.notificationBadges}>
                   {context ? <StatusBadge label={context.label} tone={context.tone} /> : null}
@@ -223,7 +244,7 @@ export default function ProviderNotificationsScreen() {
                 </View>
               </View>
               <AppText color={colors.slate700} style={styles.notificationMessage}>
-                {notification.message}
+                {normalizeNotificationMessage(notification.message)}
               </AppText>
               {timeLabel ? (
                 <AppText color={colors.slate500} style={styles.notificationTime} variant="caption">

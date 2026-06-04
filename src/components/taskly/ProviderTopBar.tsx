@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
 import { NotificationBell } from './NotificationBell';
@@ -27,7 +28,9 @@ export function ProviderTopBar() {
             style={({ pressed }) => [styles.menuButton, pressed ? styles.pressed : null]}>
             <Ionicons color={colors.navy900} name="menu" size={21} />
           </Pressable>
-          <TasklyLogoText navIcon />
+          <View style={styles.brandWordmark}>
+            <TasklyLogoText header style={styles.logo} wordmarkOnly />
+          </View>
         </View>
         <View style={styles.topBarActions}>
           <NotificationBell compact route={'/provider/notifications' as Href} />
@@ -42,22 +45,30 @@ export function ProviderTopBar() {
 const styles = StyleSheet.create({
   brandCluster: {
     alignItems: 'center',
+    flex: 1,
     flexDirection: 'row',
     gap: spacing.sm,
+    minWidth: 0,
+  },
+  brandWordmark: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+    minWidth: 0,
+  },
+  logo: {
+    alignSelf: 'flex-start',
   },
   menuButton: {
+    ...designTokens.shadows.card,
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radius.md,
     borderWidth: 1,
-    elevation: 1,
     height: 40,
     justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 2, width: 0 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
     width: 40,
   },
   pressed: {
@@ -66,24 +77,14 @@ const styles = StyleSheet.create({
   },
   topBar: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
-    borderRadius: 18,
-    borderWidth: 1,
-    elevation: 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    minHeight: 62,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
+    minHeight: 56,
   },
   topBarActions: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    flexShrink: 0,
+    gap: spacing.xs,
   },
 });

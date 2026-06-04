@@ -114,6 +114,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExistingProLoginPrompt, setShowExistingProLoginPrompt] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const isPro = role === 'pro';
@@ -139,6 +140,7 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
 
     setLoading(true);
     setError(null);
+    setShowExistingProLoginPrompt(false);
 
     const result = await register({
       confirmPassword: password,
@@ -154,7 +156,8 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
     setLoading(false);
 
     if (!result.ok) {
-      setError(getFriendlyRegistrationError(result.error.code));
+      setShowExistingProLoginPrompt(role === 'pro' && result.error.code === 'EMAIL_ALREADY_EXISTS');
+      setError(getFriendlyRegistrationError(result.error.code, role));
       return;
     }
 
@@ -276,6 +279,14 @@ export function RegistrationFormScreen({ role }: { role: RegisterRole }) {
             <AppText color={colors.danger600} variant="small">
               {error}
             </AppText>
+            {showExistingProLoginPrompt ? (
+              <Pressable
+                accessibilityRole="link"
+                onPress={() => router.push('/login?intent=pro' as Href)}
+                style={({ pressed }) => [styles.errorAction, pressed ? styles.pressedSoft : null]}>
+                <AppText color={colors.tasklyBlue600} variant="small">{t('signInToAddTasklyPro')}</AppText>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 
@@ -416,8 +427,10 @@ function getRegisterRoleVisual(role: RegisterRole) {
   };
 }
 
-function getFriendlyRegistrationError(code: string) {
-  if (code === 'EMAIL_ALREADY_EXISTS') return t('emailAlreadyExists');
+function getFriendlyRegistrationError(code: string, role: RegisterRole) {
+  if (code === 'EMAIL_ALREADY_EXISTS') {
+    return role === 'pro' ? t('emailAlreadyExistsProLogin') : t('emailAlreadyExists');
+  }
   if (code === 'PASSWORD_TOO_SHORT') return t('registrationPasswordTooShort');
   if (code === 'PASSWORD_TOO_LONG') return t('registrationPasswordTooLong');
   if (code === 'PASSWORD_PWNED') return t('registrationPasswordUnsafe');
@@ -457,7 +470,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
+    gap: spacing.sm,
     padding: spacing.md,
+  },
+  errorAction: {
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.xs,
   },
   eyeButton: {
     alignItems: 'center',

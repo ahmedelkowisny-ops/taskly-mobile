@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppButton, AppCard, AppText } from '@/src/components/ui';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type EmptyStateCardProps = {
@@ -24,20 +25,19 @@ export function EmptyStateCard({
   onActionPress,
   title,
 }: EmptyStateCardProps) {
-  const accentColor = accent === 'pro' ? colors.proOrange600 : colors.tasklyBlue600;
-  const backgroundColor = accent === 'pro' ? colors.proOrange50 : colors.tasklyBlue50;
+  const iconBg = accent === 'pro' ? colors.proOrange50 : colors.tasklyBlue50;
   const iconColor = accent === 'pro' ? colors.proOrange600 : colors.tasklyBlue600;
 
   return (
-    <AppCard accentColor={clean ? undefined : accentColor} backgroundColor={clean ? colors.white : backgroundColor}>
+    <AppCard backgroundColor={clean ? colors.white : iconBg}>
       <View style={styles.copy}>
         {icon ? (
-          <View style={styles.iconWrap}>
+          <View style={[styles.iconBox, { backgroundColor: colors.tasklyBlue50 }]}>
             <Ionicons color={iconColor} name={icon} size={22} />
           </View>
         ) : null}
-        <AppText variant="sectionTitle">{title}</AppText>
-        <AppText color={colors.slate700}>{body}</AppText>
+        <AppText color={colors.navy900} variant="cardTitle">{title}</AppText>
+        <AppText color={colors.slate500}>{body}</AppText>
       </View>
       {actionLabel ? (
         <AppButton onPress={onActionPress} tone={accent === 'pro' ? 'pro' : 'core'} variant="outline">
@@ -53,14 +53,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  iconWrap: {
+  iconBox: {
     alignItems: 'center',
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    height: 42,
+    borderRadius: radius.lg,
+    height: 40,
     justifyContent: 'center',
-    width: 42,
+    width: 40,
+    ...designTokens.shadows.card,
   },
 });

@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -50,7 +50,7 @@ import {
   requestImageLibraryPermission,
   validateSelectedImages,
 } from '@/src/lib/images/imagePicker';
-import { t } from '@/src/lib/i18n';
+import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -147,7 +147,8 @@ const emptyProProjectDraft: ProProjectDraft = {
 };
 
 export default function ProviderProfileScreen() {
-  const router = useRouter();
+  useI18n();
+  const params = useLocalSearchParams<{ mode?: string; openApplication?: string }>();
   const { applySession, getValidAccessToken, refreshSession, session: authSession, status, useDemoSession } = useAuth();
   const [data, setData] = useState<ProviderProfileResponse | null>(null);
   const [taskerProfile, setTaskerProfile] = useState<ProviderTaskerProfile | null>(null);
@@ -360,12 +361,26 @@ export default function ProviderProfileScreen() {
     }, [loadProfile]),
   );
 
+  useEffect(() => {
+    if (params.mode === 'pro') {
+      setActiveProfileMode('pro');
+    }
+  }, [params.mode]);
+
   const profile = data?.profile;
-  const showProProfileTools = status === 'demo' || hasApprovedProMode(authSession) || profile?.proStatus === 'approved';
+  const isProApplicationEntry = params.mode === 'pro' && params.openApplication === '1';
+  const showProProfileTools =
+    status === 'demo' ||
+    hasApprovedProMode(authSession) ||
+    hasCoreTaskerMode(authSession) ||
+    profile?.proStatus === 'approved' ||
+    profile?.proStatus === 'draft' ||
+    profile?.proStatus === 'pending';
   const showTaskerProfileTools = Boolean(taskerProfile) || status === 'demo' || hasCoreTaskerMode(authSession) || (profile?.coreTaskerStatus != null && profile.coreTaskerStatus !== 'none');
   const effectiveProfileMode: ProfileMode = showProProfileTools && !showTaskerProfileTools ? 'pro' : activeProfileMode;
   const showTaskerProfileSection = showTaskerProfileTools && effectiveProfileMode === 'tasker';
   const showProProfileSection = showProProfileTools && effectiveProfileMode === 'pro';
+  const showProApplicationForm = Boolean(proProfile) || isProApplicationEntry;
   const readinessItems = buildTaskerReadinessItems(taskerProfile, profile);
   const proReadinessItems = buildProReadinessItems(proProfile, profile, portfolioProjects);
 
@@ -570,18 +585,20 @@ export default function ProviderProfileScreen() {
     await loadProfile();
   }
 
-  function beginProEdit() {
+  const beginProEdit = useCallback(() => {
     if (!proProfile) return;
     setProDraft(toProDraft(proProfile));
     setProFieldErrors({});
     setProNotice(null);
     setProErrorMessage(null);
     setIsEditingPro(true);
-  }
+  }, [proProfile]);
 
   function cancelProEdit() {
     if (proProfile) {
       setProDraft(toProDraft(proProfile));
+    } else {
+      setProDraft(emptyProDraft);
     }
     setProFieldErrors({});
     setProNotice(null);
@@ -589,13 +606,33 @@ export default function ProviderProfileScreen() {
     setIsEditingPro(false);
   }
 
+  useEffect(() => {
+    if (
+      params.mode === 'pro' &&
+      status === 'authenticated' &&
+      profile?.proStatus !== 'pending' &&
+      profile?.proStatus !== 'approved' &&
+      !isEditingPro
+    ) {
+      if (proProfile) {
+        beginProEdit();
+      } else {
+        setProDraft(emptyProDraft);
+        setProFieldErrors({});
+        setProNotice(null);
+        setProErrorMessage(null);
+        setIsEditingPro(true);
+      }
+    }
+  }, [beginProEdit, isEditingPro, isProApplicationEntry, params.mode, proProfile, profile?.proStatus, status]);
+
   async function handleSavePro() {
     const validation = validateProDraft(proDraft);
     setProFieldErrors(validation);
     setProNotice(null);
     setProErrorMessage(null);
 
-    if (Object.keys(validation).length > 0 || !hasProChanges) {
+    if (Object.keys(validation).length > 0 || (!hasProChanges && !isProApplicationEntry)) {
       return;
     }
 
@@ -833,25 +870,16 @@ export default function ProviderProfileScreen() {
       <ProviderTopBar />
 
       <View style={{ gap: spacing.sm }}>
-        <StatusBadge
-          label={showProProfileTools && !showTaskerProfileTools ? t('tasklyProWorkspace') : t('tasklyTaskerWorkspace')}
-          tone={showProProfileTools && !showTaskerProfileTools ? 'pro' : 'core'}
-        />
         <AppText variant="screenTitle">{t('profile')}</AppText>
-        <AppText color={colors.slate700}>{t('providerProfileIntro')}</AppText>
+        <AppText color={colors.slate500}>{t('providerProfileIntro')}</AppText>
       </View>
 
       {isLoading ? (
-        <AppCard accentColor={colors.navy900}>
-          <StatusBadge label={t('loading')} tone="neutral" />
-          <AppText variant="sectionTitle">{t('loadingProviderProfile')}</AppText>
-          <AppText color={colors.slate700}>{t('loadingProviderProfileBody')}</AppText>
-        </AppCard>
+        <SkeletonLoader />
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
-          <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
+        <AppCard backgroundColor={colors.white}>
           <AppText variant="sectionTitle">
             {isUnauthorized ? t('providerProfileNeedsAccessTitle') : t('couldNotRefreshProviderProfile')}
           </AppText>
@@ -951,17 +979,24 @@ export default function ProviderProfileScreen() {
           ) : null}
         </View>
         <AppText color={colors.slate700}>{t('proProfileWorkspaceBody')}</AppText>
+        <AppText color={colors.slate500} style={styles.proRoleDescription}>
+          {t('tasklyProRoleDescription')}
+        </AppText>
 
         {proErrorMessage ? <InlineMessage message={proErrorMessage} tone="error" /> : null}
         {projectErrorMessage ? <InlineMessage message={projectErrorMessage} tone="error" /> : null}
         {proNotice ? <InlineMessage message={proNotice} tone="success" /> : null}
         {status === 'demo' ? <InlineMessage message={t('proProfileEditUnavailableDemo')} tone="neutral" /> : null}
 
-        {proProfile ? (
+        {showProApplicationForm ? (
           <View style={styles.form}>
-            <ProProfileHero profile={proProfile} summary={profile ?? null} projectCount={portfolioProjects.length} />
-            <ProReadinessCard items={proReadinessItems} />
-            <ProApprovalSummary profile={proProfile} summary={profile ?? null} />
+            {proProfile ? (
+              <>
+                <ProProfileHero profile={proProfile} summary={profile ?? null} projectCount={portfolioProjects.length} />
+                <ProReadinessCard items={proReadinessItems} />
+                <ProApprovalSummary profile={proProfile} summary={profile ?? null} />
+              </>
+            ) : null}
             <FormField
               autoCapitalize="words"
               editable={isEditingPro && !isSavingPro}
@@ -1074,7 +1109,7 @@ export default function ProviderProfileScreen() {
                 <AppButton disabled={isSavingPro} onPress={cancelProEdit} style={styles.actionButton} tone="neutral" variant="outline">
                   {t('cancel')}
                 </AppButton>
-                {hasProChanges ? (
+                {hasProChanges || isProApplicationEntry ? (
                   <AppButton disabled={isSavingPro} loading={isSavingPro} onPress={handleSavePro} style={styles.actionButton} tone="pro">
                     {isSavingPro ? t('savingChanges') : t('saveChanges')}
                   </AppButton>
@@ -1083,7 +1118,10 @@ export default function ProviderProfileScreen() {
             ) : null}
           </View>
         ) : (
-          <AppText color={colors.slate500}>{t('proProfileMissing')}</AppText>
+          <View style={styles.proMissingStatus}>
+            <Ionicons color={colors.proOrangeTextDark} name="information-circle-outline" size={18} />
+            <AppText color={colors.slate500} style={styles.proMissingStatusText}>{t('proProfileMissing')}</AppText>
+          </View>
         )}
 
         {proProfile ? (
@@ -1210,15 +1248,6 @@ export default function ProviderProfileScreen() {
         ) : null}
       </AppCard>
       ) : null}
-
-      <AppCard>
-        <StatusBadge label={t('drawerSettings')} tone="neutral" />
-        <AppText variant="sectionTitle">{t('providerAccount')}</AppText>
-        <AppText color={colors.slate700}>{t('providerAccountHelper')}</AppText>
-        <AppButton onPress={() => router.push('/provider/account')} variant="outline">
-          {t('openAccount')}
-        </AppButton>
-      </AppCard>
 
     </Screen>
   );
@@ -1965,6 +1994,37 @@ function buildProReadinessItems(
   ];
 }
 
+function SkeletonBar({ width, height = 14 }: { width: number | string; height?: number }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.slate100,
+        borderRadius: 6,
+        height,
+        width: width as number,
+      }}
+    />
+  );
+}
+
+function SkeletonLoader() {
+  return (
+    <View style={{ gap: spacing.md }}>
+      <View style={{ backgroundColor: colors.white, borderColor: colors.border, borderRadius: 20, borderWidth: 1, gap: spacing.md, padding: spacing.lg }}>
+        <SkeletonBar width="60%" height={20} />
+        <SkeletonBar width="40%" />
+        <SkeletonBar width="80%" />
+        <SkeletonBar width="55%" />
+      </View>
+      <View style={{ backgroundColor: colors.white, borderColor: colors.border, borderRadius: 20, borderWidth: 1, gap: spacing.md, padding: spacing.lg }}>
+        <SkeletonBar width="50%" height={18} />
+        <SkeletonBar width="70%" />
+        <SkeletonBar width="45%" />
+      </View>
+    </View>
+  );
+}
+
 function ProfileModeSwitcher({
   activeMode,
   onChange,
@@ -2294,7 +2354,7 @@ function ProfilePhotoCard({
   const payoutReady = summary?.payoutStatus?.isReady ?? isPayoutReadyFromLabel(summary?.stripeStatusLabel);
 
   return (
-    <AppCard backgroundColor={colors.tasklyBlue50} accentColor={colors.tasklyBlue600}>
+    <AppCard backgroundColor={colors.white}>
       <View style={styles.photoRow}>
         <View style={styles.avatar}>
           {photoUrl ? (
@@ -2840,8 +2900,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   payoutBox: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: spacing.xs,
@@ -2914,7 +2974,7 @@ const styles = StyleSheet.create({
   },
   profileSectionCard: {
     backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
+    borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.md,
@@ -2933,7 +2993,7 @@ const styles = StyleSheet.create({
   },
   profileSectionIcon: {
     alignItems: 'center',
-    backgroundColor: colors.tasklyBlue50,
+    backgroundColor: colors.slate50,
     borderRadius: radius.pill,
     height: 36,
     justifyContent: 'center',
@@ -2961,8 +3021,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileSummaryRow: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: 2,
@@ -2979,6 +3039,23 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.lg,
     paddingTop: spacing.lg,
+  },
+  proMissingStatus: {
+    alignItems: 'center',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  proMissingStatusText: {
+    flex: 1,
+    lineHeight: 20,
+  },
+  proRoleDescription: {
+    lineHeight: 21,
   },
   portfolioPhotoEmpty: {
     alignItems: 'center',

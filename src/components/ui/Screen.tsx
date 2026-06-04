@@ -3,6 +3,7 @@ import { ScrollView, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useCustomerCreateBarScrollHandler } from '@/src/components/taskly/CustomerCreateBarVisibility';
+import { useProviderBottomNavScrollHandler } from '@/src/components/taskly/ProviderBottomNavVisibility';
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
@@ -14,13 +15,17 @@ type ScreenProps = PropsWithChildren<{
 
 export function Screen({ children, contentStyle, scroll = true, style }: ScreenProps) {
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
+  const handleProviderScroll = useProviderBottomNavScrollHandler();
 
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={[styles.content, contentStyle]}
-          onScroll={handleCustomerScroll}
+          onScroll={(event) => {
+            handleCustomerScroll(event);
+            handleProviderScroll(event);
+          }}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}>
           {children}
