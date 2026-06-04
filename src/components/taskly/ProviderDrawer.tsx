@@ -73,13 +73,14 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { applySession, getValidAccessToken, isDemoMode, logout, session, status } = useAuth();
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const drawerWidth = Math.min(width * 0.74, 286);
   const panelTopInset = Math.max(insets.top + spacing.md, spacing.xl);
   const panelBottomInset = Math.max(insets.bottom + spacing.lg, spacing.xxl);
   const drawerBottomPadding = spacing.lg;
-  const proConfirmBottomOffset = Math.max(insets.bottom, 44);
+  const proConfirmBottomPadding = Math.max(insets.bottom + 24, Platform.OS === 'android' ? 88 : 24);
+  const proConfirmMaxHeight = Math.round(height * 0.85);
   const translateX = useRef(new Animated.Value(-drawerWidth)).current;
   const showCoreTasker = status === 'demo' || hasCoreTaskerMode(session);
   const showApprovedPro = status === 'demo' || hasApprovedProMode(session);
@@ -446,24 +447,35 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-      <Modal animationType="slide" onRequestClose={closeProApplyConfirm} transparent visible={showProApplyConfirm}>
-        <View style={styles.modalRoot}>
+      <Modal
+        animationType="slide"
+        onRequestClose={closeProApplyConfirm}
+        statusBarTranslucent
+        transparent
+        visible={showProApplyConfirm}>
+        <View style={styles.proConfirmRoot}>
           <Pressable
             accessibilityLabel={t('cancel')}
             accessibilityRole="button"
             onPress={closeProApplyConfirm}
             style={styles.modalScrim}
           />
-          <View style={[styles.proConfirmSafeArea, { paddingBottom: proConfirmBottomOffset }]}>
-            <View style={[styles.modalSheet, styles.proConfirmSheet]}>
-              <View style={styles.modalHandle} />
-              <View style={styles.proConfirmIcon}>
-                <Ionicons color="#EA580C" name="ribbon-outline" size={24} />
-              </View>
-              <View style={styles.proConfirmCopy}>
-                <AppText color={colors.navy900} variant="sectionTitle">{t('applyForTasklyProConfirmTitle')}</AppText>
-                <AppText color={colors.slate700} style={styles.proConfirmBody}>{t('applyForTasklyProConfirmBody')}</AppText>
-              </View>
+          <View style={styles.proConfirmSafeArea}>
+            <View style={[styles.modalSheet, styles.proConfirmSheet, { maxHeight: proConfirmMaxHeight, paddingBottom: proConfirmBottomPadding }]}>
+              <ScrollView
+                bounces={false}
+                contentContainerStyle={styles.proConfirmScrollContent}
+                showsVerticalScrollIndicator={false}
+                style={styles.proConfirmScroll}>
+                <View style={styles.modalHandle} />
+                <View style={styles.proConfirmIcon}>
+                  <Ionicons color="#EA580C" name="ribbon-outline" size={24} />
+                </View>
+                <View style={styles.proConfirmCopy}>
+                  <AppText color={colors.navy900} variant="sectionTitle">{t('applyForTasklyProConfirmTitle')}</AppText>
+                  <AppText color={colors.slate700} style={styles.proConfirmBody}>{t('applyForTasklyProConfirmBody')}</AppText>
+                </View>
+              </ScrollView>
               <View style={styles.proConfirmActions}>
                 <AppButton loading={isOpeningProRegister} onPress={handleContinueProApplication} tone="pro">
                   {t('continueAction')}
@@ -743,6 +755,7 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
   },
   proConfirmActions: {
+    flexShrink: 0,
     gap: spacing.sm,
   },
   proConfirmBody: {
@@ -762,12 +775,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 48,
   },
+  proConfirmRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  proConfirmScroll: {
+    flexShrink: 1,
+  },
+  proConfirmScrollContent: {
+    gap: spacing.md,
+    paddingBottom: spacing.xs,
+  },
   proConfirmSafeArea: {
     justifyContent: 'flex-end',
   },
   proConfirmSheet: {
     gap: spacing.md,
-    paddingBottom: 20,
   },
   navContent: {
     gap: spacing.sm,
