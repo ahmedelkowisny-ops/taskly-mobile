@@ -2,12 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -25,6 +23,7 @@ import {
 } from 'react-native';
 import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
 
+import AddressPickerModal from '@/components/AddressPickerModal';
 import { TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { createCustomerTask } from '@/src/lib/api/customer';
@@ -460,11 +459,10 @@ export default function CustomerPostTaskScreen() {
   const [uploadProgressCurrent, setUploadProgressCurrent] = useState(0);
   const [uploadProgressTotal, setUploadProgressTotal] = useState(0);
   const [uploadWarning, setUploadWarning] = useState<string | null>(null);
-  const [selectedLatitude, setSelectedLatitude] = useState(DEFAULT_TASK_LOCATION.lat);
-  const [selectedLongitude, setSelectedLongitude] = useState(DEFAULT_TASK_LOCATION.lng);
   const [selectedAddress, setSelectedAddress] = useState(DEFAULT_TASK_ADDRESS);
-  const [isMapReady, setIsMapReady] = useState(Platform.OS !== 'android');
-  const [showMapFallback, setShowMapFallback] = useState(false);
+  const [selectedLatitude, setSelectedLatitude] = useState<number | null>(null);
+  const [selectedLongitude, setSelectedLongitude] = useState<number | null>(null);
+  const [isAddressPickerVisible, setIsAddressPickerVisible] = useState(false);
 
   const steps: StepMeta[] = [
     {
@@ -643,16 +641,6 @@ export default function CustomerPostTaskScreen() {
       void loadCatalog();
     }, [loadCatalog]),
   );
-
-  useEffect(() => {
-    if (Platform.OS !== 'android' || isMapReady) {
-      setShowMapFallback(false);
-      return;
-    }
-
-    const fallbackTimer = setTimeout(() => setShowMapFallback(true), 6000);
-    return () => clearTimeout(fallbackTimer);
-  }, [isMapReady]);
 
   useEffect(() => {
     if (!selectedCategory) return;
@@ -840,35 +828,6 @@ export default function CustomerPostTaskScreen() {
       setEndTime(nextEndTime);
       setTimePickerTarget(null);
       clearFieldError('endTime');
-    },
-    [clearFieldError],
-  );
-
-  const handleMapPress = useCallback(
-    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      setSelectedLatitude(latitude);
-      setSelectedLongitude(longitude);
-
-      const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      try {
-        const results = await Location.reverseGeocodeAsync({ latitude, longitude });
-        if (results.length > 0) {
-          const r = results[0];
-          const streetPart = [r.streetNumber, r.street].filter(Boolean).join(' ');
-          const resolved =
-            [streetPart, r.district, r.city].filter(Boolean).join(', ') || fallback;
-          setSelectedAddress(resolved);
-          setAddress(resolved);
-        } else {
-          setSelectedAddress(fallback);
-          setAddress(fallback);
-        }
-      } catch {
-        setSelectedAddress(fallback);
-        setAddress(fallback);
-      }
-      clearFieldError('address');
     },
     [clearFieldError],
   );
@@ -2166,46 +2125,46 @@ export default function CustomerPostTaskScreen() {
               </AppText>
             ) : null}
           </View>
-          <Field
-            errorText={getFieldError('address')}
-            label={t('address')}
-            onChangeText={(value) => {
-              setSelectedAddress(value);
-              setAddress(value);
-              clearFieldError('address');
-            }}
-            placeholder={t('addressPlaceholder')}
-            value={selectedAddress}
-          />
-          <View style={styles.mapCard}>
-            <MapView
-              initialRegion={{
-                latitude: DEFAULT_TASK_LOCATION.lat,
-                longitude: DEFAULT_TASK_LOCATION.lng,
-                latitudeDelta: 0.04,
-                longitudeDelta: 0.04,
-              }}
-              onPress={handleMapPress}
-              onMapReady={() => {
-                setIsMapReady(true);
-                setShowMapFallback(false);
-              }}
-              provider={PROVIDER_GOOGLE}
-              style={styles.mapView}>
-              <Marker coordinate={{ latitude: selectedLatitude, longitude: selectedLongitude }} />
-            </MapView>
-            {showMapFallback ? (
-              <View pointerEvents="none" style={styles.mapFallback}>
-                <Ionicons color={colors.slate700} name="map-outline" size={20} />
-                <AppText color={colors.slate700} style={styles.mapFallbackText} variant="small">
-                  {t('mapLoadFallback')}
-                </AppText>
-              </View>
+          <View style={styles.field}>
+            <AppText style={styles.fieldLabel}>{t('address')}</AppText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIsAddressPickerVisible(true)}
+              style={({ pressed }) => [
+                styles.locationSummaryCard,
+                getFieldError('address') ? styles.inputError : null,
+                pressed ? styles.locationSummaryCardPressed : null,
+              ]}>
+              <Ionicons color={colors.tasklyBlue600} name="location-outline" size={20} />
+              <AppText
+                color={selectedAddress ? colors.navy900 : colors.slate500}
+                numberOfLines={1}
+                style={styles.locationSummaryText}>
+                {selectedAddress || 'Tap to choose location'}
+              </AppText>
+              <Ionicons color={colors.slate500} name="chevron-forward" size={18} />
+            </Pressable>
+            {getFieldError('address') ? (
+              <AppText color={colors.danger600} variant="small">
+                {getFieldError('address')}
+              </AppText>
             ) : null}
           </View>
-          <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
-            {t('mapPinHelper')}
-          </AppText>
+          <AddressPickerModal
+            initialAddress={selectedAddress}
+            initialCity={selectedCity?.slug}
+            initialLatitude={selectedLatitude}
+            initialLongitude={selectedLongitude}
+            onClose={() => setIsAddressPickerVisible(false)}
+            onConfirm={(nextAddress, latitude, longitude) => {
+              setSelectedAddress(nextAddress);
+              setAddress(nextAddress);
+              setSelectedLatitude(latitude);
+              setSelectedLongitude(longitude);
+              clearFieldError('address');
+            }}
+            visible={isAddressPickerVisible}
+          />
           <Modal
             animationType="slide"
             onRequestClose={() => setShowCityPicker(false)}
@@ -3394,32 +3353,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  mapCard: {
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  mapFallback: {
+  locationSummaryCard: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    bottom: 0,
-    gap: spacing.xs,
-    justifyContent: 'center',
-    left: 0,
-    padding: spacing.md,
-    position: 'absolute',
-    right: 0,
-    top: 0,
+    borderColor: '#DDE6F0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 50,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  mapFallbackText: {
-    textAlign: 'center',
+  locationSummaryCardPressed: {
+    backgroundColor: colors.tasklyBlue50,
   },
-  mapHelper: {
-    paddingVertical: spacing.xs,
-    textAlign: 'center',
-  },
-  mapView: {
-    height: 200,
-    width: '100%',
+  locationSummaryText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    minWidth: 0,
   },
   moneyCard: {
     backgroundColor: '#F7FAFF',

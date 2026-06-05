@@ -2,12 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   KeyboardTypeOptions,
@@ -22,6 +20,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
+import AddressPickerModal from '@/components/AddressPickerModal';
 import { ImagePickerPlaceholder, TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
 import { getCities, getPostingRules, getProCategories } from '@/src/lib/api/catalog';
@@ -415,6 +414,7 @@ export default function CustomerPostProRequestScreen() {
   const [selectedTagKeys, setSelectedTagKeys] = useState<string[]>([]);
   const [selectedLatitude, setSelectedLatitude] = useState(DEFAULT_PRO_LOCATION.lat);
   const [selectedLongitude, setSelectedLongitude] = useState(DEFAULT_PRO_LOCATION.lng);
+  const [isAddressPickerVisible, setIsAddressPickerVisible] = useState(false);
   const [images, setImages] = useState<LocalSelectedImage[]>([]);
   const [imageErrorMessage, setImageErrorMessage] = useState<string | null>(null);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
@@ -429,19 +429,7 @@ export default function CustomerPostProRequestScreen() {
   const [attemptedSteps, setAttemptedSteps] = useState<Record<number, boolean>>({});
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
   const [step1TagsBlocked, setStep1TagsBlocked] = useState(false);
-  const [isMapReady, setIsMapReady] = useState(Platform.OS !== 'android');
-  const [showMapFallback, setShowMapFallback] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-
-  useEffect(() => {
-    if (Platform.OS !== 'android' || isMapReady) {
-      setShowMapFallback(false);
-      return;
-    }
-
-    const fallbackTimer = setTimeout(() => setShowMapFallback(true), 6000);
-    return () => clearTimeout(fallbackTimer);
-  }, [isMapReady]);
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -832,30 +820,6 @@ export default function CustomerPostProRequestScreen() {
     [clearFieldError],
   );
 
-  const handleMapPress = useCallback(
-    async (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      setSelectedLatitude(latitude);
-      setSelectedLongitude(longitude);
-
-      const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-      try {
-        const results = await Location.reverseGeocodeAsync({ latitude, longitude });
-        if (results.length > 0) {
-          const r = results[0];
-          const streetPart = [r.streetNumber, r.street].filter(Boolean).join(' ');
-          const resolved = [streetPart, r.district, r.city].filter(Boolean).join(', ') || fallback;
-          setAddressNotes(resolved);
-        } else {
-          setAddressNotes(fallback);
-        }
-      } catch {
-        setAddressNotes(fallback);
-      }
-    },
-    [],
-  );
-
   const handleSubmit = useCallback(async () => {
     setHasSubmittedOnce(true);
     setSubmitMessage(null);
@@ -1189,47 +1153,45 @@ export default function CustomerPostProRequestScreen() {
           </View>
 
           <View style={styles.sectionCard}>
-            <Field
-              label={t('address')}
-              onChangeText={(value) => setAddressNotes(value)}
-              placeholder={t('proLocationAddressPlaceholder')}
-              value={addressNotes}
-            />
+            <View style={styles.field}>
+              <AppText style={styles.fieldLabel}>{t('address')}</AppText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setIsAddressPickerVisible(true)}
+                style={({ pressed }) => [
+                  styles.locationSummaryCard,
+                  pressed ? styles.pressed : null,
+                ]}>
+                <Ionicons color={colors.proOrange600} name="location-outline" size={20} />
+                <AppText
+                  color={addressNotes ? colors.navy900 : colors.slate500}
+                  numberOfLines={1}
+                  style={styles.locationSummaryText}>
+                  {addressNotes || 'Tap to choose location'}
+                </AppText>
+                <Ionicons color={colors.slate500} name="chevron-forward" size={18} />
+              </Pressable>
+            </View>
             <View style={styles.privacyNoteCard}>
               <Ionicons color={colors.proOrange600} name="lock-closed-outline" size={18} />
               <AppText color={colors.proOrangeTextDark} style={styles.privacyNoteText} variant="small">
                 {t('proExactAddressPrivacyNote')}
               </AppText>
             </View>
-            <View style={styles.mapCard}>
-              <MapView
-                initialRegion={{
-                  latitude: DEFAULT_PRO_LOCATION.lat,
-                  longitude: DEFAULT_PRO_LOCATION.lng,
-                  latitudeDelta: 0.04,
-                  longitudeDelta: 0.04,
-                }}
-                onPress={handleMapPress}
-                onMapReady={() => {
-                  setIsMapReady(true);
-                  setShowMapFallback(false);
-                }}
-                provider={PROVIDER_GOOGLE}
-                style={styles.mapView}>
-                <Marker coordinate={{ latitude: selectedLatitude, longitude: selectedLongitude }} />
-              </MapView>
-              {showMapFallback ? (
-                <View pointerEvents="none" style={styles.mapFallback}>
-                  <Ionicons color={colors.slate700} name="map-outline" size={20} />
-                  <AppText color={colors.slate700} style={styles.mapFallbackText} variant="small">
-                    {t('mapLoadFallback')}
-                  </AppText>
-                </View>
-              ) : null}
-            </View>
-            <AppText color={colors.slate500} style={styles.mapHelper} variant="caption">
-              {t('mapPinHelper')}
-            </AppText>
+            <AddressPickerModal
+              initialAddress={addressNotes}
+              initialCity={selectedCity?.slug}
+              initialLatitude={selectedLatitude}
+              initialLongitude={selectedLongitude}
+              onClose={() => setIsAddressPickerVisible(false)}
+              onConfirm={(nextAddress, latitude, longitude) => {
+                setAddressNotes(nextAddress);
+                setSelectedLatitude(latitude);
+                setSelectedLongitude(longitude);
+              }}
+              title="Choose Project Location"
+              visible={isAddressPickerVisible}
+            />
             <Field
               helperText={t('proLocationNotesHelper')}
               label={t('locationNotes')}
@@ -1860,33 +1822,23 @@ const styles = StyleSheet.create({
   keyboardAvoider: {
     flex: 1,
   },
-  mapCard: {
-    borderColor: colors.proOrangeBorder,
-    borderRadius: radius.card,
-    borderWidth: 1,
-    height: 190,
-    overflow: 'hidden',
-  },
-  mapFallback: {
+  locationSummaryCard: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    bottom: 0,
-    gap: spacing.xs,
-    justifyContent: 'center',
-    left: 0,
-    padding: spacing.md,
-    position: 'absolute',
-    right: 0,
-    top: 0,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 50,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  mapFallbackText: {
-    textAlign: 'center',
-  },
-  mapHelper: {
-    marginTop: -spacing.xs,
-  },
-  mapView: {
+  locationSummaryText: {
     flex: 1,
+    fontSize: 15,
+    lineHeight: 20,
+    minWidth: 0,
   },
   modalCard: {
     backgroundColor: colors.white,

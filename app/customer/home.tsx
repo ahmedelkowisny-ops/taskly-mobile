@@ -132,6 +132,9 @@ export default function CustomerHomeScreen() {
           tone="pro"
         />
       </View>
+      <AppButton onPress={() => router.push('/map-test' as Href)} variant="outline">
+        Map test
+      </AppButton>
 
       {isLoading ? (
         <StateCard icon="timer-outline" title={t('loadingCustomerArea')} />

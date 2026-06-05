@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "tasklyapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "bundleIdentifier": "com.tasklyco.app",
       "supportsTablet": true
@@ -17,11 +17,6 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyBZ4WAY-vdgS3KYwrppH7hJ9M3A1ZKKcpE"
-        }
       },
       "edgeToEdgeEnabled": true
     },

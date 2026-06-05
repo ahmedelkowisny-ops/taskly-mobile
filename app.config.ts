@@ -31,6 +31,7 @@ export default ({ config }: ConfigContext) => ({
         androidGoogleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY,
       },
     ],
+    './scripts/with-android-local-properties',
     '@react-native-community/datetimepicker',
   ],
 });
