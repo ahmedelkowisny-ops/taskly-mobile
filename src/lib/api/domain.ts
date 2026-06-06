@@ -1889,7 +1889,7 @@ export type SendMessageResponse = {
 };
 
 export type NotificationPreferenceSummary = {
-  channels: ('email' | 'push' | 'telegram')[];
+  channels: ('email' | 'push')[];
   coreAlertsEnabled: boolean;
   proAlertsEnabled: boolean;
 };
