@@ -10,7 +10,8 @@ import { useAuth } from '@/src/lib/auth/useAuth';
 import { canAccessProviderWorkspace, hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function ProviderStartScreen() {
   useI18n();
@@ -33,7 +34,7 @@ export default function ProviderStartScreen() {
   const proStatusLabel = proStatus === 'approved' ? t('available') : t('proProfileReview');
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content} style={styles.screen}>
       <ProviderTopBar />
 
       <View style={styles.header}>
@@ -43,7 +44,10 @@ export default function ProviderStartScreen() {
         <AppText color={colors.slate700}>{t('providerStartBody')}</AppText>
       </View>
 
-      <AppCard accentColor={hasProviderAccess ? colors.tasklyBlue600 : colors.proOrange600}>
+      <AppCard
+        accentColor={hasProviderAccess ? colors.tasklyBlue600 : colors.proOrange600}
+        backgroundColor={hasProviderAccess ? colors.tasklyBlue50 : colors.proOrange50}
+        style={[styles.readinessCard, hasProviderAccess ? styles.readyCard : styles.reviewCard]}>
         <StatusBadge label={status === 'demo' ? t('demoPreview') : t('accountStatus')} tone="neutral" />
         <AppText variant="sectionTitle">{mainTitle}</AppText>
         <AppText color={colors.slate700}>{mainBody}</AppText>
@@ -65,7 +69,7 @@ export default function ProviderStartScreen() {
         />
       ) : null}
 
-      <AppCard>
+      <AppCard style={styles.modeCard}>
         <View style={styles.modeRow}>
           <ModeBadge mode="providerCore" />
           {showProReadiness ? <ModeBadge mode="providerPro" /> : null}
@@ -73,7 +77,10 @@ export default function ProviderStartScreen() {
         <AppText color={colors.slate700}>{t(showProReadiness ? 'providerWorkspaceDescription' : 'taskerStartBody')}</AppText>
       </AppCard>
 
-      <AppButton onPress={() => router.push('/provider/dashboard')} tone={showProReadiness ? 'pro' : 'core'}>
+      <AppButton
+        onPress={() => router.push('/provider/dashboard')}
+        style={styles.primaryButton}
+        tone={showProReadiness ? 'pro' : 'core'}>
         {primaryActionLabel}
       </AppButton>
     </Screen>
@@ -81,13 +88,44 @@ export default function ProviderStartScreen() {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+  },
   header: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
     gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  modeCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
   },
   modeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  primaryButton: {
+    borderRadius: radius.card,
+    minHeight: 54,
+  },
+  readinessCard: {
+    borderRadius: radius.card,
+    ...designTokens.shadows.card,
+  },
+  readyCard: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  reviewCard: {
+    borderColor: colors.proOrangeBorder,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
   },
   topBar: {
     alignItems: 'center',
@@ -96,5 +134,6 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 26,
+    lineHeight: 32,
   },
 });

@@ -549,7 +549,7 @@ function DrawerNavItem({
       style={({ pressed }) => [
         styles.item,
         highlight ? styles.itemProHighlight : null,
-        active ? styles.itemActive : null,
+        active ? (isPro ? styles.itemActivePro : styles.itemActiveTaskly) : null,
         pressed && !active ? styles.itemPressed : null,
       ]}>
       {active ? <View style={[styles.activeBar, { backgroundColor: accent }]} /> : null}
@@ -643,17 +643,24 @@ const styles = StyleSheet.create({
   },
   item: {
     alignItems: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     flexDirection: 'row',
     gap: spacing.sm,
-    minHeight: 44,
-    paddingHorizontal: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
     position: 'relative',
   },
-  itemActive: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+  itemActivePro: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
     borderWidth: 1,
+    ...designTokens.shadows.card,
+  },
+  itemActiveTaskly: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderWidth: 1,
+    ...designTokens.shadows.card,
   },
   itemIcon: {
     alignItems: 'center',
@@ -678,12 +685,14 @@ const styles = StyleSheet.create({
     borderColor: '#FED7AA',
   },
   itemPressed: {
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.tasklyBlue50,
+    transform: [{ scale: 0.985 }],
   },
   itemProHighlight: {
-    backgroundColor: '#FFF7ED',
-    borderColor: '#FED7AA',
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
     borderWidth: 1,
+    ...designTokens.shadows.card,
   },
   itemText: {
     flex: 1,

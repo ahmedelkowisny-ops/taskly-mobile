@@ -134,8 +134,8 @@ function NavButton({
       accessibilityLabel={item.label}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.navItem, pressed ? styles.pressed : null]}>
-      <View style={styles.iconWrap}>
+      style={({ pressed }) => [styles.navItem, active ? styles.navItemActive : null, pressed ? styles.pressed : null]}>
+      <View style={[styles.iconWrap, active ? styles.iconWrapActive : null]}>
         <Ionicons color={active ? colors.tasklyBlue600 : colors.slate500} name={iconName} size={24} />
         {badge ? <View style={styles.unreadDot} /> : null}
       </View>
@@ -150,8 +150,8 @@ function BrowseNavButton({ active, onPress }: { active: boolean; onPress: () => 
       accessibilityLabel={t('providerNavBrowse')}
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.navItem, styles.browseNavItem, pressed ? styles.pressed : null]}>
-      <View style={styles.browseButton}>
+      style={({ pressed }) => [styles.navItem, styles.browseNavItem, active ? styles.browseNavItemActive : null, pressed ? styles.pressed : null]}>
+      <View style={[styles.browseButton, active ? styles.browseButtonActive : null]}>
         <Ionicons color={colors.white} name="search" size={24} />
       </View>
       <AppText color={active ? colors.tasklyBlue600 : colors.slate500} style={styles.browseLabel} variant="small">
@@ -178,22 +178,40 @@ const styles = StyleSheet.create({
     width: 48,
     ...designTokens.shadows.buttonBlue,
   },
+  browseButtonActive: {
+    borderColor: colors.tasklyBlueBorder,
+    borderWidth: 2,
+  },
   browseLabel: {
     fontSize: 10,
     lineHeight: 12,
     marginTop: 2,
   },
   browseNavItem: {
+    borderRadius: radius.lg,
     marginTop: -spacing.lg,
   },
+  browseNavItemActive: {
+    backgroundColor: colors.tasklyBlue50,
+  },
   iconWrap: {
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    height: 38,
+    justifyContent: 'center',
     position: 'relative',
+    width: 42,
+  },
+  iconWrapActive: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderWidth: 1,
   },
   navBar: {
     ...designTokens.shadows.card,
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
@@ -211,10 +229,14 @@ const styles = StyleSheet.create({
   },
   navItem: {
     alignItems: 'center',
+    borderRadius: radius.lg,
     flex: 1,
     justifyContent: 'center',
     minHeight: 48,
     minWidth: 0,
+  },
+  navItemActive: {
+    backgroundColor: colors.tasklyBlue50,
   },
   navWrap: {
     paddingHorizontal: spacing.md,

@@ -215,7 +215,7 @@ export const en = {
   tasklyProfile: 'Taskly profile',
   tasklyProProfile: 'Taskly Pro profile',
   proProfessionalProfile: 'Pro professional profile',
-  proProfileModeHelper: 'Keep your Core Tasker profile and approved Pro profile separated. Each workspace uses different backend rules.',
+  proProfileModeHelper: 'Keep your Taskly Tasker profile and approved Pro profile separated. Each workspace uses different backend rules.',
   proProfileWorkspaceBody: 'Manage the public Pro profile customers compare after Taskly approves your categories and cities.',
   tasklyProRoleDescription: 'Taskly Pro is for larger projects like renovations, plumbing, electrical work, painting, and other professional home services. After approval, customers can compare your Pro profile, portfolio, and responses.',
   proDashboardTitle: 'Taskly Pro dashboard',

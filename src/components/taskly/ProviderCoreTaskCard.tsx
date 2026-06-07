@@ -4,6 +4,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import type { ProviderCoreTaskSummary } from '@/src/lib/api/domain';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { AppButton, AppCard, AppText, StatusBadge } from '../ui';
@@ -45,7 +46,7 @@ export function ProviderCoreTaskCard({
   const statusChips = getUniqueStatusChips(task);
 
   return (
-    <AppCard backgroundColor={compact ? colors.tasklyBlue50 : colors.white} style={compact ? styles.compactCard : undefined}>
+    <AppCard backgroundColor={compact ? colors.tasklyBlue50 : colors.white} style={[styles.card, compact ? styles.compactCard : undefined]}>
       <View style={styles.badges}>
         {statusChips.map((chip) => (
           <StatusBadge key={chip.label} label={chip.label} tone={chip.tone} style={chip.style} />
@@ -326,6 +327,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flexBasis: '47%',
     flexGrow: 1,
+    minHeight: 46,
   },
   actions: {
     flexDirection: 'row',
@@ -337,7 +339,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  card: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
   compactCard: {
+    borderColor: colors.tasklyBlueBorder,
     padding: spacing.md,
   },
   infoRow: {
@@ -353,9 +360,9 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
   },
   payoutBox: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,

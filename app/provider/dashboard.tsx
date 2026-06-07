@@ -46,7 +46,8 @@ import { useAuth } from '@/src/lib/auth/useAuth';
 import { hasApprovedProMode, hasCoreTaskerMode } from '@/src/lib/auth/workspaceAccess';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function ProviderDashboardScreen() {
   useI18n();
@@ -219,7 +220,7 @@ export default function ProviderDashboardScreen() {
     <Screen contentStyle={styles.content} style={styles.screen}>
       <ProviderTopBar />
 
-      <View style={styles.header}>
+      <View style={[styles.header, showProDashboard ? styles.headerPro : styles.headerCore]}>
         <AppText style={styles.screenTitle} variant="screenTitle">
           {showProDashboard ? t('proDashboardTitle') : t('taskerDashboard')}
         </AppText>
@@ -231,14 +232,14 @@ export default function ProviderDashboardScreen() {
       ) : null}
 
       {isLoading ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <StatusBadge label={t('loading')} tone="neutral" />
           <AppText variant="sectionTitle">{t('loadingProviderDashboard')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard backgroundColor={isUnauthorized ? colors.white : colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="sectionTitle">
             {isUnauthorized ? t('loginOrProviderAccessRequired') : t('couldNotRefreshProviderDashboard')}
@@ -340,14 +341,14 @@ export default function ProviderDashboardScreen() {
       ) : null}
 
       {!hasCoreAccess && !showProDashboard ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <StatusBadge label={coreStatusLabel} tone="warning" />
           <AppText color={colors.slate700}>{t('providerTasklyTaskerReadiness')}</AppText>
         </AppCard>
       ) : null}
 
       {hasApprovedPro && showCoreDashboard ? (
-        <AppCard backgroundColor={colors.proOrange50}>
+        <AppCard backgroundColor={colors.proOrange50} style={styles.proBridgeCard}>
           <ModeBadge mode="providerPro" />
           <AppText variant="sectionTitle">{t('tasklyProProductTitle')}</AppText>
           <AppText color={colors.slate700}>{t('tasklyProProductBody')}</AppText>
@@ -361,69 +362,6 @@ export default function ProviderDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    gap: spacing.xl,
-    paddingTop: spacing.lg,
-  },
-  stack: {
-    gap: spacing.sm,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  screenTitle: {
-    fontSize: 26,
-  },
-  section: {
-    gap: spacing.md,
-  },
-  sectionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  metric: {
-    borderRadius: 8,
-    borderWidth: 1,
-    flexBasis: '47%',
-    flexGrow: 1,
-    padding: spacing.md,
-  },
-  metricBlue: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
-  },
-  metricSlate: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  modeButton: {
-    flex: 1,
-  },
-  modeSwitcher: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  proDashboard: {
-    gap: spacing.xl,
-  },
-  screen: {
-    backgroundColor: '#F7F9FB',
-  },
-  sectionActionButton: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
-  },
-  topBar: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   badges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -434,12 +372,120 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
+  content: {
+    gap: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl + 96,
+  },
+  stack: {
+    gap: spacing.sm,
+  },
+  header: {
+    backgroundColor: colors.white,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  headerCore: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  headerPro: {
+    borderColor: colors.proOrangeBorder,
+  },
+  screenTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+  },
+  section: {
+    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  metric: {
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
+    gap: spacing.xs,
+    minHeight: 92,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  metricBlue: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+  },
+  metricSlate: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  modeButton: {
+    flex: 1,
+    minHeight: 48,
+  },
+  modeSwitcher: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  proDashboard: {
+    gap: spacing.xl,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  sectionActionButton: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    minHeight: 48,
+  },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   messageCard: {
     gap: spacing.sm,
   },
   metricPro: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
+    ...designTokens.shadows.card,
+  },
+  modeCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  proBridgeCard: {
+    borderColor: colors.proOrangeBorder,
+    ...designTokens.shadows.buttonPro,
+  },
+  proHeroCard: {
+    borderColor: colors.proOrangeBorder,
+    ...designTokens.shadows.buttonPro,
+  },
+  proRequestCard: {
+    borderColor: colors.proOrangeBorder,
+    ...designTokens.shadows.card,
+  },
+  proSummaryCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.surface,
   },
   quickActions: {
     gap: spacing.sm,
@@ -451,6 +497,10 @@ const styles = StyleSheet.create({
   proOutlineButton: {
     borderColor: colors.proOrangeBorder,
   },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
 });
 
 function WorkspaceModeSwitcher({
@@ -461,7 +511,7 @@ function WorkspaceModeSwitcher({
   onChange: (workspace: 'core' | 'pro') => void;
 }) {
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.modeCard}>
       <View style={styles.modeSwitcher}>
         <AppButton
           onPress={() => onChange('core')}
@@ -512,7 +562,7 @@ function ProDashboard({
 
   return (
     <View style={styles.proDashboard}>
-      <AppCard backgroundColor={colors.proOrange50}>
+      <AppCard backgroundColor={colors.proOrange50} style={styles.proHeroCard}>
         <View style={styles.badges}>
           <ModeBadge mode="providerPro" />
           <StatusBadge label={t('approvedForTasklyPro')} tone="success" />
@@ -544,7 +594,7 @@ function ProDashboard({
         </View>
         {requests.length ? (
           requests.slice(0, 3).map((request) => (
-            <AppCard backgroundColor={colors.white} key={request.id}>
+            <AppCard backgroundColor={colors.white} key={request.id} style={styles.proRequestCard}>
               <View style={styles.badges}>
                 <StatusBadge label={request.statusLabel} tone="pro" />
                 {request.proResponseState?.badgeLabel || request.responseStatusLabel ? (
@@ -574,7 +624,7 @@ function ProDashboard({
         )}
       </View>
 
-      <AppCard backgroundColor={colors.white}>
+      <AppCard backgroundColor={colors.white} style={styles.proSummaryCard}>
         <View style={styles.topBar}>
           <View style={styles.sectionTitleBlock}>
             <AppText variant="sectionTitle">{t('proProfilePortfolioSummary')}</AppText>
@@ -685,7 +735,9 @@ function TaskSection({
 }) {
   return (
     <View style={styles.section}>
-      <AppText variant="sectionTitle">{title}</AppText>
+      <View style={styles.sectionHeader}>
+        <AppText variant="sectionTitle">{title}</AppText>
+      </View>
       {tasks.length ? (
         tasks.map((task) => (
           <ProviderCoreTaskCard
