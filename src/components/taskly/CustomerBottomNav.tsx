@@ -7,7 +7,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useCustomerCreateBarVisibility } from '@/src/components/taskly/CustomerCreateBarVisibility';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { AppText } from '../ui';
@@ -193,17 +192,21 @@ const styles = StyleSheet.create({
     width: 18,
   },
   navBar: {
-    ...designTokens.shadows.card,
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     borderWidth: 1,
+    elevation: 8,
     flexDirection: 'row',
     gap: spacing.xs,
     justifyContent: 'space-between',
     minHeight: 58,
     paddingHorizontal: spacing.sm,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
   },
   navFloat: {
     left: 0,
@@ -235,6 +238,11 @@ const styles = StyleSheet.create({
   postActionCore: {
     backgroundColor: colors.tasklyBlue600,
     borderColor: colors.tasklyBlue600,
+    elevation: 4,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
   },
   postActionIcon: {
     alignItems: 'center',
@@ -248,10 +256,17 @@ const styles = StyleSheet.create({
   },
   postActionIconPro: {
     backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderWidth: 1,
   },
   postActionPro: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
+    elevation: 3,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
   },
   postActionText: {
     flex: 1,
@@ -261,10 +276,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue600,
     borderRadius: radius.pill,
+    elevation: 6,
     height: 50,
     justifyContent: 'center',
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
     width: 50,
-    ...designTokens.shadows.buttonBlue,
   },
   postNavItem: {
     marginTop: -spacing.lg,
@@ -280,19 +299,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
+    elevation: 10,
     gap: spacing.md,
     padding: spacing.lg,
     paddingTop: spacing.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { height: -4, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
   },
   sheetHandle: {
     alignSelf: 'center',
-    backgroundColor: colors.border,
+    backgroundColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     height: 4,
     width: 44,
   },
   sheetOverlay: {
-    backgroundColor: 'rgba(8, 12, 20, 0.24)',
+    backgroundColor: 'rgba(15, 23, 42, 0.30)',
     flex: 1,
     justifyContent: 'flex-end',
   },
