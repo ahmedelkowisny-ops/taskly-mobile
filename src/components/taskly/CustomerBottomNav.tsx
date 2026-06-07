@@ -1,10 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Href, usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useCustomerCreateBarVisibility } from '@/src/components/taskly/CustomerCreateBarVisibility';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
@@ -18,42 +17,32 @@ type NavItem = {
   value: 'home' | 'messages' | 'profile' | 'tasks';
 };
 
-const MAIN_CUSTOMER_PATHS = new Set([
-  '/customer/home',
-  '/customer/dashboard',
-  '/customer/tasks',
-  '/customer/pro-requests',
-  '/customer/messages',
-  '/customer/profile',
-]);
+const HIDDEN_CUSTOMER_BOTTOM_NAV_PATHS = new Set(['/customer/post-task']);
+
+function shouldShowCustomerBottomNav(pathname: string) {
+  if (HIDDEN_CUSTOMER_BOTTOM_NAV_PATHS.has(pathname)) return false;
+
+  return (
+    pathname === '/customer/home' ||
+    pathname === '/customer/dashboard' ||
+    pathname === '/customer/profile' ||
+    pathname === '/customer/tasks' ||
+    pathname.startsWith('/customer/tasks/') ||
+    pathname === '/customer/pro-requests' ||
+    pathname.startsWith('/customer/pro-requests/') ||
+    pathname === '/customer/messages' ||
+    pathname.startsWith('/customer/messages/')
+  );
+}
 
 export function CustomerBottomNav() {
   useI18n();
   const pathname = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const visibility = useCustomerCreateBarVisibility();
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
   const [postSheetVisible, setPostSheetVisible] = useState(false);
-  const hidden = visibility?.hidden ?? false;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        duration: hidden ? 220 : 180,
-        toValue: hidden ? 112 : 0,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        duration: hidden ? 160 : 160,
-        toValue: hidden ? 0 : 1,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [hidden, opacity, translateY]);
-
-  if (!MAIN_CUSTOMER_PATHS.has(pathname)) {
+  if (!shouldShowCustomerBottomNav(pathname)) {
     return null;
   }
 
@@ -71,14 +60,12 @@ export function CustomerBottomNav() {
 
   return (
     <>
-      <Animated.View
-        pointerEvents={hidden ? 'none' : 'box-none'}
+      <View
+        pointerEvents="box-none"
         style={[
           styles.navFloat,
           {
             bottom: Math.max(insets.bottom, spacing.md),
-            opacity,
-            transform: [{ translateY }],
           },
         ]}>
         <View style={styles.navWrap}>
@@ -90,7 +77,7 @@ export function CustomerBottomNav() {
             <NavButton active={pathname === '/customer/profile'} item={items[3]} onPress={() => navigate(items[3].route)} />
           </View>
         </View>
-      </Animated.View>
+      </View>
 
       <Modal animationType="slide" onRequestClose={() => setPostSheetVisible(false)} transparent visible={postSheetVisible}>
         <View style={styles.sheetOverlay}>
