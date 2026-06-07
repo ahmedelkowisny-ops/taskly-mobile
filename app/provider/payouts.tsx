@@ -14,6 +14,7 @@ import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 function formatDate(value: string | null | undefined) {
@@ -31,20 +32,22 @@ function PayoutRow({ task }: { task: ProviderCoreTaskSummary }) {
   const dateLabel = formatDate(task.scheduledStartAt ?? task.scheduledEndAt);
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard accentColor={colors.success600} backgroundColor={colors.white} style={styles.payoutRow}>
       <View style={styles.rowHeader}>
         <StatusBadge label={task.statusLabel} tone={task.status.toUpperCase() === 'COMPLETED' ? 'core' : 'neutral'} />
         {payout ? <AppText color={colors.success600} variant="bodyStrong">{payout}</AppText> : null}
       </View>
-      <AppText variant="bodyStrong">{task.title}</AppText>
+      <AppText style={styles.taskTitle} variant="bodyStrong">{task.title}</AppText>
       <AppText color={colors.slate700} variant="small">
         {task.categoryLabel} - {task.cityLabel}
       </AppText>
       {dateLabel ? <AppText color={colors.slate500} variant="small">{dateLabel}</AppText> : null}
       {breakdown?.tasklyFeeLabel ? (
-        <AppText color={colors.slate500} variant="small">
-          {t('providerPaymentBreakdown')}: {breakdown.grossTaskPriceLabel} - {t('tasklyFee')}: {breakdown.tasklyFeeLabel} - {payout}
-        </AppText>
+        <View style={styles.breakdownSurface}>
+          <AppText color={colors.slate500} variant="small">
+            {t('providerPaymentBreakdown')}: {breakdown.grossTaskPriceLabel} - {t('tasklyFee')}: {breakdown.tasklyFeeLabel} - {payout}
+          </AppText>
+        </View>
       ) : null}
     </AppCard>
   );
@@ -198,21 +201,34 @@ export default function ProviderPayoutsScreen() {
     <Screen contentStyle={styles.content} style={styles.screen}>
       <ProviderTopBar />
 
-      <View style={styles.header}>
+      <AppCard accentColor={colors.tasklyBlue600} style={styles.header}>
         <AppText variant="screenTitle">{t('payouts')}</AppText>
         <AppText color={colors.slate700}>{t('payoutsIntro')}</AppText>
-      </View>
+      </AppCard>
 
       {needsStripe ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard
+          accentColor={payoutStatus?.isReady ? colors.success600 : colors.tasklyBlue600}
+          backgroundColor={payoutStatus?.isReady ? colors.success50 : colors.white}
+          style={styles.stripeCard}>
           <AppText variant="bodyStrong">{payoutStatus?.isReady ? t('yourPayoutsAreReady') : t('stripeVerificationNeeded')}</AppText>
           <AppText color={colors.slate700}>{t('stripeVerificationHelper')}</AppText>
           <AppText color={colors.slate500} variant="small">{t('stripePayoutsExplanation')}</AppText>
           {payoutStatus && payoutStatus.taskerStatus !== 'VERIFIED' ? (
-            <AppText color={colors.warning600} variant="small">{t('completeTaskerProfileFirst')}</AppText>
+            <View style={styles.warningSurface}>
+              <AppText color={colors.warning600} variant="small">{t('completeTaskerProfileFirst')}</AppText>
+            </View>
           ) : null}
-          {payoutErrorMessage ? <AppText color={colors.warning600} variant="small">{payoutErrorMessage}</AppText> : null}
-          {payoutNotice ? <AppText color={colors.success600} variant="small">{payoutNotice}</AppText> : null}
+          {payoutErrorMessage ? (
+            <View style={styles.errorSurface}>
+              <AppText color={colors.danger600} variant="small">{payoutErrorMessage}</AppText>
+            </View>
+          ) : null}
+          {payoutNotice ? (
+            <View style={styles.successSurface}>
+              <AppText color={colors.success600} variant="small">{payoutNotice}</AppText>
+            </View>
+          ) : null}
           <View style={styles.stack}>
             {payoutStatus?.canOpenOnboarding ? (
               <AppButton loading={isStartingPayoutSetup} onPress={handleStartPayoutSetup}>
@@ -231,13 +247,13 @@ export default function ProviderPayoutsScreen() {
       ) : null}
 
       {isLoading ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{t('payouts')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -282,9 +298,30 @@ export default function ProviderPayoutsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.xl, paddingTop: spacing.lg },
-  header: { gap: spacing.sm },
+  breakdownSurface: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  errorSurface: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  header: {
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
   payoutBreakdownCard: {
+    ...designTokens.shadows.card,
     borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.lg,
   },
@@ -307,7 +344,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 40,
   },
-  rowHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  screen: { backgroundColor: '#F7F9FB' },
+  payoutRow: {
+    borderColor: colors.border,
+  },
+  rowHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
   stack: { gap: spacing.sm },
+  stateCard: {
+    borderColor: colors.border,
+  },
+  stripeCard: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  successSurface: {
+    backgroundColor: colors.success50,
+    borderColor: '#A7F3D0',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  taskTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  warningSurface: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
 });

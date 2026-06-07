@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -2979,9 +2979,6 @@ export default function CustomerPostTaskScreen() {
               {currentStep === STEP_TOTAL ? t('postTaskButton') : t('continueAction')}
             </AppButton>
           </View>
-          <AppText color={colors.slate700} style={styles.footerNote} variant="small">
-            {t('postTaskFooterNote')}
-          </AppText>
         </View>
         </KeyboardAvoidingView>
       </View>
@@ -3289,9 +3286,6 @@ const styles = StyleSheet.create({
   footerButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
-  },
-  footerNote: {
-    textAlign: 'center',
   },
   guidanceCard: {
     alignItems: 'flex-start',

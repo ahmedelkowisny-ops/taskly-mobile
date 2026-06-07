@@ -15,6 +15,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/src/components/ui';
+import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
@@ -37,6 +38,7 @@ type AddressSuggestion = {
 };
 
 type PlacesAutocompleteResponse = {
+  error_message?: string;
   predictions?: {
     description?: string;
     place_id?: string;
@@ -49,6 +51,7 @@ type PlacesAutocompleteResponse = {
 };
 
 type PlaceDetailsResponse = {
+  error_message?: string;
   result?: {
     formatted_address?: string;
     geometry?: {
@@ -62,8 +65,15 @@ type PlaceDetailsResponse = {
 };
 
 type GeocodingResponse = {
+  error_message?: string;
   results?: {
     formatted_address?: string;
+    geometry?: {
+      location?: {
+        lat?: number;
+        lng?: number;
+      };
+    };
   }[];
   status?: string;
 };
@@ -119,6 +129,7 @@ export default function AddressPickerModal({
   const [isSearching, setIsSearching] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [isCurrentLocationLoading, setIsCurrentLocationLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   const selectedCoordinate =
     typeof selectedLatitude === 'number' && typeof selectedLongitude === 'number'
@@ -149,16 +160,63 @@ export default function AddressPickerModal({
       setQuery(address);
       setSelectedLatitude(latitude);
       setSelectedLongitude(longitude);
+      setLookupError(null);
       animateToCoordinates(latitude, longitude);
     },
     [animateToCoordinates],
   );
+
+  const reportGoogleLookupFailure = useCallback((operation: string, status?: string, errorMessage?: string) => {
+    const detail = [status, errorMessage].filter(Boolean).join(': ');
+    console.warn(`[AddressPickerModal] Google ${operation} failed${detail ? ` - ${detail}` : ''}`);
+    setLookupError(status === 'REQUEST_DENIED' ? t('addressLookupAuthorizationError') : t('addressLookupFailed'));
+  }, []);
+
+  const geocodeTypedAddress = useCallback(async () => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    setIsResolving(true);
+    setSuggestions([]);
+    setLookupError(null);
+
+    try {
+      if (!GOOGLE_PLACES_API_KEY) {
+        reportGoogleLookupFailure('Geocoding', 'MISSING_API_KEY');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        address: trimmedQuery,
+        components: 'country:bg',
+        key: GOOGLE_PLACES_API_KEY,
+      });
+      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`);
+      const data = (await response.json()) as GeocodingResponse;
+      const result = data.results?.[0];
+      const latitude = result?.geometry?.location?.lat;
+      const longitude = result?.geometry?.location?.lng;
+
+      if (data.status !== 'OK' || typeof latitude !== 'number' || typeof longitude !== 'number') {
+        reportGoogleLookupFailure('Geocoding', data.status, data.error_message);
+        return;
+      }
+
+      updateLocation(result?.formatted_address || trimmedQuery, latitude, longitude);
+    } catch (error) {
+      console.warn('[AddressPickerModal] Google Geocoding request failed', error);
+      setLookupError(t('addressLookupFailed'));
+    } finally {
+      setIsResolving(false);
+    }
+  }, [query, reportGoogleLookupFailure, updateLocation]);
 
   const reverseGeocodeCoordinates = useCallback(
     async (latitude: number, longitude: number) => {
       const fallbackAddress = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
       setIsResolving(true);
       setSuggestions([]);
+      setLookupError(null);
       setSelectedLatitude(latitude);
       setSelectedLongitude(longitude);
       animateToCoordinates(latitude, longitude);
@@ -172,23 +230,26 @@ export default function AddressPickerModal({
         });
         const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`);
         const data = (await response.json()) as GeocodingResponse;
-        console.log('Google Geocoding response:', data);
         const resolvedAddress = data.status === 'OK' ? data.results?.[0]?.formatted_address : null;
         updateLocation(resolvedAddress || fallbackAddress, latitude, longitude);
+        if (data.status !== 'OK') {
+          reportGoogleLookupFailure('reverse geocoding', data.status, data.error_message);
+        }
       } catch (error) {
-        console.log('Google Geocoding error:', error);
+        console.warn('[AddressPickerModal] Google reverse geocoding request failed', error);
         updateLocation(fallbackAddress, latitude, longitude);
       } finally {
         setIsResolving(false);
       }
     },
-    [animateToCoordinates, updateLocation],
+    [animateToCoordinates, reportGoogleLookupFailure, updateLocation],
   );
 
   const handleSuggestionPress = useCallback(
     async (suggestion: AddressSuggestion) => {
       setSuggestions([]);
       setIsResolving(true);
+      setLookupError(null);
 
       try {
         if (!GOOGLE_PLACES_API_KEY) throw new Error('Missing Google Places API key');
@@ -200,26 +261,32 @@ export default function AddressPickerModal({
         });
         const response = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`);
         const data = (await response.json()) as PlaceDetailsResponse;
-        console.log('Google Place Details response:', data);
+        if (data.status !== 'OK') {
+          reportGoogleLookupFailure('Place Details', data.status, data.error_message);
+          return;
+        }
         const latitude = data.result?.geometry?.location?.lat;
         const longitude = data.result?.geometry?.location?.lng;
         if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-          throw new Error('Place details did not include coordinates');
+          reportGoogleLookupFailure('Place Details', data.status, 'Response did not include coordinates');
+          return;
         }
 
         updateLocation(data.result?.formatted_address || suggestion.text, latitude, longitude);
       } catch (error) {
-        console.log('Google Place Details error:', error);
+        console.warn('[AddressPickerModal] Google Place Details request failed', error);
+        setLookupError(t('addressLookupFailed'));
       } finally {
         setIsResolving(false);
       }
     },
-    [updateLocation],
+    [reportGoogleLookupFailure, updateLocation],
   );
 
   const handleCurrentLocationPress = useCallback(async () => {
     setIsCurrentLocationLoading(true);
     setSuggestions([]);
+    setLookupError(null);
 
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
@@ -301,9 +368,15 @@ export default function AddressPickerModal({
 
   useEffect(() => {
     const trimmedQuery = query.trim();
-    if (!visible || trimmedQuery.length < 3 || !GOOGLE_PLACES_API_KEY) {
+    if (!visible || trimmedQuery.length < 3) {
       setSuggestions([]);
       setIsSearching(false);
+      return;
+    }
+    if (!GOOGLE_PLACES_API_KEY) {
+      setSuggestions([]);
+      setIsSearching(false);
+      reportGoogleLookupFailure('Places Autocomplete', 'MISSING_API_KEY');
       return;
     }
 
@@ -321,7 +394,10 @@ export default function AddressPickerModal({
           `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`,
         );
         const data = (await response.json()) as PlacesAutocompleteResponse;
-        console.log('Google Places Autocomplete response:', data);
+        if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+          if (!cancelled) reportGoogleLookupFailure('Places Autocomplete', data.status, data.error_message);
+          return;
+        }
         const nextSuggestions =
           data.predictions?.flatMap((prediction) => {
             const placeId = prediction.place_id;
@@ -340,7 +416,8 @@ export default function AddressPickerModal({
 
         if (!cancelled) setSuggestions(nextSuggestions);
       } catch (error) {
-        console.log('Google Places Autocomplete error:', error);
+        console.warn('[AddressPickerModal] Google Places Autocomplete request failed', error);
+        if (!cancelled) setLookupError(t('addressLookupFailed'));
         if (!cancelled) setSuggestions([]);
       } finally {
         if (!cancelled) setIsSearching(false);
@@ -351,7 +428,7 @@ export default function AddressPickerModal({
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [query, visible]);
+  }, [query, reportGoogleLookupFailure, visible]);
 
   return (
     <Modal animationType="none" onRequestClose={onClose} visible={visible}>
@@ -381,14 +458,42 @@ export default function AddressPickerModal({
               onChangeText={(value) => {
                 setQuery(value);
                 setSelectedAddress(value);
+                setSelectedLatitude(null);
+                setSelectedLongitude(null);
+                setSuggestions([]);
+                setLookupError(null);
+              }}
+              onSubmitEditing={() => {
+                void geocodeTypedAddress();
               }}
               placeholder="Search address..."
               placeholderTextColor={colors.slate500}
+              returnKeyType="search"
               style={styles.searchInput}
               value={query}
             />
             {isSearching || isResolving ? <ActivityIndicator color="#2563EB" size="small" /> : null}
+            {!isSearching && !isResolving ? (
+              <Pressable
+                accessibilityLabel={t('findAddress')}
+                accessibilityRole="button"
+                onPress={() => {
+                  void geocodeTypedAddress();
+                }}
+                style={styles.searchButton}>
+                <Ionicons color={colors.white} name="arrow-forward" size={18} />
+              </Pressable>
+            ) : null}
           </View>
+
+          {lookupError ? (
+            <View style={styles.lookupError}>
+              <Ionicons color={colors.danger600} name="alert-circle-outline" size={18} />
+              <AppText color={colors.danger600} style={styles.lookupErrorText} variant="small">
+                {lookupError}
+              </AppText>
+            </View>
+          ) : null}
 
           {suggestions.length > 0 ? (
             <View style={styles.suggestions}>
@@ -573,6 +678,20 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
+  lookupError: {
+    alignItems: 'flex-start',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+    padding: spacing.sm,
+  },
+  lookupErrorText: {
+    flex: 1,
+  },
   searchBar: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -595,6 +714,14 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     minHeight: 24,
     padding: 0,
+  },
+  searchButton: {
+    alignItems: 'center',
+    backgroundColor: colors.tasklyBlue600,
+    borderRadius: radius.md,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
   searchLayer: {
     left: spacing.md,

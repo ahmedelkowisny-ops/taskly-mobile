@@ -69,7 +69,7 @@ export default function CustomerSupportScreen() {
 
     setForm(emptyForm);
     setErrors({});
-    setSuccessMessage(result.data.message || t('supportRequestSubmitted'));
+    setSuccessMessage(t('supportMessageSubmittedSuccessfully'));
   }
 
   return (
@@ -123,8 +123,10 @@ export default function CustomerSupportScreen() {
       </AppCard>
 
       <AppCard accentColor={colors.tasklyBlue600}>
-        <AppText variant="cardTitle">{t('supportContextNoteTitle')}</AppText>
-        <AppText color={colors.slate700}>{t('supportContextNoteBody')}</AppText>
+        <AppText color={colors.slate700}>{t('supportMessagesMonitorBody')}</AppText>
+        <AppButton onPress={() => router.push('/customer/messages?context=support' as Href)} variant="outline">
+          {t('openSupportMessages')}
+        </AppButton>
       </AppCard>
 
       <CustomerDrawer onClose={() => setDrawerOpen(false)} visible={drawerOpen} />
@@ -146,7 +148,8 @@ function IssueChip({ label, onPress, selected }: { label: string; onPress: () =>
 function InlineMessage({ message, tone }: { message: string; tone: 'error' | 'success' }) {
   return (
     <View style={[styles.inlineMessage, tone === 'success' ? styles.successMessage : styles.errorMessage]}>
-      <AppText color={tone === 'success' ? colors.tasklyBlue700 : colors.warning600} variant="small">
+      <Ionicons color={tone === 'success' ? colors.success600 : colors.danger600} name={tone === 'success' ? 'checkmark-circle-outline' : 'alert-circle-outline'} size={18} />
+      <AppText color={tone === 'success' ? colors.success600 : colors.danger600} style={styles.inlineMessageText} variant="small">
         {message}
       </AppText>
     </View>
@@ -208,10 +211,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   inlineMessage: {
+    alignItems: 'flex-start',
     borderRadius: radius.md,
     borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  inlineMessageText: {
+    flex: 1,
   },
   issueChip: {
     alignItems: 'center',
@@ -237,7 +246,7 @@ const styles = StyleSheet.create({
     opacity: 0.84,
   },
   successMessage: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.success50,
+    borderColor: '#A7F3D0',
   },
 });

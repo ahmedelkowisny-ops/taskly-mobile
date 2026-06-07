@@ -31,7 +31,8 @@ function shouldShowCustomerBottomNav(pathname: string) {
     pathname === '/customer/pro-requests' ||
     pathname.startsWith('/customer/pro-requests/') ||
     pathname === '/customer/messages' ||
-    pathname.startsWith('/customer/messages/')
+    pathname.startsWith('/customer/messages/') ||
+    pathname === '/customer/support'
   );
 }
 

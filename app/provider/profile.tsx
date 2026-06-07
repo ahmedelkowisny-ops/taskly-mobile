@@ -52,6 +52,7 @@ import {
 } from '@/src/lib/images/imagePicker';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type TaskerDraft = {
@@ -866,13 +867,13 @@ export default function ProviderProfileScreen() {
   }
 
   return (
-    <KeyboardAwareFormScreen>
+    <KeyboardAwareFormScreen contentStyle={styles.screenContent} style={styles.screen}>
       <ProviderTopBar />
 
-      <View style={{ gap: spacing.sm }}>
+      <AppCard accentColor={effectiveProfileMode === 'pro' ? colors.proAmber500 : colors.tasklyBlue600} style={styles.pageHeader}>
         <AppText variant="screenTitle">{t('profile')}</AppText>
         <AppText color={colors.slate500}>{t('providerProfileIntro')}</AppText>
-      </View>
+      </AppCard>
 
       {isLoading ? (
         <SkeletonLoader />
@@ -924,7 +925,7 @@ export default function ProviderProfileScreen() {
       ) : null}
 
       {showTaskerProfileSection ? (
-      <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white}>
+      <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white} style={styles.taskerWorkspaceCard}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
             <ModeBadge mode="providerCore" />
@@ -966,7 +967,7 @@ export default function ProviderProfileScreen() {
       ) : null}
 
       {showProProfileSection ? (
-      <AppCard accentColor={colors.proOrange600}>
+      <AppCard accentColor={colors.proOrange600} style={styles.proWorkspaceCard}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleBlock}>
             <ModeBadge mode="providerPro" />
@@ -2038,7 +2039,7 @@ function ProfileModeSwitcher({
   ];
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.profileModeCard}>
       <View style={styles.profileModeHeader}>
         <StatusBadge label={t('dualProviderWorkspace')} tone="neutral" />
         <AppText color={colors.slate700} variant="small">
@@ -2136,7 +2137,7 @@ function ProReadinessCard({ items }: { items: ReadinessItem[] }) {
         {items.map((item) => (
           <View key={item.label} style={styles.readinessRow}>
             <View style={[styles.readinessIcon, item.complete ? styles.readinessIconComplete : styles.readinessIconAttention]}>
-              <Ionicons color={item.complete ? colors.tasklyBlue700 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
+              <Ionicons color={item.complete ? colors.success600 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
             </View>
             <View style={styles.readinessText}>
               <AppText variant="bodyStrong">{item.label}</AppText>
@@ -2242,9 +2243,10 @@ function PortfolioProjectCard({
             </AppButton>
             <AppButton
               disabled={isDeleting}
+              labelColor={colors.danger600}
               loading={isDeleting}
               onPress={onDelete}
-              style={styles.actionButton}
+              style={[styles.actionButton, styles.projectDeleteButton]}
               tone="neutral"
               variant="outline">
               {t('remove')}
@@ -2354,7 +2356,7 @@ function ProfilePhotoCard({
   const payoutReady = summary?.payoutStatus?.isReady ?? isPayoutReadyFromLabel(summary?.stripeStatusLabel);
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white} style={styles.identityCard}>
       <View style={styles.photoRow}>
         <View style={styles.avatar}>
           {photoUrl ? (
@@ -2420,7 +2422,7 @@ function TaskerReadinessCard({
   const setupLabel = payoutStatus?.hasStripeAccount ? t('continueStripeSetup') : t('setUpPayouts');
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.taskerReadinessCard}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleBlock}>
           <StatusBadge label={t('profileReadiness')} tone="core" />
@@ -2432,7 +2434,7 @@ function TaskerReadinessCard({
         {items.map((item) => (
           <View key={item.label} style={styles.readinessRow}>
             <View style={[styles.readinessIcon, item.complete ? styles.readinessIconComplete : styles.readinessIconAttention]}>
-              <Ionicons color={item.complete ? colors.tasklyBlue700 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
+              <Ionicons color={item.complete ? colors.success600 : colors.warning600} name={item.complete ? 'checkmark' : 'alert'} size={16} />
             </View>
             <View style={styles.readinessText}>
               <AppText variant="bodyStrong">{item.label}</AppText>
@@ -2725,7 +2727,7 @@ function InlineMessage({ message, tone }: { message: string; tone: 'error' | 'ne
   return (
     <View style={[styles.inlineMessage, styles[`${tone}Message`]]}>
       <AppText
-        color={tone === 'error' ? colors.warning600 : tone === 'success' ? colors.tasklyBlue700 : colors.slate500}
+        color={tone === 'error' ? colors.danger600 : tone === 'success' ? colors.success600 : colors.slate500}
         variant="small">
         {message}
       </AppText>
@@ -2757,8 +2759,9 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   avatar: {
+    ...designTokens.shadows.card,
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
     borderRadius: 42,
     borderWidth: 1,
@@ -2776,8 +2779,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   errorMessage: {
-    backgroundColor: colors.proOrange50,
-    borderColor: colors.proOrangeBorder,
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
   },
   form: {
     gap: spacing.md,
@@ -2804,8 +2807,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   infoRow: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: 3,
@@ -2843,7 +2846,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     gap: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xl,
   },
   modalHandle: {
     alignSelf: 'center',
@@ -2879,29 +2882,25 @@ const styles = StyleSheet.create({
   },
   modalScrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.38)',
+    backgroundColor: 'rgba(15, 23, 42, 0.50)',
   },
   modalSheet: {
+    ...designTokens.shadows.surface,
     backgroundColor: colors.white,
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
     gap: spacing.md,
-    maxHeight: '88%',
+    maxHeight: '92%',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: -8, width: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 22,
-    elevation: 18,
   },
   neutralMessage: {
     backgroundColor: colors.slate50,
     borderColor: colors.border,
   },
   payoutBox: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: spacing.xs,
@@ -2923,6 +2922,7 @@ const styles = StyleSheet.create({
   photoRow: {
     alignItems: 'flex-start',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.md,
   },
   photoButton: {
@@ -2945,7 +2945,7 @@ const styles = StyleSheet.create({
   profileModeOption: {
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flex: 1,
     flexDirection: 'row',
@@ -2955,10 +2955,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   profileModeOptionCoreSelected: {
+    ...designTokens.shadows.buttonBlue,
     backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlue600,
   },
   profileModeOptionProSelected: {
+    ...designTokens.shadows.buttonPro,
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrange600,
   },
@@ -2973,9 +2975,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   profileSectionCard: {
+    ...designTokens.shadows.card,
     backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
     marginRight: spacing.md,
@@ -2993,7 +2996,7 @@ const styles = StyleSheet.create({
   },
   profileSectionIcon: {
     alignItems: 'center',
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.tasklyBlue50,
     borderRadius: radius.pill,
     height: 36,
     justifyContent: 'center',
@@ -3021,8 +3024,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileSummaryRow: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.md,
     borderWidth: 1,
     gap: 2,
@@ -3085,7 +3088,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   portfolioPhotoSection: {
-    backgroundColor: colors.proOrange50,
+    backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -3098,7 +3101,7 @@ const styles = StyleSheet.create({
   },
   portfolioThumbRemove: {
     alignItems: 'center',
-    backgroundColor: 'rgba(31, 42, 51, 0.60)',
+    backgroundColor: colors.danger600,
     borderRadius: radius.pill,
     height: 22,
     justifyContent: 'center',
@@ -3125,6 +3128,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   proHero: {
+    ...designTokens.shadows.card,
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
@@ -3155,6 +3159,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   proReadinessPanel: {
+    ...designTokens.shadows.card,
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
@@ -3163,9 +3168,10 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   projectCard: {
+    ...designTokens.shadows.card,
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.lg,
+    borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.sm,
     overflow: 'hidden',
@@ -3182,7 +3188,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   projectForm: {
-    backgroundColor: colors.proOrange50,
+    ...designTokens.shadows.card,
+    backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -3222,17 +3229,17 @@ const styles = StyleSheet.create({
     width: 28,
   },
   readinessIconAttention: {
-    backgroundColor: colors.slate100,
+    backgroundColor: colors.proOrange50,
   },
   readinessIconComplete: {
-    backgroundColor: colors.tasklyBlue50,
+    backgroundColor: colors.success50,
   },
   readinessList: {
     gap: spacing.sm,
   },
   readinessRow: {
-    alignItems: 'center',
-    backgroundColor: colors.slate50,
+    alignItems: 'flex-start',
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -3259,8 +3266,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   successMessage: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.success50,
+    borderColor: '#A7F3D0',
   },
   segmentBlock: {
     backgroundColor: colors.tasklyBlue50,
@@ -3329,7 +3336,39 @@ const styles = StyleSheet.create({
     borderColor: colors.tasklyBlue600,
   },
   toggleRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  identityCard: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  pageHeader: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+  },
+  profileModeCard: {
+    borderColor: colors.border,
+  },
+  proWorkspaceCard: {
+    borderColor: colors.proOrangeBorder,
+  },
+  projectDeleteButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  screenContent: {
+    gap: spacing.lg,
+  },
+  taskerReadinessCard: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  taskerWorkspaceCard: {
+    borderColor: colors.tasklyBlueBorder,
   },
 });
