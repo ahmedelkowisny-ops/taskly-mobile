@@ -14,6 +14,7 @@ import { getMockMessageThreadsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerMessagesScreen() {
@@ -85,7 +86,7 @@ export default function CustomerMessagesScreen() {
       {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
 
       {message ? (
-        <AppCard accentColor={colors.warning600}>
+        <AppCard accentColor={colors.warning600} style={styles.stateCard}>
           <StatusBadge label={t('couldNotLoadMessages')} tone="warning" />
           <AppText color={colors.slate700}>{message}</AppText>
           <View style={styles.actions}>
@@ -126,7 +127,7 @@ export default function CustomerMessagesScreen() {
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
+    <AppCard accentColor={colors.tasklyBlue600} style={styles.stateCard}>
       <StatusBadge label={label} tone="core" />
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -144,18 +145,18 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
   const supportBadge = thread.contextType === 'SUPPORT' ? getSupportStatusBadge(thread.supportStatus) : null;
 
   return (
-    <Pressable accessibilityRole="button" onPress={onPress}>
-      <AppCard>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.threadPressable, pressed ? styles.pressedCard : null]}>
+      <AppCard style={styles.threadCard}>
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.unreadCount ? <StatusBadge label={`${thread.unreadCount} ${t('unreadMessages')}`} tone="warning" /> : null}
           {supportBadge ? <StatusBadge label={supportBadge.label} tone={supportBadge.tone} /> : null}
           {!thread.capabilities.canSendText && !supportBadge ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
         </View>
-        <AppText variant="cardTitle">{thread.title}</AppText>
-        {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
+        <AppText style={styles.threadTitle} variant="cardTitle">{thread.title}</AppText>
+        {thread.subtitle ? <AppText color={colors.slate700} style={styles.threadText}>{thread.subtitle}</AppText> : null}
         {thread.lastMessagePreview ? (
-          <AppText color={colors.slate700}>{`${t('lastMessage')}: ${thread.lastMessagePreview}`}</AppText>
+          <AppText color={colors.slate500} style={styles.threadPreview}>{`${t('lastMessage')}: ${thread.lastMessagePreview}`}</AppText>
         ) : null}
       </AppCard>
     </Pressable>
@@ -170,43 +171,104 @@ function getContextLabel(contextType: MessageThreadSummary['contextType']) {
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: spacing.sm },
+  actions: { gap: spacing.md },
   emptyBody: {
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: 'center',
   },
   emptyIconBox: {
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
-    height: 56,
+    borderWidth: 1,
+    height: 64,
     justifyContent: 'center',
-    width: 56,
+    width: 64,
   },
   emptyStateCard: {
     alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.xl,
+    width: '100%',
+    ...designTokens.shadows.card,
+  },
+  emptyStateWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 300,
+  },
+  emptyTitle: {
+    color: colors.navy900,
+    textAlign: 'center',
+  },
+  header: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  pressedCard: {
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
+  },
+  screenContent: {
+    backgroundColor: colors.slate50,
+    flexGrow: 1,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+  },
+  stateCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  threadCard: {
     backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.sm,
-    padding: spacing.xl,
-    width: '100%',
-  },
-  emptyStateWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: 360,
-  },
-  emptyTitle: {
-    textAlign: 'center',
-  },
-  header: { gap: spacing.sm },
-  screenContent: {
-    flexGrow: 1,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   threadHeader: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  threadPressable: {
+    borderRadius: radius.card,
+  },
+  threadPreview: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  threadText: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  threadTitle: {
+    color: colors.navy900,
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 22,
   },
 });

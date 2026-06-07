@@ -19,7 +19,8 @@ import {
 } from '@/src/lib/images/imagePicker';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 const MESSAGE_MAX_LENGTH = 2000;
 
@@ -300,7 +301,7 @@ export default function CustomerMessageThreadScreen() {
   );
 
   return (
-    <KeyboardAwareFormScreen>
+    <KeyboardAwareFormScreen contentStyle={styles.screenContent}>
       <View style={styles.header}>
         <AppButton onPress={() => router.back()} variant="ghost">{t('backToTaskly')}</AppButton>
       </View>
@@ -308,7 +309,7 @@ export default function CustomerMessageThreadScreen() {
       {isLoading ? <StateCard label="Loading" message={t('conversation')} /> : null}
 
       {message ? (
-        <AppCard accentColor={colors.warning600}>
+        <AppCard accentColor={colors.warning600} style={styles.stateCard}>
           <StatusBadge label={t('couldNotLoadConversation')} tone="warning" />
           <AppText color={colors.slate700}>{message}</AppText>
           <View style={styles.actions}>
@@ -353,7 +354,7 @@ export default function CustomerMessageThreadScreen() {
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
+    <AppCard accentColor={colors.tasklyBlue600} style={styles.stateCard}>
       <StatusBadge label={label} tone="core" />
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -364,10 +365,12 @@ function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
   const visual = getThreadVisual(thread);
 
   return (
-    <AppCard accentColor={visual.accentColor}>
-      <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
-      <AppText variant="screenTitle">{thread.title}</AppText>
-      {thread.subtitle ? <AppText color={colors.slate700}>{thread.subtitle}</AppText> : null}
+    <AppCard accentColor={visual.accentColor} style={styles.threadHeaderCard}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
+      </View>
+      <AppText style={styles.threadTitle} variant="screenTitle">{thread.title}</AppText>
+      {thread.subtitle ? <AppText color={colors.slate700} style={styles.threadSubtitle}>{thread.subtitle}</AppText> : null}
     </AppCard>
   );
 }
@@ -422,11 +425,11 @@ function Messages({
   messages: MessageItem[];
 }) {
   const isSupportThread = contextType === 'SUPPORT';
-  const mineColor = getThreadAccentColor(accent);
+  void accent;
 
   if (!messages.length) {
     return (
-      <AppCard>
+      <AppCard style={styles.stateCard}>
         <AppText color={colors.slate700}>{t('noMessagesYet')}</AppText>
       </AppCard>
     );
@@ -456,7 +459,7 @@ function Messages({
         return (
           <View
             key={message.id}
-            style={[styles.messageBubble, message.isMine ? { ...styles.myMessage, backgroundColor: mineColor } : styles.otherMessage]}>
+            style={[styles.messageBubble, message.isMine ? styles.myMessage : styles.otherMessage]}>
             <AppText color={message.isMine ? colors.white : colors.slate500} variant="small">
               {message.isMine ? t('you') : message.senderName}
             </AppText>
@@ -500,7 +503,7 @@ function MessageComposer({
   const disabled = !canSend || !trimmed || isTooLong || isSending || isSendingImage;
 
   return (
-    <AppCard accentColor={canSend ? colors.tasklyBlue600 : colors.slate500}>
+    <AppCard accentColor={canSend ? colors.tasklyBlue600 : colors.slate500} style={styles.composerCard}>
       <StatusBadge label={t('textOrPhotoMessagesOnly')} tone={canSend ? 'core' : 'neutral'} />
       {canSend ? (
         <>
@@ -511,6 +514,7 @@ function MessageComposer({
             multiline
             onChangeText={onChangeDraft}
             placeholder={t('typeMessage')}
+            style={styles.composerInput}
             value={draftMessage}
           />
           {sendError ? <AppText color={colors.danger600}>{sendError}</AppText> : null}
@@ -586,7 +590,7 @@ function ResolutionCard({
   onRefuse: () => void;
 }) {
   return (
-    <AppCard accentColor={colors.warning600}>
+    <AppCard accentColor={colors.warning600} style={styles.resolutionCard}>
       <StatusBadge label={t('supportThreadResolutionRequested')} tone="warning" />
       <AppText variant="bodyStrong">{t('supportResolutionCardTitle')}</AppText>
       <AppText color={colors.slate700}>{t('supportResolutionCardBody')}</AppText>
@@ -709,36 +713,82 @@ function getReadOnlyReason(thread: MessageThreadMeta) {
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: spacing.sm },
+  actions: { gap: spacing.md },
   attachmentImage: {
     aspectRatio: 4 / 3,
-    backgroundColor: colors.slate100,
-    borderRadius: 10,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     width: 220,
   },
   attachmentList: { gap: spacing.sm },
-  header: { gap: spacing.sm },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  composerCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  composerInput: {
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 116,
+  },
+  header: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+    ...designTokens.shadows.card,
+  },
   imageFallback: {
     alignItems: 'center',
     aspectRatio: 4 / 3,
-    backgroundColor: colors.slate100,
-    borderRadius: 10,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     justifyContent: 'center',
     padding: spacing.md,
     width: 220,
   },
   messageBubble: {
-    borderRadius: 14,
+    borderRadius: radius.lg,
     gap: spacing.xs,
     maxWidth: '86%',
     padding: spacing.md,
   },
   messageList: { gap: spacing.md },
-  resolutionActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  resolutionActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   resolutionBtn: { flex: 1, minWidth: 120 },
+  resolutionCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
   resolutionEvent: {
     alignSelf: 'center',
-    borderRadius: 10,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
     maxWidth: '90%',
@@ -760,35 +810,80 @@ const styles = StyleSheet.create({
   myMessage: {
     alignSelf: 'flex-end',
     backgroundColor: colors.tasklyBlue600,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 2,
   },
   otherMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
     borderWidth: 1,
+    ...designTokens.shadows.card,
   },
   supportBubbleMine: {
     alignSelf: 'flex-end',
     backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
     borderWidth: 1,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 1,
   },
   supportBubbleOther: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.proOrange50,
-    borderColor: colors.proOrangeBorder,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
     borderWidth: 1,
+    ...designTokens.shadows.card,
   },
   photoButton: {
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderColor: colors.tasklyBlue600,
-    borderRadius: 8,
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs,
     minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  screenContent: {
+    backgroundColor: colors.slate50,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxxl + 96,
+  },
+  stateCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  threadHeaderCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  threadSubtitle: {
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  threadTitle: {
+    color: colors.navy900,
+    fontSize: 24,
+    lineHeight: 30,
   },
 });
