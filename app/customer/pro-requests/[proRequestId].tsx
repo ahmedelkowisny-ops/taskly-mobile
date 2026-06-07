@@ -26,6 +26,7 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type CustomerSiteVisitFormValues = {
@@ -474,7 +475,7 @@ export default function CustomerProRequestDetailScreen() {
   const request = data?.proRequest;
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.screenContent}>
       <View style={styles.header}>
         <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
       </View>
@@ -482,7 +483,7 @@ export default function CustomerProRequestDetailScreen() {
       {isLoading ? <StateCard label={t('loading')} message={t('loadingProRequestDetail')} /> : null}
 
       {message ? (
-        <AppCard accentColor={colors.warning600}>
+        <AppCard accentColor={colors.warning600} style={styles.errorCard}>
           <StatusBadge label={stateLabel || t('currentStatus')} tone="warning" />
           <AppText variant="cardTitle">{message}</AppText>
           <View style={styles.stack}>
@@ -522,7 +523,7 @@ export default function CustomerProRequestDetailScreen() {
           ) : null}
 
           {proAccessSupportNotice ? (
-            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50} style={styles.successCard}>
               <StatusBadge label={t('requestSubmitted')} tone="success" />
               <AppText color={colors.slate700}>{t('tasklyWillReviewProAccessRequest')}</AppText>
               <AppText color={colors.slate700}>{t('refundNotGuaranteed')}</AppText>
@@ -530,7 +531,7 @@ export default function CustomerProRequestDetailScreen() {
           ) : null}
 
           {proAccessSupportError && !showProAccessSupportForm ? (
-            <AppCard accentColor={colors.warning600}>
+            <AppCard accentColor={colors.warning600} style={styles.errorCard}>
               <StatusBadge label={t('couldNotSubmitRequest')} tone="warning" />
               <AppText color={colors.slate700}>{proAccessSupportError}</AppText>
             </AppCard>
@@ -546,7 +547,7 @@ export default function CustomerProRequestDetailScreen() {
           ) : null}
 
           {proAccessPaymentMessage ? (
-            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
               <StatusBadge label={t('proAccessPayment')} tone="pro" />
               <AppText color={colors.slate700}>{proAccessPaymentMessage}</AppText>
               <AppButton onPress={refreshAccessStatus} tone="pro" variant="outline">{t('refreshAccessStatus')}</AppButton>
@@ -554,7 +555,7 @@ export default function CustomerProRequestDetailScreen() {
           ) : null}
 
           {proAccessPaymentError ? (
-            <AppCard accentColor={colors.warning600}>
+            <AppCard accentColor={colors.warning600} style={styles.errorCard}>
               <StatusBadge label={t('couldNotStartPayment')} tone="warning" />
               <AppText color={colors.slate700}>{proAccessPaymentError}</AppText>
               <AppButton onPress={openProAccessConfirm} tone="pro" variant="outline">{t('retry')}</AppButton>
@@ -574,14 +575,14 @@ export default function CustomerProRequestDetailScreen() {
           />
 
           {discardError ? (
-            <AppCard accentColor={colors.warning600}>
+            <AppCard accentColor={colors.warning600} style={styles.errorCard}>
               <StatusBadge label={t('couldNotRemoveProResponse')} tone="warning" />
               <AppText color={colors.slate700}>{discardError}</AppText>
             </AppCard>
           ) : null}
 
           {selectionError ? (
-            <AppCard accentColor={colors.warning600}>
+            <AppCard accentColor={colors.warning600} style={styles.errorCard}>
               <StatusBadge label={t('couldNotSelectPro')} tone="warning" />
               <AppText color={colors.slate700}>{selectionError}</AppText>
             </AppCard>
@@ -600,14 +601,14 @@ export default function CustomerProRequestDetailScreen() {
           ) : null}
 
           {siteVisitNotice ? (
-            <AppCard accentColor={colors.success600} backgroundColor={colors.success50}>
+            <AppCard accentColor={colors.success600} backgroundColor={colors.success50} style={styles.successCard}>
               <StatusBadge label={siteVisitNotice} tone="success" />
               <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
             </AppCard>
           ) : null}
 
           {siteVisitActionError ? (
-            <AppCard accentColor={colors.warning600}>
+            <AppCard accentColor={colors.warning600} style={styles.errorCard}>
               <StatusBadge label={t('couldNotUpdateSiteVisit')} tone="warning" />
               <AppText color={colors.slate700}>{siteVisitActionError}</AppText>
             </AppCard>
@@ -616,7 +617,7 @@ export default function CustomerProRequestDetailScreen() {
           <SiteVisitStateCard isUpdating={isUpdatingSiteVisit} onCancelInvite={cancelSiteVisitInvite} request={request} />
 
           {!request.unlockedComparison?.canViewFullComparison ? (
-            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+            <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
             <AppText variant="cardTitle">{t('proResponses')}</AppText>
             {request.responsePreviews.length ? request.responsePreviews.map((response) => (
               <View key={response.id} style={styles.response}>
@@ -666,7 +667,7 @@ function ProjectSummaryCard({ request }: { request: CustomerProRequestDetailResp
   const photoValue = request.images.length ? String(request.images.length) : t('noPhotosAdded');
 
   return (
-    <AppCard>
+    <AppCard style={styles.sectionCard}>
       <View style={styles.badgeRow}>
         <StatusBadge label={t('projectSummary')} tone="pro" />
         <StatusBadge label={request.proAccessState?.statusLabel || request.unlockStatusLabel} tone={request.isUnlocked ? 'success' : 'pro'} />
@@ -705,7 +706,7 @@ function UnlockedComparisonSection({
   const canInvite = Boolean(request.siteVisitNextActions?.canInviteForSiteVisit);
 
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
       <View style={styles.badgeRow}>
         <StatusBadge label={t('proAccessUnlocked')} tone="success" />
         <StatusBadge label={comparison.comparisonLabel || t('fullComparison')} tone="pro" />
@@ -869,7 +870,7 @@ function CustomerSiteVisitInviteForm({
   values: CustomerSiteVisitFormValues;
 }) {
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.formCard}>
       <StatusBadge label={t('inviteForSiteVisit')} tone="pro" />
       <AppText variant="cardTitle">{response.displayName}</AppText>
       <AppText color={colors.slate700}>{t('siteVisitOnlyNotFinalAgreement')}</AppText>
@@ -978,7 +979,7 @@ function SiteVisitStateCard({
   const allowedFields = request.allowedContactFields || contactState?.allowedContactFields || [];
 
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
       <View style={styles.badgeRow}>
         <StatusBadge label={t('siteVisit')} tone="pro" />
         <StatusBadge label={state.statusLabel} tone={getSiteVisitTone(state.status)} />
@@ -1061,7 +1062,7 @@ function ProAccessCard({
   );
 
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proAccessCard}>
       <View style={styles.badgeRow}>
         <StatusBadge label={t('proAccess')} tone="pro" />
         <StatusBadge label={statusLabel} tone={isUnlocked ? 'success' : nextActions?.canUnlockProResponses ? 'pro' : 'warning'} />
@@ -1105,7 +1106,7 @@ function ProAccessPaymentConfirmCard({
   request: CustomerProRequestDetailResponse['proRequest'];
 }) {
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proAccessCard}>
       <StatusBadge label={t('secureCheckout')} tone="pro" />
       <AppText variant="cardTitle">{t('proAccessPayment')}</AppText>
       <AppText color={colors.slate700}>{t('postingWasFree')}</AppText>
@@ -1155,7 +1156,7 @@ function ProAccessSupportCard({
   if (!shouldShow || !supportState || !refundState) return null;
 
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
       <View style={styles.badgeRow}>
         <StatusBadge label={t('proAccessSupport')} tone="pro" />
         <StatusBadge label={getProAccessSupportStatusLabel(supportState.statusLabel, refundState.status)} tone={getProAccessSupportTone(supportState.status, refundState.status, paymentStatus)} />
@@ -1201,7 +1202,7 @@ function ProAccessSupportRequestForm({
   values: CustomerProAccessSupportFormValues;
 }) {
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.formCard}>
       <StatusBadge label={t('requestReview')} tone="pro" />
       <AppText variant="cardTitle">{t('tellUsWhatHappened')}</AppText>
       <AppText color={colors.slate700}>{t('tasklyWillReviewProAccessRequest')}</AppText>
@@ -1252,7 +1253,7 @@ function ProAccessSupportRequestForm({
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
       <StatusBadge label={label} tone="pro" />
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -1271,7 +1272,7 @@ function Info({ label, value }: { label: string; value: string }) {
 function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
   if (!images.length) return null;
   return (
-    <AppCard>
+    <AppCard style={styles.sectionCard}>
       <AppText variant="cardTitle">{t('images')}</AppText>
       <View style={styles.imageGrid}>
         {images.map((image) => (
@@ -1289,7 +1290,7 @@ function Images({ images }: { images: { alt: string; id: string; url: string }[]
 
 function NextActions({ actions }: { actions: { label: string; type: string }[] }) {
   return (
-    <AppCard>
+    <AppCard style={styles.sectionCard}>
       <AppText variant="cardTitle">{t('nextSteps')}</AppText>
       {actions.map((action) => (
         <AppButton key={action.type} disabled tone="pro" variant="outline">{action.label}</AppButton>
@@ -1374,6 +1375,12 @@ function getProAccessSupportErrorMessages(details: unknown, fallbackMessage: str
 const styles = StyleSheet.create({
   header: {
     alignItems: 'flex-start',
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   comparisonCard: {
@@ -1381,12 +1388,31 @@ const styles = StyleSheet.create({
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+    ...designTokens.shadows.card,
+  },
+  errorCard: {
+    backgroundColor: colors.white,
+    borderColor: '#FECACA',
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  formCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 4,
   },
   heroChip: {
     backgroundColor: colors.white,
@@ -1403,25 +1429,41 @@ const styles = StyleSheet.create({
   },
   heroTitle: {
     color: colors.navy900,
-    fontSize: 24,
+    fontSize: 25,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 32,
   },
-  image: { aspectRatio: 1, borderRadius: radius.lg, width: '31%' },
-  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  infoGrid: { gap: spacing.sm },
-  infoRow: {
+  image: {
+    aspectRatio: 1,
     backgroundColor: colors.white,
     borderColor: colors.border,
-    borderRadius: radius.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    width: '31%',
+  },
+  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  infoRow: {
+    backgroundColor: colors.white,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexGrow: 1,
+    gap: spacing.xs,
+    minWidth: '46%',
+    padding: spacing.md,
+  },
+  issueOptions: { gap: spacing.sm },
+  noteBlock: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
     padding: spacing.md,
   },
-  issueOptions: { gap: spacing.sm },
-  noteBlock: { gap: spacing.xs },
   portfolioProjectBody: {
-    gap: spacing.xs,
+    gap: spacing.sm,
     padding: spacing.md,
   },
   portfolioProjectCard: {
@@ -1430,6 +1472,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    ...designTokens.shadows.card,
   },
   portfolioProjectImage: {
     aspectRatio: 16 / 9,
@@ -1441,41 +1484,104 @@ const styles = StyleSheet.create({
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.lg,
     borderWidth: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
     padding: spacing.md,
+  },
+  proAccessCard: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.16,
+    shadowRadius: 26,
+    elevation: 4,
   },
   proHero: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.proOrange600,
+    shadowColor: '#F59E0B',
     shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 4,
   },
-  profileImage: { backgroundColor: colors.proOrange50, borderRadius: 28, height: 56, width: 56 },
+  profileImage: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: 28,
+    borderWidth: 1,
+    height: 56,
+    width: 56,
+  },
   profileRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.sm },
   profileText: { flex: 1, gap: spacing.xs },
+  proSurfaceCard: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
+    elevation: 3,
+  },
   response: {
+    backgroundColor: '#FEF3C7',
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  screenContent: {
+    backgroundColor: colors.slate50,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+  },
+  sectionCard: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   siteVisitInvite: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    gap: spacing.xs,
+    gap: spacing.sm,
     padding: spacing.md,
+    ...designTokens.shadows.card,
   },
-  stack: { gap: spacing.sm },
+  stack: { gap: spacing.md },
+  successCard: {
+    backgroundColor: colors.success50,
+    borderColor: colors.success600,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
 });
 
 function getSiteVisitTone(status?: string) {

@@ -14,6 +14,7 @@ import { getMockCustomerProRequestsResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 export default function CustomerProRequestsScreen() {
@@ -77,7 +78,7 @@ export default function CustomerProRequestsScreen() {
   );
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.screenContent}>
       <CustomerTopBar onMenuPress={() => setDrawerOpen(true)} />
 
       <View style={styles.proHero}>
@@ -86,7 +87,7 @@ export default function CustomerProRequestsScreen() {
           <StatusBadge label={t('approvedProsChip')} tone="neutral" />
         </View>
         <AppText style={styles.heroTitle}>{t('myProRequests')}</AppText>
-        <AppText color={colors.slate700}>{t('customerProIntro')}</AppText>
+        <AppText color={colors.slate700} style={styles.heroSubtitle}>{t('customerProIntro')}</AppText>
       </View>
 
       {data && !data.proRequests.length && !isLoading && !errorMessage && !isUnauthorized ? (
@@ -102,7 +103,7 @@ export default function CustomerProRequestsScreen() {
       {data?.proRequests.length ? <ProRequestMetrics requests={data.proRequests} /> : null}
 
       {isLoading ? (
-        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50}>
+        <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={[styles.stateCard, styles.proStateCard]}>
           <StatusBadge label={t('loading')} tone="pro" />
           <AppText variant="cardTitle">{t('loadingProRequests')}</AppText>
           <AppText color={colors.slate700}>{t('fetchingCustomerProRequests')}</AppText>
@@ -110,7 +111,7 @@ export default function CustomerProRequestsScreen() {
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600}>
+        <AppCard accentColor={isUnauthorized ? colors.warning600 : colors.danger600} style={[styles.stateCard, styles.errorCard]}>
           <StatusBadge label={isUnauthorized ? t('loginRequired') : t('backendUnavailable')} tone={isUnauthorized ? 'warning' : 'danger'} />
           <AppText variant="cardTitle">
             {isUnauthorized ? t('proRequestsNeedRealSession') : t('couldNotRefreshProRequests')}
@@ -118,7 +119,7 @@ export default function CustomerProRequestsScreen() {
           <AppText color={colors.slate700}>
             {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
-          <View style={{ gap: spacing.sm }}>
+          <View style={styles.buttonStack}>
             <AppButton onPress={loadProRequests} tone="pro" variant="outline">
               {t('retry')}
             </AppButton>
@@ -248,24 +249,10 @@ function getProAccessSupportBadgeTone(request: CustomerProRequestsResponse['proR
 }
 
 const styles = StyleSheet.create({
-  ctaButton: {
-    alignItems: 'center',
-    backgroundColor: colors.proAmber500,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'center',
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  emptyCard: {
-    borderColor: colors.proOrangeBorder,
-  },
   accessLine: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FEF3C7',
     borderColor: colors.proOrangeBorder,
-    borderRadius: radius.card,
+    borderRadius: radius.lg,
     borderWidth: 1,
     padding: spacing.md,
   },
@@ -274,62 +261,115 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  cardList: {
+  buttonStack: {
     gap: spacing.md,
+  },
+  cardList: {
+    gap: spacing.lg,
   },
   cardTitle: {
     color: colors.navy900,
     fontSize: 17,
     fontWeight: '800',
-    lineHeight: 22,
+    lineHeight: 23,
+  },
+  ctaButton: {
+    alignItems: 'center',
+    backgroundColor: colors.proAmber500,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    borderColor: colors.proAmber500,
+    elevation: 5,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minHeight: 54,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.34,
+    shadowRadius: 18,
+  },
+  emptyCard: {
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  errorCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    lineHeight: 21,
   },
   heroTitle: {
     color: colors.navy900,
-    fontSize: 24,
+    fontSize: 25,
     fontWeight: '800',
-    lineHeight: 30,
+    lineHeight: 31,
   },
   metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   metaItem: {
-    gap: spacing.xs,
-  },
-  metricCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
+    borderWidth: 1,
+    flexGrow: 1,
+    gap: spacing.xs,
+    minWidth: '46%',
+    padding: spacing.md,
+  },
+  metricCard: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,
     minWidth: '45%',
     padding: spacing.md,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 6, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
+    shadowColor: '#F59E0B',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 2,
   },
   metricValue: {
-    color: colors.navy900,
+    color: colors.proOrangeTextDark,
     fontSize: 24,
     fontWeight: '800',
+    lineHeight: 30,
   },
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   proHero: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.proOrange600,
+    shadowColor: '#F59E0B',
     shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
+    shadowOpacity: 0.16,
+    shadowRadius: 22,
+    elevation: 4,
+  },
+  proStateCard: {
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
   },
   requestCard: {
     backgroundColor: colors.white,
@@ -338,9 +378,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 8, width: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
+    ...designTokens.shadows.card,
+  },
+  screenContent: {
+    backgroundColor: colors.slate50,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+  },
+  stateCard: {
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
 });
