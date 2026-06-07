@@ -316,6 +316,8 @@ function RegisterOptionCard({ option, onPress }: { option: RegisterOption; onPre
       onPress={onPress}
       style={({ pressed }) => [
         styles.optionCard,
+        isCustomer ? styles.optionCardCore : null,
+        isPro ? styles.optionCardPro : null,
         {
           backgroundColor: visual.background,
           borderColor: visual.border,
@@ -443,8 +445,13 @@ const styles = StyleSheet.create({
   backButton: {
     alignItems: 'center',
     alignSelf: 'flex-start',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.xs,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   checkbox: {
@@ -467,8 +474,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
   },
   errorBox: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.border,
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
@@ -497,12 +504,12 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: colors.white,
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.lg,
     padding: spacing.lg,
-    ...designTokens.shadows.card,
+    ...designTokens.shadows.surface,
   },
   hero: {
     gap: spacing.sm,
@@ -524,7 +531,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   input: {
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -560,10 +567,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: radius.card,
     borderWidth: 1,
+    elevation: 3,
     flexDirection: 'row',
     gap: spacing.md,
     minHeight: 92,
     padding: spacing.lg,
+    shadowColor: '#0F172A',
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+  },
+  optionCardCore: {
+    shadowColor: '#1877F2',
+    shadowOpacity: 0.3,
+  },
+  optionCardPro: {
+    shadowColor: '#F59E0B',
+    shadowOpacity: 0.2,
   },
   optionIcon: {
     alignItems: 'center',
@@ -589,7 +609,7 @@ const styles = StyleSheet.create({
   },
   passwordWrap: {
     alignItems: 'center',
-    backgroundColor: colors.slate50,
+    backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -597,7 +617,7 @@ const styles = StyleSheet.create({
   },
   pressedScale: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.98 }],
   },
   pressedSoft: {
     opacity: 0.74,
@@ -605,10 +625,12 @@ const styles = StyleSheet.create({
   primaryButton: {
     borderRadius: radius.pill,
     minHeight: 52,
+    ...designTokens.shadows.buttonBlue,
   },
   proPrimaryButton: {
     backgroundColor: colors.proAmber500,
     borderColor: colors.proAmber500,
+    ...designTokens.shadows.buttonPro,
   },
   progressDot: {
     backgroundColor: colors.border,

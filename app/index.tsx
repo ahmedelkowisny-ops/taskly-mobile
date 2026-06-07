@@ -9,6 +9,7 @@ import { getDefaultAuthenticatedRoute } from '@/src/lib/auth/workspaceAccess';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 const CUSTOMER_HOME_ROUTE = '/customer/home' as Href;
@@ -264,6 +265,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: 92,
     padding: spacing.lg,
+    elevation: 5,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
   },
   actionCopy: {
     flex: 1,
@@ -283,7 +289,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
@@ -310,13 +316,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: colors.white,
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
     borderWidth: 1,
+    elevation: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   content: {
     gap: spacing.xl,
@@ -347,17 +358,22 @@ const styles = StyleSheet.create({
   },
   pressedScale: {
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.98 }],
   },
   primaryButton: {
     borderRadius: radius.pill,
     minHeight: 52,
+    ...designTokens.shadows.buttonBlue,
   },
   proArrowBox: {
     backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderWidth: 1,
   },
   proIconBox: {
     backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
+    borderWidth: 1,
   },
   screen: {
     backgroundColor: colors.slate50,
@@ -392,7 +408,9 @@ const styles = StyleSheet.create({
   stepNumber: {
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.pill,
+    borderWidth: 1,
     height: 28,
     justifyContent: 'center',
     width: 28,
@@ -417,6 +435,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   trustItem: {
     alignItems: 'center',
@@ -436,11 +455,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderTopColor: colors.border,
     borderTopWidth: 1,
+    elevation: 1,
     flexDirection: 'row',
     gap: spacing.sm,
     marginHorizontal: -spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    shadowColor: '#0F172A',
+    shadowOffset: { height: 2, width: 0 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
   },
   topLoginButton: {
     borderColor: colors.border,

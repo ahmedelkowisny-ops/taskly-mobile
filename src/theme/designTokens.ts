@@ -2,38 +2,46 @@ import type { ViewStyle } from 'react-native';
 
 export const designTokens = {
   colors: {
-    background: '#F7F9FB',
-    foreground: '#1F2A33',
-    foregroundHover: '#273641',
-    mutedText: '#6B7280',
+    // ── Base surfaces ──────────────────────────────────────────────
+    background: '#F4F7FA',
+    foreground: '#0F172A',
+    foregroundHover: '#1E293B',
+    mutedText: '#64748B',
     card: '#FFFFFF',
-    border: '#E6EBF0',
+    border: '#E2E8F0',
     hoverBackground: '#F1F5F9',
-    softBlueTint: '#EAF2FB',
+    softBlueTint: '#EFF6FF',
 
-    tasklyBlue: '#5A8EC7',
-    tasklyBluePressed: '#4F80B5',
-    tasklyBlueBorder: '#4F80B5',
-    tasklyBlueFocus: 'rgba(90, 142, 199, 0.22)',
-    tasklyBlueShadow: 'rgba(90, 142, 199, 0.25)',
-    tasklyBlueDisabled: '#9EB8D3',
-    tasklyBlueSurface: '#EAF2FB',
+    // ── Taskly Core Blue — #1877F2 (Facebook blue) ─────────────────
+    tasklyBlue: '#1877F2',
+    tasklyBluePressed: '#0e63d4',
+    tasklyBlueBorder: '#BFDBFE',
+    tasklyBlueFocus: 'rgba(24, 119, 242, 0.20)',
+    tasklyBlueShadow: 'rgba(24, 119, 242, 0.30)',
+    tasklyBlueDisabled: '#93C5FD',
+    tasklyBlueSurface: '#EFF6FF',
+    tasklyBlueSurface2: '#DBEAFE',
 
-    landingBlue: '#2C6BED',
-    landingBluePressed: '#1F5DE0',
+    // ── Landing blue (same as core at launch) ──────────────────────
+    landingBlue: '#1877F2',
+    landingBluePressed: '#0e63d4',
 
+    // ── Taskly Pro Amber — #F59E0B ─────────────────────────────────
     proGold: '#F59E0B',
     proGoldPressed: '#D97706',
     proText: '#B45309',
     proTextDark: '#92400E',
     proSurface: '#FFF7ED',
-    proBorder: '#F3D6AF',
-    proChipBorder: '#FCD9A8',
+    proSurface2: '#FEF3C7',
+    proBorder: '#FDE68A',
+    proChipBorder: '#FDE68A',
 
+    // ── Sidebar ────────────────────────────────────────────────────
     sidebarBackground: '#FFFCF8',
     sidebarBorder: '#E8DDD0',
     sidebarMuted: '#6A6259',
   },
+
   radius: {
     control: 14,
     compactControl: 12,
@@ -42,6 +50,7 @@ export const designTokens = {
     sheet: 24,
     pill: 999,
   },
+
   spacing: {
     xs: 4,
     sm: 8,
@@ -51,6 +60,7 @@ export const designTokens = {
     xxl: 32,
     xxxl: 40,
   },
+
   size: {
     button: 48,
     buttonCompact: 44,
@@ -58,44 +68,46 @@ export const designTokens = {
     chip: 28,
     drawerIcon: 32,
   },
+
   typography: {
     screenTitle: { fontSize: 26, lineHeight: 32, fontWeight: '800' },
-    sectionTitle: { fontSize: 19, lineHeight: 25, fontWeight: '800' },
-    cardTitle: { fontSize: 16, lineHeight: 21, fontWeight: '800' },
+    sectionTitle: { fontSize: 19, lineHeight: 25, fontWeight: '700' },
+    cardTitle: { fontSize: 16, lineHeight: 21, fontWeight: '700' },
     body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
     bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '700' },
     caption: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
     small: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
     button: { fontSize: 15, lineHeight: 20, fontWeight: '700' },
   },
+
   shadows: {
     surface: {
-      shadowColor: '#1F2A33',
+      shadowColor: '#0F172A',
+      shadowOffset: { height: 10, width: 0 },
+      shadowOpacity: 0.10,
+      shadowRadius: 32,
+      elevation: 4,
+    } satisfies ViewStyle,
+    card: {
+      shadowColor: '#0F172A',
       shadowOffset: { height: 8, width: 0 },
-      shadowOpacity: 0.06,
+      shadowOpacity: 0.08,
       shadowRadius: 24,
       elevation: 3,
     } satisfies ViewStyle,
-    card: {
-      shadowColor: '#1F2A33',
-      shadowOffset: { height: 6, width: 0 },
-      shadowOpacity: 0.05,
-      shadowRadius: 18,
-      elevation: 2,
-    } satisfies ViewStyle,
     buttonBlue: {
-      shadowColor: '#5A8EC7',
-      shadowOffset: { height: 4, width: 0 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      elevation: 2,
+      shadowColor: '#1877F2',
+      shadowOffset: { height: 6, width: 0 },
+      shadowOpacity: 0.35,
+      shadowRadius: 16,
+      elevation: 4,
     } satisfies ViewStyle,
     buttonPro: {
-      shadowColor: '#D97706',
-      shadowOffset: { height: 4, width: 0 },
-      shadowOpacity: 0.24,
-      shadowRadius: 12,
-      elevation: 2,
+      shadowColor: '#F59E0B',
+      shadowOffset: { height: 6, width: 0 },
+      shadowOpacity: 0.32,
+      shadowRadius: 16,
+      elevation: 4,
     } satisfies ViewStyle,
   },
 } as const;

@@ -27,7 +27,7 @@ export function AppCard({ accentColor, backgroundColor = colors.white, children,
 
 const styles = StyleSheet.create({
   card: {
-    borderColor: colors.border,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.card,
     borderWidth: 1,
     gap: spacing.md,
