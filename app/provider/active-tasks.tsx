@@ -24,7 +24,8 @@ import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function ProviderActiveTasksScreen() {
   useI18n();
@@ -123,13 +124,13 @@ export default function ProviderActiveTasksScreen() {
       </View>
 
       {isLoading ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{t('activeTasks')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -148,23 +149,51 @@ export default function ProviderActiveTasksScreen() {
         />
       ) : null}
 
-      {activeTasks.map((task) => (
-        <ProviderCoreTaskCard
-          actionLoading={actionLoadingId === task.id}
-          key={task.id}
-          onOpenChat={openThread}
-          onOpenDetail={openTaskDetail}
-          onPrimaryAction={handlePrimaryAction}
-          task={task}
-        />
-      ))}
+      {activeTasks.length ? (
+        <View style={styles.taskList}>
+          {activeTasks.map((task) => (
+            <ProviderCoreTaskCard
+              actionLoading={actionLoadingId === task.id}
+              key={task.id}
+              onOpenChat={openThread}
+              onOpenDetail={openTaskDetail}
+              onPrimaryAction={handlePrimaryAction}
+              task={task}
+            />
+          ))}
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.xl, paddingTop: spacing.lg },
-  header: { gap: spacing.sm },
-  screen: { backgroundColor: '#F7F9FB' },
-  stack: { gap: spacing.sm },
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  stack: {
+    gap: spacing.sm,
+  },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  taskList: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
 });

@@ -12,7 +12,8 @@ import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 function isInterestSentTask(task: ProviderCoreTaskSummary) {
   return (
@@ -98,13 +99,13 @@ export default function ProviderInterestsSentScreen() {
       </View>
 
       {isLoading ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{t('interestsSent')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{errorMessage}</AppText>
           <View style={styles.stack}>
             <AppButton onPress={load} variant="outline">{t('retry')}</AppButton>
@@ -123,22 +124,50 @@ export default function ProviderInterestsSentScreen() {
         />
       ) : null}
 
-      {interestTasks.map((task) => (
-        <ProviderCoreTaskCard
-          key={task.id}
-          onOpenChat={openThread}
-          onOpenDetail={openTaskDetail}
-          onPrimaryAction={handlePrimaryAction}
-          task={task}
-        />
-      ))}
+      {interestTasks.length ? (
+        <View style={styles.taskList}>
+          {interestTasks.map((task) => (
+            <ProviderCoreTaskCard
+              key={task.id}
+              onOpenChat={openThread}
+              onOpenDetail={openTaskDetail}
+              onPrimaryAction={handlePrimaryAction}
+              task={task}
+            />
+          ))}
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.xl, paddingTop: spacing.lg },
-  header: { gap: spacing.sm },
-  screen: { backgroundColor: '#F7F9FB' },
-  stack: { gap: spacing.sm },
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  stack: {
+    gap: spacing.sm,
+  },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  taskList: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
 });
