@@ -30,7 +30,8 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 type ProviderIssueActionKind = 'cannot_attend' | 'report_issue' | 'support_request';
 
@@ -687,7 +688,7 @@ export default function ProviderCoreTaskDetailScreen() {
   }, [router]);
 
   return (
-    <KeyboardAwareFormScreen>
+    <KeyboardAwareFormScreen contentStyle={styles.content} style={styles.screen}>
       <View style={styles.header}>
         <ModeBadge mode="providerCore" />
         <AppButton onPress={() => router.back()} variant="ghost">{t('back')}</AppButton>
@@ -696,7 +697,7 @@ export default function ProviderCoreTaskDetailScreen() {
       {isLoading ? <StateCard label={t('loading')} message={t('loadingProviderTasklyTaskDetail')} /> : null}
 
       {message ? (
-        <AppCard accentColor={colors.warning600}>
+        <AppCard accentColor={colors.warning600} style={styles.warningCard}>
           <StatusBadge label={stateLabel || t('notice')} tone="warning" />
           <AppText variant="sectionTitle">{message}</AppText>
           <View style={styles.stack}>
@@ -708,8 +709,8 @@ export default function ProviderCoreTaskDetailScreen() {
 
       {task ? (
         <>
-          <AppCard backgroundColor={colors.white}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <AppCard backgroundColor={colors.white} style={styles.heroCard}>
+            <View style={styles.badgeRow}>
               <StatusBadge label={t('tasklyTask')} tone="core" />
               <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
               {task.hasScheduleConflict ? <StatusBadge label={t('scheduleConflict')} tone="warning" /> : null}
@@ -719,7 +720,7 @@ export default function ProviderCoreTaskDetailScreen() {
             <AppText color={colors.slate700}>{task.categoryLabel} - {task.cityLabel}</AppText>
           </AppCard>
 
-          <AppCard>
+          <AppCard style={styles.detailCard}>
             <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
             <AppText variant="sectionTitle">{t('taskDetails')}</AppText>
             <Info label={t('customer')} value={formatCustomerPreviewLabel(task.customerPreviewLabel)} />
@@ -785,7 +786,7 @@ export default function ProviderCoreTaskDetailScreen() {
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.stateCard}>
       <StatusBadge label={label} tone="core" />
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -812,8 +813,8 @@ function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }
   );
 
   return (
-    <AppCard accentColor={colors.success600}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard accentColor={colors.success600} backgroundColor={colors.tasklyBlue50} style={styles.paymentCard}>
+      <View style={styles.badgeRow}>
         <StatusBadge label={breakdown.isEstimate ? t('paymentEstimate') : t('paymentRecord')} tone={breakdown.isEstimate ? 'warning' : 'success'} />
         {breakdown.paymentStateLabel ? <StatusBadge label={breakdown.paymentStateLabel} tone="neutral" /> : null}
       </View>
@@ -825,7 +826,7 @@ function ProviderPaymentBreakdownCard({ task }: { task: ProviderCoreTaskDetail }
       {breakdown.paymentStateLabel ? <Info label={t('paymentState')} value={breakdown.paymentStateLabel} /> : null}
       {breakdown.providerPayoutHint ? <AppText color={colors.slate500}>{breakdown.providerPayoutHint}</AppText> : null}
       {hasCancellationBreakdown ? (
-        <View style={{ gap: spacing.xs }}>
+          <View style={styles.subSection}>
           <AppText variant="bodyStrong">{t('cancellationDetails')}</AppText>
           {breakdown.cancellationFeeBreakdownLabel ? <Info label={t('cancellationFee')} value={breakdown.cancellationFeeBreakdownLabel} /> : null}
           {breakdown.lateCancellationProviderShareLabel ? <Info label={t('lateCancellationProviderShare')} value={breakdown.lateCancellationProviderShareLabel} /> : null}
@@ -851,8 +852,8 @@ function ProviderEdgeCaseCard({
   if (!isCancelled && !isSupportReview) return null;
 
   return (
-    <AppCard accentColor={isSupportReview ? colors.warning600 : colors.tasklyBlue600}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard accentColor={isSupportReview ? colors.warning600 : colors.tasklyBlue600} style={isSupportReview ? styles.warningCard : styles.detailCard}>
+      <View style={styles.badgeRow}>
         <StatusBadge label={isSupportReview ? t('underSupportReview') : t('taskCancelled')} tone={isSupportReview ? 'warning' : 'neutral'} />
         <StatusBadge label={t('readOnly')} tone="neutral" />
       </View>
@@ -894,8 +895,8 @@ function ProviderAftercareCard({
   if (!aftercare && task.status.toUpperCase() !== 'COMPLETED') return null;
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard accentColor={colors.tasklyBlue600} style={styles.successCard}>
+      <View style={styles.badgeRow}>
         <StatusBadge label={task.status.toUpperCase().includes('CANCELLED') ? t('cancelled') : t('completed')} tone="success" />
         <StatusBadge label={t('readOnly')} tone="neutral" />
       </View>
@@ -950,8 +951,8 @@ function ProviderAftercareCard({
 function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
   if (!images.length) return null;
   return (
-    <AppCard>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard style={styles.detailCard}>
+      <View style={styles.badgeRow}>
         <StatusBadge label={t('photoCount').replace('{count}', String(images.length))} tone="core" />
       </View>
       <AppText variant="sectionTitle">{t('images')}</AppText>
@@ -967,7 +968,7 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
   if (!checklist.length) return null;
 
   return (
-    <AppCard>
+    <AppCard style={styles.detailCard}>
       <StatusBadge label={`${checklist.filter((item) => item.checked).length}/${checklist.length}`} tone="core" />
       <AppText variant="sectionTitle">{t('scopeChecklist')}</AppText>
       <View style={styles.scopeChecklistList}>
@@ -990,7 +991,7 @@ function ScopeChecklistCard({ task }: { task: ProviderCoreTaskDetail }) {
 
 function Timeline({ items }: { items: { description: string; id: string; label: string; status: string }[] }) {
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.detailCard}>
       <AppText variant="sectionTitle">{t('timeline')}</AppText>
       {items.map((item) => (
         <View key={item.id} style={styles.timelineItem}>
@@ -1016,7 +1017,7 @@ function ProviderStatusCard({ task }: { task: ProviderCoreTaskDetail }) {
   if (!messages.length) return null;
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.statusCard}>
       <StatusBadge label={getProviderTaskPhaseLabel(task)} tone="core" />
       <AppText variant="sectionTitle">{t('tasklyTaskStatus')}</AppText>
       {messages.map((item, index) => (
@@ -1042,8 +1043,8 @@ function ProviderIssueSupportCard({ task }: { task: ProviderCoreTaskDetail }) {
   const primaryState = relevantStates[0];
 
   return (
-    <AppCard accentColor={getProviderIssueAccent(relevantStates)}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard accentColor={getProviderIssueAccent(relevantStates)} style={styles.warningCard}>
+      <View style={styles.badgeRow}>
         {relevantStates.slice(0, 3).map((state, index) => (
           <StatusBadge key={`${state.status}-${state.statusLabel}-${index}`} label={getProviderIssueStateLabel(state)} tone={getProviderIssueTone(state)} />
         ))}
@@ -1078,8 +1079,8 @@ function ProviderCancellationSupportCard({ task }: { task: ProviderCoreTaskDetai
   if (!shouldShow) return null;
 
   return (
-    <AppCard accentColor={getProviderSupportAccent(cancellation, support, dispute)}>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+    <AppCard accentColor={getProviderSupportAccent(cancellation, support, dispute)} style={styles.warningCard}>
+      <View style={styles.badgeRow}>
         {cancellation && isRelevantProviderCancellationState(cancellation) ? (
           <StatusBadge label={getProviderCancellationLabel(cancellation)} tone={getProviderSupportTone(cancellation, support, dispute)} />
         ) : null}
@@ -1135,7 +1136,7 @@ function ProviderActions({
   const blockedReason = getProviderBlockedReasonText(task);
 
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.tasklyBlue50} style={styles.actionCard}>
       <AppText variant="sectionTitle">{t('nextSteps')}</AppText>
       {primaryAction === 'express_interest' ? (
         <>
@@ -1260,7 +1261,7 @@ function ProviderIssueActions({
   const isSubmitting = Boolean(activeMode && submittingKind === activeMode);
 
   return (
-    <AppCard accentColor={colors.warning600}>
+    <AppCard accentColor={colors.warning600} style={styles.issueCard}>
       <StatusBadge label={t('issueAndSupport')} tone="warning" />
       <AppText variant="sectionTitle">{t('issueAndSupport')}</AppText>
       <AppText color={colors.slate700}>{task.providerIssueSummary || t('tasklyWillReviewRequest')}</AppText>
@@ -1556,20 +1557,89 @@ function getProviderIssueAccent(states: ProviderCoreIssueState[]) {
 }
 
 const styles = StyleSheet.create({
-  aftercareSection: { gap: spacing.xs },
-  header: { gap: spacing.sm },
-  image: { aspectRatio: 1, borderRadius: 8, width: '31%' },
-  imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  infoRow: { gap: spacing.xs },
+  actionCard: {
+    borderColor: colors.tasklyBlueBorder,
+    ...designTokens.shadows.surface,
+  },
+  aftercareSection: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+    paddingTop: spacing.lg,
+  },
+  detailCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  header: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    ...designTokens.shadows.card,
+  },
+  heroCard: {
+    borderColor: colors.tasklyBlueBorder,
+    ...designTokens.shadows.surface,
+  },
+  image: {
+    aspectRatio: 1,
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    width: '31%',
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  infoRow: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  issueCard: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    ...designTokens.shadows.card,
+  },
+  paymentCard: {
+    borderColor: colors.tasklyBlueBorder,
+    ...designTokens.shadows.surface,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
   scopeChecklistIcon: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#D7E7FA',
-    borderRadius: 12,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.md,
     borderWidth: 1,
-    height: 24,
+    height: 28,
     justifyContent: 'center',
-    width: 24,
+    width: 28,
   },
   scopeChecklistIconChecked: {
     backgroundColor: colors.tasklyBlue600,
@@ -1591,13 +1661,49 @@ const styles = StyleSheet.create({
   scopeChecklistRow: {
     alignItems: 'flex-start',
     backgroundColor: colors.tasklyBlue50,
-    borderColor: '#D7E7FA',
-    borderRadius: 8,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.md,
   },
-  stack: { gap: spacing.sm },
-  timelineItem: { gap: spacing.xs },
+  stack: {
+    gap: spacing.md,
+  },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  statusCard: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    ...designTokens.shadows.card,
+  },
+  subSection: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  successCard: {
+    backgroundColor: colors.success50,
+    borderColor: '#BBF7D0',
+    ...designTokens.shadows.card,
+  },
+  timelineItem: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  warningCard: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    ...designTokens.shadows.card,
+  },
 });

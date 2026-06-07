@@ -2,7 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   EmptyStateCard,
@@ -24,7 +24,8 @@ import {
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function ProviderCoreTasksScreen() {
   useI18n();
@@ -142,29 +143,29 @@ export default function ProviderCoreTasksScreen() {
   const availableTasks = (data?.tasks ?? []).filter(isAvailableProviderCoreTask);
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content} style={styles.screen}>
       <ProviderTopBar />
 
-      <View style={{ gap: spacing.sm }}>
+      <View style={styles.header}>
         <AppText variant="screenTitle">{t('availableTasksScreenTitle')}</AppText>
-        <AppText color={colors.slate500}>{t('availableTasksScreenSubtitle')}</AppText>
+        <AppText color={colors.slate500} style={styles.subtitle}>{t('availableTasksScreenSubtitle')}</AppText>
       </View>
 
       {isLoading ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText variant="sectionTitle">{t('loadingMatchingTasklyTasks')}</AppText>
         </AppCard>
       ) : null}
 
       {errorMessage || isUnauthorized ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText variant="sectionTitle">
             {isUnauthorized ? t('tasklyTasksNeedProviderAccess') : t('couldNotRefreshTasklyTasks')}
           </AppText>
           <AppText color={colors.slate700}>
             {errorMessage || t('retryOrContinueDemoBackendUnavailable')}
           </AppText>
-          <View style={{ gap: spacing.sm }}>
+          <View style={styles.stack}>
             <AppButton onPress={loadTasks} variant="outline">
               {t('retry')}
             </AppButton>
@@ -176,7 +177,7 @@ export default function ProviderCoreTasksScreen() {
       ) : null}
 
       {availableTasks.length ? (
-        <View style={{ gap: spacing.md }}>
+        <View style={styles.taskList}>
           {availableTasks.map((task) => (
             <ProviderCoreTaskCard
               actionLoading={actionLoadingId === task.id}
@@ -200,3 +201,37 @@ export default function ProviderCoreTasksScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  stack: {
+    gap: spacing.sm,
+  },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  subtitle: {
+    lineHeight: 22,
+  },
+  taskList: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+});
