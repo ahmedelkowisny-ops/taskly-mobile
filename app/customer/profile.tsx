@@ -12,6 +12,7 @@ import { getMockUserSession } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type ProfileDraft = {
@@ -182,7 +183,7 @@ export default function CustomerProfileScreen() {
         </View>
       </View>
 
-      <AppCard>
+      <AppCard style={styles.sectionCard}>
         <View style={styles.cardHeader}>
           <Ionicons color={colors.tasklyBlue600} name="person-circle-outline" size={22} />
           <AppText variant="cardTitle">{t('accountOverview')}</AppText>
@@ -191,7 +192,7 @@ export default function CustomerProfileScreen() {
         <InfoRow label={t('accountEmail')} value={email || t('emailNotAvailable')} />
       </AppCard>
 
-      <AppCard>
+      <AppCard style={styles.editCard}>
         <View style={styles.editHeader}>
           <View style={styles.cardHeader}>
             <Ionicons color={colors.tasklyBlue600} name="create-outline" size={22} />
@@ -455,14 +456,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue600,
     borderRadius: radius.pill,
-    height: 56,
+    elevation: 4,
+    height: 64,
     justifyContent: 'center',
-    width: 56,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 6, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    width: 64,
   },
   avatarInitial: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    lineHeight: 26,
+    lineHeight: 30,
   },
   cardHeader: {
     alignItems: 'center',
@@ -470,19 +476,42 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   content: {
-    gap: spacing.md,
+    backgroundColor: colors.slate50,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
     paddingTop: spacing.lg,
   },
   header: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
     gap: spacing.sm,
+    padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   actionButton: {
     flex: 1,
+    minHeight: 50,
   },
   actionRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  editCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+    ...designTokens.shadows.surface,
   },
   editHeader: {
     alignItems: 'center',
@@ -491,61 +520,72 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   errorMessage: {
-    backgroundColor: colors.proOrange50,
-    borderColor: colors.proOrangeBorder,
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
   },
   form: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   headerButton: {
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.pill,
     minHeight: 40,
     paddingHorizontal: spacing.md,
   },
   infoRow: {
-    backgroundColor: colors.slate50,
-    borderColor: '#E6EBF0',
-    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    gap: 3,
+    gap: spacing.xs,
     padding: spacing.md,
   },
   infoValue: {
+    color: colors.navy900,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    lineHeight: 21,
   },
   inlineMessage: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   loadingRow: {
     alignItems: 'center',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
+    padding: spacing.md,
   },
   neutralMessage: {
-    backgroundColor: colors.slate50,
-    borderColor: '#E6EBF0',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
   },
   profileCard: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: '#E6EBF0',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.card,
     borderWidth: 1,
-    elevation: 1,
+    elevation: 4,
     flexDirection: 'row',
     gap: spacing.md,
     padding: spacing.lg,
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
   },
   profileMeta: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xs,
+    minWidth: 0,
   },
   menuCard: {
     backgroundColor: colors.white,
@@ -553,6 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     borderWidth: 1,
     overflow: 'hidden',
+    ...designTokens.shadows.card,
   },
   menuDivider: {
     borderBottomColor: colors.border,
@@ -561,16 +602,20 @@ const styles = StyleSheet.create({
   menuIconBox: {
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.lg,
+    borderWidth: 1,
     height: 40,
     justifyContent: 'center',
     width: 40,
   },
   menuIconBoxDanger: {
-    backgroundColor: colors.slate50,
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
   },
   menuIconBoxDisabled: {
     backgroundColor: colors.slate50,
+    borderColor: colors.border,
   },
   menuRow: {
     alignItems: 'center',
@@ -589,11 +634,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   menuRowDisabled: {
-    opacity: 0.5,
+    opacity: 0.62,
   },
   menuRowText: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   menuSection: {
     gap: spacing.sm,
@@ -607,14 +653,26 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   pressedSoft: {
-    opacity: 0.74,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  sectionCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   successMessage: {
-    backgroundColor: colors.tasklyBlue50,
-    borderColor: colors.tasklyBlueBorder,
+    backgroundColor: colors.success50,
+    borderColor: colors.success600,
   },
   title: {
+    color: colors.navy900,
     fontSize: 26,
+    fontWeight: '800',
     lineHeight: 32,
   },
 });
