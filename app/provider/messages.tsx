@@ -13,7 +13,8 @@ import { useAuth } from '@/src/lib/auth/useAuth';
 import { hasApprovedProMode } from '@/src/lib/auth/workspaceAccess';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
-import { spacing } from '@/src/theme/spacing';
+import { designTokens } from '@/src/theme/designTokens';
+import { radius, spacing } from '@/src/theme/spacing';
 
 export default function ProviderMessagesScreen() {
   const router = useRouter();
@@ -85,7 +86,7 @@ export default function ProviderMessagesScreen() {
     showProTab ? taskThreads : allThreads.filter((th) => th.contextType === 'CORE_TASK' || th.contextType === 'PRO_REQUEST');
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content} style={styles.screen}>
       <ProviderTopBar />
 
       <View style={styles.header}>
@@ -124,7 +125,7 @@ export default function ProviderMessagesScreen() {
       {isLoading ? <StateCard label={t('loading')} message={t('messages')} /> : null}
 
       {message ? (
-        <AppCard backgroundColor={colors.white}>
+        <AppCard backgroundColor={colors.white} style={styles.stateCard}>
           <AppText color={colors.slate700}>{message}</AppText>
           <View style={styles.actions}>
             <AppButton onPress={loadThreads} variant="outline">{t('retry')}</AppButton>
@@ -160,20 +161,24 @@ export default function ProviderMessagesScreen() {
         />
       ) : null}
 
-      {threads.map((thread) => (
-        <ThreadCard
-          key={thread.id}
-          thread={thread}
-          onPress={() => router.push(`/provider/messages/${encodeURIComponent(thread.id)}` as Href)}
-        />
-      ))}
+      {threads.length ? (
+        <View style={styles.threadList}>
+          {threads.map((thread) => (
+            <ThreadCard
+              key={thread.id}
+              thread={thread}
+              onPress={() => router.push(`/provider/messages/${encodeURIComponent(thread.id)}` as Href)}
+            />
+          ))}
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 function StateCard({ label, message }: { label: string; message: string }) {
   return (
-    <AppCard backgroundColor={colors.white}>
+    <AppCard backgroundColor={colors.white} style={styles.stateCard}>
       <AppText color={colors.slate500} variant="small">{label}</AppText>
       <AppText color={colors.slate700}>{message}</AppText>
     </AppCard>
@@ -185,8 +190,13 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
   const accentColor = thread.accent === 'pro' ? colors.proOrange600 : thread.accent === 'core' ? colors.tasklyBlue600 : colors.navy900;
 
   return (
-    <Pressable accessibilityRole="button" onPress={onPress}>
-      <AppCard backgroundColor={colors.white}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [pressed ? styles.pressed : null]}>
+      <AppCard
+        backgroundColor={colors.white}
+        style={[
+          styles.threadCard,
+          thread.accent === 'pro' ? styles.threadCardPro : thread.accent === 'core' ? styles.threadCardCore : null,
+        ]}>
         <View style={styles.threadHeader}>
           <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
           {thread.roleLabel ? <StatusBadge label={thread.roleLabel} tone="neutral" /> : null}
@@ -212,28 +222,78 @@ function getContextLabel(contextType: MessageThreadSummary['contextType']) {
 
 const styles = StyleSheet.create({
   actions: { gap: spacing.sm },
-  header: { gap: spacing.sm },
+  content: {
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl + 96,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.99 }],
+  },
+  screen: {
+    backgroundColor: colors.slate50,
+  },
+  stateCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
   tab: {
     alignItems: 'center',
-    borderBottomColor: 'transparent',
-    borderBottomWidth: 2,
+    borderColor: 'transparent',
+    borderRadius: radius.pill,
+    borderWidth: 1,
     flex: 1,
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   tabActive: {
-    borderBottomColor: colors.tasklyBlue600,
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
   },
   tabActivePro: {
-    borderBottomColor: colors.proOrange600,
+    backgroundColor: colors.proOrange50,
+    borderColor: colors.proOrangeBorder,
   },
   tabs: {
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
     flexDirection: 'row',
+    gap: spacing.xs,
+    padding: spacing.xs,
+    ...designTokens.shadows.card,
+  },
+  threadCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  threadCardCore: {
+    borderColor: colors.tasklyBlueBorder,
+  },
+  threadCardPro: {
+    borderColor: colors.proOrangeBorder,
   },
   threadHeader: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  threadList: {
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
   },
 });
