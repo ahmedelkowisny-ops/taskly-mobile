@@ -34,6 +34,7 @@ import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type PaymentSetupStage = 'setup' | 'confirm' | 'finalize';
@@ -1224,7 +1225,7 @@ function InterestedTaskers({
   if (!canSelectTasker) return null;
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
+    <AppCard accentColor={colors.tasklyBlue600} style={[styles.sectionCard, styles.taskerSectionCard]}>
       <StatusBadge label={t('chooseTasker')} tone="core" />
       <AppText variant="cardTitle">{t('taskerResponses')}</AppText>
       <AppText color={colors.slate700}>{t('nextStepPaymentSetup')}</AppText>
@@ -1277,7 +1278,7 @@ function PaymentStateCard({
   paymentState: CustomerCorePaymentState;
 }) {
   return (
-    <AppCard accentColor={getPaymentAccentColor(paymentState)} style={styles.sectionCard}>
+    <AppCard accentColor={getPaymentAccentColor(paymentState)} style={[styles.sectionCard, styles.paymentSectionCard]}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         <StatusBadge label={getPaymentStateLabel(paymentState)} tone={getPaymentStateTone(paymentState)} />
         {paymentState.paymentRequired ? <StatusBadge label={t('protectedPaymentFlow')} tone="neutral" /> : null}
@@ -1303,7 +1304,7 @@ function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
   if (!shouldShow) return null;
 
   return (
-    <AppCard accentColor={getCancellationSupportAccent(cancellation, support, dispute)} style={styles.sectionCard}>
+    <AppCard accentColor={getCancellationSupportAccent(cancellation, support, dispute)} style={[styles.sectionCard, styles.supportSectionCard]}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         {cancellation ? (
           <StatusBadge label={getCancellationStateLabel(cancellation)} tone={getCancellationSupportTone(cancellation, support, dispute)} />
@@ -1377,7 +1378,7 @@ function CustomerCancellationSupportActions({
   const isLateCancellation = task.nextActions.canCancelLate || cancellation?.status === 'late_cancellation_available';
 
   return (
-    <AppCard accentColor={isLateCancellation || canRequestSupport ? colors.warning600 : colors.slate500} style={styles.sectionCard}>
+    <AppCard accentColor={isLateCancellation || canRequestSupport ? colors.warning600 : colors.slate500} style={[styles.sectionCard, styles.supportSectionCard]}>
       <StatusBadge
         label={canRequestSupport ? t('requestSupportReview') : isLateCancellation ? t('lateCancellationWarning') : t('freeCancellationAvailable')}
         tone={isLateCancellation || canRequestSupport ? 'warning' : 'neutral'}
@@ -1465,7 +1466,7 @@ function PaymentSetupCard({
   const canCollectCard = paymentsConfigured && !isDemoMode;
 
   return (
-    <AppCard accentColor={colors.tasklyBlue600} style={styles.sectionCard}>
+    <AppCard accentColor={colors.tasklyBlue600} style={[styles.sectionCard, styles.paymentSectionCard]}>
       <StatusBadge label={t('paymentProtected')} tone="core" />
       <AppText variant="cardTitle">{getPaymentSetupButtonLabel(task.nextActions)}</AppText>
       <AppText color={colors.slate700}>{t('cardHandledSecurelyByStripe')}</AppText>
@@ -1477,10 +1478,10 @@ function PaymentSetupCard({
         <CardField
           cardStyle={{
             backgroundColor: colors.white,
-            borderColor: colors.slate100,
-            borderRadius: 8,
+            borderColor: colors.border,
+            borderRadius: 14,
             borderWidth: 1,
-            fontSize: 16,
+            fontSize: 15,
             placeholderColor: colors.slate500,
             textColor: colors.navy900,
           }}
@@ -1534,7 +1535,7 @@ function CompletionDecision({
   if (!canApprove && !canReject && !approvalBlockedByPayment) return null;
 
   return (
-    <AppCard accentColor={colors.warning600} style={styles.sectionCard}>
+    <AppCard accentColor={colors.warning600} style={[styles.sectionCard, styles.completionSectionCard]}>
       <StatusBadge label={t('waitingForCustomerApproval')} tone="warning" />
       <AppText variant="cardTitle">{t('approveCompletionPrompt')}</AppText>
       <AppText color={colors.slate700}>
@@ -1842,23 +1843,46 @@ function getCancellationSupportAccent(
 }
 
 const styles = StyleSheet.create({
-  cardField: { height: 52, width: '100%' },
+  cardField: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    height: 54,
+    paddingHorizontal: spacing.sm,
+    width: '100%',
+  },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  descriptionText: { fontSize: 14, lineHeight: 21 },
+  descriptionText: { fontSize: 14, lineHeight: 22 },
   header: {
     alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    padding: spacing.md,
+    ...designTokens.shadows.card,
   },
   heroCard: {
-    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.lg,
     padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 4,
   },
-  heroCopy: { gap: spacing.xs },
+  heroCopy: { gap: spacing.sm },
   heroMetaItem: {
     backgroundColor: colors.tasklyBlue50,
-    borderColor: '#D7E7FA',
-    borderRadius: radius.md,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,
@@ -1868,17 +1892,24 @@ const styles = StyleSheet.create({
   heroMetaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   heroSubtitle: { fontSize: 14, lineHeight: 20 },
-  heroTitle: { fontSize: 26, lineHeight: 31 },
-  image: { aspectRatio: 1, borderRadius: radius.sm, width: '31%' },
+  heroTitle: { color: colors.navy900, fontSize: 26, lineHeight: 32 },
+  image: {
+    aspectRatio: 1,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    width: '31%',
+  },
   imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   infoRow: {
-    backgroundColor: colors.slate50,
-    borderColor: colors.slate100,
-    borderRadius: radius.sm,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexGrow: 1,
     gap: spacing.xs,
@@ -1886,11 +1917,27 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   infoValue: { fontSize: 13, lineHeight: 18 },
-  screenContent: { gap: spacing.lg },
+  completionSectionCard: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FDE68A',
+    shadowColor: '#F59E0B',
+    shadowOpacity: 0.12,
+  },
+  paymentSectionCard: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    shadowColor: '#1877F2',
+    shadowOpacity: 0.12,
+  },
+  screenContent: {
+    backgroundColor: colors.slate50,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
   scopeChecklistIcon: {
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderColor: '#D7E7FA',
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: 12,
     borderWidth: 1,
     height: 24,
@@ -1917,16 +1964,21 @@ const styles = StyleSheet.create({
   scopeChecklistRow: {
     alignItems: 'flex-start',
     backgroundColor: colors.tasklyBlue50,
-    borderColor: '#D7E7FA',
-    borderRadius: radius.md,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.sm,
-    padding: spacing.sm,
+    padding: spacing.md,
   },
   sectionCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   sectionHeader: {
     alignItems: 'flex-start',
@@ -1935,31 +1987,57 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     justifyContent: 'space-between',
   },
-  stack: { gap: spacing.sm },
+  stack: { gap: spacing.md },
+  supportSectionCard: {
+    backgroundColor: colors.white,
+    borderColor: '#FECACA',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.07,
+  },
+  taskerSectionCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    shadowColor: '#1877F2',
+    shadowOpacity: 0.09,
+  },
   taskerBody: { flex: 1, gap: spacing.xs },
-  taskerImage: { borderRadius: 24, height: 48, width: 48 },
+  taskerImage: {
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: 24,
+    borderWidth: 1,
+    height: 48,
+    width: 48,
+  },
   taskerInitials: {
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: 24,
+    borderWidth: 1,
     height: 48,
     justifyContent: 'center',
     width: 48,
   },
   taskerOptionCard: {
     backgroundColor: colors.white,
-    borderColor: colors.slate100,
-    borderRadius: radius.md,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
     borderWidth: 1,
+    elevation: 2,
     gap: spacing.md,
-    padding: spacing.md,
+    padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
   taskerRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md },
   timelineItem: {
-    borderColor: colors.slate100,
-    borderRadius: radius.md,
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    gap: spacing.xs,
+    gap: spacing.sm,
     padding: spacing.md,
   },
 });

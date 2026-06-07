@@ -20,6 +20,7 @@ import { getMockCustomerTasksResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
 import { t, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type StatusTone = 'core' | 'pro' | 'success' | 'warning' | 'danger' | 'neutral';
@@ -419,31 +420,38 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   buttonStack: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   cardHeader: {
     alignItems: 'flex-start',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     justifyContent: 'space-between',
   },
   cardMain: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   cardSubtitle: {
+    fontSize: 14,
     lineHeight: 20,
   },
   cardTitle: {
+    color: colors.navy900,
     fontSize: 17,
+    fontWeight: '800',
     lineHeight: 22,
   },
   detailsButton: {
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.pill,
     minHeight: 38,
     paddingHorizontal: spacing.md,
   },
   helperText: {
+    color: colors.slate500,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   locationMeta: {
     alignItems: 'center',
@@ -453,6 +461,7 @@ const styles = StyleSheet.create({
   metaDivider: {
     fontSize: 13,
     lineHeight: 17,
+    opacity: 0.7,
   },
   metaRow: {
     alignItems: 'center',
@@ -467,10 +476,11 @@ const styles = StyleSheet.create({
   nextActionCard: {
     alignItems: 'center',
     backgroundColor: colors.tasklyBlue50,
-    borderColor: '#D7E7FA',
-    borderRadius: radius.md,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.md,
     justifyContent: 'space-between',
     padding: spacing.md,
@@ -480,26 +490,54 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   pageHeader: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
     gap: spacing.xs,
+    padding: spacing.lg,
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 4, width: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   screenContent: {
-    gap: spacing.lg,
+    backgroundColor: colors.slate50,
+    gap: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
   stateCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
     borderRadius: radius.card,
-  },
-  taskCard: {
     gap: spacing.md,
     padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  taskCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   taskList: {
-    gap: spacing.md,
+    gap: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   trustCard: {
     alignItems: 'flex-start',
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.card,
+    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
+    padding: spacing.lg,
+    ...designTokens.shadows.card,
   },
   trustCopy: {
     flex: 1,
@@ -507,10 +545,17 @@ const styles = StyleSheet.create({
   },
   trustIconBox: {
     alignItems: 'center',
-    backgroundColor: colors.tasklyBlue50,
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.lg,
+    borderWidth: 1,
     height: 44,
     justifyContent: 'center',
+    shadowColor: '#1877F2',
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
     width: 44,
   },
 });
