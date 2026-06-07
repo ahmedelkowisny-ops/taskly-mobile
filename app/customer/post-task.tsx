@@ -5,9 +5,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   KeyboardTypeOptions,
   Modal,
@@ -21,7 +23,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import type { GestureResponderEvent, LayoutChangeEvent } from 'react-native';
+import type { GestureResponderEvent, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 import AddressPickerModal from '@/components/AddressPickerModal';
 import { TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
@@ -127,6 +129,8 @@ const MAX_DURATION_MINUTES = 6 * 60;
 const TODAY_LEAD_TIME_MINUTES = 60;
 const DEFAULT_FUTURE_START_TIME = '16:00';
 const DEFAULT_FUTURE_END_TIME = '20:00';
+const FOOTER_SCROLL_THRESHOLD = 16;
+const FOOTER_BOTTOM_PROXIMITY = 96;
 const CATEGORY_BUDGET_RANGES: Record<string, { min: number; max: number; recommended: number }> = {
   furniture_assembly:  { min: 20, max: 100, recommended: 30 },
   general_mounting:    { min: 20, max: 100, recommended: 30 },
@@ -391,12 +395,95 @@ function getLocalizedCityName(city: CityOption, locale: 'bg' | 'en') {
   return locale === 'bg' ? city.nameBg || city.nameEn : city.nameEn || city.nameBg;
 }
 
+function usePostingFooterVisibility() {
+  const [visible, setVisible] = useState(true);
+  const visibleRef = useRef(true);
+  const keyboardVisibleRef = useRef(false);
+  const lastOffsetRef = useRef(0);
+  const animation = useRef(new Animated.Value(1)).current;
+
+  const setFooterVisible = useCallback(
+    (nextVisible: boolean) => {
+      if (nextVisible && keyboardVisibleRef.current) return;
+      if (visibleRef.current === nextVisible) return;
+
+      visibleRef.current = nextVisible;
+      setVisible(nextVisible);
+      animation.stopAnimation();
+      Animated.timing(animation, {
+        duration: nextVisible ? 190 : 220,
+        toValue: nextVisible ? 1 : 0,
+        useNativeDriver: true,
+      }).start();
+    },
+    [animation],
+  );
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      keyboardVisibleRef.current = true;
+      setFooterVisible(false);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      keyboardVisibleRef.current = false;
+      setFooterVisible(true);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [setFooterVisible]);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const currentOffset = Math.max(contentOffset.y, 0);
+      const distanceFromBottom = contentSize.height - (currentOffset + layoutMeasurement.height);
+
+      if (currentOffset <= 12 || distanceFromBottom <= FOOTER_BOTTOM_PROXIMITY) {
+        lastOffsetRef.current = currentOffset;
+        setFooterVisible(true);
+        return;
+      }
+
+      const delta = currentOffset - lastOffsetRef.current;
+      if (Math.abs(delta) < FOOTER_SCROLL_THRESHOLD) return;
+
+      setFooterVisible(delta < 0);
+      lastOffsetRef.current = currentOffset;
+    },
+    [setFooterVisible],
+  );
+  const showFooter = useCallback(() => setFooterVisible(true), [setFooterVisible]);
+
+  return {
+    footerAnimatedStyle: {
+      opacity: animation,
+      transform: [
+        {
+          translateY: animation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [120, 0],
+          }),
+        },
+      ],
+    },
+    footerPointerEvents: visible ? ('auto' as const) : ('none' as const),
+    handleFooterScroll: handleScroll,
+    showFooter,
+  };
+}
+
 export default function CustomerPostTaskScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
+  const { footerAnimatedStyle, footerPointerEvents, handleFooterScroll, showFooter } = usePostingFooterVisibility();
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -463,6 +550,10 @@ export default function CustomerPostTaskScreen() {
   const [selectedLatitude, setSelectedLatitude] = useState<number | null>(null);
   const [selectedLongitude, setSelectedLongitude] = useState<number | null>(null);
   const [isAddressPickerVisible, setIsAddressPickerVisible] = useState(false);
+
+  useEffect(() => {
+    showFooter();
+  }, [currentStep, showFooter]);
 
   const steps: StepMeta[] = [
     {
@@ -2916,7 +3007,10 @@ export default function CustomerPostTaskScreen() {
           ]}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
-          onScroll={handleCustomerScroll}
+          onScroll={(event) => {
+            handleCustomerScroll(event);
+            handleFooterScroll(event);
+          }}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}>
           <View style={styles.stepCard}>
@@ -2966,7 +3060,13 @@ export default function CustomerPostTaskScreen() {
           ) : null}
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom + spacing.sm, spacing.md) }]}>
+        <Animated.View
+          pointerEvents={footerPointerEvents}
+          style={[
+            styles.footer,
+            { paddingBottom: Math.max(insets.bottom + spacing.sm, spacing.md) },
+            footerAnimatedStyle,
+          ]}>
           <View style={styles.footerButtons}>
             <AppButton disabled={isBusy} labelColor={colors.slate500} onPress={handleBack} style={[styles.footerButton, styles.footerBackButton]} tone="neutral" variant="outline">
               {currentStep === 1 ? t('cancel') : t('back')}
@@ -2979,7 +3079,7 @@ export default function CustomerPostTaskScreen() {
               {currentStep === STEP_TOTAL ? t('postTaskButton') : t('continueAction')}
             </AppButton>
           </View>
-        </View>
+        </Animated.View>
         </KeyboardAvoidingView>
       </View>
     </Screen>
@@ -3269,10 +3369,17 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor: colors.white,
     borderColor: colors.border,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
     borderTopWidth: 1,
+    bottom: 0,
     gap: spacing.sm,
+    left: 0,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+    position: 'absolute',
+    right: 0,
+    zIndex: 20,
     ...designTokens.shadows.surface,
   },
   footerBackButton: {
@@ -3300,6 +3407,7 @@ const styles = StyleSheet.create({
   },
   keyboardAvoider: {
     flex: 1,
+    position: 'relative',
   },
   header: {
     backgroundColor: colors.white,

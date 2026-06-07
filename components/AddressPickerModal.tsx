@@ -130,6 +130,9 @@ export default function AddressPickerModal({
   const [isResolving, setIsResolving] = useState(false);
   const [isCurrentLocationLoading, setIsCurrentLocationLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [isLocationResolved, setIsLocationResolved] = useState(
+    typeof initialLatitude === 'number' && typeof initialLongitude === 'number',
+  );
 
   const selectedCoordinate =
     typeof selectedLatitude === 'number' && typeof selectedLongitude === 'number'
@@ -160,6 +163,7 @@ export default function AddressPickerModal({
       setQuery(address);
       setSelectedLatitude(latitude);
       setSelectedLongitude(longitude);
+      setIsLocationResolved(true);
       setLookupError(null);
       animateToCoordinates(latitude, longitude);
     },
@@ -219,6 +223,7 @@ export default function AddressPickerModal({
       setLookupError(null);
       setSelectedLatitude(latitude);
       setSelectedLongitude(longitude);
+      setIsLocationResolved(true);
       animateToCoordinates(latitude, longitude);
 
       try {
@@ -312,6 +317,7 @@ export default function AddressPickerModal({
     setSelectedAddress(initialAddress ?? '');
     setSelectedLatitude(nextLatitude);
     setSelectedLongitude(nextLongitude);
+    setIsLocationResolved(typeof nextLatitude === 'number' && typeof nextLongitude === 'number');
     setSuggestions([]);
 
     Animated.parallel([
@@ -458,8 +464,7 @@ export default function AddressPickerModal({
               onChangeText={(value) => {
                 setQuery(value);
                 setSelectedAddress(value);
-                setSelectedLatitude(null);
-                setSelectedLongitude(null);
+                setIsLocationResolved(false);
                 setSuggestions([]);
                 setLookupError(null);
               }}
@@ -521,7 +526,7 @@ export default function AddressPickerModal({
                     </View>
                   </Pressable>
                 )}
-                scrollEnabled={false}
+                showsVerticalScrollIndicator={false}
               />
             </View>
           ) : null}
@@ -570,15 +575,15 @@ export default function AddressPickerModal({
           </AppText>
           <Pressable
             accessibilityRole="button"
-            disabled={!selectedAddress || !selectedCoordinate}
+            disabled={!selectedAddress || !selectedCoordinate || !isLocationResolved}
             onPress={() => {
-              if (!selectedAddress || !selectedCoordinate) return;
+              if (!selectedAddress || !selectedCoordinate || !isLocationResolved) return;
               onConfirm(selectedAddress, selectedCoordinate.latitude, selectedCoordinate.longitude);
               onClose();
             }}
             style={({ pressed }) => [
               styles.confirmButton,
-              !selectedAddress || !selectedCoordinate ? styles.confirmButtonDisabled : null,
+              !selectedAddress || !selectedCoordinate || !isLocationResolved ? styles.confirmButtonDisabled : null,
               pressed ? styles.confirmButtonPressed : null,
             ]}>
             <AppText color={colors.white} style={styles.confirmButtonText}>
@@ -751,6 +756,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     elevation: 10,
     marginTop: spacing.xs,
+    maxHeight: 240,
     overflow: 'hidden',
     shadowColor: '#0F172A',
     shadowOffset: { height: 8, width: 0 },

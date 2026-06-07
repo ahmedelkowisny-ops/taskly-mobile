@@ -5,8 +5,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  Keyboard,
   KeyboardAvoidingView,
   KeyboardTypeOptions,
   Modal,
@@ -19,6 +21,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 import AddressPickerModal from '@/components/AddressPickerModal';
 import { ImagePickerPlaceholder, TasklyLogoText, useCustomerCreateBarScrollHandler } from '@/src/components/taskly';
@@ -42,6 +45,7 @@ import { LocalSelectedImage } from '@/src/lib/images/types';
 import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
 import { t, TranslationKey, useI18n } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
+import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 type CatalogState = {
@@ -84,6 +88,8 @@ const TIME_SLOT_START_MINUTES = 6 * 60;
 const TIME_SLOT_END_MINUTES = 24 * 60;
 const TIME_SLOT_STEP_MINUTES = 15;
 const MIN_DURATION_MINUTES = 60;
+const FOOTER_SCROLL_THRESHOLD = 16;
+const FOOTER_BOTTOM_PROXIMITY = 96;
 type TimePickerTarget = 'start' | 'end' | null;
 
 const PROPERTY_TYPE_KEYS = [
@@ -340,6 +346,7 @@ function Field({
   keyboardType,
   label,
   multiline,
+  onFocus,
   onChangeText,
   placeholder,
   value,
@@ -349,6 +356,7 @@ function Field({
   keyboardType?: KeyboardTypeOptions;
   label: string;
   multiline?: boolean;
+  onFocus?: () => void;
   onChangeText: (value: string) => void;
   placeholder?: string;
   value: string;
@@ -360,6 +368,7 @@ function Field({
         keyboardType={keyboardType}
         multiline={multiline}
         onChangeText={onChangeText}
+        onFocus={onFocus}
         placeholder={placeholder}
         placeholderTextColor={colors.slate500}
         style={[styles.input, multiline ? styles.textArea : null, errorText ? styles.inputError : null]}
@@ -382,12 +391,126 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function usePostingFooterVisibility() {
+  const [visible, setVisible] = useState(true);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const visibleRef = useRef(true);
+  const keyboardVisibleRef = useRef(false);
+  const lastOffsetRef = useRef(0);
+  const animation = useRef(new Animated.Value(1)).current;
+
+  const setFooterVisible = useCallback(
+    (nextVisible: boolean) => {
+      if (nextVisible && keyboardVisibleRef.current) return;
+      if (visibleRef.current === nextVisible) return;
+
+      visibleRef.current = nextVisible;
+      setVisible(nextVisible);
+      animation.stopAnimation();
+      Animated.timing(animation, {
+        duration: nextVisible ? 190 : 220,
+        toValue: nextVisible ? 1 : 0,
+        useNativeDriver: true,
+      }).start();
+    },
+    [animation],
+  );
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      keyboardVisibleRef.current = true;
+      setKeyboardVisible(true);
+      visibleRef.current = false;
+      setVisible(false);
+      animation.stopAnimation();
+      animation.setValue(0);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      keyboardVisibleRef.current = false;
+      setKeyboardVisible(false);
+      setFooterVisible(true);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [animation, setFooterVisible]);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const currentOffset = Math.max(contentOffset.y, 0);
+
+      if (keyboardVisibleRef.current || Keyboard.isVisible()) {
+        keyboardVisibleRef.current = true;
+        lastOffsetRef.current = currentOffset;
+        setFooterVisible(false);
+        return;
+      }
+
+      const distanceFromBottom = contentSize.height - (currentOffset + layoutMeasurement.height);
+
+      if (currentOffset <= 12 || distanceFromBottom <= FOOTER_BOTTOM_PROXIMITY) {
+        lastOffsetRef.current = currentOffset;
+        setFooterVisible(true);
+        return;
+      }
+
+      const delta = currentOffset - lastOffsetRef.current;
+      if (Math.abs(delta) < FOOTER_SCROLL_THRESHOLD) return;
+
+      setFooterVisible(delta < 0);
+      lastOffsetRef.current = currentOffset;
+    },
+    [setFooterVisible],
+  );
+  const hideFooterForTyping = useCallback(() => {
+    keyboardVisibleRef.current = true;
+    setKeyboardVisible(true);
+    visibleRef.current = false;
+    setVisible(false);
+    animation.stopAnimation();
+    animation.setValue(0);
+  }, [animation]);
+  const showFooter = useCallback(() => setFooterVisible(true), [setFooterVisible]);
+
+  return {
+    footerAnimatedStyle: {
+      opacity: animation,
+      transform: [
+        {
+          translateY: animation.interpolate({
+            inputRange: [0, 1],
+            outputRange: [120, 0],
+          }),
+        },
+      ],
+    },
+    footerPointerEvents: visible ? ('auto' as const) : ('none' as const),
+    handleFooterScroll: handleScroll,
+    hideFooterForTyping,
+    keyboardVisible,
+    showFooter,
+  };
+}
+
 export default function CustomerPostProRequestScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
+  const {
+    footerAnimatedStyle,
+    footerPointerEvents,
+    handleFooterScroll,
+    hideFooterForTyping,
+    keyboardVisible,
+    showFooter,
+  } = usePostingFooterVisibility();
   const [catalog, setCatalog] = useState<CatalogState | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -430,6 +553,10 @@ export default function CustomerPostProRequestScreen() {
   const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
   const [step1TagsBlocked, setStep1TagsBlocked] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    showFooter();
+  }, [currentStep, showFooter]);
 
   const loadCatalog = useCallback(async () => {
     setErrorMessage(null);
@@ -1197,6 +1324,7 @@ export default function CustomerPostProRequestScreen() {
               label={t('locationNotes')}
               multiline
               onChangeText={setLocationNotes}
+              onFocus={hideFooterForTyping}
               placeholder={t('locationNotesPlaceholder')}
               value={locationNotes}
             />
@@ -1211,6 +1339,7 @@ export default function CustomerPostProRequestScreen() {
                 setDistrict(value);
                 clearFieldError('district');
               }}
+              onFocus={hideFooterForTyping}
               placeholder={t('proRequestDistrictPlaceholder')}
               value={district}
             />
@@ -1234,6 +1363,7 @@ export default function CustomerPostProRequestScreen() {
                 setTitle(value);
                 clearFieldError('title');
               }}
+              onFocus={hideFooterForTyping}
               placeholder={t('proRequestTitlePlaceholder')}
               value={title}
             />
@@ -1248,12 +1378,14 @@ export default function CustomerPostProRequestScreen() {
                 setDescription(value);
                 clearFieldError('description');
               }}
+              onFocus={hideFooterForTyping}
               placeholder={t('proRequestDescriptionPlaceholder')}
               value={description}
             />
             <Field
               label={t('projectSize')}
               onChangeText={setProjectSize}
+              onFocus={hideFooterForTyping}
               placeholder={t('projectSizePlaceholder')}
               value={projectSize}
             />
@@ -1262,6 +1394,7 @@ export default function CustomerPostProRequestScreen() {
               label={t('specialtyDetails')}
               multiline
               onChangeText={setSpecialtyNotes}
+              onFocus={hideFooterForTyping}
               placeholder={t('specialtyDetailsPlaceholder')}
               value={specialtyNotes}
             />
@@ -1286,6 +1419,7 @@ export default function CustomerPostProRequestScreen() {
                   clearFieldError('budgetMinEur');
                   clearFieldError('budgetMaxEur');
                 }}
+                onFocus={hideFooterForTyping}
                 placeholder={t('proRequestBudgetMinPlaceholder')}
                 value={budgetMin}
               />
@@ -1298,6 +1432,7 @@ export default function CustomerPostProRequestScreen() {
                   clearFieldError('budgetMinEur');
                   clearFieldError('budgetMaxEur');
                 }}
+                onFocus={hideFooterForTyping}
                 placeholder={t('proRequestBudgetMaxPlaceholder')}
                 value={budgetMax}
               />
@@ -1532,7 +1667,7 @@ export default function CustomerPostProRequestScreen() {
           ) : null}
 
           <KeyboardAvoidingView
-            behavior={Platform.select({ android: 'height', ios: 'padding', default: undefined })}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, spacing.lg) : 0}
             style={styles.keyboardAvoider}>
             <ScrollView
@@ -1543,7 +1678,10 @@ export default function CustomerPostProRequestScreen() {
               ]}
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               keyboardShouldPersistTaps="handled"
-              onScroll={handleCustomerScroll}
+              onScroll={(event) => {
+                handleCustomerScroll(event);
+                handleFooterScroll(event);
+              }}
               scrollEventThrottle={16}
               showsVerticalScrollIndicator={false}>
               {renderStep()}
@@ -1640,21 +1778,29 @@ export default function CustomerPostProRequestScreen() {
             </Pressable>
           </Modal>
 
-          <View style={styles.footer}>
-            <View style={styles.footerButtons}>
-              <AppButton disabled={isBusy} labelColor={colors.slate500} onPress={handleBack} style={[styles.footerButton, styles.footerBackButton]} tone="neutral" variant="outline">
-                {currentStep === 1 ? t('cancel') : t('back')}
-              </AppButton>
-              <AppButton
-                disabled={isBusy}
-                loading={isBusy}
-                onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinueStep1}
-                style={styles.footerButton}
-                tone="pro">
-                {currentStep === STEP_TOTAL ? t('postProRequestButton') : t('continueAction')}
-              </AppButton>
-            </View>
-          </View>
+          {!keyboardVisible ? (
+            <Animated.View
+              pointerEvents={footerPointerEvents}
+              style={[
+                styles.footer,
+                { paddingBottom: Math.max(insets.bottom + spacing.sm, spacing.md) },
+                footerAnimatedStyle,
+              ]}>
+              <View style={styles.footerButtons}>
+                <AppButton disabled={isBusy} labelColor={colors.slate500} onPress={handleBack} style={[styles.footerButton, styles.footerBackButton]} tone="neutral" variant="outline">
+                  {currentStep === 1 ? t('cancel') : t('back')}
+                </AppButton>
+                <AppButton
+                  disabled={isBusy}
+                  loading={isBusy}
+                  onPress={currentStep === STEP_TOTAL ? handleSubmit : handleContinueStep1}
+                  style={styles.footerButton}
+                  tone="pro">
+                  {currentStep === STEP_TOTAL ? t('postProRequestButton') : t('continueAction')}
+                </AppButton>
+              </View>
+            </Animated.View>
+          ) : null}
           </KeyboardAvoidingView>
         </View>
       </View>
@@ -1752,11 +1898,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   footer: {
+    ...designTokens.shadows.surface,
     backgroundColor: colors.white,
     borderTopColor: colors.proOrangeBorder,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
     borderTopWidth: 1,
+    bottom: 0,
+    left: 0,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
+    position: 'absolute',
+    right: 0,
+    zIndex: 20,
   },
   footerBackButton: {
     borderColor: colors.border,
@@ -1821,6 +1975,7 @@ const styles = StyleSheet.create({
   },
   keyboardAvoider: {
     flex: 1,
+    position: 'relative',
   },
   locationSummaryCard: {
     alignItems: 'center',
