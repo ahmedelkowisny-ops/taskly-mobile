@@ -26,6 +26,7 @@ export const endpoints = {
     paymentsUnlocks: '/api/mobile/customer/payments-unlocks',
     profile: '/api/mobile/customer/profile',
     proRequestAccessCheckout: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/checkout`,
+    proRequestAccessCredit: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/credit`,
     proRequestAccessSupportRequest: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/access/support-request`,
     proRequestDetail: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}`,
     proRequestImageUpload: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/images`,

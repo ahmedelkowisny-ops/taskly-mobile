@@ -14,6 +14,7 @@ import {
   getCustomerProRequestDetail,
   requestCustomerProAccessSupport,
   selectCustomerProResponse,
+  consumeCustomerProAccessCredit,
 } from '@/src/lib/api/customer';
 import { CustomerProAccessSupportRequestPayload, CustomerProRequestDetailResponse, CustomerUnlockedProComparisonResponse, ProAccessSupportIssueType } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
@@ -75,6 +76,9 @@ export default function CustomerProRequestDetailScreen() {
   const [data, setData] = useState<CustomerProRequestDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isStartingProAccessPayment, setIsStartingProAccessPayment] = useState(false);
+  const [isUsingProAccessCredit, setIsUsingProAccessCredit] = useState(false);
+  const [proAccessCreditError, setProAccessCreditError] = useState<string | null>(null);
+  const [proAccessCreditMessage, setProAccessCreditMessage] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [proAccessPaymentError, setProAccessPaymentError] = useState<string | null>(null);
   const [proAccessPaymentMessage, setProAccessPaymentMessage] = useState<string | null>(null);
@@ -466,6 +470,36 @@ export default function CustomerProRequestDetailScreen() {
     }
   }, [getValidAccessToken, loadDetail, proRequestId, status]);
 
+  const useFreeProAccessCredit = useCallback(async () => {
+    setProAccessCreditError(null);
+    setProAccessCreditMessage(null);
+
+    if (status !== 'authenticated') {
+      setProAccessCreditError(t('loginRequiredProRequestDetail'));
+      return;
+    }
+
+    setIsUsingProAccessCredit(true);
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setIsUsingProAccessCredit(false);
+      setProAccessCreditError(t('loginRequiredProRequestDetail'));
+      return;
+    }
+
+    const result = await consumeCustomerProAccessCredit(proRequestId, authToken);
+    setIsUsingProAccessCredit(false);
+
+    if (result.ok) {
+      setData(result.data);
+      setShowProAccessConfirm(false);
+      setProAccessCreditMessage(t('freeProAccessCreditUsed'));
+      return;
+    }
+
+    setProAccessCreditError(t('couldNotUseFreeProAccessCredit'));
+  }, [getValidAccessToken, proRequestId, status]);
+
   useFocusEffect(
     useCallback(() => {
       void loadDetail();
@@ -503,6 +537,14 @@ export default function CustomerProRequestDetailScreen() {
             isStartingPayment={isStartingProAccessPayment}
             onRefreshAccessStatus={refreshAccessStatus}
             onStartPayment={openProAccessConfirm}
+            request={request}
+          />
+
+          <ProAccessCreditCard
+            error={proAccessCreditError}
+            isUsingCredit={isUsingProAccessCredit}
+            message={proAccessCreditMessage}
+            onUseCredit={useFreeProAccessCredit}
             request={request}
           />
 
@@ -1090,6 +1132,43 @@ function ProAccessCard({
       ) : (
         <AppText color={colors.slate700}>{t('proAccessPaymentNotProject')}</AppText>
       )}
+    </AppCard>
+  );
+}
+
+function ProAccessCreditCard({
+  error,
+  isUsingCredit,
+  message,
+  onUseCredit,
+  request,
+}: {
+  error: string | null;
+  isUsingCredit: boolean;
+  message: string | null;
+  onUseCredit: () => void;
+  request: CustomerProRequestDetailResponse['proRequest'];
+}) {
+  const creditState = request.proAccessCreditState;
+  if (!creditState || (creditState.availableCredits < 1 && !message && !error) || (request.isUnlocked && !message && !error)) return null;
+
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
+      <View style={styles.badgeRow}>
+        <StatusBadge label={t('freeProAccessCredit')} tone="pro" />
+        <StatusBadge label={`${creditState.availableCredits}`} tone="success" />
+      </View>
+      <AppText variant="cardTitle">{t('useFreeProAccessCredit')}</AppText>
+      <AppText color={colors.slate700}>{t('freeProAccessCreditExplanation')}</AppText>
+      {message ? <AppText color={colors.success600}>{message}</AppText> : null}
+      {error ? <AppText color={colors.danger600}>{error}</AppText> : null}
+      {creditState.canUseCredit ? (
+        <AppButton loading={isUsingCredit} onPress={onUseCredit} tone="pro">
+          {t('useFreeProAccessCredit')}
+        </AppButton>
+      ) : !message && !error ? (
+        <AppText color={colors.slate700}>{t('freeProAccessCreditNotEligible')}</AppText>
+      ) : null}
     </AppCard>
   );
 }

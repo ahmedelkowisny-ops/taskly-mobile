@@ -5,6 +5,7 @@ import {
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,
   CustomerProAccessCheckoutResponse,
+  CustomerProAccessCreditResponse,
   CustomerProAccessSupportRequestPayload,
   CustomerProAccessSupportRequestResponse,
   CustomerProResponseSelectResponse,
@@ -226,6 +227,17 @@ export function createCustomerProAccessCheckout(
   authToken: string,
 ): Promise<ApiResult<CustomerProAccessCheckoutResponse>> {
   return apiRequest<CustomerProAccessCheckoutResponse>(endpoints.customer.proRequestAccessCheckout(proRequestId), {
+    authToken,
+    body: {},
+    method: 'POST',
+  });
+}
+
+export function consumeCustomerProAccessCredit(
+  proRequestId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerProAccessCreditResponse>> {
+  return apiRequest<CustomerProAccessCreditResponse>(endpoints.customer.proRequestAccessCredit(proRequestId), {
     authToken,
     body: {},
     method: 'POST',

@@ -1025,6 +1025,10 @@ export type CustomerProRequestDetail = {
   nextActions: DetailNextAction[];
   proAccessBlockedReason?: string | null;
   proAccessBlockedReasonCode?: string | null;
+  proAccessCreditState?: {
+    availableCredits: number;
+    canUseCredit: boolean;
+  };
   proAccessFeeAmount?: number;
   proAccessFeeCurrency?: string;
   proAccessFeeLabel?: string;
@@ -1074,6 +1078,10 @@ export type CustomerProAccessCheckoutResponse = CustomerProRequestDetailResponse
   alreadyUnlocked?: boolean;
   checkoutUrl?: string | null;
   sessionId?: string | null;
+};
+
+export type CustomerProAccessCreditResponse = CustomerProRequestDetailResponse & {
+  message?: string;
 };
 
 export type CustomerProAccessSupportRequestResponse = CustomerProRequestDetailResponse & {
