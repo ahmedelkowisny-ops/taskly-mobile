@@ -34,6 +34,7 @@ export const endpoints = {
     proRequestSiteVisitCancel: (proRequestId: string, siteVisitId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/site-visits/${siteVisitId}/cancel`,
     proRequestSiteVisits: (proRequestId: string) => `/api/mobile/customer/pro-requests/${proRequestId}/site-visits`,
     proRequests: '/api/mobile/customer/pro-requests',
+    rewards: '/api/mobile/customer/rewards',
     taskApproveCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/approve-completion`,
     taskCancel: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/cancel`,
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,

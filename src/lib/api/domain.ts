@@ -1916,3 +1916,51 @@ export type ChangePasswordResponse = {
 };
 
 export type ChangeEmailResponse = ChangePasswordResponse;
+
+export type CustomerRewardLedgerItem = {
+  createdAt: string;
+  direction: string;
+  id: number;
+  points: number;
+  reason: string;
+  sourceType: string;
+  status: string;
+};
+
+export type CustomerRewardRedemptionItem = {
+  cashAmountCents: number | null;
+  createdAt: string;
+  currency: string | null;
+  id: number;
+  pointsCost: number;
+  status: string;
+  type: string;
+};
+
+export type CustomerRewardsResponse = {
+  availablePoints: number;
+  availableProAccessCredits: number;
+  cashRedemptionAmountCents: number;
+  cashRedemptionCurrency: string;
+  cashRedemptionPointsRequired: number;
+  lifetimeEarnedPoints: number;
+  pendingPoints: number;
+  proUnlockPointsCost: number;
+  progressToCashPayout: number;
+  redeemedPoints: number;
+  referralCode: string;
+  referralLink: string;
+  referralStats: {
+    qualified: number;
+    registered: number;
+  };
+  recentLedgerEntries: CustomerRewardLedgerItem[];
+  recentRedemptions: CustomerRewardRedemptionItem[];
+};
+
+export type CustomerRewardsAction = 'redeem_pro_unlock' | 'request_cash_redemption';
+
+export type CustomerRewardsActionResponse = {
+  message: string;
+  rewards: CustomerRewardsResponse;
+};
