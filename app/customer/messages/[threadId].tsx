@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Href, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
@@ -73,7 +73,13 @@ export default function CustomerMessageThreadScreen() {
     }
 
     setData(null);
-    setMessage(t('couldNotLoadConversation'));
+    setMessage(
+      threadId.startsWith('pro_response:') || threadId.startsWith('pro_chat:')
+        ? result.error.code === 'NOT_FOUND'
+          ? t('proChatAvailableAfterUnlock')
+          : t('couldNotOpenProChat')
+        : t('couldNotLoadConversation'),
+    );
   }, [getValidAccessToken, status, threadId]);
 
   const handleSend = useCallback(async () => {
@@ -150,6 +156,7 @@ export default function CustomerMessageThreadScreen() {
 
   const handleSendPhoto = useCallback(async () => {
     if (!data) return;
+    if (isSending || isSendingImage) return;
 
     if (!canSendAttachmentsInThread(data.thread)) {
       setSendError(t('attachmentsUnavailableForConversation'));
@@ -241,15 +248,16 @@ export default function CustomerMessageThreadScreen() {
               }
             : current,
         );
+        await loadThread();
         return;
       }
 
-      setSendError(getSendPhotoErrorMessage(result.error.code));
+      setSendError(getSendPhotoErrorMessage(result.error.code, data.thread.contextType));
     } catch {
       setSendError(t('couldNotSendPhoto'));
       setIsSendingImage(false);
     }
-  }, [data, getValidAccessToken, status, threadId]);
+  }, [data, getValidAccessToken, isSending, isSendingImage, loadThread, status, threadId]);
 
   const handleResolution = useCallback(
     async (decision: 'accepted' | 'refused') => {
@@ -325,6 +333,7 @@ export default function CustomerMessageThreadScreen() {
           return (
         <>
           <ThreadHeader thread={thread} />
+          {thread.contextType === 'PRO_REQUEST' ? <ProConversationContext onBackToComparison={() => router.push(`/customer/pro-requests/${encodeURIComponent(String(thread.contextId || ''))}` as Href)} /> : null}
           <Messages accent={thread.accent} contextType={thread.contextType} messages={data.messages ?? []} />
           {thread.supportStatus === 'RESOLUTION_REQUESTED' ? (
             <ResolutionCard
@@ -349,6 +358,18 @@ export default function CustomerMessageThreadScreen() {
         })()
       ) : null}
     </KeyboardAwareFormScreen>
+  );
+}
+
+function ProConversationContext({ onBackToComparison }: { onBackToComparison: () => void }) {
+  return (
+    <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.stateCard}>
+      <StatusBadge label={t('tasklyPro')} tone="pro" />
+      <AppText variant="cardTitle">{t('proConversation')}</AppText>
+      <AppText color={colors.slate700}>{t('proChatPrivacyHelper')}</AppText>
+      <AppText color={colors.slate700}>{t('selectedProsCommunicationPrivacy')}</AppText>
+      <AppButton onPress={onBackToComparison} tone="pro" variant="outline">{t('backToProComparison')}</AppButton>
+    </AppCard>
   );
 }
 
@@ -693,10 +714,11 @@ function getSendErrorMessage(code: string) {
   return t('couldNotSendMessage');
 }
 
-function getSendPhotoErrorMessage(code: string) {
+function getSendPhotoErrorMessage(code: string, contextType: MessageThreadMeta['contextType']) {
   if (code === 'IMAGE_TOO_LARGE') return t('couldNotSendPhoto');
   if (code === 'UNSUPPORTED_IMAGE_TYPE') return t('unsupportedImageType');
   if (code === 'SENDING_NOT_SUPPORTED') return t('attachmentsUnavailableForConversation');
+  if (contextType === 'PRO_REQUEST' && (code === 'NOT_FOUND' || code === 'THREAD_CLOSED')) return t('couldNotSendProChatPhoto');
   return t('couldNotSendPhoto');
 }
 

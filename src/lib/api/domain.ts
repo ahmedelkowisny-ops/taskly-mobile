@@ -948,6 +948,7 @@ export type CustomerUnlockedProComparisonResponse = {
   displayName: string;
   earliestStartDate: string | null;
   excludedNotes: string | null;
+  hasExistingThread?: boolean;
   includedNotes: string | null;
   independentProLabel: string;
   materialsIncluded: string | null;

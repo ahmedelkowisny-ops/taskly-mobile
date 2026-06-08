@@ -867,6 +867,7 @@ function ComparisonResponseCard({
       <AppText color={colors.slate500} variant="caption">
         {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
       </AppText>
+      <AppText color={colors.slate700}>{t('selectedProsCommunicationPrivacy')}</AppText>
       <AppButton onPress={() => onOpenProProfile(response)} tone="pro" variant="outline">
         {t('viewProProfile')}
       </AppButton>
@@ -889,7 +890,7 @@ function ComparisonResponseCard({
       ) : null}
       {response.proChat?.capabilities.canRead && (response.proChat.messageThreadId || response.messageThreadId) ? (
         <AppButton onPress={() => onOpenProChat(response)} tone="pro" variant="outline">
-          {t('openProChat')}
+          {response.hasExistingThread ? t('continueConversation') : t('openProChat')}
         </AppButton>
       ) : null}
       {!response.isSelected ? (

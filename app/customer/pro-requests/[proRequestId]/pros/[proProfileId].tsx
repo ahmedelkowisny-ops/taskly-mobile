@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { getCustomerApprovedProProfile } from '@/src/lib/api/customer';
+import { getCustomerApprovedProProfile, selectCustomerProResponse } from '@/src/lib/api/customer';
 import type { CustomerApprovedProProfileResponse, CustomerUnlockedProPortfolioProject } from '@/src/lib/api/domain';
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerProRequestDetailResponse } from '@/src/lib/api/mockApi';
@@ -21,7 +21,9 @@ export default function CustomerApprovedProProfileScreen() {
   const { getValidAccessToken, status, useDemoSession } = useAuth();
   const [data, setData] = useState<CustomerApprovedProProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [stateLabel, setStateLabel] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
@@ -100,6 +102,39 @@ export default function CustomerApprovedProProfileScreen() {
     router.push(`/customer/messages/${encodeURIComponent(threadId)}` as Href);
   }, [data?.response, router]);
 
+  const selectPro = useCallback(async () => {
+    if (!data?.response.canSelectPro) return;
+    setActionMessage(null);
+    setError(null);
+
+    if (status === 'demo') {
+      setData((current) => current ? {
+        ...current,
+        response: { ...current.response, canSelectPro: false, isSelected: true, selectionStatusLabel: t('selectedPro') },
+      } : current);
+      setActionMessage(t('proSelectedForRequest'));
+      return;
+    }
+
+    const token = await getValidAccessToken();
+    if (!token) {
+      setError(t('loginRequired'));
+      return;
+    }
+
+    setIsSelecting(true);
+    const result = await selectCustomerProResponse(proRequestId, data.response.responseId, token);
+    setIsSelecting(false);
+
+    if (result.ok) {
+      await loadProfile();
+      setActionMessage(t('proSelectedForRequest'));
+      return;
+    }
+
+    setError(result.error.message || t('couldNotSelectPro'));
+  }, [data?.response, getValidAccessToken, loadProfile, proRequestId, status]);
+
   return (
     <Screen contentStyle={styles.content}>
       <AppButton onPress={() => router.back()} variant="ghost">{t('backToComparison')}</AppButton>
@@ -126,8 +161,17 @@ export default function CustomerApprovedProProfileScreen() {
           <AppCard accentColor={colors.tasklyBlue600} style={styles.card}>
             <AppText variant="cardTitle">{t('continueWithThisPro')}</AppText>
             <AppText color={colors.slate700}>{data.response.contactPolicyLabel}</AppText>
+            <AppText color={colors.slate700}>{t('selectedProsCommunicationPrivacy')}</AppText>
+            {actionMessage ? <AppText color={colors.success600}>{actionMessage}</AppText> : null}
+            {data.response.canSelectPro ? (
+              <AppButton loading={isSelecting} onPress={selectPro} tone="pro">
+                {t('selectThisPro')}
+              </AppButton>
+            ) : data.response.isSelected ? (
+              <StatusBadge label={t('selectedPro')} tone="success" />
+            ) : null}
             {data.response.proChat?.capabilities.canRead ? (
-              <AppButton onPress={openChat}>{t('openProChat')}</AppButton>
+              <AppButton onPress={openChat}>{data.response.hasExistingThread ? t('continueConversation') : t('openProChat')}</AppButton>
             ) : null}
             <AppButton onPress={() => router.back()} tone="pro" variant="outline">{t('backToComparison')}</AppButton>
           </AppCard>
