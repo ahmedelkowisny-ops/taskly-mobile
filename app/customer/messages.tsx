@@ -81,9 +81,15 @@ export default function CustomerMessagesScreen() {
 
       <View style={styles.header}>
         <AppText variant="screenTitle">{supportOnly ? t('supportMessagesTitle') : t('messages')}</AppText>
+        {supportOnly ? <AppText color={colors.slate700}>{t('supportWorkspaceIntro')}</AppText> : null}
+        {supportOnly ? (
+          <AppButton onPress={() => router.push('/customer/support' as Href)} variant="outline">
+            {t('newSupportRequest')}
+          </AppButton>
+        ) : null}
       </View>
 
-      {isLoading ? <StateCard label="Loading" message={t('messages')} /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('messages')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600} style={styles.stateCard}>
@@ -108,6 +114,11 @@ export default function CustomerMessagesScreen() {
             <AppText color={colors.slate500} style={styles.emptyBody}>
               {supportOnly ? t('noSupportMessagesBody') : t('startTaskToBeginConversation')}
             </AppText>
+            {supportOnly ? (
+              <AppButton onPress={() => router.push('/customer/support' as Href)} variant="outline">
+                {t('newSupportRequest')}
+              </AppButton>
+            ) : null}
           </View>
         </View>
       ) : null}

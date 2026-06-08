@@ -164,6 +164,12 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
           route: '/customer/profile' as Href,
         },
         {
+          icon: 'shield-checkmark-outline',
+          isActive: (current) => current === '/customer/security',
+          label: t('accountSecurityTitle'),
+          route: '/customer/security' as Href,
+        },
+        {
           icon: 'settings-outline',
           isActive: (current) => current === '/customer/settings',
           label: t('drawerSettings'),

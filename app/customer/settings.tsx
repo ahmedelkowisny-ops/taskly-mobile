@@ -52,6 +52,9 @@ export default function CustomerSettingsScreen() {
 
       <NotificationSettingsCard workspace="customer" />
 
+      <AppButton onPress={() => router.push('/customer/security' as Href)} tone="neutral" variant="outline">
+        {t('accountSecurityTitle')}
+      </AppButton>
       <AppButton onPress={() => router.push('/customer/profile' as Href)} tone="neutral" variant="outline">
         {t('drawerProfile')}
       </AppButton>

@@ -269,6 +269,7 @@ export default function CustomerProfileScreen() {
 
       <AccountMenuSection
         items={[
+          { icon: 'shield-checkmark-outline', label: t('accountSecurityTitle'), onPress: () => router.push('/customer/security' as Href) },
           { icon: 'settings-outline', label: t('settings'), onPress: () => router.push('/customer/settings' as Href) },
           { icon: 'language-outline', label: t('language'), onPress: () => router.push('/customer/settings' as Href) },
         ]}
@@ -295,7 +296,7 @@ export default function CustomerProfileScreen() {
       <AccountMenuSection
         items={[
           { icon: 'help-circle-outline', label: t('helpCenter'), onPress: () => router.push('/customer/support' as Href) },
-          { icon: 'chatbubbles-outline', label: t('support'), onPress: () => router.push('/customer/messages' as Href) },
+          { icon: 'chatbubbles-outline', label: t('support'), onPress: () => router.push('/customer/messages?context=support' as Href) },
         ]}
         title={t('customerMenuHelp')}
       />

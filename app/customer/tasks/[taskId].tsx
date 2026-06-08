@@ -1295,14 +1295,6 @@ function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
   const support = task.supportState;
   const dispute = task.disputeState;
   const refund = task.refundState;
-  const shouldShow =
-    isRelevantCancellationState(cancellation) ||
-    isRelevantSupportState(support) ||
-    isRelevantDisputeState(dispute) ||
-    isRelevantRefundState(refund);
-
-  if (!shouldShow) return null;
-
   return (
     <AppCard accentColor={getCancellationSupportAccent(cancellation, support, dispute)} style={[styles.sectionCard, styles.supportSectionCard]}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -1317,6 +1309,10 @@ function CoreCancellationSupportCard({ task }: { task: CustomerTaskDetail }) {
         ) : null}
       </View>
       <AppText variant="cardTitle">{t('cancellationAndSupport')}</AppText>
+      <AppText color={colors.slate700}>{t('paymentCancellationHelpBody')}</AppText>
+      <AppText color={colors.slate700}>{t('cancellationPolicyHelpBody')}</AppText>
+      <AppText color={colors.slate700}>{t('refundHelpBody')}</AppText>
+      <AppText color={colors.slate700}>{t('supportEscalationHelpBody')}</AppText>
       {cancellation ? <AppText color={colors.slate700}>{cancellation.helperText}</AppText> : null}
       {cancellation?.estimatedPolicyOutcomeLabel ? (
         <AppText color={colors.slate700}>{cancellation.estimatedPolicyOutcomeLabel}</AppText>
@@ -1768,10 +1764,6 @@ function getPaymentAccentColor(paymentState: CustomerCorePaymentState) {
   if (paymentState.status === 'payment_method_required' || paymentState.status === 'unknown') return colors.warning600;
   if (paymentState.canShowPaymentProtectedBadge || paymentState.paymentProtected) return colors.success600;
   return colors.tasklyBlue600;
-}
-
-function isRelevantCancellationState(state?: CoreCancellationState) {
-  return Boolean(state && state.status !== 'not_available' && state.status !== 'unknown');
 }
 
 function isRelevantSupportState(state?: CoreSupportState) {

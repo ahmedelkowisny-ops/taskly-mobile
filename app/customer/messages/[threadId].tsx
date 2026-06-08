@@ -306,7 +306,7 @@ export default function CustomerMessageThreadScreen() {
         <AppButton onPress={() => router.back()} variant="ghost">{t('backToTaskly')}</AppButton>
       </View>
 
-      {isLoading ? <StateCard label="Loading" message={t('conversation')} /> : null}
+      {isLoading ? <StateCard label={t('loading')} message={t('conversation')} /> : null}
 
       {message ? (
         <AppCard accentColor={colors.warning600} style={styles.stateCard}>
