@@ -1900,6 +1900,11 @@ export type ChangePasswordRequest = {
   newPassword: string;
 };
 
+export type ChangeEmailRequest = {
+  currentPassword: string;
+  newEmail: string;
+};
+
 export type ChangePasswordResponse = {
   session: UserSession;
   tokens: {
@@ -1909,3 +1914,5 @@ export type ChangePasswordResponse = {
     refreshTokenExpiresAt: string;
   };
 };
+
+export type ChangeEmailResponse = ChangePasswordResponse;

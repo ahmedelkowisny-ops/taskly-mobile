@@ -2,6 +2,7 @@
 
 export const endpoints = {
   account: {
+    changeEmail: '/api/mobile/account/change-email',
     changePassword: '/api/mobile/account/change-password',
   },
   auth: {
