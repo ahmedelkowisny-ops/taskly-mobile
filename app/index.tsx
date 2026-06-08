@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import * as Linking from 'expo-linking';
 import { Href, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
@@ -13,13 +14,14 @@ import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 const CUSTOMER_HOME_ROUTE = '/customer/home' as Href;
+const TASKLY_WEBSITE_URL = 'https://www.tasklyco.com';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { session, status } = useAuth();
-  useI18n();
+  const { locale } = useI18n();
 
   const heroOpacity = useRef(new Animated.Value(0)).current;
   const heroTranslateY = useRef(new Animated.Value(10)).current;
@@ -55,8 +57,12 @@ export default function WelcomeScreen() {
     }
   }, [router, session, status]);
 
+  function openWebsite(url: string) {
+    void Linking.openURL(url).catch(() => undefined);
+  }
+
   return (
-    <Screen contentStyle={styles.content} style={styles.screen}>
+    <Screen contentStyle={styles.content} stickyHeaderIndices={[0]} style={styles.screen}>
       <PublicTopBar>
         <AppButton onPress={() => router.push('/login' as Href)} style={styles.topLoginButton} variant="outline">
           {t('loginTitle')}
@@ -141,6 +147,44 @@ export default function WelcomeScreen() {
         <AppButton onPress={() => router.push('/login' as Href)} style={styles.secondaryButton} variant="outline">
           {t('loginToMyAccount')}
         </AppButton>
+      </View>
+
+      <View style={styles.footer}>
+        <View style={styles.websiteSentence}>
+          <AppText color={colors.slate500} style={styles.footerText} variant="small">
+            {t('landingFooterMoreInfo')}{' '}
+          </AppText>
+          <Pressable
+            accessibilityLabel="tasklyco.com"
+            accessibilityRole="link"
+            onPress={() => openWebsite(TASKLY_WEBSITE_URL)}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <AppText color={colors.tasklyBlue600} style={styles.footerLink} variant="small">
+              tasklyco.com
+            </AppText>
+          </Pressable>
+        </View>
+        <View style={styles.legalLinks}>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => openWebsite(`${TASKLY_WEBSITE_URL}/${locale}/legal/terms`)}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <AppText color={colors.tasklyBlue600} style={styles.footerLink} variant="small">
+              {t('landingFooterTerms')}
+            </AppText>
+          </Pressable>
+          <AppText color={colors.slate500} style={styles.legalSeparator} variant="small">
+            ·
+          </AppText>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => openWebsite(`${TASKLY_WEBSITE_URL}/${locale}/legal/privacy`)}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <AppText color={colors.tasklyBlue600} style={styles.footerLink} variant="small">
+              {t('landingFooterPrivacy')}
+            </AppText>
+          </Pressable>
+        </View>
       </View>
     </Screen>
   );
@@ -350,6 +394,33 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 35,
   },
+  footer: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  footerLink: {
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  footerText: {
+    lineHeight: 18,
+  },
+  legalLinks: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'center',
+  },
+  legalSeparator: {
+    lineHeight: 18,
+  },
   mutedWhite: {
     opacity: 0.82,
   },
@@ -482,5 +553,11 @@ const styles = StyleSheet.create({
   },
   whiteIconBox: {
     backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  websiteSentence: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
 });

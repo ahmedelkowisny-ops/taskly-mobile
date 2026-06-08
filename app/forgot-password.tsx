@@ -46,9 +46,7 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAwareFormScreen contentStyle={styles.content} style={styles.screen}>
       <View style={styles.topRow}>
-        <View style={styles.brandMark}>
-          <TasklyLogoText compact iconOnly />
-        </View>
+        <TasklyLogoText compact wordmarkOnly />
         <View style={styles.topActions}>
           <LanguageToggle />
         </View>
@@ -128,21 +126,6 @@ const styles = StyleSheet.create({
   },
   backText: {
     textAlign: 'center',
-  },
-  brandMark: {
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.tasklyBlueBorder,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    elevation: 2,
-    height: 46,
-    justifyContent: 'center',
-    shadowColor: '#1877F2',
-    shadowOffset: { height: 4, width: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    width: 46,
   },
   content: {
     gap: spacing.lg,

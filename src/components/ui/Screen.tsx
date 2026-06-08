@@ -10,10 +10,11 @@ import { spacing } from '@/src/theme/spacing';
 type ScreenProps = PropsWithChildren<{
   contentStyle?: StyleProp<ViewStyle>;
   scroll?: boolean;
+  stickyHeaderIndices?: number[];
   style?: StyleProp<ViewStyle>;
 }>;
 
-export function Screen({ children, contentStyle, scroll = true, style }: ScreenProps) {
+export function Screen({ children, contentStyle, scroll = true, stickyHeaderIndices, style }: ScreenProps) {
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
   const handleProviderScroll = useProviderBottomNavScrollHandler();
 
@@ -27,7 +28,8 @@ export function Screen({ children, contentStyle, scroll = true, style }: ScreenP
             handleProviderScroll(event);
           }}
           scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          stickyHeaderIndices={stickyHeaderIndices}>
           {children}
         </ScrollView>
       ) : (
