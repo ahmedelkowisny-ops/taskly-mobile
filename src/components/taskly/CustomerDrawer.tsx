@@ -152,6 +152,12 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
       label: t('drawerGroupAccount'),
       items: [
         {
+          icon: 'gift-outline',
+          isActive: (current) => current === '/customer/rewards',
+          label: t('rewards'),
+          route: '/customer/rewards' as Href,
+        },
+        {
           icon: 'card-outline',
           isActive: (current) => current === '/customer/payments-unlocks',
           label: t('drawerPaymentsUnlocks'),

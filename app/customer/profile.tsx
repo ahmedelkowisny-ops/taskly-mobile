@@ -278,6 +278,7 @@ export default function CustomerProfileScreen() {
 
       <AccountMenuSection
         items={[
+          { icon: 'gift-outline', label: t('rewards'), onPress: () => router.push('/customer/rewards' as Href) },
           { icon: 'card-outline', label: t('walletAndPayments'), onPress: () => router.push('/customer/payments-unlocks' as Href) },
           { helper: t('comingSoon'), icon: 'bookmark-outline', label: t('savedPros') },
         ]}
