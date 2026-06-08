@@ -8,6 +8,7 @@ import {
   CustomerProAccessCreditResponse,
   CustomerProAccessSupportRequestPayload,
   CustomerProAccessSupportRequestResponse,
+  CustomerApprovedProProfileResponse,
   CustomerProResponseSelectResponse,
   CustomerProSiteVisitActionResponse,
   CustomerProSiteVisitCancelPayload,
@@ -220,6 +221,17 @@ export function getCustomerProRequestDetail(
     authToken,
     method: 'GET',
   });
+}
+
+export function getCustomerApprovedProProfile(
+  proRequestId: string,
+  proProfileId: string,
+  authToken: string,
+): Promise<ApiResult<CustomerApprovedProProfileResponse>> {
+  return apiRequest<CustomerApprovedProProfileResponse>(
+    endpoints.customer.proRequestProProfile(proRequestId, proProfileId),
+    { authToken, method: 'GET' },
+  );
 }
 
 export function createCustomerProAccessCheckout(

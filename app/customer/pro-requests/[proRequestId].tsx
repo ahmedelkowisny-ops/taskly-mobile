@@ -242,6 +242,10 @@ export default function CustomerProRequestDetailScreen() {
     router.push(`/customer/messages/${encodeURIComponent(threadId)}` as Href);
   }, [router]);
 
+  const openProProfile = useCallback((response: CustomerUnlockedProComparisonResponse) => {
+    router.push(`/customer/pro-requests/${encodeURIComponent(proRequestId)}/pros/${encodeURIComponent(response.proProfileId)}` as Href);
+  }, [proRequestId, router]);
+
   const closeSiteVisitInvite = useCallback(() => {
     setSiteVisitFormResponse(null);
     setSiteVisitFormErrors({});
@@ -611,6 +615,7 @@ export default function CustomerProRequestDetailScreen() {
             onDiscardProResponse={handleDiscardProResponse}
             onInviteForSiteVisit={openSiteVisitInvite}
             onOpenProChat={openProChat}
+            onOpenProProfile={openProProfile}
             onSelectProResponse={handleSelectProResponse}
             request={request}
             selectingResponseId={selectingResponseId}
@@ -731,6 +736,7 @@ function UnlockedComparisonSection({
   onDiscardProResponse,
   onInviteForSiteVisit,
   onOpenProChat,
+  onOpenProProfile,
   onSelectProResponse,
   request,
   selectingResponseId,
@@ -739,6 +745,7 @@ function UnlockedComparisonSection({
   onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
   onOpenProChat: (response: CustomerUnlockedProComparisonResponse) => void;
+  onOpenProProfile: (response: CustomerUnlockedProComparisonResponse) => void;
   onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   request: CustomerProRequestDetailResponse['proRequest'];
   selectingResponseId: string | null;
@@ -766,6 +773,7 @@ function UnlockedComparisonSection({
               onDiscardProResponse={onDiscardProResponse}
               onInviteForSiteVisit={onInviteForSiteVisit}
               onOpenProChat={onOpenProChat}
+              onOpenProProfile={onOpenProProfile}
               onSelectProResponse={onSelectProResponse}
               response={response}
             />
@@ -786,6 +794,7 @@ function ComparisonResponseCard({
   onDiscardProResponse,
   onInviteForSiteVisit,
   onOpenProChat,
+  onOpenProProfile,
   onSelectProResponse,
   response,
 }: {
@@ -795,6 +804,7 @@ function ComparisonResponseCard({
   onDiscardProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   onInviteForSiteVisit: (response: CustomerUnlockedProComparisonResponse) => void;
   onOpenProChat: (response: CustomerUnlockedProComparisonResponse) => void;
+  onOpenProProfile: (response: CustomerUnlockedProComparisonResponse) => void;
   onSelectProResponse: (response: CustomerUnlockedProComparisonResponse) => void;
   response: CustomerUnlockedProComparisonResponse;
 }) {
@@ -857,6 +867,9 @@ function ComparisonResponseCard({
       <AppText color={colors.slate500} variant="caption">
         {response.contactPolicyLabel || t('contactDetailsSharedWhenAllowed')}
       </AppText>
+      <AppButton onPress={() => onOpenProProfile(response)} tone="pro" variant="outline">
+        {t('viewProProfile')}
+      </AppButton>
       {response.canSelectPro ? (
         <>
           <AppText color={colors.slate700}>{t('selectProHelper')}</AppText>

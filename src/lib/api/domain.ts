@@ -990,6 +990,33 @@ export type CustomerUnlockedProComparison = {
   responses: CustomerUnlockedProComparisonResponse[];
 };
 
+export type CustomerApprovedProProfileResponse = {
+  profile: {
+    approvedCategoryLabels: string[];
+    businessType: string | null;
+    cityCoverages: {
+      cityLabel: string;
+      isPrimary: boolean;
+      travelRadiusKm: number | null;
+    }[];
+    invoiceAvailable: boolean;
+    languages: string[];
+    quotePreference: string | null;
+    rating: {
+      average: number;
+      count: number;
+    };
+    siteVisitPreference: string | null;
+    teamSize: number | null;
+    warrantyNote: string | null;
+  };
+  proRequest: {
+    id: string;
+    title: string;
+  };
+  response: CustomerUnlockedProComparisonResponse;
+};
+
 export type CustomerProSelectionNextActions = {
   blockedReason?: string | null;
   blockedReasonCode?: string | null;
