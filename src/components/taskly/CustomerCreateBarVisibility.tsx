@@ -1,4 +1,4 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { PropsWithChildren, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 type CustomerCreateBarVisibilityValue = {
@@ -10,7 +10,7 @@ type CustomerCreateBarVisibilityValue = {
 const CustomerCreateBarVisibilityContext = createContext<CustomerCreateBarVisibilityValue | null>(null);
 
 const SCROLL_THRESHOLD = 10;
-const TOP_VISIBLE_OFFSET = 12;
+const TOP_VISIBLE_OFFSET = 16;
 const NON_SCROLLABLE_BUFFER = 8;
 
 export function CustomerCreateBarVisibilityProvider({ children }: PropsWithChildren) {
@@ -47,24 +47,13 @@ export function useCustomerCreateBarVisibility() {
 export function useCustomerCreateBarScrollHandler() {
   const controls = useCustomerCreateBarVisibility();
   const lastOffsetY = useRef(0);
-  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (settleTimer.current) {
-        clearTimeout(settleTimer.current);
-      }
-    },
-    [],
-  );
+  const controlsRef = useRef(controls);
+  controlsRef.current = controls;
 
   return useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (!controls) return;
-
-      if (settleTimer.current) {
-        clearTimeout(settleTimer.current);
-      }
+      const currentControls = controlsRef.current;
+      if (!currentControls) return;
 
       const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
       const currentY = Math.max(contentOffset.y, 0);
@@ -72,7 +61,7 @@ export function useCustomerCreateBarScrollHandler() {
 
       if (!canScroll || currentY <= TOP_VISIBLE_OFFSET) {
         lastOffsetY.current = currentY;
-        controls.showCreateBar();
+        currentControls.showCreateBar();
         return;
       }
 
@@ -82,17 +71,13 @@ export function useCustomerCreateBarScrollHandler() {
       }
 
       if (delta > 0) {
-        controls.hideCreateBar();
+        currentControls.hideCreateBar();
       } else {
-        controls.showCreateBar();
+        currentControls.showCreateBar();
       }
-
-      settleTimer.current = setTimeout(() => {
-        controls.showCreateBar();
-      }, 700);
 
       lastOffsetY.current = currentY;
     },
-    [controls],
+    [],
   );
 }

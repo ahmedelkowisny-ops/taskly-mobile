@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Href, usePathname, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { t, useI18n } from '@/src/lib/i18n';
@@ -9,6 +9,7 @@ import { colors } from '@/src/theme/colors';
 import { radius, spacing } from '@/src/theme/spacing';
 
 import { AppText } from '../ui';
+import { useCustomerCreateBarVisibility } from './CustomerCreateBarVisibility';
 
 type NavItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -17,7 +18,7 @@ type NavItem = {
   value: 'home' | 'messages' | 'profile' | 'tasks';
 };
 
-const HIDDEN_CUSTOMER_BOTTOM_NAV_PATHS = new Set(['/customer/post-task']);
+const HIDDEN_CUSTOMER_BOTTOM_NAV_PATHS = new Set(['/customer/post-pro-request', '/customer/post-task']);
 
 function shouldShowCustomerBottomNav(pathname: string) {
   if (HIDDEN_CUSTOMER_BOTTOM_NAV_PATHS.has(pathname)) return false;
@@ -41,11 +42,36 @@ export function CustomerBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const visibility = useCustomerCreateBarVisibility();
   const [postSheetVisible, setPostSheetVisible] = useState(false);
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+  const hidden = visibility?.hidden ?? false;
+  const shouldShow = shouldShowCustomerBottomNav(pathname);
+  const showCreateBar = visibility?.showCreateBar;
 
-  if (!shouldShowCustomerBottomNav(pathname)) {
-    return null;
-  }
+  useEffect(() => {
+    if (shouldShow) {
+      showCreateBar?.();
+    }
+  }, [pathname, shouldShow, showCreateBar]);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        duration: hidden ? 220 : 180,
+        toValue: hidden ? 112 : 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        duration: 160,
+        toValue: hidden ? 0 : 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [hidden, opacity, translateY]);
+
+  if (!shouldShow) return null;
 
   const items: NavItem[] = [
     { icon: 'home-outline', label: t('bottomNavHome'), route: '/customer/home' as Href, value: 'home' },
@@ -61,12 +87,14 @@ export function CustomerBottomNav() {
 
   return (
     <>
-      <View
-        pointerEvents="box-none"
+      <Animated.View
+        pointerEvents={hidden ? 'none' : 'box-none'}
         style={[
           styles.navFloat,
           {
             bottom: Math.max(insets.bottom, spacing.md),
+            opacity,
+            transform: [{ translateY }],
           },
         ]}>
         <View style={styles.navWrap}>
@@ -78,7 +106,7 @@ export function CustomerBottomNav() {
             <NavButton active={pathname === '/customer/profile'} item={items[3]} onPress={() => navigate(items[3].route)} />
           </View>
         </View>
-      </View>
+      </Animated.View>
 
       <Modal animationType="slide" onRequestClose={() => setPostSheetVisible(false)} transparent visible={postSheetVisible}>
         <View style={styles.sheetOverlay}>

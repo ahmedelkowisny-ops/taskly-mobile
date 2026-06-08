@@ -12,7 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '@/src/theme/colors';
 import { spacing } from '@/src/theme/spacing';
 
-import { useCustomerCreateBarScrollHandler } from './CustomerCreateBarVisibility';
+import { useCustomerCreateBarScrollHandler, useCustomerCreateBarVisibility } from './CustomerCreateBarVisibility';
 import { useProviderBottomNavScrollHandler } from './ProviderBottomNavVisibility';
 
 type KeyboardAwareFormScreenProps = PropsWithChildren<{
@@ -30,9 +30,11 @@ export function KeyboardAwareFormScreen({
   style,
 }: KeyboardAwareFormScreenProps) {
   const insets = useSafeAreaInsets();
+  const customerVisibility = useCustomerCreateBarVisibility();
   const handleCustomerScroll = useCustomerCreateBarScrollHandler();
   const handleProviderScroll = useProviderBottomNavScrollHandler();
   const bottomPadding = spacing.xxxl + 64 + Math.max(insets.bottom + spacing.lg, Platform.OS === 'android' ? 48 : spacing.lg);
+  const customerBottomClearance = 58 + Math.max(insets.bottom, spacing.md) + spacing.xxl;
 
   return (
     <SafeAreaView style={[styles.safeArea, style]}>
@@ -41,7 +43,12 @@ export function KeyboardAwareFormScreen({
         keyboardVerticalOffset={keyboardVerticalOffset}
         style={styles.keyboardAvoider}>
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: bottomPadding }, contentStyle]}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: bottomPadding },
+            contentStyle,
+            customerVisibility ? { paddingBottom: Math.max(bottomPadding, customerBottomClearance) } : null,
+          ]}
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled"
           onScroll={(event) => {
