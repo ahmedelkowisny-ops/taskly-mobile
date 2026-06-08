@@ -2,16 +2,18 @@ import { PropsWithChildren } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { colors } from '@/src/theme/colors';
-import { radius, spacing } from '@/src/theme/spacing';
+import { spacing } from '@/src/theme/spacing';
 
 import { LanguageToggle } from './LanguageToggle';
 import { TasklyLogoText } from './TasklyLogoText';
 
-export function PublicTopBar({ children }: PropsWithChildren) {
+type PublicTopBarProps = PropsWithChildren;
+
+export function PublicTopBar({ children }: PublicTopBarProps) {
   return (
     <View style={styles.topRow}>
-      <View style={styles.brandMark}>
-        <TasklyLogoText compact iconOnly />
+      <View style={styles.brandWordmark}>
+        <TasklyLogoText header wordmarkOnly />
       </View>
       <View style={styles.topActions}>
         {children}
@@ -22,20 +24,10 @@ export function PublicTopBar({ children }: PropsWithChildren) {
 }
 
 const styles = StyleSheet.create({
-  brandMark: {
+  brandWordmark: {
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    elevation: 1,
     height: 46,
     justifyContent: 'center',
-    shadowColor: colors.navy900,
-    shadowOffset: { height: 5, width: 0 },
-    shadowOpacity: 0.05,
-    shadowRadius: 14,
-    width: 46,
   },
   topActions: {
     alignItems: 'center',
@@ -44,8 +36,13 @@ const styles = StyleSheet.create({
   },
   topRow: {
     alignItems: 'center',
+    backgroundColor: colors.slate50,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginHorizontal: -spacing.lg,
     minHeight: 46,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    zIndex: 10,
   },
 });

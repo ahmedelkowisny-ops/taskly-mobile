@@ -28,7 +28,7 @@ export function TasklyLogoText({
           accessibilityIgnoresInvertColors
           accessibilityLabel="Taskly"
           resizeMode="contain"
-          source={require('../../../assets/branding/taskly-logo-icon.png')}
+          source={require('../../../assets/branding/taskly-header-logo-transparent-720x180.png')}
           style={[styles.mark, compact ? styles.markCompact : null, navIcon ? styles.markNav : null]}
         />
       </View>
@@ -55,7 +55,7 @@ export function TasklyLogoText({
           accessibilityIgnoresInvertColors
           accessibilityLabel="Taskly"
           resizeMode="contain"
-          source={require('../../../assets/branding/taskly-logo-icon.png')}
+          source={require('../../../assets/branding/taskly-header-logo-transparent-720x180.png')}
           style={[styles.mark, compact ? styles.markCompact : null, header ? styles.markHeader : null]}
         />
       ) : null}

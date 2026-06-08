@@ -263,8 +263,14 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
         ]
       : []),
     {
-      label: t('drawerSettings'),
+      label: t('drawerGroupAccount'),
       items: [
+        {
+          icon: 'gift-outline',
+          isActive: (current) => current === '/provider/rewards',
+          label: t('rewards'),
+          route: '/provider/rewards' as Href,
+        },
         {
           icon: 'notifications-outline',
           isActive: (current) => current === '/provider/account',
@@ -318,7 +324,7 @@ export function ProviderDrawer({ onClose, visible }: ProviderDrawerProps) {
           <SafeAreaView style={[styles.drawer, { paddingBottom: drawerBottomPadding }]}>
             <View style={styles.header}>
               <View style={styles.headerIdentity}>
-                <TasklyLogoText compact iconOnly />
+                <TasklyLogoText compact wordmarkOnly />
                 <AppText color={colors.slate500} style={styles.areaLabel} variant="small">
                   {isProOnly ? t('drawerProArea') : t('drawerTaskerArea')}
                 </AppText>

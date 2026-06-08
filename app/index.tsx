@@ -14,7 +14,7 @@ import { designTokens } from '@/src/theme/designTokens';
 import { radius, spacing } from '@/src/theme/spacing';
 
 const CUSTOMER_HOME_ROUTE = '/customer/home' as Href;
-const TASKLY_WEBSITE_URL = 'https://www.tasklyco.com';
+const TASKLY_WEBSITE_URL = 'https://tasklyco.com';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 

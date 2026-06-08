@@ -201,7 +201,7 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
           <SafeAreaView style={[styles.drawer, { paddingBottom: drawerBottomPadding }]}>
             <View style={styles.header}>
               <View style={styles.headerIdentity}>
-                <TasklyLogoText compact iconOnly />
+                <TasklyLogoText compact wordmarkOnly />
                 <AppText color={colors.sidebarMuted} style={styles.areaLabel} variant="small">
                   {t('drawerCustomerArea')}
                 </AppText>
