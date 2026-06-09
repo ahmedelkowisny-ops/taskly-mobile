@@ -281,17 +281,20 @@ export default function ProviderMessageThreadScreen() {
           return (
         <>
           <ThreadHeader thread={thread} />
+          {!thread.capabilities.canSendText ? <ReadOnlyNotice thread={thread} /> : null}
           <Messages messages={data.messages ?? []} accent={thread.accent} />
-          <MessageComposer
-            draftMessage={draftMessage}
-            isSendingImage={isSendingImage}
-            isSending={isSending}
-            onChangeDraft={setDraftMessage}
-            onSend={handleSend}
-            onSendPhoto={handleSendPhoto}
-            sendError={sendError}
-            thread={thread}
-          />
+          {thread.capabilities.canSendText ? (
+            <MessageComposer
+              draftMessage={draftMessage}
+              isSendingImage={isSendingImage}
+              isSending={isSending}
+              onChangeDraft={setDraftMessage}
+              onSend={handleSend}
+              onSendPhoto={handleSendPhoto}
+              sendError={sendError}
+              thread={thread}
+            />
+          ) : null}
         </>
           );
         })()
@@ -312,11 +315,15 @@ function StateCard({ label, message }: { label: string; message: string }) {
 function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
   const visual = getThreadVisual(thread);
   const isProRequest = thread.contextType === 'PRO_REQUEST';
+  const isSupportThread = isSupportAdminThread(thread);
 
   return (
     <AppCard
       accentColor={visual.accentColor}
-      style={[styles.threadMetaCard, thread.contextType === 'PRO_REQUEST' ? styles.threadMetaCardPro : styles.threadMetaCardCore]}>
+      style={[
+        styles.threadMetaCard,
+        isSupportThread ? styles.threadMetaCardSupport : thread.contextType === 'PRO_REQUEST' ? styles.threadMetaCardPro : styles.threadMetaCardCore,
+      ]}>
       <View style={styles.threadBadgeRow}>
         <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
         {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
@@ -333,7 +340,23 @@ function ThreadHeader({ thread }: { thread: MessageThreadMeta }) {
           </AppText>
         </View>
       ) : null}
-      {!thread.capabilities.canSendText ? <AppText color={colors.slate700}>{getReadOnlyReason(thread)}</AppText> : null}
+      {isSupportThread ? (
+        <View style={styles.supportContextNote}>
+          <AppText color={colors.tasklyBlue700} variant="small">
+            {t('supportAdminThreadHelper')}
+          </AppText>
+        </View>
+      ) : null}
+    </AppCard>
+  );
+}
+
+function ReadOnlyNotice({ thread }: { thread: MessageThreadMeta }) {
+  return (
+    <AppCard accentColor={colors.slate500} style={styles.readOnlyCard}>
+      <StatusBadge label={t('sendingNotAvailableShort')} tone="neutral" />
+      <AppText color={colors.slate700}>{getReadOnlyReason(thread)}</AppText>
+      {isSupportAdminThread(thread) ? <AppText color={colors.slate700}>{t('supportAdminReadOnlyHelper')}</AppText> : null}
     </AppCard>
   );
 }
@@ -436,7 +459,7 @@ function MessageComposer({
               </AppText>
             </Pressable>
           ) : (
-            <AppText color={colors.slate700}>{t('attachmentsUnavailableForConversation')}</AppText>
+            <AppText color={colors.slate700}>{getAttachmentUnavailableText(thread)}</AppText>
           )}
           <AppButton disabled={disabled} loading={isSending} onPress={onSend} style={styles.sendButton} tone={actionTone}>
             {isSending ? t('sending') : t('send')}
@@ -484,9 +507,9 @@ function MessageAttachmentImage({ attachment }: { attachment: MessageAttachment 
 }
 
 function getContextLabel(contextType: MessageThreadMeta['contextType']) {
-  if (contextType === 'CORE_TASK') return t('coreTask');
+  if (contextType === 'CORE_TASK') return t('tasklyTask');
   if (contextType === 'PRO_REQUEST') return t('proRequest');
-  if (contextType === 'SUPPORT') return t('support');
+  if (contextType === 'SUPPORT') return t('supportAdminMessages');
   return t('conversation');
 }
 
@@ -511,6 +534,10 @@ function getSafeThread(thread?: MessageThreadMeta | null): MessageThreadMeta {
 }
 
 function getThreadVisual(thread: MessageThreadMeta) {
+  if (isSupportAdminThread(thread)) {
+    return { accentColor: colors.tasklyBlue600, tone: 'core' as const };
+  }
+
   if (thread.accent === 'pro') {
     return { accentColor: getThreadAccentColor(thread.accent), tone: 'pro' as const };
   }
@@ -555,6 +582,10 @@ function canSendAttachmentsInThread(thread: MessageThreadMeta) {
   return thread.capabilities.canSendText && thread.capabilities.canSendAttachments && (thread.contextType === 'CORE_TASK' || thread.contextType === 'PRO_REQUEST');
 }
 
+function isSupportAdminThread(thread: MessageThreadMeta) {
+  return thread.contextType === 'SUPPORT' || thread.id.startsWith('admin:') || thread.id.startsWith('support:');
+}
+
 function getSendErrorMessage(code: string) {
   if (code === 'EMPTY_MESSAGE') return t('messageCannotBeEmpty');
   if (code === 'MESSAGE_TOO_LONG') return t('messageTooLong');
@@ -577,8 +608,16 @@ function appendMessageIfMissing(messages: MessageItem[], nextMessage: MessageIte
 function getReadOnlyReason(thread: MessageThreadMeta) {
   if (thread.capabilities.readOnlyReason === 'SUPPORT_READ_ONLY') return t('mobileConversationReadOnly');
   if (thread.capabilities.readOnlyReason === 'PRO_CHAT_NOT_AVAILABLE') return t('proChatConnectedLater');
+  if (thread.capabilities.readOnlyReason === 'THREAD_CLOSED') return t('threadClosedReadOnly');
+  if (thread.capabilities.readOnlyReason === 'NOT_PARTICIPANT') return t('notParticipantReadOnly');
   if (thread.capabilities.readOnlyReason === 'UNSUPPORTED_THREAD_TYPE') return t('unsupportedConversationType');
   return t('sendingNotAvailable');
+}
+
+function getAttachmentUnavailableText(thread: MessageThreadMeta) {
+  if (isSupportAdminThread(thread)) return t('supportAdminAttachmentsUnavailable');
+  if (thread.contextType === 'PRO_REQUEST') return t('proAttachmentsUnavailable');
+  return t('attachmentsUnavailableForConversation');
 }
 
 const styles = StyleSheet.create({
@@ -595,6 +634,18 @@ const styles = StyleSheet.create({
   proContextNote: {
     backgroundColor: colors.proOrange50,
     borderColor: colors.proOrangeBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: 4,
+    padding: spacing.md,
+  },
+  readOnlyCard: {
+    borderColor: colors.border,
+    ...designTokens.shadows.card,
+  },
+  supportContextNote: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: 4,
@@ -708,5 +759,9 @@ const styles = StyleSheet.create({
   threadMetaCardPro: {
     backgroundColor: colors.white,
     borderColor: colors.proOrangeBorder,
+  },
+  threadMetaCardSupport: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
   },
 });

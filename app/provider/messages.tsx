@@ -117,10 +117,17 @@ export default function ProviderMessagesScreen() {
           onPress={() => setActiveTab('support')}
           style={[styles.tab, activeTab === 'support' ? styles.tabActive : null]}>
           <AppText color={activeTab === 'support' ? colors.tasklyBlue700 : colors.slate500} variant="bodyStrong">
-            {t('supportTab')}
+            {t('supportAdminTab')}
           </AppText>
         </Pressable>
       </View>
+
+      {activeTab === 'support' ? (
+        <AppCard accentColor={colors.tasklyBlue600} backgroundColor={colors.white} style={styles.helperCard}>
+          <StatusBadge label={t('supportAdminMessages')} tone="core" />
+          <AppText color={colors.slate700}>{t('supportAdminInboxHelper')}</AppText>
+        </AppCard>
+      ) : null}
 
       {isLoading ? <StateCard label={t('loading')} message={t('messages')} /> : null}
 
@@ -141,7 +148,7 @@ export default function ProviderMessagesScreen() {
             activeTab === 'pro'
               ? t('noProConversationsYetBody')
               : activeTab === 'support'
-              ? t('providerNoSupportMessagesBody')
+              ? t('providerNoSupportAdminMessagesBody')
               : t('providerNoTaskConversationsYetBody')
           }
           icon={
@@ -155,7 +162,7 @@ export default function ProviderMessagesScreen() {
             activeTab === 'pro'
               ? t('noProConversationsYet')
               : activeTab === 'support'
-              ? t('providerNoSupportMessagesYet')
+              ? t('providerNoSupportAdminMessagesYet')
               : t('providerNoTaskConversationsYet')
           }
         />
@@ -186,19 +193,19 @@ function StateCard({ label, message }: { label: string; message: string }) {
 }
 
 function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageThreadSummary }) {
-  const tone = thread.accent === 'pro' ? 'pro' : thread.accent === 'core' ? 'core' : 'neutral';
-  const accentColor = thread.accent === 'pro' ? colors.proOrange600 : thread.accent === 'core' ? colors.tasklyBlue600 : colors.navy900;
+  const visual = getThreadVisual(thread);
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [pressed ? styles.pressed : null]}>
       <AppCard
+        accentColor={visual.accentColor}
         backgroundColor={colors.white}
         style={[
           styles.threadCard,
-          thread.accent === 'pro' ? styles.threadCardPro : thread.accent === 'core' ? styles.threadCardCore : null,
+          thread.contextType === 'SUPPORT' ? styles.threadCardSupport : thread.accent === 'pro' ? styles.threadCardPro : styles.threadCardCore,
         ]}>
         <View style={styles.threadHeader}>
-          <StatusBadge label={getContextLabel(thread.contextType)} tone={tone} />
+          <StatusBadge label={getContextLabel(thread.contextType)} tone={visual.tone} />
           {thread.roleLabel ? <StatusBadge label={thread.roleLabel} tone="neutral" /> : null}
           {!thread.capabilities.canSendText ? <StatusBadge label={t('readOnly')} tone="neutral" /> : null}
         </View>
@@ -207,17 +214,33 @@ function ThreadCard({ onPress, thread }: { onPress: () => void; thread: MessageT
         {thread.lastMessagePreview ? (
           <AppText color={colors.slate700}>{`${t('lastMessage')}: ${thread.lastMessagePreview}`}</AppText>
         ) : null}
-        <AppText color={accentColor} variant="bodyStrong">{t('openConversation')}</AppText>
+        <AppText color={visual.accentColor} variant="bodyStrong">{t('openConversation')}</AppText>
       </AppCard>
     </Pressable>
   );
 }
 
 function getContextLabel(contextType: MessageThreadSummary['contextType']) {
-  if (contextType === 'CORE_TASK') return t('coreTask');
+  if (contextType === 'CORE_TASK') return t('tasklyTask');
   if (contextType === 'PRO_REQUEST') return t('proRequest');
-  if (contextType === 'SUPPORT') return t('support');
+  if (contextType === 'SUPPORT') return t('supportAdminMessages');
   return t('conversation');
+}
+
+function getThreadVisual(thread: MessageThreadSummary) {
+  if (thread.contextType === 'SUPPORT') {
+    return { accentColor: colors.tasklyBlue600, tone: 'core' as const };
+  }
+
+  if (thread.accent === 'pro') {
+    return { accentColor: colors.proOrange600, tone: 'pro' as const };
+  }
+
+  if (thread.accent === 'core') {
+    return { accentColor: colors.tasklyBlue600, tone: 'core' as const };
+  }
+
+  return { accentColor: colors.navy900, tone: 'neutral' as const };
 }
 
 const styles = StyleSheet.create({
@@ -234,6 +257,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.lg,
+    ...designTokens.shadows.card,
+  },
+  helperCard: {
+    borderColor: colors.tasklyBlueBorder,
     ...designTokens.shadows.card,
   },
   pressed: {
@@ -285,6 +312,9 @@ const styles = StyleSheet.create({
   },
   threadCardPro: {
     borderColor: colors.proOrangeBorder,
+  },
+  threadCardSupport: {
+    borderColor: colors.tasklyBlueBorder,
   },
   threadHeader: {
     flexDirection: 'row',
