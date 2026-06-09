@@ -89,7 +89,7 @@ export function ProviderCoreTaskCard({
           ) : null}
           {task.aftercare.invoice ? (
             <AppText color={colors.slate700}>
-              {t('invoice')}: {task.aftercare.invoice.invoiceNumber}
+              {t('invoice')}: {task.aftercare.invoice.invoiceNumber} - {task.aftercare.invoice.totalLabel}
             </AppText>
           ) : null}
         </View>
@@ -151,7 +151,7 @@ function InfoRow({ task }: { task: ProviderCoreTaskSummary }) {
     <View style={styles.infoRow}>
       <Ionicons color={colors.slate500} name="location-outline" size={13} />
       <AppText color={colors.slate500} variant="small" style={styles.infoText}>
-        {parts.join(' · ')}
+        {parts.join(' - ')}
       </AppText>
     </View>
   );
@@ -308,7 +308,7 @@ function formatCompactSchedule(start: string | null, end: string | null) {
       const endDate = new Date(end);
       const endHour = endDate.getHours().toString().padStart(2, '0');
       const endMin = endDate.getMinutes().toString().padStart(2, '0');
-      return `${month} ${day}, ${startTime} – ${endHour}:${endMin}`;
+      return `${month} ${day}, ${startTime} - ${endHour}:${endMin}`;
     }
 
     return `${month} ${day}, ${startTime}`;

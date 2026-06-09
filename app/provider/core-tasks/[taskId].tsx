@@ -110,6 +110,7 @@ export default function ProviderCoreTaskDetailScreen() {
   const task = data?.task;
   const isCompletedTask = task ? task.status.toUpperCase() === 'COMPLETED' : false;
   const isLockedEdgeCaseTask = task ? isProviderLockedEdgeCaseStatus(task.status) : false;
+  const paymentStateHelper = task ? getProviderPaymentStateHelper(task) : null;
 
   const markDemoInterestSent = useCallback(() => {
     setData((current) => {
@@ -721,12 +722,13 @@ export default function ProviderCoreTaskDetailScreen() {
           </AppCard>
 
           <AppCard style={styles.detailCard}>
-            <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={isPaymentProtected(task.paymentStatusLabel) ? 'success' : 'neutral'} />
+            <StatusBadge label={getPaymentStatusLabel(task.paymentStatusLabel)} tone={getPaymentStatusTone(task.paymentStatusLabel)} />
             <AppText variant="sectionTitle">{t('taskDetails')}</AppText>
             <Info label={t('customer')} value={formatCustomerPreviewLabel(task.customerPreviewLabel)} />
             <Info label={t('schedule')} value={formatSchedule(task.scheduledStartAt, task.scheduledEndAt)} />
             {task.hasScheduleConflict ? <AppText color={colors.warning600}>{t('scheduleConflictHelper')}</AppText> : null}
             <Info label={t('address')} value={task.addressPreviewLabel || t('addressSharedAfterSelection')} />
+            {paymentStateHelper ? <AppText color={colors.slate700}>{paymentStateHelper}</AppText> : null}
             {canOpenMapsForTask(task) ? (
               <AppButton onPress={handleOpenMaps} variant="outline">
                 {t('openInMaps')}
@@ -1430,6 +1432,24 @@ function getPaymentStatusLabel(label: string) {
   if (isPaymentProtected(label)) return t('paymentProtected');
   if (['Not paid yet', 'Payment pending'].includes(label)) return t('paymentPreparing');
   return label;
+}
+
+function getPaymentStatusTone(label: string) {
+  const paymentLabel = getPaymentStatusLabel(label);
+  if (paymentLabel === t('paymentPreparing')) return 'warning';
+  if (isPaymentProtected(label)) return 'success';
+  return 'neutral';
+}
+
+function getProviderPaymentStateHelper(task: ProviderCoreTaskDetail) {
+  const status = task.status.toUpperCase();
+  const paymentLabel = getPaymentStatusLabel(task.paymentStatusLabel);
+
+  if (status === 'PENDING_COMPLETION') return t('providerCompletionRequestedHelper');
+  if (paymentLabel === t('paymentPreparing')) return t('providerPaymentPreparingHelper');
+  if (isPaymentProtected(task.paymentStatusLabel)) return t('providerPaymentProtectedHelper');
+
+  return null;
 }
 
 function isPaymentProtected(label: string) {
