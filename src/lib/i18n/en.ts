@@ -102,6 +102,8 @@ export const en = {
   rewardHistory: 'Reward history',
   noRewardsYet: 'No rewards yet',
   rewardsComingSoonBody: 'Rewards will appear here when mobile rewards become available.',
+  providerRewardsEmptyBody: 'Your reward points, referral progress, and available credits will appear here after real qualifying activity.',
+  providerRewardsDemoBody: 'Demo mode does not show real reward totals. Sign in to view account-level rewards.',
   customerRewardsSubtitle: 'Invite customers, independent Taskers, or approved Pros and earn points after real qualifying activity.',
   couldNotLoadRewards: 'Could not load your rewards.',
   pendingRewardPoints: 'Pending points',

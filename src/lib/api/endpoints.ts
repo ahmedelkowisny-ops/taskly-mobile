@@ -93,6 +93,7 @@ export const endpoints = {
     proProfilePortfolioProjectPhoto: (projectId: string) => `/api/mobile/provider/pro-profile/portfolio/${encodeURIComponent(projectId)}/photos`,
     proProfilePortfolioProjectPhotoRemove: (projectId: string, imageId: string) => `/api/mobile/provider/pro-profile/portfolio/${encodeURIComponent(projectId)}/photos/${encodeURIComponent(imageId)}`,
     profile: '/api/mobile/provider/profile',
+    rewards: '/api/mobile/provider/rewards',
     stripeOnboardingLink: '/api/mobile/provider/stripe/onboarding-link',
     stripeRefreshStatus: '/api/mobile/provider/stripe/refresh-status',
     taskerProfile: '/api/mobile/provider/tasker-profile',
