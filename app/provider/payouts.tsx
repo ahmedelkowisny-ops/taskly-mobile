@@ -7,7 +7,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { EmptyStateCard, isHistoryProviderCoreTask, ProviderTopBar } from '@/src/components/taskly';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppButton, AppCard, AppText, Screen, StatusBadge } from '@/src/components/ui';
-import { ProviderCoreTaskSummary, ProviderCoreTasksResponse, ProviderProfileSummary } from '@/src/lib/api/domain';
+import { ProviderCoreTaskSummary, ProviderCoreTasksResponse, ProviderPayoutStatus, ProviderProfileSummary } from '@/src/lib/api/domain';
 import { getProviderCoreTasks, getProviderProfile, refreshPayoutStatus, startPayoutSetup } from '@/src/lib/api/provider';
 import type { ApiError } from '@/src/lib/api/types';
 import { getMockProviderCoreTasksResponse } from '@/src/lib/api/mockApi';
@@ -30,27 +30,104 @@ function PayoutRow({ task }: { task: ProviderCoreTaskSummary }) {
   const breakdown = task.providerPaymentBreakdown;
   const payout = breakdown?.providerPayoutLabel ?? null;
   const dateLabel = formatDate(task.scheduledStartAt ?? task.scheduledEndAt);
+  const invoice = task.aftercare?.invoice ?? null;
+  const statusTone = getPaymentStateTone(breakdown?.paymentStateLabel);
 
   return (
-    <AppCard accentColor={colors.success600} backgroundColor={colors.white} style={styles.payoutRow}>
+    <AppCard accentColor={payout ? colors.success600 : colors.tasklyBlue600} backgroundColor={colors.white} style={styles.payoutRow}>
       <View style={styles.rowHeader}>
-        <StatusBadge label={task.statusLabel} tone={task.status.toUpperCase() === 'COMPLETED' ? 'core' : 'neutral'} />
-        {payout ? <AppText color={colors.success600} variant="bodyStrong">{payout}</AppText> : null}
+        <View style={styles.badgeRow}>
+          <StatusBadge label={task.statusLabel} tone={task.status.toUpperCase() === 'COMPLETED' ? 'success' : 'neutral'} />
+          {breakdown?.paymentStateLabel ? <StatusBadge label={breakdown.paymentStateLabel} tone={statusTone} /> : null}
+          {breakdown?.isEstimate ? <StatusBadge label={t('paymentEstimate')} tone="warning" /> : <StatusBadge label={t('paymentRecord')} tone="core" />}
+        </View>
+        {payout ? (
+          <View style={styles.netPayoutBlock}>
+            <AppText color={colors.slate500} variant="small">{t('netPayout')}</AppText>
+            <AppText color={colors.success600} variant="sectionTitle">{payout}</AppText>
+          </View>
+        ) : null}
       </View>
       <AppText style={styles.taskTitle} variant="bodyStrong">{task.title}</AppText>
       <AppText color={colors.slate700} variant="small">
         {task.categoryLabel} - {task.cityLabel}
       </AppText>
       {dateLabel ? <AppText color={colors.slate500} variant="small">{dateLabel}</AppText> : null}
-      {breakdown?.tasklyFeeLabel ? (
+      {breakdown ? (
         <View style={styles.breakdownSurface}>
-          <AppText color={colors.slate500} variant="small">
-            {t('providerPaymentBreakdown')}: {breakdown.grossTaskPriceLabel} - {t('tasklyFee')}: {breakdown.tasklyFeeLabel} - {payout}
-          </AppText>
+          <BreakdownLine label={t('grossTaskPrice')} value={breakdown.grossTaskPriceLabel} />
+          <BreakdownLine label={t('tasklyCommission')} value={breakdown.tasklyFeeLabel} />
+          <BreakdownLine emphasize label={t('netPayout')} value={payout} />
+          {breakdown.providerPayoutHint ? <AppText color={colors.slate500} variant="small">{breakdown.providerPayoutHint}</AppText> : null}
+        </View>
+      ) : null}
+      {invoice ? (
+        <View style={styles.invoiceSurface}>
+          <StatusBadge label={t('invoice')} tone="core" />
+          <BreakdownLine label={t('invoiceNumber')} value={invoice.invoiceNumber} />
+          <BreakdownLine emphasize label={t('invoiceTotal')} value={invoice.totalLabel} />
+          {invoice.vatEnabled ? <BreakdownLine label={t('vat')} value={invoice.vatAmountLabel} /> : null}
+          {invoice.canOpenPdf && invoice.pdfUrl ? (
+            <AppText color={colors.tasklyBlue700} variant="small">{t('invoicePdfAvailableInTaskDetail')}</AppText>
+          ) : null}
         </View>
       ) : null}
     </AppCard>
   );
+}
+
+function BreakdownLine({ emphasize = false, label, value }: { emphasize?: boolean; label: string; value?: string | null }) {
+  if (!value) return null;
+
+  return (
+    <View style={styles.breakdownLine}>
+      <AppText color={colors.slate500} variant="small">{label}</AppText>
+      <AppText color={emphasize ? colors.navy900 : colors.slate700} variant={emphasize ? 'bodyStrong' : 'small'}>{value}</AppText>
+    </View>
+  );
+}
+
+function getPaymentStateTone(label?: string | null) {
+  const normalized = String(label || '').toLowerCase();
+  if (normalized.includes('pending')) return 'warning';
+  if (normalized.includes('paid') || normalized.includes('completed') || normalized.includes('released')) return 'success';
+  return 'neutral';
+}
+
+function getStripeReadiness(status: ProviderPayoutStatus | null) {
+  if (!status) {
+    return {
+      accentColor: colors.tasklyBlue600,
+      body: t('payoutSetupUnavailable'),
+      title: t('payoutSetup'),
+      tone: 'core' as const,
+    };
+  }
+
+  if (status.isReady) {
+    return {
+      accentColor: colors.success600,
+      body: t('stripePayoutsReadyHelper'),
+      title: t('payoutsReady'),
+      tone: 'success' as const,
+    };
+  }
+
+  if (status.hasStripeAccount) {
+    return {
+      accentColor: colors.warning600,
+      body: t('stripePayoutsPendingHelper'),
+      title: t('payoutsPending'),
+      tone: 'warning' as const,
+    };
+  }
+
+  return {
+    accentColor: colors.warning600,
+    body: t('stripeSetupRequiredHelper'),
+    title: t('stripeSetupRequired'),
+    tone: 'warning' as const,
+  };
 }
 
 function getPayoutActionErrorMessage(error: ApiError, fallback = t('couldNotOpenStripeSetup')) {
@@ -78,6 +155,8 @@ export default function ProviderPayoutsScreen() {
 
   const payoutStatus = profile?.payoutStatus ?? null;
   const needsStripe = payoutStatus ? !payoutStatus.isReady : session?.providerCapabilities?.coreTaskerStatus === 'needsStripe';
+  const showStripeCard = Boolean(payoutStatus || needsStripe);
+  const stripeReadiness = getStripeReadiness(payoutStatus);
 
   const load = useCallback(async () => {
     setErrorMessage(null);
@@ -129,10 +208,6 @@ export default function ProviderPayoutsScreen() {
   const completedTasks = (data?.tasks ?? []).filter(
     (task) => isHistoryProviderCoreTask(task) && task.status.toUpperCase() === 'COMPLETED',
   );
-
-  const totalPayoutLabel = completedTasks.reduce<string | null>((_, task) => {
-    return task.providerPaymentBreakdown?.providerPayoutLabel ?? null;
-  }, null);
 
   async function handleStartPayoutSetup() {
     setPayoutNotice(null);
@@ -206,14 +281,25 @@ export default function ProviderPayoutsScreen() {
         <AppText color={colors.slate700}>{t('payoutsIntro')}</AppText>
       </AppCard>
 
-      {needsStripe ? (
+      {showStripeCard ? (
         <AppCard
-          accentColor={payoutStatus?.isReady ? colors.success600 : colors.tasklyBlue600}
+          accentColor={stripeReadiness.accentColor}
           backgroundColor={payoutStatus?.isReady ? colors.success50 : colors.white}
           style={styles.stripeCard}>
-          <AppText variant="bodyStrong">{payoutStatus?.isReady ? t('yourPayoutsAreReady') : t('stripeVerificationNeeded')}</AppText>
-          <AppText color={colors.slate700}>{t('stripeVerificationHelper')}</AppText>
+          <View style={styles.badgeRow}>
+            <StatusBadge label={stripeReadiness.title} tone={stripeReadiness.tone} />
+            {payoutStatus?.hasStripeAccount ? <StatusBadge label={t('stripeConnected')} tone="neutral" /> : null}
+          </View>
+          <AppText variant="bodyStrong">{stripeReadiness.title}</AppText>
+          <AppText color={colors.slate700}>{stripeReadiness.body}</AppText>
           <AppText color={colors.slate500} variant="small">{t('stripePayoutsExplanation')}</AppText>
+          {payoutStatus ? (
+            <View style={styles.breakdownSurface}>
+              <BreakdownLine label={t('stripeCharges')} value={payoutStatus.chargesEnabled ? t('ready') : t('notReady')} />
+              <BreakdownLine label={t('stripePayouts')} value={payoutStatus.payoutsEnabled ? t('ready') : t('notReady')} />
+              <BreakdownLine label={t('stripeRequirementsDue')} value={String(payoutStatus.requirementsCurrentlyDueCount)} />
+            </View>
+          ) : null}
           {payoutStatus && payoutStatus.taskerStatus !== 'VERIFIED' ? (
             <View style={styles.warningSurface}>
               <AppText color={colors.warning600} variant="small">{t('completeTaskerProfileFirst')}</AppText>
@@ -269,12 +355,9 @@ export default function ProviderPayoutsScreen() {
               <Ionicons color={colors.tasklyBlue600} name="wallet-outline" size={20} />
             </View>
             <View style={styles.payoutBreakdownText}>
-              <AppText color={colors.slate500} variant="small">{t('estimatedPayoutLabel')}</AppText>
-              {totalPayoutLabel ? (
-                <AppText color={colors.navy900} variant="bodyStrong">{totalPayoutLabel}</AppText>
-              ) : (
-                <AppText color={colors.navy900} variant="bodyStrong">{completedTasks.length} {t('taskHistory').toLowerCase()}</AppText>
-              )}
+              <AppText color={colors.slate500} variant="small">{t('completedPayoutRecords')}</AppText>
+              <AppText color={colors.navy900} variant="bodyStrong">{completedTasks.length} {t('tasklyTasks')}</AppText>
+              <AppText color={colors.slate700} variant="small">{t('payoutSummaryNoMobileTotal')}</AppText>
             </View>
           </View>
         </AppCard>
@@ -298,15 +381,29 @@ export default function ProviderPayoutsScreen() {
 }
 
 const styles = StyleSheet.create({
+  badgeRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  breakdownLine: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
   breakdownSurface: {
     backgroundColor: colors.slate50,
     borderColor: colors.border,
     borderRadius: radius.md,
     borderWidth: 1,
+    gap: spacing.xs,
     padding: spacing.md,
   },
   content: {
     gap: spacing.lg,
+    paddingBottom: spacing.xxxl + 96,
     paddingTop: spacing.lg,
   },
   errorSurface: {
@@ -319,6 +416,18 @@ const styles = StyleSheet.create({
   header: {
     borderColor: colors.border,
     gap: spacing.sm,
+  },
+  invoiceSurface: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  netPayoutBlock: {
+    alignItems: 'flex-end',
+    gap: 2,
   },
   payoutBreakdownCard: {
     ...designTokens.shadows.card,
