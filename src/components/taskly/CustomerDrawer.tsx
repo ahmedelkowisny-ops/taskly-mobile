@@ -142,6 +142,12 @@ export function CustomerDrawer({ onClose, visible }: CustomerDrawerProps) {
         },
         {
           icon: 'help-circle-outline',
+          isActive: (current) => current === '/customer/help',
+          label: t('helpLegalTitle'),
+          route: '/customer/help' as Href,
+        },
+        {
+          icon: 'medkit-outline',
           isActive: (current) => current === '/customer/support',
           label: t('drawerContactSupport'),
           route: '/customer/support' as Href,
