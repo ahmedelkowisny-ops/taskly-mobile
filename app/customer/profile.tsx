@@ -296,7 +296,8 @@ export default function CustomerProfileScreen() {
 
       <AccountMenuSection
         items={[
-          { icon: 'help-circle-outline', label: t('helpCenter'), onPress: () => router.push('/customer/support' as Href) },
+          { icon: 'help-circle-outline', label: t('helpLegalTitle'), onPress: () => router.push('/customer/help' as Href) },
+          { icon: 'medkit-outline', label: t('drawerContactSupport'), onPress: () => router.push('/customer/support' as Href) },
           { icon: 'chatbubbles-outline', label: t('support'), onPress: () => router.push('/customer/messages?context=support' as Href) },
         ]}
         title={t('customerMenuHelp')}
@@ -304,7 +305,7 @@ export default function CustomerProfileScreen() {
 
       <AccountMenuSection
         items={[
-          { helper: t('comingSoon'), icon: 'document-text-outline', label: t('termsAndPrivacy') },
+          { icon: 'document-text-outline', label: t('legalInformation'), onPress: () => router.push('/customer/help' as Href) },
           { icon: 'log-out-outline', label: t('drawerLogout'), onPress: handleLogout, tone: 'danger' },
         ]}
         title={t('customerMenuLegal')}
