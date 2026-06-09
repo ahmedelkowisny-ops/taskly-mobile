@@ -577,7 +577,7 @@ export const bg = {
   tasklyPro: 'Taskly Pro',
   continueProApplication: 'Продължи Pro кандидатура',
   proApplicationUnderReview: 'Pro кандидатурата се преглежда',
-  continueCoreTaskerOnboarding: 'Продължи Taskly onboarding',
+  continueCoreTaskerOnboarding: 'Продължи Taskly Tasker настройката',
   stripeVerificationCorePayouts: 'Stripe проверка за Taskly плащания',
   proProfileReview: 'Преглед на Pro профил',
   goToProviderDashboard: 'Към таблото за изпълнител',

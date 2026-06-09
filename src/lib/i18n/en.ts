@@ -814,7 +814,7 @@ export const en = {
   stripeVerificationCorePayouts: 'Stripe verification required for Taskly task payouts',
   proProfileReview: 'Pro profile review',
   goToProviderDashboard: 'Go to Provider Dashboard',
-  paymentProtectedCoreTasks: 'Payment-protected Taskly tasks',
+  paymentProtectedCoreTasks: 'Payment protected Taskly tasks',
   loginRequired: 'Login required',
   checkingSession: 'Checking session',
   checkingTasklySession: 'Checking your Taskly session...',
