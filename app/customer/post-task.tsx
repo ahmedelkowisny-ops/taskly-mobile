@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -479,6 +479,7 @@ function usePostingFooterVisibility() {
 
 export default function CustomerPostTaskScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ bookAgainTaskId?: string; categorySlug?: string }>();
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const { getValidAccessToken, status, useDemoSession } = useAuth();
@@ -732,6 +733,18 @@ export default function CustomerPostTaskScreen() {
       void loadCatalog();
     }, [loadCatalog]),
   );
+
+  useEffect(() => {
+    const categorySlug = typeof params.categorySlug === 'string' ? params.categorySlug.trim() : '';
+    if (!catalog || !categorySlug || selectedCategoryId) return;
+
+    const category = catalog.categories.find((item) => item.slug === categorySlug || item.id === categorySlug);
+    if (category) {
+      setSelectedCategoryId(category.id);
+      setCurrentStep(2);
+      setSubmitMessage(t('bookAgainPrefillReady'));
+    }
+  }, [catalog, params.categorySlug, selectedCategoryId]);
 
   useEffect(() => {
     if (!selectedCategory) return;

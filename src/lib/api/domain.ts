@@ -274,11 +274,14 @@ export type CustomerCoreTaskNextActions = {
   blockedReason?: string;
   blockedReasonCode?: string;
   canApproveCompletion: boolean;
+  canBookAgain?: boolean;
   canCancel: boolean;
   canCancelFree?: boolean;
   canCancelLate?: boolean;
   canChat: boolean;
   canConfirmPayment: boolean;
+  canEditBudget?: boolean;
+  canEditSchedule?: boolean;
   canOpenSupport?: boolean;
   canPreparePayment: boolean;
   canRejectCompletion: boolean;
@@ -516,6 +519,31 @@ export type CustomerTaskDetail = {
 
 export type CustomerTaskDetailResponse = {
   task: CustomerTaskDetail;
+};
+
+export type UpdateCustomerTaskPayload = {
+  budgetEur?: number;
+  scheduledEndAt?: string;
+  scheduledStartAt?: string;
+};
+
+export type UpdateCustomerTaskResponse = CustomerTaskDetailResponse & {
+  message?: string;
+  nextActions: CustomerCoreTaskNextActions;
+};
+
+export type BookAgainCustomerTaskResponse = {
+  message?: string;
+  prefill: {
+    categorySlug: string | null;
+    preferredTasker: {
+      firstName: string | null;
+      id: string;
+      lastName: string | null;
+      pictureUrl: string | null;
+    } | null;
+  };
+  routeHint: string;
 };
 
 export type TaskScopeData = {

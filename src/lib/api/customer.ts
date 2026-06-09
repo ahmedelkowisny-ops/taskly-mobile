@@ -2,6 +2,7 @@ import { apiRequest } from './client';
 import { endpoints } from './endpoints';
 import {
   ApproveCustomerTaskCompletionResponse,
+  BookAgainCustomerTaskResponse,
   CancelCustomerTaskPayload,
   CancelCustomerTaskResponse,
   CustomerProAccessCheckoutResponse,
@@ -35,6 +36,8 @@ import {
   RejectCustomerTaskCompletionResponse,
   SelectCustomerTaskerPayload,
   SelectCustomerTaskerResponse,
+  UpdateCustomerTaskPayload,
+  UpdateCustomerTaskResponse,
   UpdateCustomerProfilePayload,
 } from './domain';
 import { ApiResult } from './types';
@@ -101,6 +104,29 @@ export function getCustomerTaskDetail(taskId: string, authToken: string): Promis
   return apiRequest<CustomerTaskDetailResponse>(endpoints.customer.taskDetail(taskId), {
     authToken,
     method: 'GET',
+  });
+}
+
+export function updateCustomerTask(
+  taskId: string,
+  payload: UpdateCustomerTaskPayload,
+  authToken: string,
+): Promise<ApiResult<UpdateCustomerTaskResponse>> {
+  return apiRequest<UpdateCustomerTaskResponse>(endpoints.customer.taskDetail(taskId), {
+    authToken,
+    body: payload,
+    method: 'PATCH',
+  });
+}
+
+export function bookAgainCustomerTask(
+  taskId: string,
+  authToken: string,
+): Promise<ApiResult<BookAgainCustomerTaskResponse>> {
+  return apiRequest<BookAgainCustomerTaskResponse>(endpoints.customer.taskBookAgain(taskId), {
+    authToken,
+    body: {},
+    method: 'POST',
   });
 }
 

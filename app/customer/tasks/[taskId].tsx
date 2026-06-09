@@ -1,8 +1,10 @@
 import { useFocusEffect } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { CardField, useConfirmSetupIntent } from '@stripe/stripe-react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Image, StyleSheet, View } from 'react-native';
 
 import { FormField } from '@/src/components/taskly/FormField';
@@ -10,6 +12,7 @@ import { KeyboardAwareFormScreen } from '@/src/components/taskly/KeyboardAwareFo
 import { AppButton, AppCard, AppText, StatusBadge } from '@/src/components/ui';
 import {
   approveCustomerTaskCompletion,
+  bookAgainCustomerTask,
   cancelCustomerTask,
   finalizeCustomerTaskPayment,
   getCustomerTaskDetail,
@@ -17,6 +20,7 @@ import {
   requestCustomerTaskSupport,
   selectCustomerTasker,
   setupCustomerTaskPayment,
+  updateCustomerTask,
 } from '@/src/lib/api/customer';
 import {
   CoreCancellationState,
@@ -39,6 +43,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 
 type PaymentSetupStage = 'setup' | 'confirm' | 'finalize';
 type StatusTone = 'core' | 'pro' | 'success' | 'warning' | 'danger' | 'neutral';
+type TaskEditPickerTarget = 'date' | 'start' | 'end' | null;
 
 export default function CustomerTaskDetailScreen() {
   const router = useRouter();
@@ -69,6 +74,16 @@ export default function CustomerTaskDetailScreen() {
   const [supportDetails, setSupportDetails] = useState('');
   const [supportReason, setSupportReason] = useState('');
   const [supportReasonError, setSupportReasonError] = useState<string | null>(null);
+  const [editBudget, setEditBudget] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editStartTime, setEditStartTime] = useState('');
+  const [editEndTime, setEditEndTime] = useState('');
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editFieldError, setEditFieldError] = useState<string | null>(null);
+  const [editMessage, setEditMessage] = useState<string | null>(null);
+  const [isSavingTaskEdit, setIsSavingTaskEdit] = useState(false);
+  const [isBookingAgain, setIsBookingAgain] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<TaskEditPickerTarget>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
@@ -119,6 +134,19 @@ export default function CustomerTaskDetailScreen() {
   );
 
   const task = data?.task;
+
+  useEffect(() => {
+    if (!task) return;
+    const start = task.scheduledStartAt ? new Date(task.scheduledStartAt) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const end = task.scheduledEndAt ? new Date(task.scheduledEndAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    setEditBudget(parseMoneyFromLabel(task.priceLabel));
+    setEditDate(toDateInputValue(start));
+    setEditStartTime(toTimeInputValue(start));
+    setEditEndTime(toTimeInputValue(end));
+    setEditError(null);
+    setEditFieldError(null);
+    setEditMessage(null);
+  }, [task?.id, task?.priceLabel, task?.scheduledEndAt, task?.scheduledStartAt]);
 
   const handleOpenChat = useCallback(() => {
     if (task?.messageThreadId) {
@@ -614,6 +642,161 @@ export default function CustomerTaskDetailScreen() {
     ]);
   }, [submitPaymentSetup, task?.nextActions]);
 
+  const handleTaskEditPickerChange = useCallback((event: DateTimePickerEvent, selected?: Date) => {
+    if (event.type === 'dismissed' || !selected) {
+      setPickerTarget(null);
+      return;
+    }
+
+    if (pickerTarget === 'date') {
+      setEditDate(toDateInputValue(selected));
+    } else if (pickerTarget === 'start') {
+      setEditStartTime(toTimeInputValue(selected));
+    } else if (pickerTarget === 'end') {
+      setEditEndTime(toTimeInputValue(selected));
+    }
+    setEditFieldError(null);
+    setPickerTarget(null);
+  }, [pickerTarget]);
+
+  const submitTaskEdit = useCallback(async () => {
+    setEditError(null);
+    setEditFieldError(null);
+    setEditMessage(null);
+
+    if (!task?.nextActions.canEditBudget && !task?.nextActions.canEditSchedule) {
+      setEditError(t('taskNoLongerEditable'));
+      return;
+    }
+
+    const payload: { budgetEur?: number; scheduledEndAt?: string; scheduledStartAt?: string } = {};
+
+    if (task.nextActions.canEditBudget) {
+      const budgetValue = Number(editBudget.replace(',', '.'));
+      if (!Number.isFinite(budgetValue) || budgetValue <= 0) {
+        setEditFieldError(t('invalidBudget'));
+        return;
+      }
+      payload.budgetEur = budgetValue;
+    }
+
+    if (task.nextActions.canEditSchedule) {
+      const startAt = buildLocalDateTime(editDate, editStartTime);
+      const endAt = buildLocalDateTime(editDate, editEndTime);
+      if (!startAt || !endAt) {
+        setEditFieldError(t('scheduleInvalidMissing'));
+        return;
+      }
+      if (startAt >= endAt) {
+        setEditFieldError(t('scheduleEndAfterStart'));
+        return;
+      }
+      payload.scheduledStartAt = startAt.toISOString();
+      payload.scheduledEndAt = endAt.toISOString();
+    }
+
+    if (status === 'demo') {
+      setData((current) => current ? {
+        task: {
+          ...current.task,
+          nextActions: {
+            ...current.task.nextActions,
+            canEditBudget: current.task.nextActions.canEditBudget,
+            canEditSchedule: current.task.nextActions.canEditSchedule,
+          },
+          priceLabel: payload.budgetEur ? `EUR ${payload.budgetEur}` : current.task.priceLabel,
+          scheduledEndAt: payload.scheduledEndAt ?? current.task.scheduledEndAt,
+          scheduledStartAt: payload.scheduledStartAt ?? current.task.scheduledStartAt,
+        },
+      } : current);
+      setEditMessage(`${t('taskUpdatedSuccessfully')} ${t('demoModeNoRealPayments')}`);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setEditError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setEditError(t('loginRequired'));
+      return;
+    }
+
+    setIsSavingTaskEdit(true);
+    const result = await updateCustomerTask(taskId, payload, authToken);
+    setIsSavingTaskEdit(false);
+
+    if (result.ok) {
+      setData({ task: result.data.task });
+      setEditMessage(result.data.message || t('taskUpdatedSuccessfully'));
+      return;
+    }
+
+    const fieldErrors = result.error.details && typeof result.error.details === 'object' && 'fieldErrors' in result.error.details
+      ? (result.error.details as { fieldErrors?: Record<string, string> }).fieldErrors
+      : undefined;
+    const firstFieldError = fieldErrors ? Object.values(fieldErrors)[0] : null;
+
+    if (result.error.code === 'NOT_OPEN' || result.error.code === 'HAS_INTEREST' || result.error.code === 'SCHEDULE_LOCKED') {
+      setEditError(result.error.code === 'SCHEDULE_LOCKED' ? t('taskNoLongerEditable') : result.error.message);
+      await loadDetail();
+      return;
+    }
+
+    setEditError(firstFieldError || result.error.message || t('taskUpdateFailed'));
+  }, [
+    editBudget,
+    editDate,
+    editEndTime,
+    editStartTime,
+    getValidAccessToken,
+    loadDetail,
+    status,
+    task,
+    taskId,
+  ]);
+
+  const submitBookAgain = useCallback(async () => {
+    setEditError(null);
+    setEditMessage(null);
+
+    if (!task?.nextActions.canBookAgain) {
+      setEditError(t('bookAgainFailed'));
+      return;
+    }
+
+    if (status === 'demo') {
+      setEditMessage(t('similarTaskCreated'));
+      router.push('/customer/post-task' as Href);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      setEditError(t('loginRequired'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken) {
+      setEditError(t('loginRequired'));
+      return;
+    }
+
+    setIsBookingAgain(true);
+    const result = await bookAgainCustomerTask(taskId, authToken);
+    setIsBookingAgain(false);
+
+    if (result.ok) {
+      setEditMessage(t('similarTaskCreated'));
+      router.push(result.data.routeHint as Href);
+      return;
+    }
+
+    setEditError(result.error.message || t('bookAgainFailed'));
+  }, [getValidAccessToken, router, status, task?.nextActions.canBookAgain, taskId]);
+
   const submitCancelTask = useCallback(async () => {
     setActionError(null);
     setActionMessage(null);
@@ -953,6 +1136,29 @@ export default function CustomerTaskDetailScreen() {
           <TaskSummarySection task={task} />
           <ScopeChecklistSection task={task} />
           <TaskScheduleSection task={task} />
+          <TaskManagementCard
+            budget={editBudget}
+            date={editDate}
+            endTime={editEndTime}
+            error={editError}
+            fieldError={editFieldError}
+            isBookingAgain={isBookingAgain}
+            isSaving={isSavingTaskEdit}
+            message={editMessage}
+            onBookAgain={submitBookAgain}
+            onBudgetChange={setEditBudget}
+            onOpenPicker={setPickerTarget}
+            onSave={submitTaskEdit}
+            startTime={editStartTime}
+            task={task}
+          />
+          {pickerTarget ? (
+            <DateTimePicker
+              mode={pickerTarget === 'date' ? 'date' : 'time'}
+              onChange={handleTaskEditPickerChange}
+              value={getPickerValue(pickerTarget, editDate, pickerTarget === 'end' ? editEndTime : editStartTime)}
+            />
+          ) : null}
           <PaymentStateCard nextActions={task.nextActions} paymentState={task.paymentState} />
           <PaymentSetupCard
             isCardComplete={isCardComplete}
@@ -1122,6 +1328,113 @@ function TaskScheduleSection({ task }: { task: CustomerTaskDetail }) {
         <Info label={t('taskCardBudget')} value={task.priceLabel} />
         <Info label={t('selectedTasker')} value={taskerLabel} />
       </View>
+    </AppCard>
+  );
+}
+
+function TaskManagementCard({
+  budget,
+  date,
+  endTime,
+  error,
+  fieldError,
+  isBookingAgain,
+  isSaving,
+  message,
+  onBookAgain,
+  onBudgetChange,
+  onOpenPicker,
+  onSave,
+  startTime,
+  task,
+}: {
+  budget: string;
+  date: string;
+  endTime: string;
+  error: string | null;
+  fieldError: string | null;
+  isBookingAgain: boolean;
+  isSaving: boolean;
+  message: string | null;
+  onBookAgain: () => void;
+  onBudgetChange: (value: string) => void;
+  onOpenPicker: (target: TaskEditPickerTarget) => void;
+  onSave: () => void;
+  startTime: string;
+  task: CustomerTaskDetail;
+}) {
+  const canEdit = task.nextActions.canEditBudget || task.nextActions.canEditSchedule;
+  const canBookAgain = task.nextActions.canBookAgain;
+
+  if (!canEdit && !canBookAgain) return null;
+
+  return (
+    <AppCard accentColor={colors.tasklyBlue600} style={[styles.sectionCard, styles.managementCard]}>
+      <View style={styles.sectionHeader}>
+        <AppText variant="cardTitle">{t('editBudgetAndSchedule')}</AppText>
+        <StatusBadge label={canEdit ? t('updateTaskDetails') : t('readOnly')} tone={canEdit ? 'core' : 'neutral'} />
+      </View>
+
+      {canEdit ? (
+        <>
+          <AppText color={colors.slate700}>{t('taskEditAvailabilityWarning')}</AppText>
+          {task.nextActions.canEditBudget ? (
+            <FormField
+              errorText={fieldError && fieldError === t('invalidBudget') ? fieldError : undefined}
+              helperText={t('newBudgetHelper')}
+              keyboardType="numeric"
+              label={t('newBudget')}
+              onChangeText={onBudgetChange}
+              placeholder="40"
+              value={budget}
+            />
+          ) : (
+            <AppText color={colors.slate500}>{t('budgetNoLongerEditable')}</AppText>
+          )}
+          {task.nextActions.canEditSchedule ? (
+            <View style={styles.pickerStack}>
+              <AppText color={colors.slate500} variant="small">{t('newDate')}</AppText>
+              <AppButton onPress={() => onOpenPicker('date')} tone="neutral" variant="outline">
+                {date || t('newDate')}
+              </AppButton>
+              <View style={styles.timePickerRow}>
+                <View style={styles.timePickerItem}>
+                  <AppText color={colors.slate500} variant="small">{t('newStartTime')}</AppText>
+                  <AppButton onPress={() => onOpenPicker('start')} tone="neutral" variant="outline">
+                    {startTime || t('newTime')}
+                  </AppButton>
+                </View>
+                <View style={styles.timePickerItem}>
+                  <AppText color={colors.slate500} variant="small">{t('newEndTime')}</AppText>
+                  <AppButton onPress={() => onOpenPicker('end')} tone="neutral" variant="outline">
+                    {endTime || t('newTime')}
+                  </AppButton>
+                </View>
+              </View>
+              {fieldError && fieldError !== t('invalidBudget') ? <AppText color={colors.danger600}>{fieldError}</AppText> : null}
+            </View>
+          ) : (
+            <AppText color={colors.slate500}>{t('scheduleNoLongerEditable')}</AppText>
+          )}
+          <AppButton loading={isSaving} onPress={onSave}>
+            {isSaving ? t('savingChanges') : t('saveChanges')}
+          </AppButton>
+        </>
+      ) : null}
+
+      {canBookAgain ? (
+        <View style={styles.bookAgainBlock}>
+          <StatusBadge label={t('bookAgain')} tone="core" />
+          <AppText variant="bodyStrong">{t('createSimilarTask')}</AppText>
+          <AppText color={colors.slate700}>{t('bookAgainHelper')}</AppText>
+          <AppButton loading={isBookingAgain} onPress={onBookAgain} variant={canEdit ? 'outline' : 'filled'}>
+            {isBookingAgain ? t('loading') : t('reviewAndPost')}
+          </AppButton>
+        </View>
+      ) : null}
+
+      {message ? <AppText color={colors.success600}>{message}</AppText> : null}
+      {error ? <AppText color={colors.danger600}>{error}</AppText> : null}
     </AppCard>
   );
 }
@@ -1576,6 +1889,38 @@ function formatSchedule(start: string | null, end: string | null) {
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
 }
 
+function parseMoneyFromLabel(label: string) {
+  const match = label.match(/(\d+(?:[.,]\d+)?)/);
+  return match ? match[1].replace(',', '.') : '';
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toTimeInputValue(date: Date) {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function buildLocalDateTime(dateValue: string, timeValue: string) {
+  const [year, month, day] = dateValue.split('-').map(Number);
+  const [hours, minutes] = timeValue.split(':').map(Number);
+  const date = new Date(year, month - 1, day, hours, minutes);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getPickerValue(target: Exclude<TaskEditPickerTarget, null>, dateValue: string, timeValue: string) {
+  if (target === 'date') {
+    return buildLocalDateTime(dateValue, timeValue || '12:00') || new Date();
+  }
+  return buildLocalDateTime(dateValue || toDateInputValue(new Date()), timeValue || '12:00') || new Date();
+}
+
 function getTimelineStatusLabel(status: string) {
   const normalized = status.toLowerCase();
   if (normalized === 'done' || normalized === 'completed') return t('completed');
@@ -1915,6 +2260,20 @@ const styles = StyleSheet.create({
     shadowColor: '#F59E0B',
     shadowOpacity: 0.12,
   },
+  bookAgainBlock: {
+    backgroundColor: colors.tasklyBlue50,
+    borderColor: colors.tasklyBlueBorder,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  managementCard: {
+    backgroundColor: colors.white,
+    borderColor: colors.tasklyBlueBorder,
+    shadowColor: '#1877F2',
+    shadowOpacity: 0.08,
+  },
   paymentSectionCard: {
     backgroundColor: colors.tasklyBlue50,
     borderColor: colors.tasklyBlueBorder,
@@ -1980,6 +2339,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   stack: { gap: spacing.md },
+  pickerStack: { gap: spacing.sm },
   supportSectionCard: {
     backgroundColor: colors.white,
     borderColor: '#FECACA',
@@ -2024,6 +2384,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   taskerRow: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing.md },
+  timePickerItem: { flex: 1, gap: spacing.xs, minWidth: 120 },
+  timePickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   timelineItem: {
     backgroundColor: colors.white,
     borderColor: colors.border,

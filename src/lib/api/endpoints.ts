@@ -38,6 +38,7 @@ export const endpoints = {
     proRequests: '/api/mobile/customer/pro-requests',
     rewards: '/api/mobile/customer/rewards',
     taskApproveCompletion: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/approve-completion`,
+    taskBookAgain: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/book-again`,
     taskCancel: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/cancel`,
     taskDetail: (taskId: string) => `/api/mobile/customer/tasks/${taskId}`,
     taskImageUpload: (taskId: string) => `/api/mobile/customer/tasks/${taskId}/images`,
