@@ -290,6 +290,7 @@ export type CustomerCoreTaskNextActions = {
   canRetryPayment: boolean;
   canReview: boolean;
   canSelectTasker: boolean;
+  canUploadImages?: boolean;
   canViewInvoice: boolean;
   cancellationBlockedReason?: string;
   cancellationBlockedReasonCode?: string;
@@ -1890,10 +1891,22 @@ export type MessageThreadSummary = {
   capabilities: MessageThreadCapabilities;
   contextId?: string;
   contextType: MessageContextType;
+  createdAt?: string | null;
+  hasEvidencePhoto?: boolean;
   id: string;
+  issueTypeLabel?: string;
   lastMessageAt?: string | null;
   lastMessagePreview?: string;
+  linkedContext?: {
+    id: string;
+    label: string;
+    type: 'pro_request' | 'task';
+  } | null;
+  messageCount?: number;
+  nextRecommendedAction?: string;
   otherParticipantName?: string;
+  resolutionRequestedAt?: string | null;
+  resolvedAt?: string | null;
   roleLabel?: string;
   statusLabel?: string;
   subtitle?: string;

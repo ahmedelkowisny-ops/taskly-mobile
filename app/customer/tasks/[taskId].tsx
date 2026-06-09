@@ -36,6 +36,13 @@ import {
 import { resolveApiMediaUrl } from '@/src/lib/api/media';
 import { getMockCustomerTaskDetailResponse } from '@/src/lib/api/mockApi';
 import { useAuth } from '@/src/lib/auth/useAuth';
+import {
+  compressSelectedImages,
+  pickTasklyImages,
+  requestImageLibraryPermission,
+  validateSelectedImages,
+} from '@/src/lib/images/imagePicker';
+import { uploadSelectedImagesSequentially } from '@/src/lib/images/uploadSelectedImages';
 import { t } from '@/src/lib/i18n';
 import { colors } from '@/src/theme/colors';
 import { designTokens } from '@/src/theme/designTokens';
@@ -44,6 +51,7 @@ import { radius, spacing } from '@/src/theme/spacing';
 type PaymentSetupStage = 'setup' | 'confirm' | 'finalize';
 type StatusTone = 'core' | 'pro' | 'success' | 'warning' | 'danger' | 'neutral';
 type TaskEditPickerTarget = 'date' | 'start' | 'end' | null;
+const TASK_DETAIL_MAX_IMAGES = 5;
 
 export default function CustomerTaskDetailScreen() {
   const router = useRouter();
@@ -83,6 +91,10 @@ export default function CustomerTaskDetailScreen() {
   const [editMessage, setEditMessage] = useState<string | null>(null);
   const [isSavingTaskEdit, setIsSavingTaskEdit] = useState(false);
   const [isBookingAgain, setIsBookingAgain] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [imageUploadMessage, setImageUploadMessage] = useState<string | null>(null);
+  const [imageUploadProgress, setImageUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [pickerTarget, setPickerTarget] = useState<TaskEditPickerTarget>(null);
 
   const loadDetail = useCallback(async () => {
@@ -146,7 +158,7 @@ export default function CustomerTaskDetailScreen() {
     setEditError(null);
     setEditFieldError(null);
     setEditMessage(null);
-  }, [task?.id, task?.priceLabel, task?.scheduledEndAt, task?.scheduledStartAt]);
+  }, [task]);
 
   const handleOpenChat = useCallback(() => {
     if (task?.messageThreadId) {
@@ -641,6 +653,92 @@ export default function CustomerTaskDetailScreen() {
       { onPress: () => void submitPaymentSetup(), text: getPaymentSetupButtonLabel(task?.nextActions) },
     ]);
   }, [submitPaymentSetup, task?.nextActions]);
+
+  const handleAddTaskImages = useCallback(async () => {
+    setImageUploadError(null);
+    setImageUploadMessage(null);
+    setImageUploadProgress(null);
+
+    if (!task?.nextActions.canUploadImages) {
+      setImageUploadError(t('taskPhotosLockedHelper'));
+      return;
+    }
+
+    const currentCount = task.images.length;
+    if (currentCount >= TASK_DETAIL_MAX_IMAGES) {
+      setImageUploadError(t('photoLimitReached'));
+      return;
+    }
+
+    if (status === 'demo') {
+      setImageUploadMessage(t('demoDoesNotCreateTasks'));
+      return;
+    }
+
+    const authToken = await getValidAccessToken();
+    if (!authToken || status !== 'authenticated') {
+      setImageUploadError(t('loginRequired'));
+      return;
+    }
+
+    setIsUploadingImages(true);
+
+    try {
+      const permission = await requestImageLibraryPermission();
+      if (!permission.granted) {
+        setImageUploadError(t('allowPhotoAccess'));
+        return;
+      }
+
+      const pickedImages = await pickTasklyImages({
+        currentCount,
+        maxImages: TASK_DETAIL_MAX_IMAGES,
+      });
+
+      if (!pickedImages.length) return;
+
+      const validation = validateSelectedImages(pickedImages, {
+        acceptedImageTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+        maxImages: TASK_DETAIL_MAX_IMAGES - currentCount,
+      });
+
+      if (validation.rejected.length > 0) {
+        setImageUploadError(t('somePhotosCouldNotBeAdded'));
+      }
+
+      if (!validation.accepted.length) return;
+
+      setImageUploadMessage(t('compressingPhotos'));
+      const compressedImages = await compressSelectedImages(validation.accepted, {
+        compress: 0.75,
+        maxWidth: 1600,
+      });
+
+      const uploadSummary = await uploadSelectedImagesSequentially({
+        authToken,
+        entityId: task.id,
+        entityType: 'task',
+        images: compressedImages,
+        onProgress: ({ current, total }) => {
+          setImageUploadProgress({ current, total });
+          setImageUploadMessage(formatUploadProgress(current, total));
+        },
+      });
+
+      if (uploadSummary.failed > 0) {
+        setImageUploadError(t('couldNotUploadPhoto'));
+      } else if (uploadSummary.skipped > 0) {
+        setImageUploadError(t('somePhotosSkipped'));
+      } else {
+        setImageUploadMessage(t('photosUploaded'));
+      }
+
+      await loadDetail();
+    } finally {
+      setIsUploadingImages(false);
+      setImageUploadProgress(null);
+    }
+  }, [getValidAccessToken, loadDetail, status, task]);
 
   const handleTaskEditPickerChange = useCallback((event: DateTimePickerEvent, selected?: Date) => {
     if (event.type === 'dismissed' || !selected) {
@@ -1177,7 +1275,14 @@ export default function CustomerTaskDetailScreen() {
             selectingTaskerId={selectingTaskerId}
             taskers={task.interestedTaskers}
           />
-          <Images images={task.images} />
+          <Images
+            canUpload={Boolean(task.nextActions.canUploadImages)}
+            error={imageUploadError}
+            images={task.images}
+            isUploading={isUploadingImages}
+            message={imageUploadProgress ? formatUploadProgress(imageUploadProgress.current, imageUploadProgress.total) : imageUploadMessage}
+            onAddImages={handleAddTaskImages}
+          />
           <Timeline items={task.timeline} accent="core" />
           <NextActions
             actions={task.nextActions}
@@ -1448,21 +1553,56 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Images({ images }: { images: { alt: string; id: string; url: string }[] }) {
-  if (!images.length) return null;
+function Images({
+  canUpload,
+  error,
+  images,
+  isUploading,
+  message,
+  onAddImages,
+}: {
+  canUpload: boolean;
+  error: string | null;
+  images: { alt: string; id: string; url: string }[];
+  isUploading: boolean;
+  message: string | null;
+  onAddImages: () => void;
+}) {
+  if (!images.length && !canUpload) return null;
+  const maxReached = images.length >= TASK_DETAIL_MAX_IMAGES;
+
   return (
     <AppCard style={styles.sectionCard}>
-      <AppText variant="cardTitle">{t('taskPhotos')}</AppText>
-      <View style={styles.imageGrid}>
-        {images.map((image) => (
-          <Image
-            key={image.id}
-            accessibilityLabel={image.alt}
-            source={{ uri: resolveApiMediaUrl(image.url) }}
-            style={styles.image}
-          />
-        ))}
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionHeaderCopy}>
+          <AppText variant="cardTitle">{t('taskPhotos')}</AppText>
+          <AppText color={colors.slate700}>{canUpload ? t('taskPhotosAddHelper') : t('taskPhotosLockedHelper')}</AppText>
+        </View>
+        <StatusBadge label={`${images.length}/${TASK_DETAIL_MAX_IMAGES}`} tone={maxReached ? 'warning' : 'neutral'} />
       </View>
+      {images.length ? (
+        <View style={styles.imageGrid}>
+          {images.map((image) => (
+            <Image
+              key={image.id}
+              accessibilityLabel={image.alt}
+              source={{ uri: resolveApiMediaUrl(image.url) }}
+              style={styles.image}
+            />
+          ))}
+        </View>
+      ) : (
+        <View style={styles.photoEmptyState}>
+          <AppText color={colors.slate500}>{t('noPhotosAdded')}</AppText>
+        </View>
+      )}
+      {message ? <AppText color={colors.success600}>{message}</AppText> : null}
+      {error ? <AppText color={colors.danger600}>{error}</AppText> : null}
+      {canUpload ? (
+        <AppButton disabled={isUploading || maxReached} loading={isUploading} onPress={onAddImages} variant="outline">
+          {maxReached ? t('photoLimitReached') : t('addPhotos')}
+        </AppButton>
+      ) : null}
     </AppCard>
   );
 }
@@ -1887,6 +2027,12 @@ function formatSchedule(start: string | null, end: string | null) {
   const startLabel = new Date(start).toLocaleString();
   const endLabel = end ? new Date(end).toLocaleTimeString() : '';
   return endLabel ? `${startLabel} - ${endLabel}` : startLabel;
+}
+
+function formatUploadProgress(current: number, total: number) {
+  return t('uploadingPhotosProgress')
+    .replace('{current}', String(current))
+    .replace('{total}', String(total));
 }
 
 function parseMoneyFromLabel(label: string) {
@@ -2330,6 +2476,24 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
     ...designTokens.shadows.card,
+  },
+  sectionHeaderCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  sectionHeaderRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  photoEmptyState: {
+    backgroundColor: colors.slate50,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    padding: spacing.lg,
   },
   sectionHeader: {
     alignItems: 'flex-start',
