@@ -388,7 +388,7 @@ export const bg = {
   landingHeroSubtitle: 'Публикувай малка задача за минути или сравни одобрени Pro специалисти за по-големи проекти — ясно, спокойно и с повече сигурност.',
   landingTaskSubtitle: 'Монтаж, сглобяване, ремонти и още',
   landingProSubtitle: 'Ремонти, електро, ВиК и още',
-  verifiedTaskers: 'Проверени Taskers',
+  verifiedTaskers: 'Независими Taskers',
   supportAlways: 'Винаги на помощ',
   popularTasks: 'Популярни задачи',
   andMore: 'и още',

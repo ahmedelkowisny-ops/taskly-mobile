@@ -658,7 +658,7 @@ export const en = {
   landingHeroSubtitle: 'Post a small task in minutes, or compare approved Pros for bigger projects — clear steps, trusted help, and peace of mind.',
   landingTaskSubtitle: 'Mounting, assembly, repairs & more',
   landingProSubtitle: 'Renovations, electrical, plumbing & more',
-  verifiedTaskers: 'Verified Taskers',
+  verifiedTaskers: 'Independent Taskers',
   supportAlways: 'Support always',
   popularTasks: 'Popular tasks',
   andMore: 'and more',
