@@ -100,6 +100,8 @@ export default function CustomerProRequestDetailScreen() {
   const [discardError, setDiscardError] = useState<string | null>(null);
   const [selectingResponseId, setSelectingResponseId] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelReasonError, setCancelReasonError] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     setMessage(null);
@@ -290,7 +292,6 @@ export default function CustomerProRequestDetailScreen() {
       proRequestId,
       {
         accessNotes: siteVisitFormValues.accessNotes.trim(),
-        addressConfirmation: true,
         message: siteVisitFormValues.message.trim(),
         preferredDate: siteVisitFormValues.preferredDate.trim() || null,
         preferredTimeWindow: siteVisitFormValues.preferredTimeWindow.trim(),
@@ -315,6 +316,12 @@ export default function CustomerProRequestDetailScreen() {
     const invite = request?.siteVisitInvites?.find((item) => item.status === 'invited' || item.status === 'alternate_time_proposed');
     if (!invite) return;
 
+    const trimmedReason = cancelReason.trim();
+    if (trimmedReason && hasObviousContactText(trimmedReason)) {
+      setCancelReasonError(t('cancelSiteVisitReasonContactError'));
+      return;
+    }
+    setCancelReasonError(null);
     setSiteVisitActionError(null);
     setSiteVisitNotice(null);
     setIsUpdatingSiteVisit(true);
@@ -323,6 +330,7 @@ export default function CustomerProRequestDetailScreen() {
       setData(cancelMockCustomerProSiteVisitInvite(proRequestId));
       setIsUpdatingSiteVisit(false);
       setSiteVisitNotice(t('siteVisitCancelled'));
+      setCancelReason('');
       return;
     }
 
@@ -333,17 +341,24 @@ export default function CustomerProRequestDetailScreen() {
       return;
     }
 
-    const result = await cancelCustomerProSiteVisitInvite(proRequestId, invite.id, {}, authToken);
+    const result = await cancelCustomerProSiteVisitInvite(
+      proRequestId,
+      invite.id,
+      { reason: trimmedReason || undefined },
+      authToken,
+    );
     setIsUpdatingSiteVisit(false);
 
     if (result.ok) {
       setData(result.data);
       setSiteVisitNotice(t('siteVisitCancelled'));
+      setCancelReason('');
+      setCancelReasonError(null);
       return;
     }
 
     setSiteVisitActionError(result.error.message || t('couldNotUpdateSiteVisit'));
-  }, [data?.proRequest, getValidAccessToken, proRequestId, status]);
+  }, [cancelReason, data?.proRequest, getValidAccessToken, proRequestId, status]);
 
   const handleDiscardProResponse = useCallback((response: CustomerUnlockedProComparisonResponse) => {
     Alert.alert(
@@ -661,7 +676,14 @@ export default function CustomerProRequestDetailScreen() {
             </AppCard>
           ) : null}
 
-          <SiteVisitStateCard isUpdating={isUpdatingSiteVisit} onCancelInvite={cancelSiteVisitInvite} request={request} />
+          <SiteVisitStateCard
+            cancelReason={cancelReason}
+            cancelReasonError={cancelReasonError}
+            isUpdating={isUpdatingSiteVisit}
+            onCancelInvite={cancelSiteVisitInvite}
+            onCancelReasonChange={(value) => { setCancelReason(value); if (cancelReasonError) setCancelReasonError(null); }}
+            request={request}
+          />
 
           {!request.unlockedComparison?.canViewFullComparison ? (
             <AppCard accentColor={colors.proOrange600} backgroundColor={colors.proOrange50} style={styles.proSurfaceCard}>
@@ -1018,12 +1040,18 @@ function ProPortfolioProjects({ projects }: { projects: NonNullable<CustomerUnlo
 }
 
 function SiteVisitStateCard({
+  cancelReason,
+  cancelReasonError,
   isUpdating,
   onCancelInvite,
+  onCancelReasonChange,
   request,
 }: {
+  cancelReason: string;
+  cancelReasonError: string | null;
   isUpdating: boolean;
   onCancelInvite: () => void;
+  onCancelReasonChange: (value: string) => void;
   request: CustomerProRequestDetailResponse['proRequest'];
 }) {
   const state = request.siteVisitState;
@@ -1086,9 +1114,20 @@ function SiteVisitStateCard({
         <Info label={t('allowedContactFields')} value={allowedFields.join(', ')} />
       ) : null}
       {request.siteVisitNextActions?.canCancelSiteVisitInvite ? (
-        <AppButton loading={isUpdating} onPress={onCancelInvite} tone="neutral" variant="outline">
-          {t('cancelSiteVisitInvite')}
-        </AppButton>
+        <>
+          <FormField
+            errorText={cancelReasonError ?? undefined}
+            label={t('cancelSiteVisitReason')}
+            maxLength={300}
+            multiline
+            onChangeText={onCancelReasonChange}
+            placeholder={t('cancelSiteVisitReasonPlaceholder')}
+            value={cancelReason}
+          />
+          <AppButton loading={isUpdating} onPress={onCancelInvite} tone="neutral" variant="outline">
+            {t('cancelSiteVisitInvite')}
+          </AppButton>
+        </>
       ) : null}
       <AppText color={colors.slate500} variant="caption">{t('contactDetailsSharedWhenAllowed')}</AppText>
       <AppText color={colors.slate500} variant="caption">{t('independentProsResponsible')}</AppText>
@@ -1392,11 +1431,14 @@ function NextActions({ actions }: { actions: { label: string; type: string }[] }
   );
 }
 
+function hasObviousContactText(text: string) {
+  return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(text) ||
+    /(?:\+?\d[\d\s().-]{6,}\d)/.test(text) ||
+    /(https?:\/\/|www\.|telegram|viber|whatsapp|facebook|instagram|@\w{2,})/i.test(text);
+}
+
 function hasObviousContactDetails(values: CustomerSiteVisitFormValues) {
-  const merged = Object.values(values).join('\n');
-  return /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(merged) ||
-    /(?:\+?\d[\d\s().-]{6,}\d)/.test(merged) ||
-    /(https?:\/\/|www\.|telegram|viber|whatsapp|facebook|instagram|@\w{2,})/i.test(merged);
+  return hasObviousContactText(Object.values(values).join('\n'));
 }
 
 function validateCustomerSiteVisitForm(values: CustomerSiteVisitFormValues): CustomerSiteVisitFormErrors {
